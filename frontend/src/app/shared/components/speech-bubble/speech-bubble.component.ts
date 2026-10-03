@@ -20,6 +20,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       font-weight: 500;
       font-size: 1rem;   // 18px ที่สเกล 100%
       line-height: var(--yt-line-height-tight);
+      text-wrap: pretty;   // ไม่ให้เหลือคำเดียวโดดๆ บรรทัดสุดท้าย
     }
     .bubble::before {
       content: '';
