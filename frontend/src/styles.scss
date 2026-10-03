@@ -1,0 +1,27 @@
+/* ---------- Ionic ----------
+ * โหลดเฉพาะ core + structure + typography (ไม่โหลด normalize/padding/flex utilities ทั้งชุด)
+ * เพื่อไม่ให้ CSS ของ Ionic ไปเปลี่ยนหน้าตาหน้าอื่นที่ไม่ได้ใช้ Ionic
+ */
+@use '@ionic/angular/css/core.css';
+@use '@ionic/angular/css/structure.css';
+@use '@ionic/angular/css/typography.css';
+@use '@ionic/angular/css/padding.css';   /* .ion-padding ที่หน้า Scan ใช้ */
+
+/* ---------- Theme ---------- */
+:root {
+  /* โทนเขียวอมฟ้า — สื่อถึงสุขภาพ อ่านง่ายบนพื้นขาว (contrast กับตัวหนังสือขาว ≥ 4.5:1) */
+  --ion-color-primary: #0f766e;
+  --ion-color-primary-rgb: 15, 118, 110;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #0d6861;
+  --ion-color-primary-tint: #27847c;
+
+  --ion-font-family: 'Sarabun', 'Noto Sans Thai', system-ui, sans-serif;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: var(--ion-font-family);
+}

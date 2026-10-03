@@ -1,0 +1,95 @@
+# YaTung (ยาตรง) — รันทั้งระบบ: docker compose up -d --build
+# เปิด tunnel สำหรับ LINE webhook:  docker compose --profile tunnel up -d
+# เปิด Adminer ดูฐานข้อมูล:          docker compose --profile dev up -d
+# ล้างฐานข้อมูลแล้ว seed ใหม่:         docker compose down -v && docker compose up -d --build
+
+name: yatung
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      TZ: Asia/Bangkok
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+07:00
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/init:/docker-entrypoint-initdb.d:ro   # รันครั้งเดียวตอน volume ยังว่าง
+    ports:
+      - "3306:3306"                                # dev เท่านั้น ลบออกตอนส่งงานได้
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  nodered:
+    build: ./node-red
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TZ: Asia/Bangkok                 # สำคัญ: cron เตือนยาต้องใช้เวลาไทย
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      NODE_RED_CREDENTIAL_SECRET: ${NODE_RED_CREDENTIAL_SECRET}
+      NODE_RED_ADMIN_USER: ${NODE_RED_ADMIN_USER}
+      NODE_RED_ADMIN_HASH: ${NODE_RED_ADMIN_HASH}
+      OCR_API_KEY: ${OCR_API_KEY}
+      LLM_PROVIDER: ${LLM_PROVIDER}
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_MODEL: ${LLM_MODEL}
+      LINE_CHANNEL_ACCESS_TOKEN: ${LINE_CHANNEL_ACCESS_TOKEN}
+      LINE_CHANNEL_SECRET: ${LINE_CHANNEL_SECRET}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_SUBJECT: ${VAPID_SUBJECT}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
+    volumes:
+      - ./node-red/data:/data          # flows.json อยู่ใน git, ส่วน flows_cred.json ถูก ignore
+    ports:
+      - "1880:1880"                    # Node-RED editor (dev) — production ให้เข้าผ่าน frontend /api เท่านั้น
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - nodered
+    ports:
+      - "8080:80"                      # http://localhost:8080
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    depends_on:
+      - frontend
+    # มี token → URL คงที่ (ตั้งค่าใน Cloudflare Zero Trust ให้ชี้ไป http://frontend:80)
+    command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}
+    # ไม่มี token → ใช้ quick tunnel แทน (URL สุ่มใหม่ทุกครั้ง ต้องอัปเดต webhook URL ใน LINE Console):
+    # command: tunnel --no-autoupdate --url http://frontend:80
+
+  adminer:
+    image: adminer:latest
+    profiles: ["dev"]
+    depends_on:
+      - db
+    ports:
+      - "8081:8080"
+
+volumes:
+  db_data:

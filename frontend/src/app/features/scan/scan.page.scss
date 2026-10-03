@@ -1,0 +1,148 @@
+// ออกแบบสำหรับผู้สูงอายุ: ตัวหนังสือใหญ่ ปุ่มสูง ≥ 56px ระยะห่างกว้าง
+
+:host {
+  --yt-radius: 16px;
+  font-size: 1.125rem;
+}
+
+ion-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+ion-segment-button {
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+  min-height: 56px;
+  font-size: 1rem;
+  letter-spacing: normal;   // md mode ใส่ letter-spacing ทำให้ตัวไทยห่างกันผิดธรรมชาติ
+  text-transform: none;
+}
+
+ion-button[size='large'] {
+  --border-radius: var(--yt-radius);
+  min-height: 60px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.picker {
+  margin-top: 8px;
+
+  &__main {
+    min-height: 120px;
+    font-size: 1.4rem;
+    ion-icon { font-size: 2.2rem; }
+  }
+}
+
+.tips {
+  margin: 20px 0 0;
+  border-radius: var(--yt-radius);
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 8px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--ion-color-dark);
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 1.2em;
+    line-height: 1.8;
+    font-size: 1.05rem;
+  }
+}
+
+.preview {
+  position: relative;
+  border-radius: var(--yt-radius);
+  overflow: hidden;
+  background: var(--ion-color-light);
+
+  img {
+    display: block;
+    width: 100%;
+    max-height: 55vh;
+    object-fit: contain;
+  }
+
+  &__clear {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    --background: rgba(0, 0, 0, 0.45);
+    --border-radius: 50%;
+    font-size: 1.6rem;
+  }
+
+  &__info {
+    display: block;
+    margin: 6px 0 16px;
+    text-align: right;
+    font-size: 0.85rem;
+  }
+}
+
+.hint {
+  margin: 4px 0 12px;
+  color: var(--ion-color-medium-shade);
+}
+
+.manual {
+  --border-radius: var(--yt-radius);
+  font-size: 1.15rem;
+  line-height: 1.6;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 28px 0 8px;
+  text-align: center;
+
+  ion-spinner {
+    width: 48px;
+    height: 48px;
+    color: var(--ion-color-primary);
+  }
+
+  p {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+  }
+}
+
+.fallback {
+  margin: 20px 0 0;
+  border-radius: var(--yt-radius);
+
+  p {
+    margin: 0 0 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+}
+
+.disclaimer {
+  margin: 24px 0 8px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--ion-color-medium);
+  line-height: 1.6;
+}
+
+ion-footer {
+  background: var(--ion-background-color, #fff);
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+
+  ion-button { margin: 0; }
+}

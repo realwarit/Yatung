@@ -1,0 +1,14 @@
+{
+  "name": "yatung-node-red-deps",
+  "private": true,
+  "description": "Dependencies installed into the Node-RED image (see Dockerfile)",
+  "dependencies": {
+    "node-red-node-mysql": "^2.0.0",
+    "node-red-contrib-cron-plus": "^2.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "web-push": "^3.6.7",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  }
+}

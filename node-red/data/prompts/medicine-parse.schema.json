@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yatung.app/schemas/medicine-parse.json",
+  "title": "MedicineParseResult",
+  "description": "ผลการตีความข้อความจากซองยา/ใบสั่งยาที่พิมพ์ด้วยเครื่อง โดย LLM",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["is_medicine_label", "medications", "unreadable_parts", "overall_note"],
+  "properties": {
+    "is_medicine_label": {
+      "type": "boolean",
+      "description": "false ถ้าข้อความไม่ใช่ฉลากยา/ใบสั่งยา (เช่น ใบเสร็จ เมนูอาหาร ภาพมั่ว)"
+    },
+    "medications": {
+      "type": "array",
+      "maxItems": 15,
+      "items": { "$ref": "#/$defs/medication" }
+    },
+    "unreadable_parts": {
+      "type": "array",
+      "maxItems": 10,
+      "description": "ส่วนของข้อความที่อ่านไม่ออกหรือขาดหาย ให้ผู้ใช้ตรวจเอง (ภาษาไทย สั้นๆ)",
+      "items": { "type": "string", "maxLength": 120 }
+    },
+    "overall_note": {
+      "type": ["string", "null"],
+      "maxLength": 300,
+      "description": "หมายเหตุรวมถึงผู้ใช้ (ภาษาไทย) หรือ null"
+    }
+  },
+  "$defs": {
+    "slot": {
+      "type": "string",
+      "enum": ["morning", "noon", "evening", "bedtime"]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "medication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name", "strength", "dose_per_time", "unit", "slots", "meal_relation",
+        "as_needed", "total_qty", "indication", "warnings", "source_text", "confidence"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150,
+          "description": "ชื่อยาตามที่พิมพ์บนซอง (ชื่อสามัญหรือชื่อการค้า) ห้ามเดา ห้ามแปลงเป็นชื่ออื่น"
+        },
+        "strength": {
+          "type": ["string", "null"],
+          "maxLength": 50,
+          "description": "ความแรง เช่น \"500 mg\", \"5 mg/5 ml\" หรือ null ถ้าไม่ระบุ"
+        },
+        "dose_per_time": {
+          "type": ["number", "null"],
+          "exclusiveMinimum": 0,
+          "maximum": 20,
+          "description": "จำนวนต่อครั้ง เช่น 1, 0.5, 2 — null ถ้าไม่ระบุ"
+        },
+        "unit": {
+          "type": "string",
+          "enum": ["tablet", "capsule", "ml", "teaspoon", "tablespoon", "sachet", "drop", "puff", "other"]
+        },
+        "slots": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 4,
+          "items": { "$ref": "#/$defs/slot" },
+          "description": "มื้อที่ต้องกิน ว่างได้ถ้าเป็นยาเมื่อมีอาการหรือระบุไม่ได้"
+        },
+        "meal_relation": {
+          "type": "string",
+          "enum": ["before", "after", "with", "any", "unknown"]
+        },
+        "as_needed": {
+          "type": "boolean",
+          "description": "true ถ้าเป็นยา \"เมื่อมีอาการ\" / PRN"
+        },
+        "total_qty": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "จำนวนยาทั้งหมดในซอง (หน่วยเดียวกับ unit) หรือ null"
+        },
+        "indication": {
+          "type": ["string", "null"],
+          "maxLength": 200,
+          "description": "ข้อบ่งใช้ตามที่พิมพ์บนซองเท่านั้น (ภาษาไทย) หรือ null"
+        },
+        "warnings": {
+          "type": "array",
+          "maxItems": 5,
+          "items": { "type": "string", "maxLength": 120 },
+          "description": "คำเตือนที่พิมพ์บนซองเท่านั้น (ภาษาไทย)"
+        },
+        "source_text": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "ข้อความ OCR ช่วงที่ใช้ตีความยาตัวนี้ (คัดลอกตรงตัว) ใช้ไฮไลต์ในหน้า Review"
+        },
+        "confidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "dose", "slots", "meal_relation"],
+          "description": "ความมั่นใจ 0–1 ของแต่ละช่อง ใช้ไฮไลต์ช่องที่ควรตรวจ",
+          "properties": {
+            "name": { "$ref": "#/$defs/confidence" },
+            "dose": { "$ref": "#/$defs/confidence" },
+            "slots": { "$ref": "#/$defs/confidence" },
+            "meal_relation": { "$ref": "#/$defs/confidence" }
+          }
+        }
+      }
+    }
+  }
+}
