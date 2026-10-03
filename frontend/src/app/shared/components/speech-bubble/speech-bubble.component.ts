@@ -38,7 +38,7 @@ function graphemes(text: string): string[] {
       border-radius: 20px;
       box-shadow: var(--yt-shadow-md);
       font-family: var(--yt-font-display);
-      font-weight: 500;
+      font-weight: var(--bubble-fw, 500);
       font-size: var(--bubble-fs, 1rem);   // 18px ที่สเกล 100%
       line-height: var(--yt-line-height-tight);
       text-wrap: pretty;   // ไม่ให้เหลือคำเดียวโดดๆ บรรทัดสุดท้าย
@@ -68,8 +68,11 @@ function graphemes(text: string): string[] {
     }
     // หางชี้ไปทางซ้าย (มือถือ: น้องอยู่ซ้ายของกรอบ)
     :host(.tail-left) .bubble::before { top: 50%; left: -0.4rem; transform: translateY(-50%) rotate(45deg); }
-    // หางชี้ลงซ้าย (จอกว้าง: กรอบอยู่เหนือขวาของหัว ชี้เข้าหาปาก)
-    :host(.tail-down) .bubble::before { bottom: -0.4rem; left: 1.6rem; transform: rotate(45deg); }
+    // หางชี้เฉียงลงซ้าย (จอกว้าง: กรอบอยู่เฉียงขวาบนของหัว)
+    :host(.tail-down) .bubble::before {
+      bottom: -0.75rem; left: 1.2rem; width: 1.3rem; height: 0.85rem; border-radius: 0;
+      clip-path: polygon(0 100%, 30% 0, 100% 0);
+    }
   `,
   host: { '[class.tail-left]': 'tail() === "left"', '[class.tail-down]': 'tail() === "down"' },
 })

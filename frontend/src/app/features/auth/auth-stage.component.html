@@ -1,16 +1,5 @@
-<div class="head">
-  <p class="badge"><app-icon name="pill" /> ผู้ช่วยกินยาประจำบ้าน</p>
-  <h2 class="headline yt-enter">
-    <span class="line">ไม่ลืมกินยา</span>
-    <span class="line">ไม่กิน<span class="hl">ผิดเวลา</span></span>
-    <svg class="spark spark--a" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6z" /></svg>
-    <svg class="spark spark--b" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6z" /></svg>
-  </h2>
-</div>
-
-<div class="scene">
-  <div class="figure">
-    <span class="blob" aria-hidden="true"></span>
+<div class="stage">
+  <span class="blob" aria-hidden="true"></span>
 
     @for (f of floaters; track $index) {
       <svg class="fl" viewBox="0 0 24 24" aria-hidden="true" focusable="false"
@@ -43,8 +32,9 @@
       </button>
       <div class="bubble-float"><app-speech-bubble class="bubble" tail="down" [text]="shownMessage()" /></div>
     </div>
-  </div>
 </div>
+
+<p class="tagline"><span class="seg">ไม่ลืมกินยา</span>&ngsp;<span class="seg">ไม่กิน<span class="hl">ผิดเวลา</span></span></p>
 
 <ul class="chips">
   <li><app-icon name="camera" /> สแกนซองยา</li>
