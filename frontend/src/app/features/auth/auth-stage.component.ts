@@ -54,13 +54,13 @@ export class AuthStageComponent {
     this.spoken.set(PHRASES[i]);
   }
 
-  // ตำแหน่งเป็น % ของเวที; อยู่รอบนอกของ blob
+  // ตำแหน่งเป็น % ของกล่องมาสคอต (blob กว้างกว่ากล่อง ~1.35 เท่า → ค่านอก 0–100 คือขอบ blob)
   protected readonly floaters: Floater[] = [
-    { kind: 'pill', x: 6, y: 10, size: 2.6, dur: 6, delay: 0 },
-    { kind: 'clock', x: 90, y: 26, size: 2.6, dur: 7, delay: -2 },
-    { kind: 'heart', x: 3, y: 52, size: 2.2, dur: 5.5, delay: -1 },
-    { kind: 'star', x: 94, y: 56, size: 2.2, dur: 4.5, delay: -3 },
-    { kind: 'pill2', x: 12, y: 86, size: 2.4, dur: 6.5, delay: -4 },
-    { kind: 'star', x: 82, y: 88, size: 1.6, dur: 5, delay: -2.5 },
+    { kind: 'pill', x: -14, y: 12, size: 2.8, dur: 6, delay: 0 },
+    { kind: 'clock', x: 104, y: 44, size: 2.8, dur: 7, delay: -2 },
+    { kind: 'heart', x: -16, y: 52, size: 2.3, dur: 5.5, delay: -1 },
+    { kind: 'star', x: 108, y: 76, size: 2.2, dur: 4.5, delay: -3 },
+    { kind: 'pill2', x: -6, y: 90, size: 2.5, dur: 6.5, delay: -4 },
+    { kind: 'star', x: 88, y: 98, size: 1.6, dur: 5, delay: -2.5 },
   ];
 }

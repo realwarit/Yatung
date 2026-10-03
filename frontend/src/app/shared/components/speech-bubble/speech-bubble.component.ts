@@ -39,10 +39,11 @@ function graphemes(text: string): string[] {
       box-shadow: var(--yt-shadow-md);
       font-family: var(--yt-font-display);
       font-weight: 500;
-      font-size: 1rem;   // 18px ที่สเกล 100%
+      font-size: var(--bubble-fs, 1rem);   // 18px ที่สเกล 100%
       line-height: var(--yt-line-height-tight);
       text-wrap: pretty;   // ไม่ให้เหลือคำเดียวโดดๆ บรรทัดสุดท้าย
     }
+    :host(.tail-down) .bubble { text-wrap: balance; }   // แบ่งบรรทัดให้ยาวใกล้เคียงกัน ไม่เหลือคำสั้นๆ
     .full { display: block; opacity: 0; }
     .typed { position: absolute; top: var(--pad-y); left: var(--pad-x); right: var(--pad-x); }
     .dot {
