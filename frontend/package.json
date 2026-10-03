@@ -22,6 +22,8 @@
     "@angular/service-worker": "^21.2.0",
     "@capacitor/camera": "^8.2.5",
     "@capacitor/core": "^8.5.2",
+    "@fontsource/mitr": "^5.3.0",
+    "@fontsource/noto-sans-thai-looped": "^5.3.0",
     "@ionic/angular": "^9.0.6",
     "@ionic/pwa-elements": "^3.4.0",
     "ionicons": "^8.1.0",

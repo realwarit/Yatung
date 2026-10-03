@@ -1,0 +1,135 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+  background: var(--yt-bg);
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 100dvh;
+}
+
+// ---------- มือถือ: หัวโค้งสี primary ----------
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.top {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--yt-space-3);
+  padding: var(--yt-space-4) var(--yt-space-4) var(--yt-space-7);
+  background: linear-gradient(160deg, var(--yt-primary) 0%, var(--yt-primary-deep) 100%);
+  border-radius: 0 0 var(--yt-radius-lg) var(--yt-radius-lg);
+}
+
+.content {
+  flex: 1;
+  width: 100%;
+  max-width: 32rem;
+  margin: calc(var(--yt-space-6) * -1) auto 0;
+  padding: 0 var(--yt-space-4) var(--yt-space-5);
+  box-sizing: border-box;
+}
+
+.card {
+  padding: var(--yt-space-5) var(--yt-space-4);
+  background: var(--yt-surface);
+  border-radius: var(--yt-radius-lg);
+  box-shadow: var(--yt-shadow-md);
+}
+
+.yt-disclaimer { margin: var(--yt-space-4) 0 0; }
+
+// ---------- แผงแบรนด์ (ซ่อนบนมือถือ) ----------
+.brand { display: none; }
+
+@media (min-width: 600px) {
+  .card { padding: var(--yt-space-6) var(--yt-space-5); }
+}
+
+@media (min-width: 960px) {
+  .shell { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); }
+
+  .brand {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--yt-space-6);
+    overflow: hidden;
+    padding: var(--yt-space-7);
+    color: var(--yt-on-primary);
+    background: linear-gradient(155deg, var(--yt-primary) 0%, var(--yt-primary-dark) 55%, var(--yt-primary-deep) 100%);
+  }
+
+  .brand > :not(.blob) { position: relative; }
+
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--yt-on-primary);
+    opacity: 0.08;
+    pointer-events: none;
+
+    &--1 { width: 28rem; height: 28rem; top: -9rem; right: -8rem; }
+    &--2 { width: 18rem; height: 18rem; bottom: 6rem; left: -7rem; }
+    &--3 { width: 9rem; height: 9rem; top: 46%; right: 12%; background: var(--yt-accent); opacity: 0.18; }
+  }
+
+  .brand__body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: var(--yt-space-5); }
+
+  .brand__tagline {
+    font-size: clamp(2rem, 1.2rem + 2vw, 2.7rem);
+    color: var(--yt-on-primary);
+  }
+
+  .features {
+    display: grid;
+    gap: var(--yt-space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--yt-text-lg);
+
+    li { display: flex; align-items: center; gap: var(--yt-space-4); }
+  }
+
+  .features__icon {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--yt-radius-md);
+    background: var(--yt-on-primary);
+    color: var(--yt-primary-dark);
+  }
+
+  .brand__art { max-width: 26rem; width: 100%; align-self: center; }
+
+  .top {
+    justify-content: flex-end;
+    padding: var(--yt-space-5) var(--yt-space-6) 0;
+    background: none;
+    border-radius: 0;
+  }
+
+  .top__logo { display: none; }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin-top: 0;
+    padding: var(--yt-space-5) var(--yt-space-6) var(--yt-space-6);
+  }
+
+  .card { padding: 0; background: none; box-shadow: none; }
+}

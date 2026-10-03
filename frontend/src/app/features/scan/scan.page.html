@@ -6,10 +6,13 @@
       </ion-button>
     </ion-buttons>
     <ion-title>เพิ่มยาใหม่</ion-title>
+    <ion-buttons slot="end">
+      <app-font-size-toggle />
+    </ion-buttons>
   </ion-toolbar>
 
   <ion-toolbar>
-    <ion-segment [value]="mode()" (ionChange)="onModeChange($event.detail.value)" [disabled]="busy()">
+    <ion-segment mode="ios" [value]="mode()" (ionChange)="onModeChange($event.detail.value)" [disabled]="busy()">
       <ion-segment-button value="photo">
         <ion-icon name="camera-outline"></ion-icon>
         <ion-label>ถ่ายรูปซองยา</ion-label>
@@ -66,12 +69,13 @@
     }
   } @else {
     <!-- ===== โหมดพิมพ์เอง ===== -->
+    <!-- label อยู่เหนือช่องกรอกเสมอ (ไม่ใช้ floating label) -->
+    <label class="field-label" id="manual-label">ข้อความบนซองยา</label>
     <p class="hint">พิมพ์ข้อความบนซองยา เช่น ชื่อยา จำนวนเม็ด และวิธีกิน</p>
     <ion-textarea
       class="manual"
       fill="outline"
-      label="ข้อความบนซองยา"
-      labelPlacement="floating"
+      aria-labelledby="manual-label"
       placeholder="เช่น Metformin 500 mg ครั้งละ 1 เม็ด วันละ 2 ครั้ง หลังอาหาร เช้า-เย็น"
       [autoGrow]="true"
       [rows]="6"

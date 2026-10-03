@@ -1,0 +1,61 @@
+@use '@angular/material' as mat;
+
+// Angular Material (หน้าอื่นนอกจาก Scan) — ปรับผ่าน theme API: สี ฟอนต์ รัศมีมุม ปุ่ม pill
+html {
+  @include mat.theme((
+    color: (primary: mat.$cyan-palette, theme-type: light),
+    typography: (
+      plain-family: "'Noto Sans Thai Looped', 'Noto Sans Thai', system-ui, sans-serif",
+      brand-family: "'Mitr', 'Noto Sans Thai Looped', system-ui, sans-serif",
+      bold-weight: 600,
+      medium-weight: 500,
+      regular-weight: 400,
+    ),
+    density: 0,
+  ));
+
+  @include mat.theme-overrides((
+    primary: var(--yt-primary),
+    on-primary: var(--yt-on-primary),
+    primary-container: var(--yt-primary-soft),
+    on-primary-container: var(--yt-primary-deep),
+    surface-tint: var(--yt-primary),
+    background: var(--yt-bg),
+    surface: var(--yt-surface),
+    on-surface: var(--yt-text),
+    on-surface-variant: var(--yt-text-muted),
+    outline: var(--yt-border-strong),
+    outline-variant: var(--yt-border),
+    error: var(--yt-danger),
+    on-error: var(--yt-on-primary),
+    error-container: var(--yt-danger-soft),
+    on-error-container: var(--yt-on-danger-soft),
+    corner-extra-small: 12px,
+    corner-small: 12px,
+    corner-medium: 20px,
+    corner-large: 28px,
+    corner-extra-large: 28px,
+  ));
+
+  @include mat.button-overrides((
+    filled-container-height: var(--yt-tap),
+    filled-container-shape: 999px,
+    filled-horizontal-padding: 28px,
+    filled-label-text-font: var(--yt-font-display),
+    filled-label-text-size: 1.1rem,
+    filled-label-text-weight: 500,
+    filled-label-text-tracking: 0,
+    outlined-container-height: var(--yt-tap),
+    outlined-container-shape: 999px,
+    outlined-label-text-font: var(--yt-font-display),
+    outlined-label-text-size: 1.1rem,
+    outlined-label-text-weight: 500,
+    outlined-label-text-tracking: 0,
+    text-container-height: var(--yt-tap),
+    text-container-shape: 999px,
+    text-label-text-font: var(--yt-font-display),
+    text-label-text-size: 1.1rem,
+    text-label-text-weight: 500,
+    text-label-text-tracking: 0,
+  ));
+}

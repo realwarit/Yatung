@@ -2,17 +2,16 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../core/auth/auth.service';
+import { IconComponent } from '../../shared/icon.component';
+import { AuthShellComponent } from './auth-shell.component';
 
 @Component({
   selector: 'app-login-page',
   imports: [
-    ReactiveFormsModule, RouterLink, MatButtonModule, MatFormFieldModule,
-    MatIconModule, MatInputModule, MatProgressSpinnerModule,
+    ReactiveFormsModule, RouterLink, MatButtonModule, MatProgressSpinnerModule,
+    AuthShellComponent, IconComponent,
   ],
   templateUrl: './login.page.html',
   styleUrl: './auth.scss',
