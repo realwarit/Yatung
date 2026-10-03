@@ -1,11 +1,23 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, signal, untracked } from '@angular/core';
 import { IconComponent } from '../../shared/icon.component';
 import { MascotComponent, MascotMood } from '../../shared/components/mascot/mascot.component';
 import { SpeechBubbleComponent } from '../../shared/components/speech-bubble/speech-bubble.component';
 
 type Floater = { kind: 'pill' | 'pill2' | 'clock' | 'heart' | 'star'; x: number; y: number; size: number; dur: number; delay: number };
 
-/** "เวทีของน้องยาตรง" ฝั่งซ้ายของหน้า Login/Register บนจอกว้าง */
+/** ประโยคที่น้องยาตรงพูดเมื่อถูกกด (สุ่ม ไม่ซ้ำประโยคเดิมติดกัน) */
+const PHRASES = [
+  'กินยาตรงเวลา สุขภาพดีขึ้นทุกวันนะคะ',
+  'ถ่ายรูปซองยามา เดี๋ยวน้องจัดตารางให้เอง',
+  'ลืมกินยาไม่ต้องกังวล น้องจะเตือนผ่าน LINE ให้ค่ะ',
+  'ถ้าลืมกินยา น้องจะแจ้งญาติให้รู้ด้วยนะคะ',
+  'อย่าลืมดื่มน้ำตามยานะคะ',
+  'ยาใกล้หมดเมื่อไหร่ น้องบอกก่อนเลยค่ะ',
+  'วันนี้กินยาครบทุกมื้อหรือยังเอ่ย',
+  'กดฟังน้องอ่านรายละเอียดยาให้ได้นะคะ',
+] as const;
+
+/** "เวทีของน้องยาตรง" ซีกซ้ายของหน้า Login/Register บนจอกว้าง */
 @Component({
   selector: 'app-auth-stage',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -17,6 +29,30 @@ export class AuthStageComponent {
   readonly mood = input<MascotMood>('happy');
   readonly message = input.required<string>();
   readonly peek = input(false);
+  /** false = ฟอร์มกำลัง error/ส่งข้อมูล → กดมาสคอตได้แค่เด้งตัว ไม่เปลี่ยนข้อความ */
+  readonly chatty = input(true);
+
+  protected readonly hop = signal(false);
+  private readonly spoken = signal<string | null>(null);
+  protected readonly shownMessage = computed(() => this.spoken() ?? this.message());
+  private last = -1;
+
+  constructor() {
+    // ข้อความจากฟอร์มเปลี่ยน (โฟกัส/error/ส่งข้อมูล) → ยกเลิกประโยคที่สุ่มไว้
+    effect(() => { this.message(); untracked(() => this.spoken.set(null)); });
+  }
+
+  protected chat(): void {
+    if (!this.hop()) {
+      this.hop.set(true);
+      setTimeout(() => this.hop.set(false), 600);
+    }
+    if (!this.chatty()) return;
+    let i: number;
+    do { i = Math.floor(Math.random() * PHRASES.length); } while (i === this.last);
+    this.last = i;
+    this.spoken.set(PHRASES[i]);
+  }
 
   // ตำแหน่งเป็น % ของเวที; อยู่รอบนอกของ blob
   protected readonly floaters: Floater[] = [

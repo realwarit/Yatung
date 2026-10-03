@@ -82,7 +82,7 @@ form { margin-top: var(--yt-space-5); }
 }
 
 // รหัสผ่าน + ยืนยันรหัสผ่าน + ข้อความช่วย: จัดตามพื้นที่ของกล่อง (container query)
-// แคบ = เรียงลงมาเหมือนเดิม · กว้างพอ = สองช่องคู่กัน แถวข้อความช่วยอยู่ใต้ ย้ายปุ่ม "แสดงรหัส" ขึ้นไปแถวเดียวกับป้าย
+// แคบ = เรียงลงมาเหมือนเดิม · กว้างพอ = สองช่องคู่กัน แถวข้อความช่วยอยู่ใต้ (ปุ่ม "แสดงรหัส" อยู่ในช่องรหัสผ่านเสมอ)
 .pair-wrap { container-type: inline-size; }
 .pair {
   display: grid;
@@ -92,19 +92,18 @@ form { margin-top: var(--yt-space-5); }
 .pair__hint { grid-area: hint; margin-bottom: var(--yt-space-4); }
 .pair__confirm { grid-area: confirm; }
 
-@container (min-width: 21rem) {
+@container (min-width: 25rem) {
   .pair {
     grid-template-areas: 'pw confirm' 'hint hint';
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);   // ช่องรหัสผ่านกว้างกว่า เพราะมีปุ่ม "แสดงรหัส" อยู่ข้างใน
     column-gap: var(--yt-space-3);
   }
   .pair__hint { margin-bottom: 0; }
   .pair__pw { margin-bottom: var(--yt-space-3); }
-  .pair__pw .yt-control__action { position: absolute; top: -0.65rem; right: 0; margin: 0; }
 }
 
 // จอกว้าง: กระชับระยะห่างให้หน้า Register พอดีจอสูง ≥ 800px (มือถือไม่แตะ)
-@media (min-width: 960px) {
+@media (min-width: 1024px) {
   form { margin-top: var(--yt-space-4); }
   .yt-field { margin-bottom: var(--yt-space-3); }
   .yt-submit { margin-top: var(--yt-space-2); }

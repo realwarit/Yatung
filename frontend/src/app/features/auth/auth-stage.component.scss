@@ -5,7 +5,7 @@
   align-items: center;
   justify-content: center;
   min-width: 0;
-  padding: var(--yt-space-4) 0;
+  padding: var(--yt-space-2) 0;
   box-sizing: border-box;
 }
 
@@ -20,36 +20,77 @@
   position: relative;
   display: flex;
   justify-content: center;
-  width: 100%;
-  padding: 3rem 0 var(--yt-space-5);   // เว้นด้านบนให้กรอบคำพูด
+  width: min(100%, 52rem);
+  padding: clamp(4.5rem, 12vh, 7.5rem) 0 2.4rem;   // ด้านบนเว้นให้กรอบคำพูดอยู่ในพื้นที่ blob
   box-sizing: border-box;
 }
 
-// blob รูปทรงอิสระ ขอบมนนุ่ม ค่อยๆ เปลี่ยนรูปช้าๆ
+// blob ก้อนมนนุ่ม (มุมกว้างพอให้กรอบคำพูดอยู่ในพื้นที่ได้) ค่อยๆ เปลี่ยนรูปช้าๆ
 .blob {
   position: absolute;
-  inset: 0 2%;
+  inset: 0 -3%;
   background: var(--yt-primary-soft);
-  border-radius: 58% 42% 55% 45% / 52% 58% 42% 48%;
+  border-radius: 34% 38% 42% 40% / 30% 32% 38% 36%;
   animation: morph 16s ease-in-out infinite alternate;
 }
 
 @keyframes morph {
-  to { border-radius: 44% 56% 42% 58% / 58% 44% 56% 42%; }
+  to { border-radius: 38% 34% 40% 44% / 32% 30% 36% 40%; }
+}
+
+// มาสคอตเป็นปุ่ม (กดเพื่อคุย): สูงสุด ~440px และไม่ใหญ่เกินความสูงจอ
+.figure {
+  position: relative;
+  width: min(22.6rem, 78%, 38vh);
 }
 
 .hero {
   position: relative;
-  width: min(21.5rem, 78%);   // ใหญ่ขึ้น ~15% จากเดิม
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  border-radius: var(--yt-radius-lg);
 }
 
-// กรอบคำพูดอยู่เหนือหัวฝั่งขวา หางชี้ลงเข้าหาปาก; ไม่ให้ล้นขอบเวที
+.hero.hop { animation: hop 0.6s var(--yt-ease) 1; }
+
+@keyframes hop {
+  0%, 100% { transform: translateY(0); }
+  35% { transform: translateY(-1.1rem); }
+  60% { transform: translateY(0); }
+  80% { transform: translateY(-0.3rem); }
+}
+
+// ป้ายชื่อ pill เล็กๆ วางบนเงาวงรีใต้เท้า
+.tag {
+  position: absolute;
+  left: 50%;
+  top: 95.4%;
+  transform: translate(-50%, -50%);
+  padding: 0 var(--yt-space-3);
+  border-radius: var(--yt-radius-pill);
+  background: var(--yt-surface);
+  box-shadow: var(--yt-shadow-sm);
+  font-family: var(--yt-font-display);
+  font-weight: 500;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--yt-primary-dark);
+  white-space: nowrap;
+}
+
+// กรอบคำพูดลอยเหนือหัวทางขวา (ก้นกรอบอยู่เหนือหัว ~6px) อยู่ในพื้นที่ blob ห่างขอบ ≥ 24px; หางชี้ลงเข้าหาปาก
 .bubble {
   position: absolute;
-  top: 0.5rem;
-  left: min(calc(50% - 1rem), calc(100% - 340px));
+  left: 30%;
+  bottom: calc(84% + 0.4rem);
   width: max-content;
-  max-width: 340px;
+  max-width: min(260px, 52vw);
 }
 
 // ---------- ไอคอนลอย ----------
@@ -96,5 +137,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .blob, .fl { animation: none; }
+  .blob, .fl, .hero.hop { animation: none; }
 }

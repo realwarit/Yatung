@@ -2,6 +2,7 @@
 // position:absolute + overflow:hidden เพื่อให้ ion-content เลื่อนเอง ทำให้หน้าที่ไม่ใช่ Ionic เลื่อนไม่ได้
 // (ตัวอักษร ก++ แล้วการ์ดสูงเกินจอ เลื่อนลงไม่ได้) → ให้ host ครอบทั้งจอแล้วเลื่อนข้างในแทน
 :host {
+  --bar-h: 6.5rem;   // ความสูงหัวหน้าจอบนจอกว้าง (โลโก้ 56px + ระยะบนล่างขอบละ ~30px)
   position: fixed;
   inset: 0;
   overflow-x: hidden;
@@ -54,27 +55,27 @@
   .bg__blob { animation: none; }
 }
 
-.page {
-  --bar-h: 4.5rem;
+.top {
   position: relative;
   z-index: 1;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-width: clamp(1100px, 80vw, 1360px);   // container ของทั้งสองฝั่ง
-  min-height: 100dvh;
-  margin: 0 auto;
-  padding: 0 var(--yt-space-4);
-  box-sizing: border-box;
-}
-
-.top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--yt-space-3);
-  padding: var(--yt-space-4) 0;
+  padding: var(--yt-space-4);
+}
+
+.page {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--yt-space-4);
+  box-sizing: border-box;
 }
 
 .shell { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr); }
@@ -138,18 +139,23 @@
   .card { padding: var(--yt-space-6) var(--yt-space-5); }
 }
 
-// ---------- จอกว้าง: เวทีน้องยาตรง | การ์ดฟอร์ม — อยู่กึ่งกลางแนวตั้งเท่ากัน ช่องว่างระหว่างกัน 32px ----------
-@media (min-width: 960px) {
-  .page { padding: 0 var(--yt-space-5); }
-  .top { min-height: var(--bar-h); box-sizing: border-box; padding: 0; }
+// ---------- จอกว้าง (≥ 1024px): สองซีกเท่ากันเต็มความกว้าง เวทีกึ่งกลางซีกซ้าย การ์ดกึ่งกลางซีกขวา ----------
+@media (min-width: 1024px) {
+  .top { height: var(--bar-h); box-sizing: border-box; padding: 0 1.7rem; }   // ชิดมุม ห่างขอบ ~30px เท่ากันทั้งซ้ายขวา
+
+  .page {
+    max-width: none;
+    min-height: calc(100dvh - var(--bar-h));
+    padding: 0 4vw;
+  }
 
   .shell {
-    grid-template-columns: minmax(0, 1fr) minmax(0, clamp(22rem, 44%, 520px));   // การ์ดกว้างสุด 520px
-    column-gap: var(--yt-space-6);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 0;
     min-height: calc(100dvh - var(--bar-h));
   }
 
-  // เวทีสูงเต็มพื้นที่และเลื่อนติดจอเมื่อการ์ดสูงกว่าจอ; เนื้อหาในเวทีอยู่กึ่งกลางแนวตั้ง
+  // เวทีเลื่อนติดจอเมื่อการ์ดสูงกว่าจอ; เนื้อหาในเวทีอยู่กึ่งกลางทั้งแนวตั้งและแนวนอน
   .stage {
     display: flex;
     position: sticky;
@@ -160,6 +166,6 @@
 
   .peek, .tagline { display: none; }
 
-  .content { max-width: none; align-self: center; padding-bottom: var(--yt-space-4); }
+  .content { width: min(100%, 520px); max-width: none; justify-self: center; align-self: center; padding-bottom: var(--yt-space-4); }
   .card { padding: var(--yt-space-5) var(--yt-space-6); }
 }

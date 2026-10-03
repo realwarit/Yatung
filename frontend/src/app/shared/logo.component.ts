@@ -32,13 +32,21 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     :host(.on-dark) .cap-a { fill: var(--yt-primary); }
     :host(.on-dark) .cap-b { fill: var(--yt-primary-deep); }
 
+    // ขนาดใหญ่ (หัวหน้าจอบนจอกว้าง): ไอคอน ~56px ตัวอักษร ~32px
+    @media (min-width: 1024px) {
+      :host(.lg) svg { width: 3.1rem; height: 3.1rem; }
+      :host(.lg) .word { font-size: 1.8rem; }
+    }
+
     .badge { fill: var(--yt-accent); }
     .tick { fill: none; stroke: var(--yt-on-accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
   `,
-  host: { '[class.on-light]': 'tone() === "light"', '[class.on-dark]': 'tone() === "dark"' },
+  host: { '[class.lg]': 'large()', '[class.on-light]': 'tone() === "light"', '[class.on-dark]': 'tone() === "dark"' },
 })
 export class LogoComponent {
   /** 'light' = วางบนพื้นอ่อน, 'dark' = วางบนพื้น primary */
   readonly tone = input<'light' | 'dark'>('light');
   readonly iconOnly = input(false);
+  /** ขยายเมื่อจอ ≥ 1024px */
+  readonly large = input(false);
 }

@@ -16,14 +16,15 @@
   </svg>
 </div>
 
-<div class="page">
-  <header class="top">
-    <app-logo tone="light" />
-    <app-font-size-toggle />
-  </header>
+<!-- หัวหน้าจอ: โลโก้ชิดซ้าย ตัวปรับขนาดตัวอักษรชิดขวา ห่างขอบเท่ากัน (อยู่นอก container) -->
+<header class="top">
+  <app-logo tone="light" [large]="true" />
+  <app-font-size-toggle />
+</header>
 
+<div class="page">
   <div class="shell">
-    <app-auth-stage class="stage" [mood]="mood()" [message]="message()" [peek]="peek()" />
+    <app-auth-stage class="stage" [mood]="mood()" [message]="message()" [peek]="peek()" [chatty]="chatty()" />
 
     <main class="content">
       <!-- มือถือ: น้องโผล่หน้าจากหลังการ์ด มือเกาะขอบ -->
