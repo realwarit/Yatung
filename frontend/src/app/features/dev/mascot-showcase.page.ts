@@ -10,6 +10,8 @@ const USAGE: Record<MascotMood, string> = {
   celebrate: 'กดกินแล้ว / adherence 100%',
   sleepy: 'มื้อก่อนนอน',
   worried: 'error · ลืมกินยา · ยาใกล้หมด',
+  watching: 'โฟกัสช่องอีเมล (Login)',
+  shy: 'โฟกัสช่องรหัสผ่าน (ปิดตา · [peek] แง้มนิ้วเมื่อกด "แสดงรหัส")',
 };
 
 /** หน้าตรวจมาสคอตทุก mood ทุกขนาด (เปิดเฉพาะ dev — ดู app.routes.ts) */
@@ -36,6 +38,10 @@ const USAGE: Record<MascotMood, string> = {
           }
         </section>
       }
+      <section class="card">
+        <h2>shy + peek <span>กด "แสดงรหัส"</span></h2>
+        <div class="band"><app-mascot mood="shy" [peek]="true" [size]="96" /><app-mascot mood="shy" [peek]="true" [size]="200" /></div>
+      </section>
     </div>
     <p class="yt-disclaimer">ไม่ใช่คำแนะนำทางการแพทย์</p>
   `,

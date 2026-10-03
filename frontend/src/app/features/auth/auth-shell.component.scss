@@ -1,7 +1,7 @@
 :host {
   display: block;
   min-height: 100dvh;
-  background: var(--yt-bg);
+  background: linear-gradient(160deg, var(--yt-bg-mint) 0%, var(--yt-bg-cream) 100%);
 }
 
 .shell {
@@ -10,7 +10,6 @@
   min-height: 100dvh;
 }
 
-// ---------- มือถือ: หัวโค้งสี primary ----------
 .panel {
   display: flex;
   flex-direction: column;
@@ -18,162 +17,90 @@
 }
 
 .top {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--yt-space-3);
-  padding: var(--yt-space-4) var(--yt-space-4) var(--yt-space-7);
-  background: linear-gradient(160deg, var(--yt-primary) 0%, var(--yt-primary-deep) 100%);
-  border-radius: 0 0 var(--yt-radius-lg) var(--yt-radius-lg);
+  padding: var(--yt-space-4);
 }
 
 .content {
   flex: 1;
   width: 100%;
   max-width: 32rem;
-  margin: calc(var(--yt-space-6) * -1) auto 0;
+  margin: 0 auto;
   padding: 0 var(--yt-space-4) var(--yt-space-5);
   box-sizing: border-box;
 }
 
+// ---------- มือถือ: น้องยาตรงโผล่หน้าจากหลังการ์ด ----------
+.peek {
+  --m: min(9.5rem, 42vw);   // ความกว้างน้องยาตรง
+  position: relative;
+  z-index: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--yt-space-4);
+  margin-bottom: -0.4rem;   // ให้ขอบการ์ดทับปลายมือเล็กน้อย → ดูเหมือนเกาะอยู่ด้านหลัง
+}
+
+.peek__mascot {
+  flex: none;
+  width: var(--m);
+  height: calc(var(--m) * 0.82);   // ตัดภาพที่ขอบการ์ด (ส่วนล่างของตัวอยู่หลังการ์ด)
+  overflow: hidden;
+}
+
+.peek__bubble { flex: 0 1 12rem; margin-top: var(--yt-space-2); }
+
 .card {
+  position: relative;
+  z-index: 1;
   padding: var(--yt-space-5) var(--yt-space-4);
   background: var(--yt-surface);
   border-radius: var(--yt-radius-lg);
   box-shadow: var(--yt-shadow-md);
 }
 
-.yt-disclaimer { margin: var(--yt-space-4) 0 0; }
-
-// ---------- มาสคอต + กรอบคำพูด ----------
-.mascot { display: flex; align-items: center; gap: var(--yt-space-4); }
-.mascot--narrow { flex: 1 1 100%; }
-.mascot--wide { display: none; }
-
-.speech {
-  position: relative;
-  margin: 0;
-  padding: var(--yt-space-3) var(--yt-space-4);
-  background: var(--yt-surface);
-  color: var(--yt-text);
-  border-radius: var(--yt-radius-md);
-  box-shadow: var(--yt-shadow-sm);
-  font-family: var(--yt-font-display);
+.tagline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--yt-space-2);
+  margin: var(--yt-space-4) 0 0;
   font-weight: 500;
-  font-size: var(--yt-text-base);
-  line-height: var(--yt-line-height-tight);
+  color: var(--yt-primary-dark);
 
-  // หางกรอบคำพูดชี้ไปทางน้องยาตรง (มือถือ = ซ้าย)
-  &::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: -0.5rem;
-    width: 1rem;
-    height: 1rem;
-    background: inherit;
-    border-radius: 3px;
-    transform: translateY(-50%) rotate(45deg);
-  }
+  app-icon { color: var(--yt-peach); }
 }
 
-// ---------- แผงแบรนด์ (ซ่อนบนมือถือ) ----------
-.brand { display: none; }
+.yt-disclaimer { margin: var(--yt-space-2) 0 0; }
+
+.stage { display: none; }
 
 @media (min-width: 600px) {
+  .peek { --m: 12rem; }
   .card { padding: var(--yt-space-6) var(--yt-space-5); }
 }
 
+// ---------- จอกว้าง: เวทีน้องยาตรง 55% | การ์ดฟอร์ม 45% ----------
 @media (min-width: 960px) {
-  .shell { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); }
+  .shell { grid-template-columns: minmax(0, 55fr) minmax(0, 45fr); }
 
-  .brand {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: var(--yt-space-6);
-    overflow: hidden;
-    padding: var(--yt-space-7);
-    color: var(--yt-on-primary);
-    background: linear-gradient(155deg, var(--yt-primary) 0%, var(--yt-primary-dark) 55%, var(--yt-primary-deep) 100%);
-  }
+  .stage { display: flex; position: sticky; top: 0; align-self: start; min-height: 100dvh; }
+  .peek, .tagline { display: none; }
 
-  .brand > :not(.blob) { position: relative; }
-
-  .blob {
-    position: absolute;
-    border-radius: 50%;
-    background: var(--yt-on-primary);
-    opacity: 0.08;
-    pointer-events: none;
-
-    &--1 { width: 28rem; height: 28rem; top: -9rem; right: -8rem; }
-    &--2 { width: 18rem; height: 18rem; bottom: 6rem; left: -7rem; }
-    &--3 { width: 9rem; height: 9rem; top: 46%; right: 12%; background: var(--yt-accent); opacity: 0.18; }
-  }
-
-  .brand__body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: var(--yt-space-5); }
-
-  .brand__tagline {
-    font-size: clamp(2rem, 1.2rem + 2vw, 2.7rem);
-    color: var(--yt-on-primary);
-  }
-
-  .features {
-    display: grid;
-    gap: var(--yt-space-4);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    font-size: var(--yt-text-lg);
-
-    li { display: flex; align-items: center; gap: var(--yt-space-4); }
-  }
-
-  .features__icon {
-    display: inline-flex;
-    flex: none;
-    align-items: center;
-    justify-content: center;
-    width: 3rem;
-    height: 3rem;
-    border-radius: var(--yt-radius-md);
-    background: var(--yt-on-primary);
-    color: var(--yt-primary-dark);
-  }
-
-  .mascot--narrow { display: none; }
-  .mascot--wide {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    align-self: center;
-    gap: var(--yt-space-4);
-    text-align: center;
-  }
-  .mascot--wide .speech {
-    font-size: var(--yt-text-lg);
-    &::before { top: auto; left: 50%; bottom: -0.5rem; transform: translateX(-50%) rotate(45deg); }
-  }
-
-  .top {
-    justify-content: flex-end;
-    padding: var(--yt-space-5) var(--yt-space-6) 0;
-    background: none;
-    border-radius: 0;
-  }
-
+  .top { justify-content: flex-end; padding: var(--yt-space-5) var(--yt-space-6) 0; }
   .top__logo { display: none; }
 
   .content {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    margin-top: 0;
     padding: var(--yt-space-5) var(--yt-space-6) var(--yt-space-6);
   }
 
-  .card { padding: 0; background: none; box-shadow: none; }
+  .card { padding: var(--yt-space-7) var(--yt-space-6); }
 }

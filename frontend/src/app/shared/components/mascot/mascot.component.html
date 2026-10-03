@@ -22,46 +22,50 @@
 
     <!-- ตา -->
     @switch (mood()) {
-      @case ('sleepy') { <path class="o f0" d="M73 121Q82 130 91 121M109 121Q118 130 127 121" /> }
-      @case ('celebrate') { <path class="o f0" d="M73 125Q82 112 91 125M109 125Q118 112 127 125" /> }
+      @case ('sleepy') { <path class="o f0 pose" d="M73 121Q82 130 91 121M109 121Q118 130 127 121" /> }
+      @case ('celebrate') { <path class="o f0 pose" d="M73 125Q82 112 91 125M109 125Q118 112 127 125" /> }
       @default {
-        <g [attr.transform]="mood() === 'thinking' ? 'translate(3 -5)' : null"><g class="eyes">
-          <circle class="ink" cx="82" cy="122" r="9" /><circle class="hl" cx="85" cy="119" r="3" />
-          <circle class="ink" cx="118" cy="122" r="9" /><circle class="hl" cx="121" cy="119" r="3" />
-        </g></g>
+        @if (showEyes()) {
+          <g class="look" [style.transform]="look()"><g class="eyes">
+            <circle class="ink" cx="82" cy="122" r="9" /><circle class="hl" cx="85" cy="119" r="3" />
+            <circle class="ink" cx="118" cy="122" r="9" /><circle class="hl" cx="121" cy="119" r="3" />
+          </g></g>
+        }
       }
     }
-    @if (mood() === 'worried') { <path class="o f0" d="M72 111L91 105M128 111L109 105" /> }
+    @if (mood() === 'worried') { <path class="o f0 pose" d="M72 111L91 105M128 111L109 105" /> }
 
     <!-- ปาก -->
     @switch (mood()) {
       @case ('celebrate') {
-        <path class="ink o2" d="M88 136Q100 158 112 136Z" />
+        <path class="ink o2 pose" d="M88 136Q100 158 112 136Z" />
         <ellipse class="cheek" cx="100" cy="144.5" rx="5" ry="3" />
       }
-      @case ('thinking') { <circle class="o f0" cx="104" cy="141" r="3.5" /> }
-      @case ('sleepy') { <path class="o f0" d="M95 140Q100 143 105 140" /> }
-      @case ('worried') { <path class="o f0" d="M90 143Q95 137 100 143T110 143" /> }
-      @default { <path class="o f0" d="M91 137Q100 146 109 137" /> }
+      @case ('thinking') { <circle class="o f0 pose" cx="104" cy="141" r="3.5" /> }
+      @case ('sleepy') { <path class="o f0 pose" d="M95 140Q100 143 105 140" /> }
+      @case ('worried') { <path class="o f0 pose" d="M90 143Q95 137 100 143T110 143" /> }
+      @default { <path class="o f0 pose" d="M91 137Q100 146 109 137" /> }
     }
 
-    <!-- แขน -->
-    <path class="arm-o" [attr.d]="arms()[0]" /><path class="arm-f" [attr.d]="arms()[0]" />
+    <!-- แขน (d เปลี่ยนแบบนุ่มใน browser ที่รองรับ CSS d) -->
+    <path class="arm-o" [attr.d]="arms()[0]" [style.d]="path(arms()[0])" />
+    <path class="arm-f" [attr.d]="arms()[0]" [style.d]="path(arms()[0])" />
     <g [class.wave]="mood() === 'wave'">
-      <path class="arm-o" [attr.d]="arms()[1]" /><path class="arm-f" [attr.d]="arms()[1]" />
+      <path class="arm-o" [attr.d]="arms()[1]" [style.d]="path(arms()[1])" />
+      <path class="arm-f" [attr.d]="arms()[1]" [style.d]="path(arms()[1])" />
     </g>
 
     <!-- ของประกอบตาม mood -->
     @switch (mood()) {
       @case ('thinking') {
-        <circle class="prop o2" cx="150" cy="66" r="3.5" />
-        <circle class="prop o2" cx="157" cy="56" r="5" />
-        <ellipse class="prop o2" cx="172" cy="34" rx="24" ry="16" />
+        <circle class="prop o2 pose" cx="150" cy="66" r="3.5" />
+        <circle class="prop o2 pose" cx="157" cy="56" r="5" />
+        <ellipse class="prop o2 pose" cx="172" cy="34" rx="24" ry="16" />
         <circle class="ink" cx="162" cy="34" r="3.2" /><circle class="ink" cx="172" cy="34" r="3.2" /><circle class="ink" cx="182" cy="34" r="3.2" />
       }
       @case ('reminder') {
         @for (d of bellRing; track d) { <path class="halo" [attr.d]="d" /><path class="halo-f" [attr.d]="d" /> }
-        <g transform="translate(166 62)">
+        <g class="pose" transform="translate(166 62)">
           <path class="bell o2" d="M-15 14H15Q13 14 13 6Q13 -10 0 -10Q-13 -10 -13 6Q-13 14 -15 14Z" />
           <circle class="ink" cx="0" cy="19" r="4" />
         </g>
@@ -70,7 +74,7 @@
         @for (d of sleepZ; track d) { <path class="halo" [attr.d]="d" /><path class="halo-f" [attr.d]="d" /> }
       }
       @case ('worried') {
-        <path class="sweat o2" d="M152 82q-8 12-8 17a8 8 0 0 0 16 0q0-5-8-17z" />
+        <path class="sweat o2 pose" d="M152 82q-8 12-8 17a8 8 0 0 0 16 0q0-5-8-17z" />
       }
       @case ('celebrate') {
         @for (s of stars; track $index) {

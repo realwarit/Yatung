@@ -111,6 +111,13 @@
 | `celebrate` | กดกินแล้ว / adherence 100% |
 | `sleepy` | มื้อก่อนนอน |
 | `worried` | error, ลืมกินยา, ยาใกล้หมด (Scan ตอนอ่านไม่สำเร็จ) |
+| `watching` | โฟกัสช่องอีเมล/ชื่อในฟอร์ม auth (ตาเหลือบไปทางฟอร์ม) |
+| `shy` | โฟกัสช่องรหัสผ่าน (มือปิดตา); `[peek]="true"` = แง้มนิ้วตอนกด "แสดงรหัส" |
+
+- input เพิ่มเติม: `fluid` (ขยายเต็มกล่องที่ครอบ), `peek`, `grip` (มือเกาะขอบล่าง ใช้คู่ wrapper ที่ตัดภาพ — โหมดโผล่หน้าจากหลังการ์ดบนมือถือ)
+- หน้า Login/Register: `auth-shell` รับ `[mood] [message] [peek]` จากหน้าที่ครอบ (logic: success→celebrate 600ms, busy→thinking, error ใหม่→worried, focus→watching/shy; Register รหัสอ่อน→worried แข็งแรง→happy)
+  โครง: `auth-stage` (เวทีซ้ายจอ ≥ 960px) + `shared/components/speech-bubble`; กรอกอีเมล/รหัสผิด error ต้องมี `role="alert"` ในฟอร์มเสมอ (กรอบคำพูดเป็น aria-hidden)
+- โทนสีหน้า auth: พื้นไล่ `--yt-bg-mint → --yt-bg-cream`; `--yt-peach`/`--yt-amber` ใช้เป็นจุดตกแต่งเล็กๆ เท่านั้น (ห้ามเป็นสีตัวหนังสือ/วางทับพื้นเขียว)
 
 - ไอคอนแอป: `cd frontend && node tools/make-icons.mjs` (ใช้ `sharp`) สร้าง `public/favicon.svg|ico`, `public/icons/*` (any + maskable 192/512 + apple-touch), และ `frontend/resources/icon-only|icon-foreground|icon-background.png` 1024px
   สำหรับ `npx @capacitor/assets generate --android` ในวันที่ 9 — ถ้าแก้หน้า/สีมาสคอต ต้องแก้ค่าซ้ำใน `tools/make-icons.mjs` แล้วรันใหม่

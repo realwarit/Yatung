@@ -1,4 +1,4 @@
-<app-auth-shell>
+<app-auth-shell [mood]="mood()" [message]="message()" [peek]="showPassword()">
   <h1 class="yt-title">สมัครสมาชิก</h1>
   <p class="yt-lead">สร้างบัญชีเพื่อเริ่มใช้ยาตรง</p>
 
@@ -9,7 +9,7 @@
     </div>
   }
 
-  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <form [formGroup]="form" (ngSubmit)="submit()" (focusin)="onFocusIn($event)" (focusout)="onFocusOut($event)" novalidate>
     <div class="yt-field">
       <label class="yt-label" for="display_name">ชื่อที่ใช้แสดง</label>
       <div class="yt-control" [class.is-invalid]="form.controls.display_name.touched && form.controls.display_name.invalid">
@@ -45,7 +45,7 @@
                autocomplete="new-password"
                [attr.aria-invalid]="form.controls.password.touched && form.controls.password.invalid"
                aria-describedby="password-hint password-error" />
-        <button type="button" class="yt-control__action" (click)="showPassword.set(!showPassword())"
+        <button type="button" id="toggle-password" class="yt-control__action" (click)="showPassword.set(!showPassword())"
                 [attr.aria-pressed]="showPassword()">
           {{ showPassword() ? 'ซ่อนรหัส' : 'แสดงรหัส' }}
         </button>

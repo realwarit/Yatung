@@ -18,16 +18,17 @@
   gap: var(--yt-space-3);
   min-height: var(--yt-tap);
   padding: 0 var(--yt-space-4);
-  background: var(--yt-field-bg);
+  background: var(--yt-surface);
   border: 2px solid var(--yt-border-strong);
   border-radius: var(--yt-radius-field);
-  transition: border-color var(--yt-duration), background var(--yt-duration);
+  transition: border-color var(--yt-duration), box-shadow var(--yt-duration);
 
+  // focus: ขอบ primary + วงแสง primary-soft + outline (กันคนที่แยกสีไม่ออก)
   &:focus-within {
     border-color: var(--yt-primary);
+    box-shadow: 0 0 0 4px var(--yt-primary-soft);
     outline: 3px solid var(--yt-primary);
-    outline-offset: 2px;
-    background: var(--yt-surface);
+    outline-offset: 4px;
   }
 
   &.is-invalid { border-color: var(--yt-danger); }

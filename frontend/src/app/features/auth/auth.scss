@@ -4,13 +4,23 @@
 
 form { margin-top: var(--yt-space-5); }
 
+.yt-lead { margin-bottom: 0; }
+
 .yt-submit {
   width: 100%;
+  height: var(--yt-tap);
   margin-top: var(--yt-space-3);
-  --mat-button-filled-container-color: var(--yt-primary);
+  --mat-button-filled-container-color: transparent;
   --mat-button-filled-label-text-color: var(--yt-on-primary);
   --mat-button-filled-state-layer-color: var(--yt-on-primary);
+  --mat-button-filled-container-shape: var(--yt-radius-pill);
+  border-radius: var(--yt-radius-pill);
+  background: linear-gradient(135deg, var(--yt-primary) 0%, var(--yt-primary-light) 100%);
   box-shadow: var(--yt-shadow-md);
+  transition: transform 160ms var(--yt-ease), box-shadow 160ms var(--yt-ease);
+
+  &:hover { transform: translateY(-2px); box-shadow: var(--yt-shadow-lg); }
+  &:active { transform: translateY(1px) scale(0.98); box-shadow: var(--yt-shadow-sm); }
 
   mat-spinner {
     display: inline-block;
@@ -63,3 +73,5 @@ form { margin-top: var(--yt-space-5); }
   &--3 &__text { color: var(--yt-primary-dark); }
   &--4 &__text { color: var(--yt-success); }
 }
+
+.nw { white-space: nowrap; }
