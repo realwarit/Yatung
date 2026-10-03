@@ -1,4 +1,3 @@
-<app-logo class="logo" tone="light" />
 <h2 class="headline">ไม่ลืมกินยา ไม่กินผิดเวลา</h2>
 
 <div class="scene">
@@ -26,10 +25,8 @@
     </svg>
   }
 
-  <div class="hero">
-    <app-mascot [mood]="mood()" [peek]="peek()" [fluid]="true" />
-    <app-speech-bubble class="bubble" tail="down" [text]="message()" />
-  </div>
+  <div class="hero"><app-mascot [mood]="mood()" [peek]="peek()" [fluid]="true" /></div>
+  <app-speech-bubble class="bubble" tail="down" [text]="message()" />
 </div>
 
 <ul class="chips">

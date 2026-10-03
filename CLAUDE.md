@@ -81,6 +81,7 @@
 - Material override ผ่าน `mat.theme` / `mat.theme-overrides` / `mat.*-overrides` ใน `_material-theme.scss` ห้ามไล่แก้ด้วย `::ng-deep`
 - Ionic (หน้า Scan) ใช้ `--ion-*` จาก `_ionic.scss` ชุดเดียวกับ token; ถ้าเพิ่มสีใน Ionic ต้องมีค่า `-rgb` คู่กัน
 - คอมโพเนนต์ที่มี scss ของตัวเอง: งบ 4kB/ไฟล์ (warning) 8kB (error)
+- ระวัง: Ionic `structure.css` ตั้ง `body` เป็น `position:absolute; overflow:hidden` → หน้าที่ไม่ใช่ Ionic เลื่อนไม่ได้ ต้องทำหน้าให้เป็น scroll container เอง (ดู `auth-shell.component.scss` `:host { position: fixed; inset: 0; overflow-y: auto }`)
 - ระวัง: selector `.parent > *` ใน component scss มี specificity สูงกว่า `.child` เพราะ Angular ใส่ attribute ให้ `*` → ใช้ `> :not(.x)`
 
 **การเข้าถึง (ห้ามทำเสียเพื่อความสวย)**

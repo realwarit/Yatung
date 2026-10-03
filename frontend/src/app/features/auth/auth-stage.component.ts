@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IconComponent } from '../../shared/icon.component';
-import { LogoComponent } from '../../shared/logo.component';
 import { MascotComponent, MascotMood } from '../../shared/components/mascot/mascot.component';
 import { SpeechBubbleComponent } from '../../shared/components/speech-bubble/speech-bubble.component';
 
@@ -10,7 +9,7 @@ type Floater = { kind: 'pill' | 'pill2' | 'clock' | 'heart' | 'star'; x: number;
 @Component({
   selector: 'app-auth-stage',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent, LogoComponent, MascotComponent, SpeechBubbleComponent],
+  imports: [IconComponent, MascotComponent, SpeechBubbleComponent],
   templateUrl: './auth-stage.component.html',
   styleUrl: './auth-stage.component.scss',
 })

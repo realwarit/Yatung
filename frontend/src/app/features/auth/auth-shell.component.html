@@ -1,11 +1,11 @@
-<div class="shell">
-  <app-auth-stage class="stage" [mood]="mood()" [message]="message()" [peek]="peek()" />
+<div class="page">
+  <header class="top">
+    <app-logo tone="light" />
+    <app-font-size-toggle />
+  </header>
 
-  <div class="panel">
-    <header class="top">
-      <app-logo class="top__logo" tone="light" />
-      <app-font-size-toggle />
-    </header>
+  <div class="shell">
+    <app-auth-stage class="stage" [mood]="mood()" [message]="message()" [peek]="peek()" />
 
     <main class="content">
       <!-- มือถือ: น้องโผล่หน้าจากหลังการ์ด มือเกาะขอบ -->
