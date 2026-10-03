@@ -6,7 +6,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../core/auth/auth.service';
 import { IconComponent } from '../../shared/icon.component';
+import { MascotMood } from '../../shared/components/mascot/mascot.component';
 import { AuthShellComponent } from './auth-shell.component';
+import { AuthFocus, focusKind, useIntroMood } from './auth-mascot';
 
 const STRENGTH_LABELS = ['', 'อ่อนมาก', 'พอใช้', 'ดี', 'แข็งแรง'] as const;
 
@@ -55,6 +57,43 @@ export class RegisterPage {
   readonly error = signal('');
   readonly showPassword = signal(false);
 
+  // ---------- น้องยาตรงตอบสนองต่อฟอร์ม ----------
+  readonly focus = signal<AuthFocus>(null);
+  readonly success = signal(false);
+  private readonly errorFresh = signal(false);
+  private readonly intro = useIntroMood();
+
+  readonly mood = computed<MascotMood>(() => {
+    if (this.success()) return 'celebrate';
+    if (this.busy()) return 'thinking';
+    if (this.error() && this.errorFresh()) return 'worried';
+    const f = this.focus();
+    if (f === 'secret') {
+      const s = this.strength();
+      // พิมพ์รหัสแล้ว → ท่าทางบอกความแข็งแรง; ยังไม่พิมพ์ → เขินปิดตา
+      return s ? (s.level <= 2 ? 'worried' : 'happy') : 'shy';
+    }
+    if (f) return 'watching';
+    return this.intro();
+  });
+  readonly message = computed(() => {
+    if (this.success()) return 'ยินดีต้อนรับค่ะ!';
+    if (this.busy()) return 'รอสักครู่นะคะ…';
+    if (this.error() && this.errorFresh()) return 'อุ๊ย สมัครไม่สำเร็จค่ะ ดูข้อความในฟอร์มนะคะ';
+    const s = this.focus() === 'secret' ? this.strength() : null;
+    if (s) return s.level <= 2 ? 'รหัสยังอ่อนอยู่นะคะ ลองเพิ่มความยาวหรือตัวเลข' : 'รหัสแข็งแรงเลยค่ะ!';
+    return 'ยินดีที่ได้รู้จักค่ะ! มาเริ่มกันเลย';
+  });
+
+  constructor() {
+    this.form.valueChanges.subscribe(() => this.errorFresh.set(false));
+  }
+
+  onFocusIn(e: FocusEvent): void { this.focus.set(focusKind(e.target)); }
+  onFocusOut(e: FocusEvent): void {
+    if (!(e.relatedTarget instanceof HTMLElement && e.relatedTarget.closest('form'))) this.focus.set(null);
+  }
+
   /** แสดง error ยืนยันรหัสผ่านเมื่อช่องนี้ถูกแตะแล้ว และไม่ตรงหรือว่าง */
   confirmInvalid(): boolean {
     const c = this.form.controls.confirm;
@@ -71,10 +110,14 @@ export class RegisterPage {
     this.error.set('');
     const v = this.form.getRawValue();
     this.auth.register({ display_name: v.display_name.trim(), email: v.email.trim(), password: v.password }).subscribe({
-      next: () => this.router.navigateByUrl('/scan'),
+      next: () => {
+        this.success.set(true);   // น้องฉลอง 600ms ก่อนเปลี่ยนหน้า
+        setTimeout(() => this.router.navigateByUrl('/scan'), 600);
+      },
       error: (err) => {
         this.busy.set(false);
         this.error.set(AuthService.errorMessage(err));
+        this.errorFresh.set(true);
       },
     });
   }

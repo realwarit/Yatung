@@ -1,0 +1,102 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--yt-space-4);
+  min-width: 0;
+  padding: var(--yt-space-6) var(--yt-space-6) var(--yt-space-5);
+  box-sizing: border-box;
+}
+
+.logo { align-self: flex-start; }
+
+.headline {
+  margin: 0;
+  text-align: center;
+  font-size: clamp(2rem, 1.5rem + 1vw, 2.4rem);
+  color: var(--yt-primary-dark);
+}
+
+.scene {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 40rem;
+  min-height: 22rem;
+}
+
+// blob รูปทรงอิสระ ขอบมนนุ่ม ค่อยๆ เปลี่ยนรูปช้าๆ
+.blob {
+  position: absolute;
+  inset: 6% 12%;
+  background: var(--yt-primary-soft);
+  border-radius: 58% 42% 55% 45% / 52% 58% 42% 48%;
+  animation: morph 16s ease-in-out infinite alternate;
+}
+
+@keyframes morph {
+  to { border-radius: 44% 56% 42% 58% / 58% 44% 56% 42%; }
+}
+
+.hero {
+  position: relative;
+  width: clamp(16rem, 26vw, 19.5rem);
+}
+
+.bubble {
+  position: absolute;
+  left: 62%;
+  bottom: 88%;
+  width: max-content;
+  max-width: 12.5rem;
+}
+
+// ---------- ไอคอนลอย ----------
+.fl {
+  position: absolute;
+  animation: drift 6s ease-in-out infinite alternate;
+}
+
+@keyframes drift {
+  from { transform: translateY(-0.4rem) rotate(-6deg); }
+  to   { transform: translateY(0.5rem) rotate(6deg); }
+}
+
+.c-peach { fill: var(--yt-peach); }
+.c-amber { fill: var(--yt-amber); }
+.c-mint { fill: var(--yt-mint-mid); }
+.c-white { fill: var(--yt-surface); }
+.hand { fill: none; stroke: var(--yt-peach); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+// ---------- chip จุดเด่น ----------
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--yt-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chips li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--yt-space-2);
+  padding: var(--yt-space-2) var(--yt-space-4) var(--yt-space-2) var(--yt-space-3);
+  border: 1px solid var(--yt-surface);
+  border-radius: var(--yt-radius-pill);
+  background: rgb(255 255 255 / 0.7);
+  box-shadow: var(--yt-shadow-sm);
+  font-weight: 500;
+  color: var(--yt-text);
+
+  app-icon { color: var(--yt-primary); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blob, .fl { animation: none; }
+}
