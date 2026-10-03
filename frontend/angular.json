@@ -29,7 +29,14 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"]
+            "styles": [
+              "@fontsource/mitr/500.css",
+              "@fontsource/mitr/600.css",
+              "@fontsource/noto-sans-thai-looped/400.css",
+              "@fontsource/noto-sans-thai-looped/500.css",
+              "@fontsource/noto-sans-thai-looped/600.css",
+              "src/styles.scss"
+            ]
           },
           "configurations": {
             "production": {
@@ -60,7 +67,7 @@
           "builder": "@angular/build:dev-server",
           "options": {
             "proxyConfig": "proxy.conf.json"
-            },
+          },
           "configurations": {
             "production": {
               "buildTarget": "frontend:build:production"

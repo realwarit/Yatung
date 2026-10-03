@@ -1,69 +1,122 @@
-// ออกแบบสำหรับผู้สูงอายุ: ตัวหนังสือใหญ่ ปุ่มสูง ≥ 56px ระยะห่างกว้าง
+// หน้า Scan (Ionic) — ใช้ design token กลางทั้งหมด (ดู src/styles/_tokens.scss)
 
 :host {
-  --yt-radius: 16px;
-  font-size: 1.125rem;
+  font-family: var(--yt-font-body);
+  font-size: var(--yt-text-base);
+  line-height: var(--yt-line-height);
 }
 
+ion-toolbar {
+  --min-height: var(--yt-tap);
+  --padding-start: var(--yt-space-2);
+  --padding-end: var(--yt-space-2);
+  --background: var(--yt-bg);
+}
+
+ion-header ion-toolbar:first-child {
+  --min-height: calc(var(--yt-tap) + var(--yt-space-3));
+  --background: var(--yt-primary);
+  --color: var(--yt-on-primary);
+}
+
+ion-header {
+  box-shadow: var(--yt-shadow-sm);
+  &::after { display: none; }
+}
+
+ion-buttons { margin: 0; }
+
 ion-title {
-  font-size: 1.35rem;
-  font-weight: 700;
+  padding-inline: var(--yt-space-1);
+  font-family: var(--yt-font-display);
+  font-size: 1.1rem;
+  font-weight: 500;
+  line-height: var(--yt-line-height-tight);
+  text-align: start;
+}
+
+ion-segment {
+  --background: var(--yt-field-bg);
+  border-radius: var(--yt-radius-pill);
+  padding: var(--yt-space-1);
 }
 
 ion-segment-button {
-  --padding-top: 8px;
-  --padding-bottom: 8px;
-  min-height: 56px;
-  font-size: 1rem;
+  --padding-top: var(--yt-space-2);
+  --padding-bottom: var(--yt-space-2);
+  --color: var(--yt-text-muted);
+  --color-checked: var(--yt-on-primary);
+  --indicator-color: var(--yt-primary);
+  --border-radius: var(--yt-radius-pill);
+  --indicator-box-shadow: var(--yt-shadow-sm);
+  min-height: var(--yt-tap);
+  font-family: var(--yt-font-display);
+  font-size: var(--yt-text-base);
+  font-weight: 500;
   letter-spacing: normal;   // md mode ใส่ letter-spacing ทำให้ตัวไทยห่างกันผิดธรรมชาติ
   text-transform: none;
 }
 
+ion-button {
+  --border-radius: var(--yt-radius-pill);
+  font-family: var(--yt-font-display);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
 ion-button[size='large'] {
-  --border-radius: var(--yt-radius);
-  min-height: 60px;
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin-bottom: 12px;
+  min-height: var(--yt-tap);
+  font-size: var(--yt-text-lg);
+  font-weight: 500;
+  margin-bottom: var(--yt-space-3);
+  --box-shadow: var(--yt-shadow-md);
+}
+
+ion-button[fill='outline'] {
+  --border-width: 2px;
+  --box-shadow: none;
 }
 
 .picker {
-  margin-top: 8px;
+  margin-top: var(--yt-space-2);
 
   &__main {
-    min-height: 120px;
-    font-size: 1.4rem;
+    min-height: 7.5rem;
+    font-size: 1.3rem;
+    --border-radius: var(--yt-radius-lg);
     ion-icon { font-size: 2.2rem; }
   }
 }
 
 .tips {
-  margin: 20px 0 0;
-  border-radius: var(--yt-radius);
+  margin: var(--yt-space-5) 0 0;
+  border-radius: var(--yt-radius-md);
+  background: var(--yt-surface);
+  box-shadow: var(--yt-shadow-sm);
 
   h3 {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin: 0 0 8px;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--ion-color-dark);
+    gap: var(--yt-space-2);
+    margin: 0 0 var(--yt-space-2);
+    font-size: var(--yt-text-lg);
+    color: var(--yt-primary-dark);
   }
 
   ul {
     margin: 0;
     padding-left: 1.2em;
-    line-height: 1.8;
-    font-size: 1.05rem;
+    font-size: var(--yt-text-base);
+    color: var(--yt-text);
   }
 }
 
 .preview {
   position: relative;
-  border-radius: var(--yt-radius);
+  border-radius: var(--yt-radius-md);
   overflow: hidden;
-  background: var(--ion-color-light);
+  background: var(--yt-field-bg);
+  box-shadow: var(--yt-shadow-sm);
 
   img {
     display: block;
@@ -74,75 +127,96 @@ ion-button[size='large'] {
 
   &__clear {
     position: absolute;
-    top: 4px;
-    right: 4px;
-    --background: rgba(0, 0, 0, 0.45);
+    top: var(--yt-space-1);
+    right: var(--yt-space-1);
+    --background: var(--yt-text);
+    --color: var(--yt-surface);
     --border-radius: 50%;
-    font-size: 1.6rem;
+    min-width: var(--yt-tap);
+    min-height: var(--yt-tap);
+    font-size: 1.4rem;
   }
 
   &__info {
     display: block;
-    margin: 6px 0 16px;
+    margin: var(--yt-space-2) 0 var(--yt-space-4);
     text-align: right;
-    font-size: 0.85rem;
+    font-size: var(--yt-text-sm);
+    color: var(--yt-text-muted);
   }
 }
 
+.field-label {
+  display: block;
+  margin: 0 0 var(--yt-space-2);
+  font-weight: 600;
+  color: var(--yt-text);
+}
+
 .hint {
-  margin: 4px 0 12px;
-  color: var(--ion-color-medium-shade);
+  margin: 0 0 var(--yt-space-3);
+  color: var(--yt-text-muted);
 }
 
 .manual {
-  --border-radius: var(--yt-radius);
-  font-size: 1.15rem;
-  line-height: 1.6;
+  --background: var(--yt-field-bg);
+  --color: var(--yt-text);
+  --border-radius: var(--yt-radius-field);
+  --border-color: var(--yt-border-strong);
+  --border-width: 2px;
+  --highlight-color-focused: var(--yt-primary);
+  --padding-start: var(--yt-space-4);
+  --padding-end: var(--yt-space-4);
+  font-size: var(--yt-text-lg);
+  line-height: var(--yt-line-height);
 }
 
 .loading {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  margin: 28px 0 8px;
+  gap: var(--yt-space-2);
+  margin: var(--yt-space-6) 0 var(--yt-space-2);
   text-align: center;
 
   ion-spinner {
-    width: 48px;
-    height: 48px;
-    color: var(--ion-color-primary);
+    width: 3rem;
+    height: 3rem;
+    color: var(--yt-primary);
   }
 
   p {
     margin: 0;
-    font-size: 1.15rem;
-    font-weight: 600;
+    font-family: var(--yt-font-display);
+    font-size: var(--yt-text-lg);
+    font-weight: 500;
   }
 }
 
 .fallback {
-  margin: 20px 0 0;
-  border-radius: var(--yt-radius);
+  margin: var(--yt-space-5) 0 0;
+  border-radius: var(--yt-radius-md);
+  --background: var(--yt-warning-soft);
+  --color: var(--yt-on-warning-soft);
+  border-left: 6px solid var(--yt-accent);
 
   p {
-    margin: 0 0 12px;
-    font-size: 1.1rem;
-    font-weight: 600;
+    margin: 0 0 var(--yt-space-3);
+    font-size: var(--yt-text-base);
+    font-weight: 500;
   }
 }
 
 .disclaimer {
-  margin: 24px 0 8px;
+  margin: var(--yt-space-5) 0 var(--yt-space-2);
   text-align: center;
-  font-size: 0.9rem;
-  color: var(--ion-color-medium);
-  line-height: 1.6;
+  font-size: var(--yt-text-sm);
+  color: var(--yt-text-muted);
 }
 
 ion-footer {
-  background: var(--ion-background-color, #fff);
-  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+  background: var(--yt-surface);
+  box-shadow: 0 -4px 16px rgb(var(--yt-shadow-color) / 0.10);
 
   ion-button { margin: 0; }
 }

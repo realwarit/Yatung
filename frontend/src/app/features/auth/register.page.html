@@ -1,46 +1,87 @@
-<main class="card">
-  <h1>สมัครสมาชิก</h1>
-  <p class="sub">สร้างบัญชีเพื่อเริ่มใช้ยาตรง</p>
+<app-auth-shell>
+  <h1 class="yt-title">สมัครสมาชิก</h1>
+  <p class="yt-lead">สร้างบัญชีเพื่อเริ่มใช้ยาตรง</p>
 
   @if (error()) {
-    <p class="error" role="alert">{{ error() }}</p>
+    <div class="yt-alert yt-alert--danger" role="alert">
+      <app-icon name="alert" />
+      <span>{{ error() }}</span>
+    </div>
   }
 
   <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-    <mat-form-field appearance="outline">
-      <mat-label>ชื่อที่ใช้แสดง</mat-label>
-      <input matInput formControlName="display_name" autocomplete="name" maxlength="100" />
+    <div class="yt-field">
+      <label class="yt-label" for="display_name">ชื่อที่ใช้แสดง</label>
+      <div class="yt-control" [class.is-invalid]="form.controls.display_name.touched && form.controls.display_name.invalid">
+        <app-icon name="user" />
+        <input id="display_name" formControlName="display_name" autocomplete="name" maxlength="100"
+               [attr.aria-invalid]="form.controls.display_name.touched && form.controls.display_name.invalid"
+               aria-describedby="name-error" />
+      </div>
       @if (form.controls.display_name.touched && form.controls.display_name.invalid) {
-        <mat-error>กรุณากรอกชื่อที่ใช้แสดง</mat-error>
+        <p class="yt-error-text" id="name-error"><app-icon name="alert" /> กรุณากรอกชื่อที่ใช้แสดง</p>
       }
-    </mat-form-field>
+    </div>
 
-    <mat-form-field appearance="outline">
-      <mat-label>อีเมล</mat-label>
-      <input matInput type="email" formControlName="email" autocomplete="username" inputmode="email" />
+    <div class="yt-field">
+      <label class="yt-label" for="email">อีเมล</label>
+      <div class="yt-control" [class.is-invalid]="form.controls.email.touched && form.controls.email.invalid">
+        <app-icon name="mail" />
+        <input id="email" type="email" formControlName="email" autocomplete="username" inputmode="email"
+               placeholder="name&#64;example.com"
+               [attr.aria-invalid]="form.controls.email.touched && form.controls.email.invalid"
+               aria-describedby="email-error" />
+      </div>
       @if (form.controls.email.touched && form.controls.email.invalid) {
-        <mat-error>กรุณากรอกอีเมลให้ถูกต้อง เช่น name&#64;example.com</mat-error>
+        <p class="yt-error-text" id="email-error"><app-icon name="alert" /> กรุณากรอกอีเมลให้ถูกต้อง เช่น name&#64;example.com</p>
       }
-    </mat-form-field>
+    </div>
 
-    <mat-form-field appearance="outline">
-      <mat-label>รหัสผ่าน</mat-label>
-      <input matInput [type]="showPassword() ? 'text' : 'password'" formControlName="password" autocomplete="new-password" />
-      <button mat-icon-button matSuffix type="button" (click)="showPassword.set(!showPassword())"
-              [attr.aria-label]="showPassword() ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'">
-        <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
-      </button>
-      <mat-hint>ยาวอย่างน้อย 8 ตัวอักษร</mat-hint>
+    <div class="yt-field">
+      <label class="yt-label" for="password">รหัสผ่าน</label>
+      <div class="yt-control" [class.is-invalid]="form.controls.password.touched && form.controls.password.invalid">
+        <app-icon name="lock" />
+        <input id="password" [type]="showPassword() ? 'text' : 'password'" formControlName="password"
+               autocomplete="new-password"
+               [attr.aria-invalid]="form.controls.password.touched && form.controls.password.invalid"
+               aria-describedby="password-hint password-error" />
+        <button type="button" class="yt-control__action" (click)="showPassword.set(!showPassword())"
+                [attr.aria-pressed]="showPassword()">
+          {{ showPassword() ? 'ซ่อนรหัส' : 'แสดงรหัส' }}
+        </button>
+      </div>
+      <p class="yt-hint" id="password-hint">ยาวอย่างน้อย 8 ตัวอักษร</p>
       @if (form.controls.password.touched && form.controls.password.invalid) {
-        <mat-error>รหัสผ่านต้องยาวอย่างน้อย 8 ตัวอักษร</mat-error>
+        <p class="yt-error-text" id="password-error"><app-icon name="alert" /> รหัสผ่านต้องยาวอย่างน้อย 8 ตัวอักษร</p>
       }
-    </mat-form-field>
+      @if (strength(); as s) {
+        <div class="strength strength--{{ s.level }}" role="status">
+          <div class="strength__bars" aria-hidden="true">
+            <span class="strength__bar"></span><span class="strength__bar"></span>
+            <span class="strength__bar"></span><span class="strength__bar"></span>
+          </div>
+          <p class="strength__text">ความแข็งแรงของรหัสผ่าน: {{ s.label }}</p>
+        </div>
+      }
+    </div>
 
-    <button mat-flat-button type="submit" [disabled]="busy()">
-      @if (busy()) { <mat-spinner diameter="28" /> } @else { สมัครสมาชิก }
+    <div class="yt-field">
+      <label class="yt-label" for="confirm">ยืนยันรหัสผ่าน</label>
+      <div class="yt-control" [class.is-invalid]="confirmInvalid()">
+        <app-icon name="lock" />
+        <input id="confirm" [type]="showPassword() ? 'text' : 'password'" formControlName="confirm"
+               autocomplete="new-password" [attr.aria-invalid]="confirmInvalid()"
+               aria-describedby="confirm-error" />
+      </div>
+      @if (confirmInvalid()) {
+        <p class="yt-error-text" id="confirm-error"><app-icon name="alert" /> รหัสผ่านทั้งสองช่องต้องตรงกัน</p>
+      }
+    </div>
+
+    <button mat-flat-button class="yt-submit" type="submit" [attr.aria-busy]="busy()">
+      @if (busy()) { <mat-spinner diameter="24" /> กำลังสมัครสมาชิก… } @else { สมัครสมาชิก }
     </button>
   </form>
 
   <p class="switch">มีบัญชีอยู่แล้ว? <a routerLink="/login">เข้าสู่ระบบ</a></p>
-  <p class="disclaimer">ไม่ใช่คำแนะนำทางการแพทย์</p>
-</main>
+</app-auth-shell>

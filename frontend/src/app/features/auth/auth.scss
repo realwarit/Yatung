@@ -1,72 +1,65 @@
-:host {
-  display: flex;
-  min-height: 100dvh;
-  align-items: center;
-  justify-content: center;
-  padding: 24px 16px;
-  background: #f0f7f6;
-  font-size: 18px;
-}
+// สไตล์เฉพาะฟอร์ม login/register (คลาสฟอร์มกลางอยู่ใน src/styles/_components.scss)
 
-.card {
+:host { display: block; }
+
+form { margin-top: var(--yt-space-5); }
+
+.yt-submit {
   width: 100%;
-  max-width: 480px;
-  padding: 32px 24px;
-  background: #fff;
-  border-radius: 20px;
-  box-shadow: 0 4px 24px rgba(15, 118, 110, 0.12);
-}
+  margin-top: var(--yt-space-3);
+  --mat-button-filled-container-color: var(--yt-primary);
+  --mat-button-filled-label-text-color: var(--yt-on-primary);
+  --mat-button-filled-state-layer-color: var(--yt-on-primary);
+  box-shadow: var(--yt-shadow-md);
 
-h1 {
-  margin: 0 0 4px;
-  font-size: 32px;
-  color: #0f766e;
-}
-
-.sub {
-  margin: 0 0 24px;
-  font-size: 18px;
-  color: #475569;
-}
-
-mat-form-field {
-  width: 100%;
-  font-size: 20px;
-}
-
-.error {
-  margin: 0 0 16px;
-  padding: 14px 16px;
-  font-size: 18px;
-  color: #991b1b;
-  background: #fee2e2;
-  border-radius: 12px;
-}
-
-button[type='submit'] {
-  width: 100%;
-  height: 60px;
-  margin-top: 8px;
-  font-size: 20px;
-  font-weight: 600;
+  mat-spinner {
+    display: inline-block;
+    margin-right: var(--yt-space-2);
+    --mat-progress-spinner-active-indicator-color: var(--yt-on-primary);
+  }
 }
 
 .switch {
-  margin: 24px 0 0;
+  margin: var(--yt-space-5) 0 0;
   text-align: center;
-  font-size: 18px;
 
   a {
     display: inline-block;
-    padding: 12px 8px;
-    color: #0f766e;
+    padding: var(--yt-space-3) var(--yt-space-2);
     font-weight: 600;
   }
 }
 
-.disclaimer {
-  margin: 20px 0 0;
-  font-size: 16px;
-  text-align: center;
-  color: #64748b;
+// แถบความแข็งแรงรหัสผ่าน — ใช้ทั้งแถบสีและข้อความ
+.strength {
+  margin-top: var(--yt-space-3);
+
+  &__bars {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--yt-space-1);
+  }
+
+  &__bar {
+    height: 8px;
+    border-radius: var(--yt-radius-pill);
+    background: var(--yt-border);
+    transition: background var(--yt-duration);
+  }
+
+  &__text {
+    margin: var(--yt-space-2) 0 0;
+    font-size: var(--yt-text-sm);
+    font-weight: 600;
+  }
+
+  &--1 &__bar:nth-child(-n + 1) { background: var(--yt-danger); }
+  &--2 &__bar:nth-child(-n + 2) { background: var(--yt-warning); }
+  &--3 &__bar:nth-child(-n + 3) { background: var(--yt-primary); }
+  &--4 &__bar:nth-child(-n + 4) { background: var(--yt-success); }
+
+  &--1 &__text { color: var(--yt-danger); }
+  &--2 &__text { color: var(--yt-warning); }
+  &--3 &__text { color: var(--yt-primary-dark); }
+  &--4 &__text { color: var(--yt-success); }
 }

@@ -62,6 +62,37 @@
 - สี primary `#0f766e`
 - ต้องมี disclaimer "ไม่ใช่คำแนะนำทางการแพทย์"
 
+## Design system (หน้าใหม่ทุกหน้าต้องทำตาม)
+**ไฟล์:** `frontend/src/styles/` — `_tokens.scss` (CSS variables `--yt-*`), `_base.scss` (html/body, focus ring, reduced-motion, `.yt-enter`),
+`_components.scss` (`.yt-field/.yt-label/.yt-control/.yt-error-text/.yt-alert/.yt-card/.yt-disclaimer`), `_material-theme.scss`, `_ionic.scss`;
+รวมที่ `src/styles.scss`. คอมโพเนนต์กลางใน `src/app/shared/`: `app-icon` (SVG inline, ออฟไลน์ได้), `app-logo`, `app-font-size-toggle`, `app-hero-illustration`.
+หน้า auth ใช้ `features/auth/auth-shell.component` ครอบ (จอ ≥ 960px แบ่ง 2 ฝั่ง)
+
+**ฟอนต์** (npm `@fontsource/*` โหลดผ่าน `angular.json` → `styles`, ใช้ออฟไลน์/Capacitor ได้; โหลดเฉพาะน้ำหนักที่ใช้)
+- หัวข้อ ปุ่ม ตัวเลขเด่น: `var(--yt-font-display)` = Mitr 500/600 · เนื้อความ ฟอร์ม: `var(--yt-font-body)` = Noto Sans Thai Looped 400/500/600
+- ข้อความ "ก / ก+ / ก++" ในปุ่มปรับขนาดใช้ฟอนต์เนื้อความ (ก ของ Mitr หน้าตาคล้าย n)
+- line-height ภาษาไทย ≥ 1.6 (`--yt-line-height` 1.7, `--yt-line-height-tight` 1.6) ห้ามต่ำกว่านี้
+- ขนาดใช้ `rem` เท่านั้น (html = 18px × `--yt-font-scale`) → ขยาย 125% แล้วทั้งหน้าขยายตาม; หัวข้อหน้า `--yt-text-title` (32–40px)
+
+**Token:** สี `--yt-primary(-dark/-deep/-soft)`, `--yt-accent` (ใช้น้อย เฉพาะจุดสำคัญ), `--yt-bg/surface/text/text-muted`,
+`--yt-success/warning/danger` (+ `-soft` และ `--yt-on-*-soft`) · รัศมี `--yt-radius-sm 12 / field 16 / md 20 / lg 28 / pill` ·
+เงา `--yt-shadow-sm/md/lg` (เขียวอมเทา ห้ามเงาดำ) · ระยะ `--yt-space-1..7` = 4/8/12/16/24/32/48 · ความสูงปุ่ม/ช่อง `--yt-tap` (≥ 56px)
+- **ห้าม hardcode สี/ขนาดใน scss ของหน้า** ใช้ `var(--yt-*)`; ต้องการสีใหม่ → เพิ่มใน `_tokens.scss` (เช็ก contrast ก่อน)
+- Material override ผ่าน `mat.theme` / `mat.theme-overrides` / `mat.*-overrides` ใน `_material-theme.scss` ห้ามไล่แก้ด้วย `::ng-deep`
+- Ionic (หน้า Scan) ใช้ `--ion-*` จาก `_ionic.scss` ชุดเดียวกับ token; ถ้าเพิ่มสีใน Ionic ต้องมีค่า `-rgb` คู่กัน
+- คอมโพเนนต์ที่มี scss ของตัวเอง: งบ 4kB/ไฟล์ (warning) 8kB (error)
+- ระวัง: selector `.parent > *` ใน component scss มี specificity สูงกว่า `.child` เพราะ Angular ใส่ attribute ให้ `*` → ใช้ `> :not(.x)`
+
+**การเข้าถึง (ห้ามทำเสียเพื่อความสวย)**
+- ข้อความทุกคู่สี contrast ≥ 4.5:1; ปุ่ม/ช่องกรอกสูง ≥ 56px; ขอบช่องกรอก ≥ 3:1 (`--yt-border-strong`)
+- label อยู่เหนือช่องกรอกเสมอ (`.yt-label` + `.yt-control`) ห้าม floating label / placeholder แทน label
+- focus ring: `outline: 3px solid var(--yt-primary)` + offset (ตั้งไว้ใน `_base.scss` แล้ว ห้ามปิด `outline` โดยไม่ทดแทน)
+- error = ไอคอน + ข้อความ (`.yt-error-text`, `.yt-alert`) ไม่ใช้สีอย่างเดียว; ผูก `aria-invalid` / `aria-describedby`
+- ปุ่มแสดงรหัสผ่านต้องมีข้อความ ("แสดงรหัส"/"ซ่อนรหัส") ไม่ใช่ไอคอนอย่างเดียว
+- ปุ่ม ก / ก+ / ก++ (`FontScaleService`, key `yatung_font_scale` = 100/112/125) ต้องมีทุกหน้า (มุมบนขวา) และทุกหน้าต้องไม่ล้น/ซ้อนที่ 125% ที่ความกว้าง 375 / 768 / 1440
+- animation ≤ 300ms, ใช้ `.yt-enter`; `prefers-reduced-motion` ปิด animation อัตโนมัติ (อย่าใส่ animation ที่ขัดกับกฎนี้)
+- ไอคอนใหม่ → เพิ่มใน `shared/icon.component.ts` (ไม่พึ่ง CDN) ; ภาพประกอบวาดเอง ห้ามใช้ตัวการ์ตูน/โลโก้ที่มีลิขสิทธิ์
+
 ## วิธีทำงาน
 - จบงานแต่ละส่วนต้องทดสอบจริง: API ทดสอบด้วย `curl`, frontend ต้อง `ng build` ผ่าน
 - ห้าม commit `.env` หรือ `flows_cred.json`

@@ -1,0 +1,70 @@
+// พื้นฐาน: ฟอนต์ การขยายตัวอักษร focus ring reduced-motion
+html {
+  // 112.5% = 18px; คูณสเกลจากปุ่ม ก/ก+/ก++ → หน่วย rem ทั้งแอปขยายตามอัตโนมัติ
+  font-size: calc(112.5% * var(--yt-font-scale));
+  -webkit-text-size-adjust: 100%;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--yt-font-body);
+  font-size: var(--yt-text-base);
+  line-height: var(--yt-line-height);
+  color: var(--yt-text);
+  background: var(--yt-bg);
+  -webkit-font-smoothing: antialiased;
+  overflow-wrap: anywhere;
+}
+
+h1, h2, h3, h4 {
+  margin: 0;
+  font-family: var(--yt-font-display);
+  font-weight: 500;
+  line-height: var(--yt-line-height-tight);
+  color: var(--yt-text);
+}
+
+.yt-title {
+  font-size: var(--yt-text-title);
+  color: var(--yt-primary-dark);
+}
+
+.yt-lead {
+  margin: var(--yt-space-1) 0 var(--yt-space-5);
+  color: var(--yt-text-muted);
+  font-size: var(--yt-text-base);
+}
+
+a {
+  color: var(--yt-primary-dark);
+  text-underline-offset: 0.2em;
+}
+
+// focus ring ชัดเจนสำหรับคีย์บอร์ด
+:focus-visible {
+  outline: 3px solid var(--yt-primary);
+  outline-offset: 3px;
+}
+
+// animation เข้าหน้าแบบนุ่ม
+@keyframes yt-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.yt-enter {
+  animation: yt-enter var(--yt-duration) var(--yt-ease) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

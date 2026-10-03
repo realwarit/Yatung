@@ -1,0 +1,78 @@
+// Design tokens กลางของยาตรง — ใช้ผ่าน var(--yt-*) เท่านั้น ห้าม hardcode สี/ขนาดในไฟล์ scss ของหน้า
+// contrast ที่ตรวจแล้ว (WCAG AA ≥ 4.5:1):
+//   text/bg 13:1 · text-muted/surface 6.9:1 · on-primary/primary 5.5:1 · primary/surface 5.5:1
+//   on-accent/accent 7.9:1 · success/surface 5.0:1 · warning/surface 5.0:1 · danger/surface 6.5:1
+//   on-*-soft/*-soft ≥ 7:1
+:root {
+  // ---------- สี ----------
+  --yt-primary: #0f766e;
+  --yt-primary-dark: #115e59;
+  --yt-primary-deep: #134e4a;
+  --yt-primary-soft: #ccfbf1;
+  --yt-primary-softer: #f0fdfa;
+  --yt-on-primary: #ffffff;
+
+  --yt-accent: #f59e0b;          // ใช้น้อย เน้นจุดสำคัญเท่านั้น
+  --yt-accent-soft: #fef3c7;
+  --yt-on-accent: #12302d;
+
+  --yt-bg: #f6faf9;
+  --yt-surface: #ffffff;
+  --yt-field-bg: #eef6f4;        // พื้นช่องกรอก
+  --yt-text: #12302d;
+  --yt-text-muted: #4b5f5c;
+  --yt-border: #d3e2df;          // เส้นแบ่งตกแต่ง
+  --yt-border-strong: #6f8985;   // ขอบช่องกรอก (≥ 3:1 กับพื้น)
+
+  --yt-success: #15803d;
+  --yt-success-soft: #dcfce7;
+  --yt-on-success-soft: #14532d;
+  --yt-warning: #b45309;
+  --yt-warning-soft: #fef3c7;
+  --yt-on-warning-soft: #78350f;
+  --yt-danger: #b91c1c;
+  --yt-danger-soft: #fee2e2;
+  --yt-on-danger-soft: #7f1d1d;
+  --yt-info-soft: #e0f2fe;
+  --yt-on-info-soft: #0c4a6e;
+
+  // ---------- รัศมีมุม ----------
+  --yt-radius-sm: 12px;
+  --yt-radius-field: 16px;
+  --yt-radius-md: 20px;
+  --yt-radius-lg: 28px;
+  --yt-radius-pill: 999px;
+
+  // ---------- เงา (เขียวอมเทาจาง ไม่ใช้เงาดำ) ----------
+  --yt-shadow-color: 18 62 58;
+  --yt-shadow-sm: 0 1px 3px rgb(var(--yt-shadow-color) / 0.10), 0 1px 2px rgb(var(--yt-shadow-color) / 0.06);
+  --yt-shadow-md: 0 6px 20px rgb(var(--yt-shadow-color) / 0.12), 0 2px 6px rgb(var(--yt-shadow-color) / 0.06);
+  --yt-shadow-lg: 0 18px 44px rgb(var(--yt-shadow-color) / 0.18), 0 4px 12px rgb(var(--yt-shadow-color) / 0.08);
+
+  // ---------- ระยะห่าง 4/8/12/16/24/32/48 ----------
+  --yt-space-1: 4px;
+  --yt-space-2: 8px;
+  --yt-space-3: 12px;
+  --yt-space-4: 16px;
+  --yt-space-5: 24px;
+  --yt-space-6: 32px;
+  --yt-space-7: 48px;
+
+  // ---------- ฟอนต์ ----------
+  --yt-font-display: 'Mitr', 'Noto Sans Thai Looped', 'Noto Sans Thai', system-ui, sans-serif;   // หัวข้อ ปุ่ม ตัวเลขเด่น
+  --yt-font-body: 'Noto Sans Thai Looped', 'Noto Sans Thai', system-ui, sans-serif;             // เนื้อความ ฟอร์ม
+  --yt-font-scale: 1;            // ตั้งโดยปุ่ม ก / ก+ / ก++ (1, 1.12, 1.25)
+  --yt-text-base: 1rem;          // = 18px ที่สเกล 100%
+  --yt-text-sm: 0.9rem;
+  --yt-text-lg: 1.15rem;
+  --yt-text-title: clamp(1.8rem, 1.5rem + 1.5vw, 2.2rem);   // 32–40px
+  --yt-line-height: 1.7;         // ภาษาไทยต้อง ≥ 1.6 กันสระบน/ล่างโดนตัด
+  --yt-line-height-tight: 1.6;
+
+  // ---------- ขนาดควบคุม ----------
+  --yt-tap: max(56px, 3.25rem);  // ปุ่ม/ช่องกรอกสูงอย่างน้อย 56px
+
+  // ---------- เคลื่อนไหว ----------
+  --yt-ease: cubic-bezier(0.22, 0.8, 0.3, 1);
+  --yt-duration: 240ms;          // ไม่เกิน 300ms
+}

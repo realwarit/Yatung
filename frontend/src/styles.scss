@@ -6,41 +6,10 @@
 @use '@ionic/angular/css/structure.css';
 @use '@ionic/angular/css/typography.css';
 @use '@ionic/angular/css/padding.css';   /* .ion-padding ที่หน้า Scan ใช้ */
-@use '@angular/material' as mat;
 
-/* ---------- Theme ---------- */
-:root {
-  /* โทนเขียวอมฟ้า — สื่อถึงสุขภาพ อ่านง่ายบนพื้นขาว (contrast กับตัวหนังสือขาว ≥ 4.5:1) */
-  --ion-color-primary: #0f766e;
-  --ion-color-primary-rgb: 15, 118, 110;
-  --ion-color-primary-contrast: #ffffff;
-  --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: #0d6861;
-  --ion-color-primary-tint: #27847c;
-
-  --ion-font-family: 'Sarabun', 'Noto Sans Thai', system-ui, sans-serif;
-}
-
-html, body {
-  height: 100%;
-  margin: 0;
-  font-family: var(--ion-font-family);
-}
-
-/* ---------- Angular Material (หน้าอื่นนอกจาก Scan) ---------- */
-html {
-  @include mat.theme((
-    color: (primary: mat.$cyan-palette, theme-type: light),
-    typography: (plain-family: "'Sarabun', 'Noto Sans Thai', system-ui, sans-serif", brand-family: "'Sarabun', 'Noto Sans Thai', system-ui, sans-serif"),
-    density: 0,
-  ));
-}
-
-/* ใช้สี primary ของโปรเจกต์ (#0f766e) แทนสีจาก palette */
-:root {
-  --mat-sys-primary: #0f766e;
-  --mat-sys-on-primary: #ffffff;
-  --mat-sys-primary-container: #ccfbf1;
-  --mat-sys-on-primary-container: #134e4a;
-  --mat-sys-surface-tint: #0f766e;
-}
+/* ---------- Design system (ฟอนต์โหลดผ่าน angular.json → styles) ---------- */
+@use './styles/tokens';
+@use './styles/material-theme';
+@use './styles/ionic';
+@use './styles/base';
+@use './styles/components';

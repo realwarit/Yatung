@@ -15,6 +15,7 @@ import {
 } from 'ionicons/icons';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
+import { FontSizeToggleComponent } from '../../shared/font-size-toggle.component';
 import { ScanService } from './scan.service';
 import { compressImage } from './image-compress';
 import { ScanResponse } from '../../core/api/medicine-parse.model';
@@ -37,7 +38,7 @@ const WAIT_MESSAGES = [
     FormsModule, RouterLink,
     IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonIcon,
     IonSegment, IonSegmentButton, IonLabel, IonCard, IonCardContent, IonTextarea,
-    IonSpinner, IonToast, IonNote, IonFooter,
+    IonSpinner, IonToast, IonNote, IonFooter, FontSizeToggleComponent,
   ],
   templateUrl: './scan.page.html',
   styleUrl: './scan.page.scss',
