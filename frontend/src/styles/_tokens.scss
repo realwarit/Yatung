@@ -36,6 +36,13 @@
   --yt-info-soft: #e0f2fe;
   --yt-on-info-soft: #0c4a6e;
 
+  // ---------- มาสคอต "น้องยาตรง" (ค่าเดียวกันถูกคัดลอกไป tools/make-icons.mjs) ----------
+  --yt-mascot-top: #14b8a6;      // ครึ่งบนของแคปซูล (อ่อนกว่า primary เล็กน้อย ให้แยกจากพื้น primary ได้)
+  --yt-mascot-bottom: #fffbf2;   // ครึ่งล่างขาวนวล
+  --yt-mascot-ink: var(--yt-primary-deep);   // เส้นขอบ ตา ปาก
+  --yt-mascot-cheek: #fda4af;
+  --yt-mascot-sweat: #7dd3fc;
+
   // ---------- รัศมีมุม ----------
   --yt-radius-sm: 12px;
   --yt-radius-field: 16px;

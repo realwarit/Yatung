@@ -90,7 +90,7 @@
   <!-- ===== กำลังประมวลผล ===== -->
   @if (busy()) {
     <div class="loading" role="status" aria-live="polite">
-      <ion-spinner name="crescent"></ion-spinner>
+      <app-mascot mood="thinking" [size]="120" />
       <p>{{ phase() === 'compressing' ? 'กำลังเตรียมรูป…' : waitMessage() }}</p>
       @if (phase() === 'reading') {
         <ion-button fill="clear" color="medium" (click)="cancel()">ยกเลิก</ion-button>
@@ -102,7 +102,10 @@
   @if (phase() === 'error' && mode() === 'photo') {
     <ion-card color="warning" class="fallback">
       <ion-card-content>
-        <p>{{ errorMessage() }}</p>
+        <div class="fallback__msg">
+          <app-mascot mood="worried" [size]="72" />
+          <p>{{ errorMessage() }}</p>
+        </div>
         <ion-button expand="block" fill="solid" color="dark" (click)="switchToText()">
           <ion-icon slot="start" name="create-outline"></ion-icon>
           พิมพ์ข้อมูลยาเอง

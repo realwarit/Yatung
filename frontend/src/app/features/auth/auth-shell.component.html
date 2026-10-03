@@ -15,13 +15,20 @@
       </ul>
     </div>
 
-    <app-hero-illustration class="brand__art" />
+    <div class="mascot mascot--wide">
+      <p class="speech">สวัสดีค่ะ มาจัดตารางยากันเถอะ!</p>
+      <app-mascot mood="wave" [size]="200" />
+    </div>
   </aside>
 
   <div class="panel">
     <header class="top">
       <app-logo class="top__logo" tone="dark" />
       <app-font-size-toggle />
+      <div class="mascot mascot--narrow">
+        <app-mascot mood="wave" [size]="88" />
+        <p class="speech">สวัสดีค่ะ มาจัดตารางยากันเถอะ!</p>
+      </div>
     </header>
 
     <main class="content">

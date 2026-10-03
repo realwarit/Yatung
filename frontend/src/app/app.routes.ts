@@ -1,3 +1,4 @@
+import { isDevMode } from '@angular/core';
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/auth/auth.guard';
 
@@ -11,6 +12,8 @@ export const routes: Routes = [
     // lazy load → Ionic ถูกโหลดเฉพาะตอนเปิดหน้า Scan ไม่ทำให้หน้าอื่นหนัก
     loadComponent: () => import('./features/scan/scan.page').then(m => m.ScanPage),
   },
+  // หน้าตรวจมาสคอต: เปิดเฉพาะ dev (ng serve) ไม่มีใน production build
+  ...(isDevMode() ? [{ path: 'dev/mascot', loadComponent: () => import('./features/dev/mascot-showcase.page').then(m => m.MascotShowcasePage) }] : []),
   // { path: 'review/:id', loadComponent: () => import('./features/review/review.page').then(m => m.ReviewPage) },
   // { path: 'today', loadComponent: ... },
 ];

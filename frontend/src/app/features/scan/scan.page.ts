@@ -6,7 +6,7 @@ import { Subscription } from 'rxjs';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonIcon,
   IonSegment, IonSegmentButton, IonLabel, IonCard, IonCardContent, IonTextarea,
-  IonSpinner, IonToast, IonNote, IonFooter,
+  IonToast, IonNote, IonFooter,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import {
@@ -16,6 +16,7 @@ import {
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 import { FontSizeToggleComponent } from '../../shared/font-size-toggle.component';
+import { MascotComponent } from '../../shared/components/mascot/mascot.component';
 import { ScanService } from './scan.service';
 import { compressImage } from './image-compress';
 import { ScanResponse } from '../../core/api/medicine-parse.model';
@@ -38,7 +39,7 @@ const WAIT_MESSAGES = [
     FormsModule, RouterLink,
     IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonIcon,
     IonSegment, IonSegmentButton, IonLabel, IonCard, IonCardContent, IonTextarea,
-    IonSpinner, IonToast, IonNote, IonFooter, FontSizeToggleComponent,
+    IonToast, IonNote, IonFooter, FontSizeToggleComponent, MascotComponent,
   ],
   templateUrl: './scan.page.html',
   styleUrl: './scan.page.scss',
