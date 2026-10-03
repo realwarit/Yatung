@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../core/auth/auth.service';
 import { IconComponent } from '../../shared/icon.component';
+import { WaveHandComponent } from '../../shared/components/wave-hand/wave-hand.component';
 import { MascotMood } from '../../shared/components/mascot/mascot.component';
 import { AuthShellComponent } from './auth-shell.component';
 import { AuthFocus, focusKind, greetingFor, useIntroMood } from './auth-mascot';
@@ -14,7 +15,7 @@ import { AuthFocus, focusKind, greetingFor, useIntroMood } from './auth-mascot';
   selector: 'app-login-page',
   imports: [
     ReactiveFormsModule, RouterLink, MatButtonModule, MatProgressSpinnerModule,
-    AuthShellComponent, IconComponent,
+    AuthShellComponent, IconComponent, WaveHandComponent,
   ],
   templateUrl: './login.page.html',
   styleUrl: './auth.scss',

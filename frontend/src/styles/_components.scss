@@ -32,6 +32,12 @@
   }
 
   &.is-invalid { border-color: var(--yt-danger); }
+  // error + focus: เหลือขอบแดงเส้นเดียว (หนาขึ้นด้วยเงา 1px) + วงแสงแดงอ่อน ไม่ซ้อนกับวงเขียว
+  &.is-invalid:focus-within {
+    border-color: var(--yt-danger);
+    box-shadow: 0 0 0 1px var(--yt-danger), 0 0 0 5px var(--yt-danger-soft);
+    outline: none;
+  }
 
   > app-icon { flex: none; color: var(--yt-primary); }
 

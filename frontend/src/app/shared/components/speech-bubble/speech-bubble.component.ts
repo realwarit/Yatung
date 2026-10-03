@@ -11,14 +11,14 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     .bubble {
       position: relative;
       margin: 0;
-      padding: var(--yt-space-3) var(--yt-space-4);
+      padding: var(--yt-space-3) var(--yt-space-5);
       background: var(--yt-surface);
       color: var(--yt-text);
       border-radius: var(--yt-radius-md);
       box-shadow: var(--yt-shadow-md);
       font-family: var(--yt-font-display);
       font-weight: 500;
-      font-size: var(--yt-text-base);
+      font-size: 1rem;   // 18px ที่สเกล 100%
       line-height: var(--yt-line-height-tight);
     }
     .bubble::before {

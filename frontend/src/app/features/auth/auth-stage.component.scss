@@ -1,17 +1,16 @@
+// เวทีน้องยาตรง: หัวข้อ + blob/มาสคอต + chip เป็นกลุ่มเดียว จัดกึ่งกลางทั้งแนวตั้งและแนวนอน
 :host {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--yt-space-4);
+  justify-content: center;
   min-width: 0;
-  padding: var(--yt-space-6) var(--yt-space-6) var(--yt-space-5);
+  padding: var(--yt-space-4) 0;
   box-sizing: border-box;
 }
 
-.logo { align-self: flex-start; }
-
 .headline {
-  margin: 0;
+  margin: 0 0 var(--yt-space-3);
   text-align: center;
   font-size: clamp(2rem, 1.5rem + 1vw, 2.4rem);
   color: var(--yt-primary-dark);
@@ -19,19 +18,17 @@
 
 .scene {
   position: relative;
-  flex: 1;
   display: flex;
-  align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 40rem;
-  min-height: 22rem;
+  padding: 3rem 0 var(--yt-space-5);   // เว้นด้านบนให้กรอบคำพูด
+  box-sizing: border-box;
 }
 
 // blob รูปทรงอิสระ ขอบมนนุ่ม ค่อยๆ เปลี่ยนรูปช้าๆ
 .blob {
   position: absolute;
-  inset: 6% 12%;
+  inset: 0 2%;
   background: var(--yt-primary-soft);
   border-radius: 58% 42% 55% 45% / 52% 58% 42% 48%;
   animation: morph 16s ease-in-out infinite alternate;
@@ -43,15 +40,16 @@
 
 .hero {
   position: relative;
-  width: clamp(16rem, 26vw, 19.5rem);
+  width: min(21.5rem, 78%);   // ใหญ่ขึ้น ~15% จากเดิม
 }
 
+// กรอบคำพูดอยู่เหนือหัวฝั่งขวา หางชี้ลงเข้าหาปาก; ไม่ให้ล้นขอบเวที
 .bubble {
   position: absolute;
-  left: 62%;
-  bottom: 88%;
+  top: 0.5rem;
+  left: min(calc(50% - 1rem), calc(100% - 260px));
   width: max-content;
-  max-width: 12.5rem;
+  max-width: 260px;
 }
 
 // ---------- ไอคอนลอย ----------
@@ -71,13 +69,13 @@
 .c-white { fill: var(--yt-surface); }
 .hand { fill: none; stroke: var(--yt-peach); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-// ---------- chip จุดเด่น ----------
+// ---------- chip จุดเด่น: ใต้ blob ห่าง ~24px ----------
 .chips {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: var(--yt-space-3);
-  margin: 0;
+  margin: var(--yt-space-5) 0 0;
   padding: 0;
   list-style: none;
 }
