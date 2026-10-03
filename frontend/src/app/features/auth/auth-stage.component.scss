@@ -1,135 +1,37 @@
-// เวทีน้องยาตรง: ป้าย + หัวข้อ + blob/มาสคอต + chip เป็นกลุ่มเดียว จัดกึ่งกลางทั้งแนวตั้งและแนวนอน
+// เวทีน้องยาตรง (คอลัมน์ซ้าย): stage → คำโปรย → chip เป็นกลุ่มเดียว กึ่งกลางทั้งแนวตั้งและแนวนอน
 :host {
-  --gap-bubble: 36px;   // ขอบล่างกรอบสูงกว่าจุดบนสุดของหัว (ขอบนอกเส้นขอบ ตอนลอยขึ้นสุด) ≥ 32px
-  --head-size: clamp(2.45rem, 3.6vw, 3.55rem);   // หัวข้อ 44–64px ที่สเกล 100%
-  --bubble-room: calc(3.7rem + 24px + (var(--yt-font-scale) - 1) * 6rem);   // ที่ให้กรอบคำพูด: 2 บรรทัด (ฟอนต์ 1.08rem × 1.6 + padding) และเผื่อบรรทัดที่ 3 เมื่อขยายตัวอักษร
-  // ความสูงของทุกอย่างที่ไม่ใช่มาสคอต (หัวหน้าจอ + ป้าย + หัวข้อ + ที่ว่างกรอบคำพูด + chip) เพื่อให้ทั้งกลุ่มพอดีจอ
-  --used: calc(6.5rem + 16px + 1.55rem + 12px + 2.5 * var(--head-size) + 32px + var(--gap-bubble) + var(--bubble-room) + 0.6rem + 16px + 3rem);
-  // ความกว้างตัวมาสคอต (สูง ≈ 1.08 เท่า → ~485px ที่ 1920×1080): ไม่เกิน 41.5% ของความสูงจอ และไม่เกินที่เหลือจากส่วนอื่น
-  --fw: clamp(8rem, min(41.5dvh, calc((100dvh - var(--used)) / 1.08)), 29rem);
+  --mascot-h: clamp(240px, 40vh, 460px);   // ความสูงมาสคอต
+  --blob: calc(var(--mascot-h) * 1.22);    // blob / stage กว้าง = สูง
+  --head-top: 0.1458;                      // ขอบนอกสุดของหัว = 14.58% ของความสูง SVG (เส้นขอบแคปซูล y=31.5/216)
+  --float: 0.0231;                         // มาสคอตลอยขึ้นสูงสุด 5/216 ของความสูง
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-width: 0;
-  padding: var(--yt-space-2) 0;
+  padding-bottom: 16px;   // ดันกลุ่มขึ้นเล็กน้อย: เว้นล่าง (chip → ขอบจอ) มากกว่าบน (กรอบคำพูดมีที่ว่างเหนือหัวมาสคอตเหลือ)
   box-sizing: border-box;
 }
 
-// ---------- หัวข้อ ----------
-.head {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 32px;
-  text-align: center;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--yt-space-2);
-  margin: 0;
-  padding: 2px var(--yt-space-4) 2px var(--yt-space-3);
-  border-radius: var(--yt-radius-pill);
-  background: var(--yt-primary-soft);
-  color: var(--yt-primary-dark);
-  font: 600 0.89rem/1.7 var(--yt-font-body);   // 16px ที่สเกล 100%
-
-  app-icon { width: 1.25em; height: 1.25em; }
-}
-
-.headline {
+.stage {
   position: relative;
-  margin: 0;
-  font-size: var(--head-size);
-  line-height: 1.25;
-  color: var(--yt-primary-dark);
+  flex: none;
+  width: var(--blob);
+  height: var(--blob);
+  margin-top: 64px;   // เว้นที่ให้กรอบคำพูด
 }
 
-.line { display: block; }
-
-// แถบไฮไลต์สีเหลืองใต้ครึ่งล่างของตัวอักษร (วาดจากซ้ายไปขวาครั้งเดียว)
-.hl {
-  position: relative;
-  isolation: isolate;
-  padding: 0 0.08em;
-}
-
-.hl::before {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  left: -0.04em;
-  right: -0.04em;
-  bottom: 0.1em;
-  height: 0.5em;
-  border-radius: 0.4em 0.5em 0.4em 0.5em / 0.4em;
-  background: var(--yt-amber);
-  opacity: 0.45;
-  transform: rotate(-1.4deg);
-  transform-origin: left center;
-  animation: hl-draw 600ms var(--yt-ease) 300ms both;
-}
-
-@keyframes hl-draw {
-  from { clip-path: inset(0 100% 0 0); }
-  to   { clip-path: inset(0 0 0 0); }
-}
-
-// ประกายดาวเล็กที่มุมขวาบนของหัวข้อ
-.spark {
-  position: absolute;
-  fill: var(--yt-amber);
-  animation: twinkle 3.2s ease-in-out infinite;
-}
-.spark--a { top: -0.15em; right: -0.55em; width: 0.42em; height: 0.42em; }
-.spark--b { top: 0.3em; right: -0.95em; width: 0.26em; height: 0.26em; animation-delay: -1.6s; }
-
-@keyframes twinkle {
-  0%, 100% { opacity: 0.35; transform: scale(0.8); }
-  50% { opacity: 1; transform: scale(1.1); }
-}
-
-// ---------- เวที ----------
-.scene {
-  container-type: inline-size;
-  display: flex;
-  justify-content: center;
-  width: min(100%, 52rem);
-  padding-top: calc(var(--gap-bubble) + var(--bubble-room));   // พื้นที่ให้กรอบคำพูดเหนือหัวมาสคอต
-  padding-bottom: 0.6rem;
-  box-sizing: border-box;
-}
-
-.figure {
-  position: relative;
-  width: var(--fw);
-}
-
-// blob ทรงอิสระ โอบมาสคอตพอดี กว้าง ~1.36 เท่า (ไม่ยืดเต็มคอลัมน์)
+// ก้อนมนเกือบกลม ทรงอิสระ
 .blob {
   position: absolute;
-  inset: -3% -18% -6%;
+  inset: 0;
   background: var(--yt-primary-soft);
-  border-radius: 58% 42% 55% 45% / 46% 54% 46% 54%;
+  border-radius: 52% 48% 50% 50% / 50% 53% 47% 50%;
 }
 
-// มาสคอตเป็นปุ่ม (กดเพื่อคุย)
-.hero {
-  position: relative;
-  display: block;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  border-radius: var(--yt-radius-lg);
-}
-
-.actor { position: relative; }
+// มาสคอต + กรอบคำพูดเด้งไปด้วยกัน (ระยะห่างคงที่); คลิกได้เฉพาะตัวมาสคอต
+.actor { position: absolute; inset: 0; pointer-events: none; }
 .actor.hop { animation: hop 0.6s var(--yt-ease) 1; }
 
 @keyframes hop {
@@ -138,41 +40,56 @@
   60% { transform: translateY(0); }
 }
 
-// ป้ายชื่อ pill วางบนเงาวงรีใต้เท้า (ใหญ่ขึ้นตามสัดส่วนมาสคอต)
+// ขอบล่างของตัวอยู่ที่ 9% จากก้น stage
+.hero {
+  position: absolute;
+  left: 50%;
+  bottom: 9%;
+  height: var(--mascot-h);
+  aspect-ratio: 200 / 216;
+  translate: -50% 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: var(--yt-radius-lg);
+  pointer-events: auto;
+}
+
+// ป้ายชื่อ pill อยู่ที่ 3% จากก้น stage (เงาวงรีใต้เท้าวาดอยู่ใน SVG ของมาสคอต)
 .tag {
   position: absolute;
   left: 50%;
-  top: 95.4%;
-  transform: translate(-50%, -50%);
-  padding: 0 calc(var(--fw) * 0.05);
+  bottom: calc(var(--blob) * -0.06);
+  translate: -50% 0;
+  padding: 0 var(--yt-space-4);
   border-radius: var(--yt-radius-pill);
   background: var(--yt-surface);
   box-shadow: var(--yt-shadow-sm);
-  font: 500 clamp(0.9rem, calc(var(--fw) * 0.05), 1.25rem)/1.6 var(--yt-font-display);
+  font: 500 clamp(1rem, calc(var(--mascot-h) * 0.045), 1.3rem)/1.6 var(--yt-font-display);
   color: var(--yt-primary-dark);
   white-space: nowrap;
 }
 
-// กรอบคำพูดเฉียงขวาบนของหัว: ขอบล่างสูงกว่าจุดบนสุดของหัว (หัว≈ 13% ของ --fw จากขอบบนกล่องเมื่อลอยขึ้นสุด)
-// ขอบซ้ายเยื้องไปทางขวาของกึ่งกลางหัว; ความกว้างไม่เกินขอบขวาของคอลัมน์
+// กรอบคำพูดยึดขอบล่าง: ขอบล่างสูงกว่าจุดบนสุดของหัว 32px (ตอนมาสคอตลอยขึ้นสุด) ข้อความยาวขึ้นกรอบโตขึ้นด้านบน
 .bubble-float {
   position: absolute;
-  left: 55%;
-  bottom: calc(100% - var(--fw) * 0.13 + var(--gap-bubble));
+  left: 58%;
+  bottom: calc(9% + var(--mascot-h) * (1 - var(--head-top) + var(--float)) + 32px);
   width: max-content;
-  max-width: min(320px, calc(50cqw - var(--fw) * 0.05 - 8px));
-  animation: bubble-bob 5.3s ease-in-out infinite;
+  max-width: min(300px, 40vw, calc(50cqw - var(--blob) * 0.08 - 8px));   // ไม่ล้นขอบขวาของคอลัมน์
+  pointer-events: auto;
+  --pad-y: 12px;
+  --pad-x: 20px;
+  --bubble-fs: 1.1875rem;
+  --bubble-fw: 600;
 }
 
-.bubble { --bubble-fs: 1.08rem; }   // ≈ 19.5px ที่สเกล 100%
-
-@keyframes bubble-bob {
-  50% { transform: translateY(-6px); }
-}
-
-// ---------- ไอคอนลอย ----------
+// ---------- ไอคอนลอยบนขอบ blob (x/y = จุดกึ่งกลางไอคอน) ----------
 .fl {
   position: absolute;
+  translate: -50% -50%;
   animation: drift 6s ease-in-out infinite alternate;
 }
 
@@ -187,13 +104,47 @@
 .c-white { fill: var(--yt-surface); }
 .hand { fill: none; stroke: var(--yt-peach); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-// ---------- chip จุดเด่น ----------
+// ---------- คำโปรย ----------
+.tagline {
+  margin: 20px 0 0;
+  text-align: center;
+  text-wrap: balance;
+  font: 600 clamp(1.75rem, 2.1vw, 2.4rem)/1.25 var(--yt-font-display);
+  color: var(--yt-primary);
+}
+
+.seg { display: inline-block; }   // ตัดบรรทัดได้เฉพาะระหว่างสองวลี
+
+// แถบไฮไลต์เหลืองที่ช่วง 58%–92% ของความสูงตัวอักษร (วาดจากซ้ายไปขวาครั้งเดียว)
+.hl { position: relative; isolation: isolate; }
+
+.hl::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: -0.05em;
+  right: -0.05em;
+  top: 58%;
+  bottom: 8%;
+  border-radius: 0.4em 0.5em 0.4em 0.5em / 0.4em;
+  background: var(--yt-amber);
+  opacity: 0.45;
+  transform: rotate(-1deg);
+  animation: hl-draw 600ms var(--yt-ease) 300ms both;
+}
+
+@keyframes hl-draw {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+
+// ---------- chip ----------
 .chips {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: var(--yt-space-3);
-  margin: var(--yt-space-4) 0 0;
+  gap: 12px;
+  margin: 16px 0 0;
   padding: 0;
   list-style: none;
 }
@@ -212,5 +163,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fl, .actor.hop, .bubble-float, .spark, .hl::before { animation: none; }
+  .fl, .actor.hop, .hl::before { animation: none; }
 }

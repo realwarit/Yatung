@@ -9,7 +9,7 @@ type Floater = { kind: 'pill' | 'pill2' | 'clock' | 'heart' | 'star'; x: number;
 const PHRASES = [
   'กินยาตรงเวลา สุขภาพดีขึ้นทุกวันนะคะ',
   'ถ่ายรูปซองยามา เดี๋ยวน้องจัดตารางให้เอง',
-  'ลืมกินยาไม่ต้องกังวล น้องจะเตือนผ่าน LINE ให้ค่ะ',
+  'ลืมกินยา น้องเตือนผ่าน LINE ให้นะคะ',
   'ถ้าลืมกินยา น้องจะแจ้งญาติให้รู้ด้วยนะคะ',
   'อย่าลืมดื่มน้ำตามยานะคะ',
   'ยาใกล้หมดเมื่อไหร่ น้องบอกก่อนเลยค่ะ',
@@ -54,13 +54,14 @@ export class AuthStageComponent {
     this.spoken.set(PHRASES[i]);
   }
 
-  // ตำแหน่งเป็น % ของกล่องมาสคอต (blob กว้างกว่ากล่อง ~1.35 เท่า → ค่านอก 0–100 คือขอบ blob)
+  // ตำแหน่งเป็น % ของ stage (= กล่อง blob) วางบนขอบวงกลม ตามมุมนับตามเข็มจากด้านบน; เว้นมุม 0–70° (ขวาบน) ไว้ให้กรอบคำพูด
+  // และเว้นด้านล่าง (ป้ายชื่อ/คำโปรย); ดาว ×2 คือประกายที่ย้ายมาจากหัวข้อเดิม
   protected readonly floaters: Floater[] = [
-    { kind: 'pill', x: -14, y: 12, size: 2.8, dur: 6, delay: 0 },
-    { kind: 'clock', x: 104, y: 44, size: 2.8, dur: 7, delay: -2 },
-    { kind: 'heart', x: -16, y: 52, size: 2.3, dur: 5.5, delay: -1 },
-    { kind: 'star', x: 108, y: 76, size: 2.2, dur: 4.5, delay: -3 },
-    { kind: 'pill2', x: -6, y: 90, size: 2.5, dur: 6.5, delay: -4 },
-    { kind: 'star', x: 88, y: 98, size: 1.6, dur: 5, delay: -2.5 },
+    { kind: 'pill', x: 21, y: 9, size: 2.8, dur: 6, delay: 0 },       // 325°
+    { kind: 'star', x: 5, y: 29, size: 1.7, dur: 4.5, delay: -1.5 },  // 295°
+    { kind: 'heart', x: 0, y: 54, size: 2.3, dur: 5.5, delay: -1 },   // 265°
+    { kind: 'pill2', x: 12, y: 82, size: 2.5, dur: 6.5, delay: -4 },  // 230°
+    { kind: 'clock', x: 100, y: 54, size: 2.8, dur: 7, delay: -2 },   // 95°
+    { kind: 'star', x: 88, y: 82, size: 2.2, dur: 4.8, delay: -3 },   // 130°
   ];
 }
