@@ -1,37 +1,48 @@
-<h2 class="headline">ไม่ลืมกินยา ไม่กินผิดเวลา</h2>
+<div class="head">
+  <p class="badge"><app-icon name="pill" /> ผู้ช่วยกินยาประจำบ้าน</p>
+  <h2 class="headline yt-enter">
+    <span class="line">ไม่ลืมกินยา</span>
+    <span class="line">ไม่กิน<span class="hl">ผิดเวลา</span></span>
+    <svg class="spark spark--a" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6z" /></svg>
+    <svg class="spark spark--b" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6z" /></svg>
+  </h2>
+</div>
 
 <div class="scene">
-  <span class="blob" aria-hidden="true"></span>
-
-  @for (f of floaters; track $index) {
-    <svg class="fl" viewBox="0 0 24 24" aria-hidden="true" focusable="false"
-         [style.left.%]="f.x" [style.top.%]="f.y" [style.width.rem]="f.size" [style.height.rem]="f.size"
-         [style.animation-duration.s]="f.dur" [style.animation-delay.s]="f.delay">
-      @switch (f.kind) {
-        @case ('pill') {
-          <g transform="rotate(-35 12 12)"><rect x="2" y="8" width="20" height="8" rx="4" class="c-peach" /><path d="M12 8h6a4 4 0 0 1 0 8h-6z" class="c-amber" /></g>
-        }
-        @case ('pill2') {
-          <g transform="rotate(30 12 12)"><rect x="2" y="8" width="20" height="8" rx="4" class="c-mint" /><path d="M12 8h6a4 4 0 0 1 0 8h-6z" class="c-white" /></g>
-        }
-        @case ('clock') {
-          <circle cx="5.5" cy="5" r="2.6" class="c-peach" /><circle cx="18.5" cy="5" r="2.6" class="c-peach" />
-          <circle cx="12" cy="13" r="8.5" class="c-amber" /><circle cx="12" cy="13" r="6" class="c-white" />
-          <path d="M12 9.6V13l2.4 1.6" class="hand" />
-        }
-        @case ('heart') { <path d="M12 21s-8-4.8-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.2-8 11-8 11z" class="c-peach" /> }
-        @case ('star') { <path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6z" class="c-amber" /> }
-      }
-    </svg>
-  }
-
   <div class="figure">
+    <span class="blob" aria-hidden="true"></span>
+
+    @for (f of floaters; track $index) {
+      <svg class="fl" viewBox="0 0 24 24" aria-hidden="true" focusable="false"
+           [style.left.%]="f.x" [style.top.%]="f.y" [style.width.rem]="f.size" [style.height.rem]="f.size"
+           [style.animation-duration.s]="f.dur" [style.animation-delay.s]="f.delay">
+        @switch (f.kind) {
+          @case ('pill') {
+            <g transform="rotate(-35 12 12)"><rect x="2" y="8" width="20" height="8" rx="4" class="c-peach" /><path d="M12 8h6a4 4 0 0 1 0 8h-6z" class="c-amber" /></g>
+          }
+          @case ('pill2') {
+            <g transform="rotate(30 12 12)"><rect x="2" y="8" width="20" height="8" rx="4" class="c-mint" /><path d="M12 8h6a4 4 0 0 1 0 8h-6z" class="c-white" /></g>
+          }
+          @case ('clock') {
+            <circle cx="5.5" cy="5" r="2.6" class="c-peach" /><circle cx="18.5" cy="5" r="2.6" class="c-peach" />
+            <circle cx="12" cy="13" r="8.5" class="c-amber" /><circle cx="12" cy="13" r="6" class="c-white" />
+            <path d="M12 9.6V13l2.4 1.6" class="hand" />
+          }
+          @case ('heart') { <path d="M12 21s-8-4.8-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.2-8 11-8 11z" class="c-peach" /> }
+          @case ('star') { <path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6z" class="c-amber" /> }
+        }
+      </svg>
+    }
+
     <!-- กดน้องยาตรงเพื่อให้พูดประโยคใหม่ (เด้งตัว 1 ครั้ง) -->
-    <button type="button" class="hero" [class.hop]="hop()" aria-label="คุยกับน้องยาตรง" (click)="chat()">
-      <app-mascot [mood]="mood()" [peek]="peek()" [fluid]="true" />
-      <span class="tag" aria-hidden="true">น้องยาตรง</span>
-    </button>
-    <app-speech-bubble class="bubble" tail="down" [text]="shownMessage()" />
+    <!-- .actor = มาสคอต + กรอบคำพูด เด้งไปด้วยกัน (ระยะห่างกรอบ-หัวคงที่) ส่วน blob/ไอคอนอยู่กับที่ -->
+    <div class="actor" [class.hop]="hop()">
+      <button type="button" class="hero" aria-label="คุยกับน้องยาตรง" (click)="chat()">
+        <app-mascot [mood]="mood()" [peek]="peek()" [fluid]="true" />
+        <span class="tag" aria-hidden="true">น้องยาตรง</span>
+      </button>
+      <div class="bubble-float"><app-speech-bubble class="bubble" tail="down" [text]="shownMessage()" /></div>
+    </div>
   </div>
 </div>
 

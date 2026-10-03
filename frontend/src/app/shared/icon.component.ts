@@ -3,7 +3,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 export type IconName =
   | 'mail' | 'lock' | 'user' | 'eye' | 'eye-off' | 'camera' | 'chat' | 'heart'
-  | 'alert' | 'check' | 'info';
+  | 'alert' | 'check' | 'info' | 'pill';
 
 // เส้นไอคอนแบบ inline SVG (ไม่พึ่งฟอนต์ภายนอก ใช้ได้ออฟไลน์) — markup เป็นค่าคงที่ในไฟล์นี้เท่านั้น
 const PATHS: Record<IconName, string> = {
@@ -18,6 +18,7 @@ const PATHS: Record<IconName, string> = {
   alert: '<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.6v.4"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.4"/>',
+  pill: '<g transform="rotate(-40 12 12)"><rect x="2" y="7.5" width="20" height="9" rx="4.5"/><path d="M12 7.5v9"/></g>',
 };
 
 @Component({
