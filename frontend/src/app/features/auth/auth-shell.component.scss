@@ -9,12 +9,59 @@
   background: linear-gradient(160deg, var(--yt-bg-mint) 0%, var(--yt-bg-cream) 100%);
 }
 
+// ---------- พื้นหลังตกแต่ง (อยู่ใต้ทุกอย่าง ไม่รับเมาส์) ----------
+.bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bg__blob {
+  position: absolute;
+  animation: bg-drift 40s ease-in-out infinite alternate;
+}
+
+.bg__tl {
+  width: 48vw; height: 44vw; top: -16vw; left: -14vw;
+  background: var(--yt-primary-soft); opacity: 0.5;
+  border-radius: 56% 44% 62% 38% / 48% 58% 42% 52%;
+}
+
+.bg__br {
+  width: 42vw; height: 40vw; right: -14vw; bottom: -16vw;
+  background: var(--yt-peach); opacity: 0.3;
+  border-radius: 44% 56% 40% 60% / 56% 42% 58% 44%;
+  animation-delay: -12s;
+}
+
+.bg__tr {
+  width: 16vw; height: 15vw; top: 22vh; right: 4vw;
+  background: var(--yt-amber); opacity: 0.3;
+  border-radius: 60% 40% 52% 48% / 46% 58% 42% 54%;
+  animation-delay: -24s;
+}
+
+@keyframes bg-drift {
+  from { transform: translate3d(0, 0, 0) rotate(0deg); }
+  to   { transform: translate3d(2vw, 1.5vw, 0) rotate(8deg); }
+}
+
+.bg__dots { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.07; fill: var(--yt-primary-dark); }
+
+@media (prefers-reduced-motion: reduce) {
+  .bg__blob { animation: none; }
+}
+
 .page {
-  --bar-h: 5rem;
+  --bar-h: 4.5rem;
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 1200px;   // container ของทั้งสองฝั่ง
+  max-width: clamp(1100px, 80vw, 1360px);   // container ของทั้งสองฝั่ง
   min-height: 100dvh;
   margin: 0 auto;
   padding: 0 var(--yt-space-4);
@@ -97,7 +144,7 @@
   .top { min-height: var(--bar-h); box-sizing: border-box; padding: 0; }
 
   .shell {
-    grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, clamp(22rem, 44%, 520px));   // การ์ดกว้างสุด 520px
     column-gap: var(--yt-space-6);
     min-height: calc(100dvh - var(--bar-h));
   }
@@ -113,6 +160,6 @@
 
   .peek, .tagline { display: none; }
 
-  .content { max-width: none; align-self: center; padding-bottom: var(--yt-space-5); }
-  .card { padding: var(--yt-space-7) var(--yt-space-6); }
+  .content { max-width: none; align-self: center; padding-bottom: var(--yt-space-4); }
+  .card { padding: var(--yt-space-5) var(--yt-space-6); }
 }
