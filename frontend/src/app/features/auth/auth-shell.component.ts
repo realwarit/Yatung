@@ -23,4 +23,6 @@ export class AuthShellComponent {
   readonly message = input.required<string>();
   /** mood shy: แง้มนิ้วแอบมอง (ตอนกด "แสดงรหัส") */
   readonly peek = input(false);
+  /** false = ฟอร์มกำลัง error/ส่งข้อมูล → กดมาสคอตไม่เปลี่ยนข้อความ */
+  readonly chatty = input(true);
 }

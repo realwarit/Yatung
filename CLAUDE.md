@@ -118,6 +118,7 @@
 - input เพิ่มเติม: `fluid` (ขยายเต็มกล่องที่ครอบ), `peek`, `grip` (มือเกาะขอบล่าง ใช้คู่ wrapper ที่ตัดภาพ — โหมดโผล่หน้าจากหลังการ์ดบนมือถือ)
 - หน้า Login/Register: `auth-shell` รับ `[mood] [message] [peek]` จากหน้าที่ครอบ (logic: success→celebrate 600ms, busy→thinking, error ใหม่→worried, focus→watching/shy; Register รหัสอ่อน→worried แข็งแรง→happy)
   โครง: `auth-stage` (เวทีซ้ายจอ ≥ 960px) + `shared/components/speech-bubble`; กรอกอีเมล/รหัสผิด error ต้องมี `role="alert"` ในฟอร์มเสมอ (กรอบคำพูดเป็น aria-hidden)
+- จอ ≥ 1024px: มาสคอตในเวทีเป็นปุ่ม (aria-label "คุยกับน้องยาตรง") กดแล้วเด้ง + พูดประโยคสุ่ม 8 ประโยค (ไม่ซ้ำติดกัน; ตอนฟอร์ม error/กำลังส่ง `chatty=false` ไม่เปลี่ยนข้อความ); `app-speech-bubble` พิมพ์ทีละตัวหลังจุด "..." 600ms (ข้อความเต็มอยู่ใน DOM เสมอ, reduced-motion = แสดงทันที)
 - โทนสีหน้า auth: พื้นไล่ `--yt-bg-mint → --yt-bg-cream`; `--yt-peach`/`--yt-amber` ใช้เป็นจุดตกแต่งเล็กๆ เท่านั้น (ห้ามเป็นสีตัวหนังสือ/วางทับพื้นเขียว)
 
 - ไอคอนแอป: `cd frontend && node tools/make-icons.mjs` (ใช้ `sharp`) สร้าง `public/favicon.svg|ico`, `public/icons/*` (any + maskable 192/512 + apple-touch), และ `frontend/resources/icon-only|icon-foreground|icon-background.png` 1024px

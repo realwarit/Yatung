@@ -52,6 +52,8 @@ export class LoginPage {
     if (f === 'email') return 'watching';
     return this.intro();
   });
+  /** กดมาสคอตเพื่อสุ่มประโยคได้เฉพาะตอนฟอร์มสงบ (ไม่ error/ไม่กำลังส่ง) */
+  readonly chatty = computed(() => !this.success() && !this.busy() && !(this.error() && this.errorFresh()));
   readonly message = computed(() => {
     if (this.success()) return 'ยินดีต้อนรับกลับมาค่ะ!';
     if (this.busy()) return 'รอสักครู่นะคะ…';

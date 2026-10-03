@@ -25,8 +25,14 @@
     </svg>
   }
 
-  <div class="hero"><app-mascot [mood]="mood()" [peek]="peek()" [fluid]="true" /></div>
-  <app-speech-bubble class="bubble" tail="down" [text]="message()" />
+  <div class="figure">
+    <!-- กดน้องยาตรงเพื่อให้พูดประโยคใหม่ (เด้งตัว 1 ครั้ง) -->
+    <button type="button" class="hero" [class.hop]="hop()" aria-label="คุยกับน้องยาตรง" (click)="chat()">
+      <app-mascot [mood]="mood()" [peek]="peek()" [fluid]="true" />
+      <span class="tag" aria-hidden="true">น้องยาตรง</span>
+    </button>
+    <app-speech-bubble class="bubble" tail="down" [text]="shownMessage()" />
+  </div>
 </div>
 
 <ul class="chips">
