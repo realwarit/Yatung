@@ -22,6 +22,11 @@
 - **กฎสำคัญ:** ก่อนแก้ `flows.json` ด้วยมือ ต้อง `docker compose stop nodered` ก่อนเสมอ
   แก้เสร็จค่อย `docker compose start nodered` แล้วเช็ก `docker compose logs nodered`
   (ถ้าแก้ตอน container รันอยู่ แล้วมีคนกด Deploy ใน editor ไฟล์จะถูกเขียนทับ)
+- **MySQL credentials:** node-red-node-mysql อ่าน user/password จาก credentials เท่านั้น (ไม่รองรับ `${ENV}`) →
+  หลัง clone หรือเปลี่ยน `.env` ให้ `docker compose stop nodered && node node-red/init-credentials.js && docker compose start nodered`
+  (สร้าง `flows_cred.json` ที่ถูก gitignore; ถ้าลืมจะเห็น `Access denied for user ''` ใน log)
+- Auth: JWT HS256 payload `{ sub, email }`; subflow `verify-jwt` (tab 0) ตอบ 401 เองและใส่ `msg.user = { id, email }`;
+  login ผิดเกิน 5 ครั้ง/5 นาที/email → 429 (flow context `loginFails`, หายเมื่อ restart Node-RED)
 - node id ทุกตัวต้องไม่ซ้ำ, ทุก `http in` ต้องมี `http response` ปลายทาง
 - library ใช้ผ่าน `global.get()`: `jwt`, `bcrypt`, `webpush`, `crypto`, `medicineValidator`, `prompts`
   (กำหนดใน `node-red/data/settings.js` → `functionGlobalContext`; `prompts` = `medicineSystem`, `medicineUser`, `medicineSchema`)

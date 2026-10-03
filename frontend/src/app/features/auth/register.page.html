@@ -1,0 +1,46 @@
+<main class="card">
+  <h1>สมัครสมาชิก</h1>
+  <p class="sub">สร้างบัญชีเพื่อเริ่มใช้ยาตรง</p>
+
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <mat-form-field appearance="outline">
+      <mat-label>ชื่อที่ใช้แสดง</mat-label>
+      <input matInput formControlName="display_name" autocomplete="name" maxlength="100" />
+      @if (form.controls.display_name.touched && form.controls.display_name.invalid) {
+        <mat-error>กรุณากรอกชื่อที่ใช้แสดง</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>อีเมล</mat-label>
+      <input matInput type="email" formControlName="email" autocomplete="username" inputmode="email" />
+      @if (form.controls.email.touched && form.controls.email.invalid) {
+        <mat-error>กรุณากรอกอีเมลให้ถูกต้อง เช่น name&#64;example.com</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>รหัสผ่าน</mat-label>
+      <input matInput [type]="showPassword() ? 'text' : 'password'" formControlName="password" autocomplete="new-password" />
+      <button mat-icon-button matSuffix type="button" (click)="showPassword.set(!showPassword())"
+              [attr.aria-label]="showPassword() ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'">
+        <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+      </button>
+      <mat-hint>ยาวอย่างน้อย 8 ตัวอักษร</mat-hint>
+      @if (form.controls.password.touched && form.controls.password.invalid) {
+        <mat-error>รหัสผ่านต้องยาวอย่างน้อย 8 ตัวอักษร</mat-error>
+      }
+    </mat-form-field>
+
+    <button mat-flat-button type="submit" [disabled]="busy()">
+      @if (busy()) { <mat-spinner diameter="28" /> } @else { สมัครสมาชิก }
+    </button>
+  </form>
+
+  <p class="switch">มีบัญชีอยู่แล้ว? <a routerLink="/login">เข้าสู่ระบบ</a></p>
+  <p class="disclaimer">ไม่ใช่คำแนะนำทางการแพทย์</p>
+</main>

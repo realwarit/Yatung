@@ -1,0 +1,379 @@
+[
+    {
+        "id": "sf_verify_jwt",
+        "type": "subflow",
+        "name": "verify-jwt",
+        "category": "yatung",
+        "color": "#0f766e",
+        "info": "ตรวจ header `Authorization: Bearer <token>`\n\n- ถูกต้อง → ใส่ `msg.user = { id, email }` แล้วส่งออก output เดียว\n- ผิด/หมดอายุ/ไม่มี → ตอบ 401 `{ error, details }` ภายใน subflow เอง (ไม่ต้องต่อ response เพิ่ม)\n\nใช้กับทุก endpoint ที่ต้อง login: `http in → verify-jwt → ... → http response`",
+        "in": [
+            {
+                "x": 50,
+                "y": 60,
+                "wires": [
+                    {
+                        "id": "sf_vj_fn"
+                    }
+                ]
+            }
+        ],
+        "out": [
+            {
+                "x": 560,
+                "y": 60,
+                "wires": [
+                    {
+                        "id": "sf_vj_fn",
+                        "port": 0
+                    }
+                ]
+            }
+        ],
+        "env": [],
+        "meta": {}
+    },
+    {
+        "type": "function",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "id": "sf_vj_fn",
+        "z": "sf_verify_jwt",
+        "name": "verify Bearer token",
+        "func": "const h = (msg.req && msg.req.headers && msg.req.headers.authorization) || '';\nconst m = /^Bearer\\s+(\\S+)$/i.exec(h);\nconst fail = (code, details) => {\n  msg.statusCode = 401;\n  msg.headers = { 'WWW-Authenticate': 'Bearer' };\n  msg.payload = { error: code, details: details };\n  return [null, msg];\n};\nif (!m) return fail('UNAUTHORIZED', 'กรุณาเข้าสู่ระบบ');\ntry {\n  const d = global.get('jwt').verify(m[1], env.get('JWT_SECRET'), { algorithms: ['HS256'] });\n  msg.user = { id: Number(d.sub), email: d.email };\n  return [msg, null];\n} catch (e) {\n  if (e.name === 'TokenExpiredError') return fail('TOKEN_EXPIRED', 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');\n  return fail('UNAUTHORIZED', 'โทเคนไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่');\n}",
+        "x": 300,
+        "y": 60,
+        "wires": [
+            [],
+            [
+                "sf_vj_res"
+            ]
+        ]
+    },
+    {
+        "id": "sf_vj_res",
+        "type": "http response",
+        "z": "sf_verify_jwt",
+        "name": "401",
+        "statusCode": "",
+        "headers": {},
+        "x": 520,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "tab_mw",
+        "type": "tab",
+        "label": "0-Middleware",
+        "disabled": false,
+        "info": "Middleware ที่ใช้ร่วมกัน\n\nsubflow **verify-jwt** — วางต่อจาก `http in` ของ endpoint ที่ต้อง login"
+    },
+    {
+        "id": "mw_note",
+        "type": "comment",
+        "z": "tab_mw",
+        "name": "subflow \"verify-jwt\" อยู่ใน palette หมวด yatung",
+        "info": "http in → [verify-jwt] → logic → http response\nสำเร็จ: msg.user = { id, email }\nล้มเหลว: ตอบ 401 เอง",
+        "x": 300,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "tab_auth",
+        "type": "tab",
+        "label": "1-Auth",
+        "disabled": false,
+        "info": "POST /api/auth/register · POST /api/auth/login · GET /api/me"
+    },
+    {
+        "id": "mysql_cfg",
+        "type": "MySQLdatabase",
+        "name": "yatung-db",
+        "host": "${DB_HOST}",
+        "port": "${DB_PORT}",
+        "db": "${DB_NAME}",
+        "tz": "local",
+        "charset": "UTF8MB4_UNICODE_CI"
+    },
+    {
+        "id": "reg_in",
+        "type": "http in",
+        "z": "tab_auth",
+        "name": "POST /api/auth/register",
+        "url": "/api/auth/register",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 160,
+        "y": 80,
+        "wires": [
+            [
+                "reg_validate"
+            ]
+        ]
+    },
+    {
+        "type": "function",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "id": "reg_validate",
+        "z": "tab_auth",
+        "name": "validate + bcrypt hash",
+        "x": 400,
+        "y": 80,
+        "wires": [
+            [
+                "reg_insert"
+            ],
+            [
+                "auth_res"
+            ]
+        ],
+        "func": "const b = (msg.payload && typeof msg.payload === 'object') ? msg.payload : {};\nconst email = typeof b.email === 'string' ? b.email.trim().toLowerCase() : '';\nconst pw = typeof b.password === 'string' ? b.password : '';\nconst name = typeof b.display_name === 'string' ? b.display_name.trim() : '';\nconst bad = (details) => { msg.statusCode = 400; msg.payload = { error: 'VALIDATION', details: details }; return [null, msg]; };\nif (!email || email.length > 191 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return bad('รูปแบบอีเมลไม่ถูกต้อง');\nif (pw.length < 8) return bad('รหัสผ่านต้องยาวอย่างน้อย 8 ตัวอักษร');\nif (Buffer.byteLength(pw, 'utf8') > 72) return bad('รหัสผ่านยาวเกินไป');\nif (!name || name.length > 100) return bad('กรุณากรอกชื่อที่ใช้แสดง (ไม่เกิน 100 ตัวอักษร)');\nconst hash = await global.get('bcrypt').hash(pw, 10);\nmsg.topic = 'INSERT INTO users (email, password_hash, display_name) VALUES (?, ?, ?)';\nmsg.payload = [email, hash, name];\nmsg.newUser = { email: email, display_name: name };\nreturn [msg, null];"
+    },
+    {
+        "id": "reg_insert",
+        "type": "mysql",
+        "z": "tab_auth",
+        "mydb": "mysql_cfg",
+        "name": "INSERT users",
+        "x": 640,
+        "y": 60,
+        "wires": [
+            [
+                "reg_token"
+            ]
+        ]
+    },
+    {
+        "type": "function",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "id": "reg_token",
+        "z": "tab_auth",
+        "name": "issue JWT (201)",
+        "x": 860,
+        "y": 80,
+        "wires": [
+            [
+                "auth_res"
+            ]
+        ],
+        "func": "const id = msg.payload.insertId;\nconst jwt = global.get('jwt');\nconst token = jwt.sign({ sub: String(id), email: msg.newUser.email }, env.get('JWT_SECRET'),\n  { algorithm: 'HS256', expiresIn: env.get('JWT_EXPIRES_IN') || '7d' });\nmsg.statusCode = 201;\nmsg.payload = { token: token, user: { id: id, email: msg.newUser.email, display_name: msg.newUser.display_name } };\ndelete msg.newUser;\nreturn msg;"
+    },
+    {
+        "id": "login_in",
+        "type": "http in",
+        "z": "tab_auth",
+        "name": "POST /api/auth/login",
+        "url": "/api/auth/login",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 160,
+        "y": 220,
+        "wires": [
+            [
+                "login_throttle"
+            ]
+        ]
+    },
+    {
+        "type": "function",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "id": "login_throttle",
+        "z": "tab_auth",
+        "name": "validate + brute-force check",
+        "x": 420,
+        "y": 220,
+        "wires": [
+            [
+                "login_select"
+            ],
+            [
+                "auth_res"
+            ]
+        ],
+        "func": "// กัน brute force: ผิดครบ 5 ครั้งใน 5 นาทีต่อ email → 429 (เก็บใน flow context ชื่อ loginFails)\nconst WINDOW = 5 * 60 * 1000, MAX = 5;\nconst b = (msg.payload && typeof msg.payload === 'object') ? msg.payload : {};\nconst email = typeof b.email === 'string' ? b.email.trim().toLowerCase() : '';\nconst pw = typeof b.password === 'string' ? b.password : '';\nif (!email || !pw) {\n  msg.statusCode = 400;\n  msg.payload = { error: 'VALIDATION', details: 'กรุณากรอกอีเมลและรหัสผ่าน' };\n  return [null, msg];\n}\nconst now = Date.now();\nconst fails = flow.get('loginFails') || {};\nfor (const k of Object.keys(fails)) {\n  fails[k] = fails[k].filter(t => now - t < WINDOW);\n  if (!fails[k].length) delete fails[k];\n}\nflow.set('loginFails', fails);\nconst arr = fails[email] || [];\nif (arr.length >= MAX) {\n  const wait = Math.ceil((WINDOW - (now - arr[0])) / 1000);\n  msg.statusCode = 429;\n  msg.headers = { 'Retry-After': String(wait) };\n  msg.payload = { error: 'TOO_MANY_ATTEMPTS', details: 'ลองเข้าสู่ระบบผิดหลายครั้งเกินไป กรุณารอประมาณ ' + Math.ceil(wait / 60) + ' นาทีแล้วลองใหม่' };\n  return [null, msg];\n}\nmsg.loginEmail = email;\nmsg.loginPassword = pw;\nmsg.topic = 'SELECT id, email, password_hash, display_name FROM users WHERE email = ? LIMIT 1';\nmsg.payload = [email];\nreturn [msg, null];"
+    },
+    {
+        "id": "login_select",
+        "type": "mysql",
+        "z": "tab_auth",
+        "mydb": "mysql_cfg",
+        "name": "SELECT user by email",
+        "x": 680,
+        "y": 200,
+        "wires": [
+            [
+                "login_verify"
+            ]
+        ]
+    },
+    {
+        "type": "function",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "id": "login_verify",
+        "z": "tab_auth",
+        "name": "compare password + issue JWT",
+        "x": 920,
+        "y": 220,
+        "wires": [
+            [
+                "auth_res"
+            ]
+        ],
+        "func": "const row = Array.isArray(msg.payload) ? msg.payload[0] : null;\n// ไม่พบ email ก็ยัง compare กับ hash หลอก เพื่อให้เวลาตอบใกล้เคียงกัน (กัน user enumeration)\nlet dummy = context.get('dummy');\nif (!dummy) { dummy = await global.get('bcrypt').hash('yatung-dummy-password', 10); context.set('dummy', dummy); }\nconst ok = await global.get('bcrypt').compare(msg.loginPassword, row ? row.password_hash : dummy);\nconst email = msg.loginEmail;\nconst fails = flow.get('loginFails') || {};\ndelete msg.loginPassword; delete msg.loginEmail;\nif (!row || !ok) {\n  (fails[email] = fails[email] || []).push(Date.now());\n  flow.set('loginFails', fails);\n  msg.statusCode = 401;\n  msg.payload = { error: 'INVALID_CREDENTIALS', details: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' };\n  return msg;\n}\ndelete fails[email];\nflow.set('loginFails', fails);\nconst jwt = global.get('jwt');\nconst token = jwt.sign({ sub: String(row.id), email: row.email }, env.get('JWT_SECRET'),\n  { algorithm: 'HS256', expiresIn: env.get('JWT_EXPIRES_IN') || '7d' });\nmsg.statusCode = 200;\nmsg.payload = { token: token, user: { id: row.id, email: row.email, display_name: row.display_name } };\nreturn msg;"
+    },
+    {
+        "id": "me_in",
+        "type": "http in",
+        "z": "tab_auth",
+        "name": "GET /api/me",
+        "url": "/api/me",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 160,
+        "y": 360,
+        "wires": [
+            [
+                "me_jwt"
+            ]
+        ]
+    },
+    {
+        "id": "me_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_auth",
+        "name": "",
+        "x": 360,
+        "y": 360,
+        "wires": [
+            [
+                "me_query"
+            ]
+        ]
+    },
+    {
+        "type": "function",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "id": "me_query",
+        "z": "tab_auth",
+        "name": "build query",
+        "x": 560,
+        "y": 360,
+        "wires": [
+            [
+                "me_select"
+            ]
+        ],
+        "func": "msg.topic = 'SELECT u.id, u.email, u.display_name, u.line_user_id, u.line_link_code, u.tts_rate, s.slot, s.slot_time ' +\n  'FROM users u LEFT JOIN user_slot_times s ON s.user_id = u.id WHERE u.id = ?';\nmsg.payload = [msg.user.id];\nreturn msg;"
+    },
+    {
+        "id": "me_select",
+        "type": "mysql",
+        "z": "tab_auth",
+        "mydb": "mysql_cfg",
+        "name": "SELECT user + slot times",
+        "x": 760,
+        "y": 340,
+        "wires": [
+            [
+                "me_shape"
+            ]
+        ]
+    },
+    {
+        "type": "function",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "id": "me_shape",
+        "z": "tab_auth",
+        "name": "shape response",
+        "x": 970,
+        "y": 360,
+        "wires": [
+            [
+                "auth_res"
+            ]
+        ],
+        "func": "const rows = Array.isArray(msg.payload) ? msg.payload : [];\nif (!rows.length) {\n  msg.statusCode = 401;\n  msg.payload = { error: 'UNAUTHORIZED', details: 'ไม่พบบัญชีผู้ใช้ กรุณาเข้าสู่ระบบใหม่' };\n  return msg;\n}\nconst u = rows[0];\nconst order = ['morning', 'noon', 'evening', 'bedtime'];\nconst times = {};\nfor (const r of rows) if (r.slot) times[r.slot] = String(r.slot_time).slice(0, 5);\nconst slot_times = {};\nfor (const s of order) if (times[s]) slot_times[s] = times[s];\nmsg.statusCode = 200;\nmsg.payload = {\n  id: u.id, email: u.email, display_name: u.display_name,\n  line_linked: !!u.line_user_id, line_link_code: u.line_link_code,\n  tts_rate: Number(u.tts_rate), slot_times: slot_times\n};\nreturn msg;"
+    },
+    {
+        "id": "auth_res",
+        "type": "http response",
+        "z": "tab_auth",
+        "name": "respond",
+        "statusCode": "",
+        "headers": {},
+        "x": 1200,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "auth_catch",
+        "type": "catch",
+        "z": "tab_auth",
+        "name": "catch all (this tab)",
+        "scope": null,
+        "uncaught": false,
+        "x": 160,
+        "y": 480,
+        "wires": [
+            [
+                "auth_err"
+            ]
+        ]
+    },
+    {
+        "type": "function",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "id": "auth_err",
+        "z": "tab_auth",
+        "name": "map error → JSON",
+        "x": 420,
+        "y": 480,
+        "wires": [
+            [
+                "auth_res"
+            ]
+        ],
+        "func": "const m = String((msg.error && msg.error.message) || '');\nif (m.indexOf('ER_DUP_ENTRY') !== -1 || m.indexOf('Duplicate entry') !== -1) {\n  msg.statusCode = 409;\n  msg.payload = { error: 'EMAIL_EXISTS', details: 'อีเมลนี้ถูกใช้สมัครแล้ว' };\n} else {\n  msg.statusCode = 500;\n  msg.payload = { error: 'INTERNAL_ERROR', details: 'ระบบขัดข้อง กรุณาลองใหม่ภายหลัง' };\n}\ndelete msg.loginPassword;\nreturn msg;"
+    }
+]
