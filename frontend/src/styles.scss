@@ -6,6 +6,7 @@
 @use '@ionic/angular/css/structure.css';
 @use '@ionic/angular/css/typography.css';
 @use '@ionic/angular/css/padding.css';   /* .ion-padding ที่หน้า Scan ใช้ */
+@use '@angular/material' as mat;
 
 /* ---------- Theme ---------- */
 :root {
@@ -24,4 +25,22 @@ html, body {
   height: 100%;
   margin: 0;
   font-family: var(--ion-font-family);
+}
+
+/* ---------- Angular Material (หน้าอื่นนอกจาก Scan) ---------- */
+html {
+  @include mat.theme((
+    color: (primary: mat.$cyan-palette, theme-type: light),
+    typography: (plain-family: "'Sarabun', 'Noto Sans Thai', system-ui, sans-serif", brand-family: "'Sarabun', 'Noto Sans Thai', system-ui, sans-serif"),
+    density: 0,
+  ));
+}
+
+/* ใช้สี primary ของโปรเจกต์ (#0f766e) แทนสีจาก palette */
+:root {
+  --mat-sys-primary: #0f766e;
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-primary-container: #ccfbf1;
+  --mat-sys-on-primary-container: #134e4a;
+  --mat-sys-surface-tint: #0f766e;
 }
