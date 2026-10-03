@@ -65,7 +65,7 @@
 ## Design system (หน้าใหม่ทุกหน้าต้องทำตาม)
 **ไฟล์:** `frontend/src/styles/` — `_tokens.scss` (CSS variables `--yt-*`), `_base.scss` (html/body, focus ring, reduced-motion, `.yt-enter`),
 `_components.scss` (`.yt-field/.yt-label/.yt-control/.yt-error-text/.yt-alert/.yt-card/.yt-disclaimer`), `_material-theme.scss`, `_ionic.scss`;
-รวมที่ `src/styles.scss`. คอมโพเนนต์กลางใน `src/app/shared/`: `app-icon` (SVG inline, ออฟไลน์ได้), `app-logo`, `app-font-size-toggle`, `app-hero-illustration`.
+รวมที่ `src/styles.scss`. คอมโพเนนต์กลางใน `src/app/shared/`: `app-icon` (SVG inline, ออฟไลน์ได้), `app-logo`, `app-font-size-toggle`, `app-mascot` (ดูหัวข้อ Mascot).
 หน้า auth ใช้ `features/auth/auth-shell.component` ครอบ (จอ ≥ 960px แบ่ง 2 ฝั่ง)
 
 **ฟอนต์** (npm `@fontsource/*` โหลดผ่าน `angular.json` → `styles`, ใช้ออฟไลน์/Capacitor ได้; โหลดเฉพาะน้ำหนักที่ใช้)
@@ -92,6 +92,28 @@
 - ปุ่ม ก / ก+ / ก++ (`FontScaleService`, key `yatung_font_scale` = 100/112/125) ต้องมีทุกหน้า (มุมบนขวา) และทุกหน้าต้องไม่ล้น/ซ้อนที่ 125% ที่ความกว้าง 375 / 768 / 1440
 - animation ≤ 300ms, ใช้ `.yt-enter`; `prefers-reduced-motion` ปิด animation อัตโนมัติ (อย่าใส่ animation ที่ขัดกับกฎนี้)
 - ไอคอนใหม่ → เพิ่มใน `shared/icon.component.ts` (ไม่พึ่ง CDN) ; ภาพประกอบวาดเอง ห้ามใช้ตัวการ์ตูน/โลโก้ที่มีลิขสิทธิ์
+
+## Mascot — "น้องยาตรง"
+แคปซูลตั้งตรง ครึ่งบน `--yt-mascot-top` (#14b8a6 อ่อนกว่า primary เล็กน้อย) ครึ่งล่างขาวนวล ตากลมโตมีไฮไลต์ แก้มชมพู แขนขาสั้นสีเดียวกับครึ่งบน
+ออกแบบเองทั้งหมด ห้ามปรับให้คล้ายตัวการ์ตูน/มาสคอตที่มีอยู่ ห้ามใส่โลโก้แบรนด์อื่น
+
+- คอมโพเนนต์: `shared/components/mascot/` → `<app-mascot mood="wave" [size]="160" />` (inline SVG ไฟล์เดียว ร่างกายร่วม เปลี่ยนเฉพาะหน้า/แขน/ของประกอบ)
+- สีใช้ token `--yt-mascot-*` ใน `_tokens.scss`; animation: ลอยขึ้นลง, กะพริบตา ~5 วินาที, celebrate เด้งครั้งเดียว (ปิดทั้งหมดเมื่อ `prefers-reduced-motion`)
+- a11y: ค่าเริ่มต้น `decorative=true` → `aria-hidden`; ถ้าสื่อความหมายตั้ง `[decorative]="false"` จะได้ `role="img"` + aria-label ไทยตาม mood (override ด้วย `[label]`)
+- ตรวจดูทุก mood/ขนาด: `/dev/mascot` (เฉพาะ `ng serve`, ไม่มีใน production build)
+
+| mood | ใช้เมื่อ |
+|---|---|
+| `wave` | หน้า Login / Register (พร้อมกรอบคำพูด) |
+| `happy` | หน้าว่าง เช่น "ยังไม่มียาในตาราง" |
+| `thinking` | AI กำลังอ่านซองยา (Scan ตอนรอผล) |
+| `reminder` | แจ้งเตือนถึงเวลากินยา |
+| `celebrate` | กดกินแล้ว / adherence 100% |
+| `sleepy` | มื้อก่อนนอน |
+| `worried` | error, ลืมกินยา, ยาใกล้หมด (Scan ตอนอ่านไม่สำเร็จ) |
+
+- ไอคอนแอป: `cd frontend && node tools/make-icons.mjs` (ใช้ `sharp`) สร้าง `public/favicon.svg|ico`, `public/icons/*` (any + maskable 192/512 + apple-touch), และ `frontend/resources/icon-only|icon-foreground|icon-background.png` 1024px
+  สำหรับ `npx @capacitor/assets generate --android` ในวันที่ 9 — ถ้าแก้หน้า/สีมาสคอต ต้องแก้ค่าซ้ำใน `tools/make-icons.mjs` แล้วรันใหม่
 
 ## วิธีทำงาน
 - จบงานแต่ละส่วนต้องทดสอบจริง: API ทดสอบด้วย `curl`, frontend ต้อง `ng build` ผ่าน
