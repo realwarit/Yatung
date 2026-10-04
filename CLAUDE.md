@@ -79,8 +79,14 @@
 
 ## Frontend (`frontend/`)
 - Angular 21 standalone, PWA (`ngsw-config.json`), Capacitor สำหรับ Android (`npx cap sync android`)
-- โครง: `src/app/core/` (api models, auth ที่จะเพิ่ม), `src/app/features/<name>/` (ตอนนี้มี `scan`)
-- JWT แนบโดย `auth.interceptor` (ยังไม่สร้าง), route ใช้ `authGuard` (comment ไว้ใน `app.routes.ts`)
+- โครง: `src/app/core/` (`api/` = interface + service ต่อ resource ตรงกับ response จริง, `auth/`, `i18n/` = label/pipe ไทย, `time.ts` = เวลาไทย UTC+7), `src/app/features/<name>/`
+  (`shell` โครงแอป, `today`, `medications` (+ฟอร์ม/dialog เติมยา), `overview` (placeholder วัน 8), `settings`, `scan`, `auth`)
+- route หลัง login อยู่ใต้ `ShellComponent` (มือถือ = bottom nav 5 ช่อง, ≥1024px = sidebar): `/today` (หน้าเริ่มต้น), `/medications`, `/medications/new`, `/medications/:id/edit`, `/overview`, `/settings`; `/scan` (Ionic) อยู่นอก shell
+- JWT แนบโดย `auth.interceptor`, ทุก route ใช้ `authGuard`; ฟอร์มยามี `unsavedChangesGuard` (`core/unsaved-changes.guard.ts`)
+- หน้าวันนี้: สถานะรอบ (รอเวลา/ถึงเวลา/เลยเวลา) คำนวณฝั่ง client จากเวลาปัจจุบัน (เลยเวลา = > 30 นาที ตรงกับ `is_overdue`); สถานะหลัง take/undo ใช้ตาม response ของ API เท่านั้น
+- ตัวกลางที่ใช้ซ้ำ: `app-stepper` (− / +), `app-segmented`, `app-time-picker`, `app-progress-ring`, `app-confetti`, `app-confirm-dialog`
+- backend ตอบ error validation เป็นข้อความเดียว ไม่ระบุฟิลด์ → ฟอร์มยา map จากคำขึ้นต้นข้อความ (`FIELD_BY_MESSAGE` ใน `med-form.page.ts`); ถ้าแก้ข้อความใน `validate-medication.js` ต้องแก้ตารางนี้ด้วย
+- dev server สำหรับ preview: `.claude/launch.json` (ชื่อ `frontend`, พอร์ต 4200)
 
 ## UI (ผู้ใช้หลักคือผู้สูงอายุ)
 - ตัวหนังสือ ≥ 18px, ปุ่มสูง ≥ 56px, ข้อความภาษาไทยทั้งหมด

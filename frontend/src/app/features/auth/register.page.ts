@@ -114,7 +114,7 @@ export class RegisterPage {
     this.auth.register({ display_name: v.display_name.trim(), email: v.email.trim(), password: v.password }).subscribe({
       next: () => {
         this.success.set(true);   // น้องฉลอง 600ms ก่อนเปลี่ยนหน้า
-        setTimeout(() => this.router.navigateByUrl('/scan'), 600);
+        setTimeout(() => this.router.navigateByUrl('/today'), 600);
       },
       error: (err) => {
         this.busy.set(false);

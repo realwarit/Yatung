@@ -100,7 +100,7 @@ export class LoginPage {
   private navigateAfterLogin(): void {
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
     // รับเฉพาะ path ภายในแอป กัน open redirect
-    const safe = returnUrl && returnUrl.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/scan';
+    const safe = returnUrl && returnUrl.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/today';
     this.router.navigateByUrl(safe);
   }
 }

@@ -13,5 +13,5 @@ export const authGuard: CanActivateFn = (_route, state) => {
 /** หน้า login/register — ถ้า login อยู่แล้วไม่ต้องเห็นฟอร์มอีก */
 export const guestGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
-  return auth.token ? inject(Router).createUrlTree(['/scan']) : true;
+  return auth.token ? inject(Router).createUrlTree(['/today']) : true;
 };

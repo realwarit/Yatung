@@ -120,3 +120,32 @@
   color: var(--yt-text-muted);
   text-align: center;
 }
+
+// ---------- โครงหน้าในแอป (ใช้ในพื้นที่ของ app-shell) ----------
+.yt-page {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: var(--yt-space-2) var(--yt-space-4) var(--yt-space-5);
+
+  @media (min-width: 1024px) { padding: var(--yt-space-6) var(--yt-space-6) var(--yt-space-7); }
+}
+
+.yt-page-title {
+  margin: 0 0 var(--yt-space-1);
+  font-size: var(--yt-text-title);
+  color: var(--yt-primary-dark);
+}
+
+// skeleton ระหว่างโหลด (reduced-motion ปิด animation ให้เองจาก _base.scss)
+.yt-skeleton {
+  border-radius: var(--yt-radius-md);
+  background: linear-gradient(90deg, var(--yt-field-bg) 25%, var(--yt-primary-softer) 50%, var(--yt-field-bg) 75%);
+  background-size: 200% 100%;
+  animation: yt-shimmer 1.4s linear infinite;
+}
+@keyframes yt-shimmer { to { background-position: -200% 0; } }
+
+// snackbar: บนมือถือต้องลอยเหนือแถบเมนูล่าง
+.yt-snack {
+  @media (max-width: 1023.98px) { margin-bottom: calc(72px + 28px + env(safe-area-inset-bottom)) !important; }
+}

@@ -1,0 +1,132 @@
+<div class="yt-page form">
+  <a class="back" routerLink="/medications"><app-icon name="chevron-down" class="back__ic" /> ยาของฉัน</a>
+  <h1 class="yt-page-title">{{ isEdit() ? 'แก้ไขยา' : 'เพิ่มยา' }}</h1>
+
+  @if (loading()) {
+    <div class="yt-skeleton sk" aria-busy="true" aria-label="กำลังโหลดข้อมูลยา"></div>
+  } @else {
+    <form (ngSubmit)="save()" novalidate>
+      @if (formError(); as fe) {
+        <div class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span>{{ fe }}</span></div>
+      }
+
+      <!-- ชื่อยา -->
+      <div class="yt-field">
+        <label class="yt-label" for="f-name">ชื่อยา</label>
+        <div class="yt-control" [class.is-invalid]="errors().name">
+          <input id="f-name" name="name" type="text" autocomplete="off" maxlength="150"
+                 [ngModel]="name()" (ngModelChange)="name.set($event); clearError('name')"
+                 [attr.aria-invalid]="errors().name ? 'true' : null" [attr.aria-describedby]="errors().name ? 'e-name' : null" />
+        </div>
+        @if (errors().name) { <p class="yt-error-text" id="e-name" role="alert"><app-icon name="alert" /> {{ errors().name }}</p> }
+      </div>
+
+      <!-- ยาเมื่อมีอาการ -->
+      <div class="yt-field">
+        <mat-slide-toggle [checked]="asNeeded()" (change)="setAsNeeded($event.checked)">ยาเมื่อมีอาการ (ไม่กินเป็นเวลา)</mat-slide-toggle>
+      </div>
+
+      <!-- มื้อ -->
+      @if (!asNeeded()) {
+        <fieldset class="yt-field">
+          <legend class="yt-label">กินมื้อไหน (เลือกได้หลายมื้อ)</legend>
+          <div class="tiles" id="f-slots" tabindex="-1" [attr.aria-invalid]="errors().slots ? 'true' : null"
+               [attr.aria-describedby]="errors().slots ? 'e-slots' : null">
+            @for (s of allSlots; track s) {
+              <button type="button" class="tile" [class.on]="slots().includes(s)" [attr.aria-pressed]="slots().includes(s)"
+                      (click)="toggleSlot(s)">
+                <app-icon [name]="slotIcon[s]" />
+                <span class="tile__name">{{ slotLabel[s] }}</span>
+                <span class="tile__time">{{ times()[s] }}</span>
+                @if (slots().includes(s)) { <app-icon name="check" class="tile__tick" /> }
+              </button>
+            }
+          </div>
+          @if (errors().slots) { <p class="yt-error-text" id="e-slots" role="alert"><app-icon name="alert" /> {{ errors().slots }}</p> }
+        </fieldset>
+      }
+
+      <!-- ก่อน/หลังอาหาร -->
+      <div class="yt-field">
+        <span class="yt-label" id="l-meal">กินเมื่อไหร่เทียบกับอาหาร</span>
+        <app-segmented [options]="mealOptions" [(value)]="meal" label="ก่อนหรือหลังอาหาร" />
+        @if (errors().meal) { <p class="yt-error-text" role="alert"><app-icon name="alert" /> {{ errors().meal }}</p> }
+      </div>
+
+      <!-- จำนวนต่อครั้ง + หน่วย -->
+      <div class="row">
+        <div class="yt-field">
+          <span class="yt-label">กินครั้งละ</span>
+          <app-stepper [(value)]="dose" [min]="0.5" [max]="20" [step]="0.5" [display]="doseDisplay()" label="ปริมาณต่อครั้ง" />
+          @if (errors().dose) { <p class="yt-error-text" role="alert"><app-icon name="alert" /> {{ errors().dose }}</p> }
+        </div>
+        <div class="yt-field">
+          <label class="yt-label" for="f-unit">หน่วย</label>
+          <div class="yt-control" [class.is-invalid]="errors().unit">
+            <select id="f-unit" name="unit" [ngModel]="unit()" (ngModelChange)="unit.set($event)">
+              @for (u of units; track u) { <option [value]="u">{{ unitLabel[u] }}</option> }
+            </select>
+          </div>
+          @if (errors().unit) { <p class="yt-error-text" role="alert"><app-icon name="alert" /> {{ errors().unit }}</p> }
+        </div>
+      </div>
+
+      <!-- ข้อมูลเพิ่มเติม (พับเก็บ) -->
+      <details class="more" [open]="moreOpen()" (toggle)="moreOpen.set($any($event.target).open)">
+        <summary>ข้อมูลเพิ่มเติม <app-icon name="chevron-down" class="more__chev" /></summary>
+
+        <div class="yt-field">
+          <label class="yt-label" for="f-strength">ความแรง (เช่น 500 mg)</label>
+          <div class="yt-control" [class.is-invalid]="errors().strength">
+            <input id="f-strength" name="strength" type="text" maxlength="50" autocomplete="off"
+                   [ngModel]="strength()" (ngModelChange)="strength.set($event); clearError('strength')"
+                   [attr.aria-invalid]="errors().strength ? 'true' : null" [attr.aria-describedby]="errors().strength ? 'e-strength' : null" />
+          </div>
+          @if (errors().strength) { <p class="yt-error-text" id="e-strength" role="alert"><app-icon name="alert" /> {{ errors().strength }}</p> }
+        </div>
+
+        <div class="yt-field">
+          <label class="yt-label" for="f-ind">ข้อบ่งใช้ (ยานี้ใช้ทำอะไร)</label>
+          <div class="yt-control" [class.is-invalid]="errors().indication">
+            <input id="f-ind" name="indication" type="text" maxlength="200" autocomplete="off"
+                   [ngModel]="indication()" (ngModelChange)="indication.set($event); clearError('indication')"
+                   [attr.aria-invalid]="errors().indication ? 'true' : null" [attr.aria-describedby]="errors().indication ? 'e-ind' : null" />
+          </div>
+          @if (errors().indication) { <p class="yt-error-text" id="e-ind" role="alert"><app-icon name="alert" /> {{ errors().indication }}</p> }
+        </div>
+
+        <div class="yt-field">
+          <label class="yt-label" for="f-warn">คำเตือน (หนึ่งข้อต่อหนึ่งบรรทัด)</label>
+          <div class="yt-control area" [class.is-invalid]="errors().warnings">
+            <textarea id="f-warn" name="warnings" rows="3"
+                      [ngModel]="warnings()" (ngModelChange)="warnings.set($event); clearError('warnings')"
+                      [attr.aria-invalid]="errors().warnings ? 'true' : null" [attr.aria-describedby]="errors().warnings ? 'e-warn' : null"></textarea>
+          </div>
+          @if (errors().warnings) { <p class="yt-error-text" id="e-warn" role="alert"><app-icon name="alert" /> {{ errors().warnings }}</p> }
+        </div>
+
+        <div class="yt-field">
+          <label class="yt-label" for="f-total">จำนวนยาทั้งหมด (ไว้เตือนเมื่อยาใกล้หมด)</label>
+          <div class="yt-control" [class.is-invalid]="errors().total">
+            <input id="f-total" name="total" type="number" inputmode="decimal" min="0" step="1"
+                   [ngModel]="total()" (ngModelChange)="onTotal($event)"
+                   [attr.aria-invalid]="errors().total ? 'true' : null" [attr.aria-describedby]="errors().total ? 'e-total' : null" />
+          </div>
+          @if (errors().total) { <p class="yt-error-text" id="e-total" role="alert"><app-icon name="alert" /> {{ errors().total }}</p> }
+        </div>
+      </details>
+
+      <!-- preview -->
+      <section class="preview" aria-label="สรุปก่อนบันทึก">
+        <p class="preview__cap"><app-icon name="info" /> ตรวจดูก่อนบันทึก</p>
+        <p class="preview__text">{{ preview() }}</p>
+      </section>
+
+      <div class="actions">
+        <button mat-flat-button type="submit" [disabled]="saving()">{{ saving() ? 'กำลังบันทึก…' : 'บันทึก' }}</button>
+        <a mat-stroked-button routerLink="/medications">ยกเลิก</a>
+      </div>
+      <p class="yt-disclaimer">ไม่ใช่คำแนะนำทางการแพทย์ · กินยาตามที่แพทย์หรือเภสัชกรสั่งเท่านั้น</p>
+    </form>
+  }
+</div>

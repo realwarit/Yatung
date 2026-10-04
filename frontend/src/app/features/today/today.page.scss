@@ -1,0 +1,101 @@
+.head { margin-bottom: var(--yt-space-4); }
+.date { margin: 0; font-size: var(--yt-text-lg); color: var(--yt-text-muted); }
+
+.layout { display: grid; gap: var(--yt-space-4); grid-template-columns: minmax(0, 1fr); }
+.aside, .list { display: flex; flex-direction: column; gap: var(--yt-space-4); min-width: 0; }
+
+.progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--yt-space-3);
+  padding: var(--yt-space-4);
+}
+.progress__text { display: flex; flex-direction: column; align-items: flex-start; gap: var(--yt-space-1); min-width: 0; flex: 1; }
+.progress__num { margin: 0; font: 600 1.25rem / 1.6 var(--yt-font-display); color: var(--yt-primary-deep); }
+app-progress-ring { width: 7rem; }
+
+.next {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--yt-space-3);
+  margin: 0;
+  padding: var(--yt-space-3) var(--yt-space-4);
+  border-radius: var(--yt-radius-md);
+  background: var(--yt-info-soft);
+  color: var(--yt-on-info-soft);
+  font-weight: 600;
+  app-icon { margin-top: 0.15em; }
+}
+.next--done { background: var(--yt-success-soft); color: var(--yt-on-success-soft); }
+
+// ---------- รายการมื้อ ----------
+.slot { scroll-margin-top: var(--yt-space-4); }
+.slot__head {
+  display: flex;
+  align-items: center;
+  gap: var(--yt-space-2);
+  margin: 0 0 var(--yt-space-3);
+  font-size: 1.4rem;
+  color: var(--yt-primary-dark);
+}
+.slot__time { margin-left: auto; font: 600 1.15rem var(--yt-font-display); color: var(--yt-text-muted); }
+.slot__done {
+  display: flex;
+  align-items: center;
+  gap: var(--yt-space-3);
+  width: 100%;
+  min-height: var(--yt-tap);
+  padding: 0 var(--yt-space-4);
+  border: 0;
+  border-radius: var(--yt-radius-md);
+  background: var(--yt-success-soft);
+  color: var(--yt-on-success-soft);
+  font: 600 1.05rem / 1.6 var(--yt-font-body);
+  text-align: left;
+  cursor: pointer;
+}
+.chev { transition: transform var(--yt-duration); &.open { transform: rotate(180deg); } }
+.doses { display: flex; flex-direction: column; gap: var(--yt-space-3); }
+
+.prn-note { margin: calc(var(--yt-space-2) * -1) 0 var(--yt-space-3); color: var(--yt-text-muted); }
+.prn {
+  padding: var(--yt-space-4);
+  border: 2px solid var(--yt-border);
+  border-radius: var(--yt-radius-md);
+  background: var(--yt-surface);
+  h3 { font-size: 1.3rem; }
+  p { margin: var(--yt-space-1) 0 0; }
+  .ind { color: var(--yt-text-muted); }
+}
+.strength { font: 500 var(--yt-text-base) var(--yt-font-body); color: var(--yt-text-muted); }
+
+// ---------- empty ----------
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--yt-space-3);
+  max-width: 34rem;
+  margin: var(--yt-space-5) auto;
+  padding: var(--yt-space-6) var(--yt-space-5);
+  text-align: center;
+  h2 { font-size: 1.6rem; }
+  p { margin: 0; color: var(--yt-text-muted); }
+}
+.empty__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--yt-space-3); margin-top: var(--yt-space-3); }
+
+// ---------- skeleton ----------
+.sk-card { height: 9.5rem; }
+.sk-bar { height: 4rem; }
+.sk-slot { height: 11rem; }
+
+// ---------- จอกว้าง: 2 คอลัมน์ ซ้าย=รายการ ขวา=ความคืบหน้า (sticky) ----------
+@media (min-width: 1024px) {
+  .layout { grid-template-columns: minmax(0, 1fr) 22rem; align-items: start; gap: var(--yt-space-6); }
+  .aside { order: 2; position: sticky; top: var(--yt-space-6); }
+  .list { order: 1; }
+  .progress { flex-direction: column; text-align: center; padding: var(--yt-space-5); }
+  .progress__text { align-items: center; flex: none; }
+  app-progress-ring { width: 8.5rem; }
+}

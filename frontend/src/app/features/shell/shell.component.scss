@@ -1,0 +1,163 @@
+// body ถูก Ionic structure.css ตั้งเป็น overflow:hidden → shell เป็น container เองและให้ .main เลื่อน
+:host {
+  --yt-nav-h: 72px;
+  position: fixed;
+  inset: 0;
+  display: flex;
+  background: var(--yt-bg);
+}
+
+.skip {
+  position: absolute;
+  left: var(--yt-space-3);
+  top: -80px;
+  z-index: 3000;
+  padding: var(--yt-space-3) var(--yt-space-4);
+  border-radius: var(--yt-radius-sm);
+  background: var(--yt-primary-deep);
+  color: var(--yt-on-primary);
+  &:focus { top: var(--yt-space-3); }
+}
+
+// ---------- sidebar (จอกว้าง) ----------
+.side {
+  display: none;
+  flex: none;
+  width: 260px;
+  flex-direction: column;
+  gap: var(--yt-space-4);
+  padding: var(--yt-space-5) var(--yt-space-4);
+  background: var(--yt-surface);
+  box-shadow: var(--yt-shadow-md);
+  overflow-y: auto;
+
+  nav { display: flex; flex-direction: column; gap: var(--yt-space-1); }
+  nav a {
+    display: flex;
+    align-items: center;
+    gap: var(--yt-space-3);
+    min-height: var(--yt-tap);
+    padding: 0 var(--yt-space-4);
+    border-radius: var(--yt-radius-field);
+    color: var(--yt-text);
+    font-weight: 500;
+    text-decoration: none;
+    &:hover { background: var(--yt-primary-softer); }
+    &.active { background: var(--yt-primary-soft); color: var(--yt-primary-deep); font-weight: 600; }
+  }
+}
+
+.scan-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--yt-space-2);
+  min-height: var(--yt-tap);
+  border-radius: var(--yt-radius-pill);
+  background: linear-gradient(135deg, var(--yt-primary), var(--yt-primary-light));
+  color: var(--yt-on-primary);
+  font: 500 1.1rem / 1.6 var(--yt-font-display);
+  text-decoration: none;
+  box-shadow: var(--yt-shadow-md);
+}
+
+.side__foot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--yt-space-3);
+  margin-top: auto;
+  padding-top: var(--yt-space-4);
+  border-top: 1px solid var(--yt-border);
+}
+.who { margin: 0; font-weight: 600; }
+.logout {
+  display: flex;
+  align-items: center;
+  gap: var(--yt-space-2);
+  min-height: var(--yt-tap);
+  padding: 0 var(--yt-space-4);
+  border: 2px solid var(--yt-border-strong);
+  border-radius: var(--yt-radius-pill);
+  background: transparent;
+  color: var(--yt-text);
+  font: 500 1rem / 1.6 var(--yt-font-body);
+  cursor: pointer;
+  &:hover { background: var(--yt-primary-softer); }
+}
+
+// ---------- พื้นที่เนื้อหา ----------
+.main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  // เว้นที่ให้แถบล่างบนมือถือ (+ safe area ของ iPhone/Android)
+  padding-bottom: calc(var(--yt-nav-h) + 40px + env(safe-area-inset-bottom));
+}
+main:focus { outline: none; }
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--yt-space-2);
+  padding: var(--yt-space-2) var(--yt-space-4);
+}
+
+// ---------- bottom nav (มือถือ/แท็บเล็ต) ----------
+.bottom {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(0, 1.25fr) repeat(2, minmax(0, 1fr));   // ช่องกลาง (สแกน) กว้างกว่าเล็กน้อย
+  align-items: end;
+  min-height: var(--yt-nav-h);
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--yt-surface);
+  box-shadow: 0 -4px 20px rgb(var(--yt-shadow-color) / 0.12);
+
+  a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: var(--yt-nav-h);
+    padding: var(--yt-space-1) 2px;
+    color: var(--yt-text-muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+    line-height: 1.6;
+    text-align: center;
+    text-decoration: none;
+    app-icon { font-size: 1.15rem; }
+    &.active { color: var(--yt-primary-deep); font-weight: 600; }
+    &.active app-icon { color: var(--yt-primary); }
+  }
+  // ตัวบอกหน้าปัจจุบันไม่ใช้สีอย่างเดียว: ขีดบนไอคอน
+  a.active:not(.scan) { box-shadow: inset 0 3px 0 var(--yt-primary); }
+
+  .scan { color: var(--yt-primary-deep); font-weight: 600; }
+  .scan__btn {
+    display: grid;
+    place-items: center;
+    width: 4.2rem;
+    height: 4.2rem;
+    margin-top: -1.6rem;   // ยกสูงกว่าแถบ
+    border: 4px solid var(--yt-surface);
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--yt-primary), var(--yt-primary-light));
+    color: var(--yt-on-primary);
+    box-shadow: var(--yt-shadow-md);
+    app-icon { font-size: 1.5rem; }
+  }
+}
+
+@media (min-width: 1024px) {
+  .side { display: flex; }
+  .top, .bottom { display: none; }
+  .main { padding-bottom: 0; }
+}

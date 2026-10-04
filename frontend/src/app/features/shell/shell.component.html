@@ -1,0 +1,45 @@
+<a class="skip" href="#main">ข้ามไปเนื้อหา</a>
+
+<!-- จอกว้าง: sidebar -->
+<aside class="side">
+  <app-logo tone="light" [large]="true" />
+  <a class="scan-cta" routerLink="/scan"><app-icon name="camera" /> สแกนซองยา</a>
+  <nav aria-label="เมนูหลัก">
+    @for (n of all; track n.path) {
+      <a [routerLink]="n.path" routerLinkActive="active" ariaCurrentWhenActive="page">
+        <app-icon [name]="n.icon" /> {{ n.label }}
+      </a>
+    }
+  </nav>
+  <div class="side__foot">
+    <p class="who">{{ auth.currentUser()?.display_name }}</p>
+    <app-font-size-toggle />
+    <button type="button" class="logout" (click)="logout()"><app-icon name="logout" /> ออกจากระบบ</button>
+  </div>
+</aside>
+
+<div class="main">
+  <!-- มือถือ: แถบบนมีโลโก้ + ปรับขนาดตัวอักษร -->
+  <header class="top">
+    <app-logo tone="light" [iconOnly]="true" />
+    <app-font-size-toggle />
+  </header>
+  <main id="main" tabindex="-1"><router-outlet /></main>
+</div>
+
+<!-- มือถือ: bottom navigation -->
+<nav class="bottom" aria-label="เมนูหลัก">
+  @for (n of left; track n.path) {
+    <a [routerLink]="n.path" routerLinkActive="active" ariaCurrentWhenActive="page">
+      <app-icon [name]="n.icon" /><span>{{ n.label }}</span>
+    </a>
+  }
+  <a class="scan" routerLink="/scan" aria-label="สแกนซองยา">
+    <span class="scan__btn"><app-icon name="camera" /></span><span>สแกน</span>
+  </a>
+  @for (n of right; track n.path) {
+    <a [routerLink]="n.path" routerLinkActive="active" ariaCurrentWhenActive="page">
+      <app-icon [name]="n.icon" /><span>{{ n.label }}</span>
+    </a>
+  }
+</nav>

@@ -1,0 +1,103 @@
+<div class="yt-page">
+  <header class="head">
+    <h1 class="yt-page-title">{{ hello() }}</h1>
+    <p class="date">{{ today() }}</p>
+  </header>
+
+  @if (loadError(); as err) {
+    <div class="yt-alert yt-alert--danger" role="alert">
+      <app-icon name="alert" /> <span>{{ err }}</span>
+    </div>
+    <button mat-flat-button type="button" (click)="load()">ลองใหม่</button>
+  } @else if (loading()) {
+    <div class="layout" aria-busy="true" aria-label="กำลังโหลดตารางยาวันนี้">
+      <div class="aside"><div class="yt-skeleton sk-card"></div><div class="yt-skeleton sk-bar"></div></div>
+      <div class="list"><div class="yt-skeleton sk-slot"></div><div class="yt-skeleton sk-slot"></div></div>
+    </div>
+  } @else if (noMeds()) {
+    <section class="empty yt-card yt-enter">
+      <app-mascot mood="happy" [size]="180" [decorative]="false" />
+      <h2>ยังไม่มียาในตาราง</h2>
+      <p>ถ่ายรูปซองยา หรือเพิ่มยาเอง แล้วยาตรงจะช่วยเตือนให้ค่ะ</p>
+      <div class="empty__actions">
+        <a mat-flat-button routerLink="/scan"><app-icon name="camera" /> สแกนซองยา</a>
+        <a mat-stroked-button routerLink="/medications/new"><app-icon name="plus" /> เพิ่มยาเอง</a>
+      </div>
+    </section>
+  } @else {
+    <div class="layout yt-enter">
+      <!-- ความคืบหน้า + รอบถัดไป (จอกว้าง: คอลัมน์ขวา sticky) -->
+      <div class="aside">
+        <section class="progress yt-card" aria-label="ความคืบหน้าวันนี้">
+          <app-progress-ring [done]="taken()" [total]="total()" />
+          <div class="progress__text">
+            <p class="progress__num">กินแล้ว {{ taken() }} จาก {{ total() }}</p>
+            <app-mascot [mood]="mood()" [size]="96" />
+          </div>
+        </section>
+
+        <p class="next" [class.next--done]="allDone()" role="status">
+          <app-icon [name]="allDone() ? 'check' : 'clock'" />
+          @if (total() === 0) {
+            <span>วันนี้ไม่มีรอบกินยาที่ต้องเตือน</span>
+          } @else if (allDone()) {
+            <span>วันนี้กินครบทุกรอบแล้ว เก่งมากค่ะ</span>
+          } @else if (next(); as n) {
+            <span>รอบถัดไป: {{ n.label }} {{ n.time }} (อีก {{ n.remain }})</span>
+          } @else {
+            <span>ไม่มีรอบถัดไปของวันนี้</span>
+          }
+        </p>
+      </div>
+
+      <div class="list">
+        @for (s of slots(); track s.slot) {
+          <section class="slot" [attr.data-slot]="s.slot" [attr.aria-labelledby]="'h-' + s.slot">
+            @if (s.collapsible) {
+              <button type="button" class="slot__done" [attr.aria-expanded]="!s.collapsed" (click)="toggle(s.slot)">
+                <app-icon name="check" />
+                <span id="h-{{ s.slot }}">{{ s.slot | slotLabel }} กินครบแล้ว</span>
+                <span class="slot__time">{{ s.time }}</span>
+                <app-icon name="chevron-down" class="chev" [class.open]="!s.collapsed" />
+              </button>
+            } @else {
+              <h2 class="slot__head" id="h-{{ s.slot }}">
+                <app-icon [name]="s.icon" /> {{ s.slot | slotLabel }}
+                <span class="slot__time">{{ s.time }}</span>
+              </h2>
+            }
+            @if (!s.collapsed) {
+              <div class="doses">
+                @for (v of s.doses; track v.dose.id) {
+                  <app-dose-card [dose]="v.dose" [state]="v.state" [lateMin]="v.lateMin" [takenClock]="v.takenClock"
+                                 [canUndo]="v.canUndo" [busy]="isBusy(v.dose.id)" [pop]="popId() === v.dose.id"
+                                 (take)="take(v, s.slot)" (undo)="undo(v.dose.id, s.slot)" />
+                }
+              </div>
+            }
+          </section>
+        }
+
+        @if (asNeeded().length) {
+          <section class="slot" aria-labelledby="h-prn">
+            <h2 class="slot__head" id="h-prn"><app-icon name="pill" /> ยาเมื่อมีอาการ</h2>
+            <p class="prn-note">กินเฉพาะเมื่อมีอาการเท่านั้น ไม่ต้องกดบันทึก</p>
+            <div class="doses">
+              @for (m of asNeeded(); track m.id) {
+                <article class="prn">
+                  <h3>{{ m.name }}@if (m.strength) { <span class="strength"> {{ m.strength }}</span> }</h3>
+                  <p>ครั้งละ {{ m.dose_per_time | doseQty: m.unit }}@if (m.meal_relation | mealLabel; as meal) { · {{ meal }} }</p>
+                  @if (m.indication) { <p class="ind">{{ m.indication }}</p> }
+                </article>
+              }
+            </div>
+          </section>
+        }
+
+        <p class="yt-disclaimer">ไม่ใช่คำแนะนำทางการแพทย์ · ปรึกษาแพทย์หรือเภสัชกรเมื่อมีข้อสงสัย</p>
+      </div>
+    </div>
+  }
+</div>
+
+@if (confetti()) { <app-confetti aria-hidden="true" /> }

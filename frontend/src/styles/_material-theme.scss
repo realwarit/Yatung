@@ -58,4 +58,23 @@ html {
     text-label-text-weight: 500,
     text-label-text-tracking: 0,
   ));
+
+  // ตัวหนังสือ ≥ 18px (1rem) ทุกส่วนที่ผู้สูงอายุอ่าน
+  @include mat.slide-toggle-overrides((
+    label-text-size: 1rem,
+    label-text-line-height: 1.6,
+    label-text-weight: 500,
+  ));
+  @include mat.snack-bar-overrides((
+    supporting-text-size: 1rem,
+    supporting-text-line-height: 1.6,
+    button-color: var(--yt-amber),
+  ));
+  @include mat.dialog-overrides((
+    supporting-text-size: 1rem,
+    supporting-text-line-height: 1.7,
+    subhead-size: 1.4rem,
+    subhead-line-height: 1.6,
+    container-shape: 28px,
+  ));
 }
