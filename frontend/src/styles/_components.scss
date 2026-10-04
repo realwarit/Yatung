@@ -127,6 +127,9 @@
   margin: 0 auto;
   padding: var(--yt-space-2) var(--yt-space-4) var(--yt-space-5);
 
+  // มือถือ: เว้นล่างให้พ้นปุ่มสแกนที่ยื่นขึ้นเหนือแถบเมนู (แถบเมนูเป็นพี่น้องของ .main จึงไม่ซ้อนทับเนื้อหา; safe-area อยู่ใน padding ของแถบเมนู)
+  padding-bottom: calc(var(--yt-space-5) + 2rem);
+
   @media (min-width: 1024px) { padding: var(--yt-space-6) var(--yt-space-6) var(--yt-space-7); }
 }
 
@@ -151,8 +154,84 @@
 }
 
 // ปุ่ม Material ที่มีไอคอน + ข้อความ: จัดกึ่งกลางแนวตั้งให้ตรงกัน (ไอคอนไม่ลอยเหนือตัวอักษรไทย)
-.mdc-button__label { display: inline-flex; align-items: center; justify-content: center; gap: var(--yt-space-2); }
+.mdc-button__label { display: inline-flex; align-items: center; justify-content: center; gap: 0.5em; line-height: 1; }
+.mat-mdc-button-base { --mat-button-filled-icon-spacing: 0; --mat-button-outlined-icon-spacing: 0; --mat-button-text-icon-spacing: 0; }
 
 // รายการในเมนู ⋮ และตัวเลือกของ select (overlay นอก component) สูง ≥ 48px
 .mat-mdc-menu-item, .mat-mdc-option { min-height: max(48px, 2.7rem); }
 .mat-mdc-menu-item .mdc-list-item__primary-text { display: inline-flex; align-items: center; gap: var(--yt-space-2); }
+
+// ---------- ไอคอนข้างข้อความ (ทุกปุ่ม/chip/สถานะ/แถบแจ้งเตือน) ----------
+// ปุ่มทุกแบบที่มีไอคอนนำ: กึ่งกลางแนวตั้ง ช่องไฟเท่ากัน ข้อความ line-height 1
+// (:where = specificity 0 คอมโพเนนต์ปรับรายละเอียดทับได้) ; ขยับไอคอนตามฟอนต์ไทยที่ app-icon ผ่าน --icon-optical-offset
+:where(button, a, summary):has(> app-icon) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  line-height: 1;
+}
+// chip / ป้ายสถานะ / ข้อความที่มีไอคอนนำ
+.yt-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.15em 0.8em;
+  border-radius: var(--yt-radius-pill);
+  background: var(--yt-primary-soft);
+  color: var(--yt-primary-deep);
+  font-size: var(--yt-text-sm);
+  font-weight: 600;
+  line-height: 1.6;
+}
+// ไอคอนล้วน (ไม่มีข้อความ) ไม่ต้องขยับ
+.yt-icon-only { --icon-optical-offset: 0; }
+
+// ---------- ตัวเลือกใหญ่ 2 ช่อง (radiogroup) + ส่วนที่ซ่อน/แสดงแบบนุ่ม ----------
+.yt-choices { display: grid; gap: var(--yt-space-3); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 600px) { .yt-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.yt-choice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--yt-space-3);
+  min-height: 5rem;
+  padding: var(--yt-space-3) var(--yt-space-4);
+  border: 2px solid var(--yt-border-strong);
+  border-radius: var(--yt-radius-md);
+  background: var(--yt-surface);
+  color: var(--yt-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--yt-duration), border-color var(--yt-duration);
+  &:hover { background: var(--yt-primary-softer); }
+  &.on { border-color: var(--yt-primary); background: var(--yt-primary-soft); }
+}
+.yt-choice__ic {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--yt-primary-softer);
+  color: var(--yt-primary);
+  font-size: 1.4rem;
+  --icon-optical-offset: 0;
+}
+.yt-choice.on .yt-choice__ic { background: var(--yt-surface); }
+.yt-choice__txt { display: flex; flex-direction: column; min-width: 0; line-height: var(--yt-line-height-tight); strong { font-weight: 600; } small { font-size: var(--yt-text-sm); color: var(--yt-text-muted); } }
+.yt-choice.on small { color: var(--yt-primary-deep); }
+.yt-choice__tick { position: absolute; top: var(--yt-space-2); right: var(--yt-space-2); color: var(--yt-primary-deep); --icon-optical-offset: 0; }
+
+// ซ่อน/แสดงส่วนเลือกมื้อแบบนุ่ม (grid-rows 0fr → 1fr ไม่ต้องรู้ความสูง)
+.yt-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows var(--yt-duration) var(--yt-ease), opacity var(--yt-duration);
+  &.open { grid-template-rows: 1fr; opacity: 1; }
+  &:not(.open) { visibility: hidden; transition: grid-template-rows var(--yt-duration) var(--yt-ease), opacity var(--yt-duration), visibility 0s var(--yt-duration); }
+}
+.yt-collapse__in { overflow: hidden; min-height: 0; padding: 4px; margin: -4px; }
+

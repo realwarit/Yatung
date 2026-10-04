@@ -195,6 +195,17 @@ req PATCH /api/medications/$MED/resume "$TOKEN_A"
 expect "resume ซ้ำ (ใช้งานอยู่แล้ว) ไม่พัง → 200" "$STATUS" "200"
 expect "resume ซ้ำไม่สร้างรอบซ้ำ" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE medication_id=$MED AND slot='evening' AND status='pending';")" "1"
 req PATCH /api/medications/9999999/resume "$TOKEN_A"; expect "resume id ที่ไม่มี → 404" "$STATUS" "404"
+# resume ตอนที่เวลาของมื้อผ่านไปแล้ว → ไม่สร้างรอบ และตอบ skipped_slots_today (ข้ามถ้ารันช่วงเที่ยงคืน–02:00 เพราะเวลา 01:xx จะยังไม่ผ่าน)
+if [ "$(date +%H)" -ge 2 ]; then
+  req PATCH /api/medications/$MED/stop "$TOKEN_A"
+  req PUT /api/settings/slot-times "$TOKEN_A" '{"morning":"01:00","noon":"01:10","evening":"01:20","bedtime":"01:30"}'
+  req PATCH /api/medications/$MED/resume "$TOKEN_A"
+  expect "resume หลังเวลามื้อผ่านไปแล้ว → 200 + skipped_slots_today ครบ" "$STATUS $(jget 'o.skipped_slots_today')" '200 ["evening","bedtime"]'
+  expect "ไม่สร้างรอบที่ผ่านเวลาไปแล้ว" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE medication_id=$MED AND status='pending';")" "0"
+  req PUT /api/settings/slot-times "$TOKEN_A" "$ORIG_TIMES"
+else
+  echo "  - ข้ามเคส skipped_slots_today (รันช่วง 00:00–01:59)"
+fi
 req PATCH /api/medications/$MED/stop "$TOKEN_A"
 expect "หยุดอีกครั้ง → pending หมด" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE medication_id=$MED AND status='pending';")" "0"
 

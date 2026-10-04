@@ -35,6 +35,7 @@
               "@fontsource/noto-sans-thai-looped/400.css",
               "@fontsource/noto-sans-thai-looped/500.css",
               "@fontsource/noto-sans-thai-looped/600.css",
+              "@fontsource/noto-sans-thai-looped/700.css",
               "src/styles.scss"
             ]
           },

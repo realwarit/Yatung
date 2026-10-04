@@ -9,7 +9,29 @@
 
 .slot { padding: var(--yt-space-3) 0; border-top: 1px solid var(--yt-border); }
 
-.save { width: 100%; margin-top: var(--yt-space-3); }
+.save { width: 100%; }
+.savebar { margin-top: var(--yt-space-3); }
+/* มือถือ: เมื่อมีการเปลี่ยนแปลง ปุ่มบันทึกติดล่างจอเหนือแถบเมนู */
+@media (max-width: 1023.98px) {
+  .savebar.dirty {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin: var(--yt-space-3) calc(var(--yt-space-4) * -1) calc(var(--yt-space-4) * -1);
+    padding: var(--yt-space-3) var(--yt-space-4);
+    background: var(--yt-surface);
+    box-shadow: 0 -4px 16px rgb(var(--yt-shadow-color) / 0.12);
+  }
+}
+.sample {
+  margin: var(--yt-space-3) 0 0;
+  padding: var(--yt-space-3) var(--yt-space-4);
+  border-radius: var(--yt-radius-sm);
+  background: var(--yt-field-bg);
+}
+.sample__cap { color: var(--yt-text-muted); font-weight: 600; }
 .soon { display: flex; align-items: center; gap: var(--yt-space-2); margin: 0; color: var(--yt-text-muted); font-weight: 500; }
 .logout { align-self: stretch; }
+/* จอคอมมีปุ่มออกจากระบบใน sidebar แล้ว */
+@media (min-width: 1024px) { .logout { display: none; } }
 .sk { height: 18rem; }

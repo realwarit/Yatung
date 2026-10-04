@@ -61,6 +61,20 @@
   font-weight: 500;
   app-icon { margin-top: 0.15em; flex: none; }
 }
+.supply { flex-wrap: wrap; align-items: center; }
+.supply__txt { flex: 1 1 auto; min-width: 0; }
+.low-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0 var(--yt-space-3);
+  border-radius: var(--yt-radius-pill);
+  background: var(--yt-warning);
+  color: var(--yt-on-primary);
+  font-size: var(--yt-text-sm);
+  font-weight: 600;
+  line-height: 1.6;
+}
 .supply--low { background: var(--yt-warning-soft); color: var(--yt-on-warning-soft); font-weight: 600; }
 .stopped-note { display: flex; align-items: center; gap: var(--yt-space-2); color: var(--yt-text-muted); font-weight: 500; }
 

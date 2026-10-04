@@ -5,7 +5,7 @@ export type IconName =
   | 'mail' | 'lock' | 'user' | 'eye' | 'eye-off' | 'camera' | 'chat' | 'heart'
   | 'alert' | 'check' | 'info' | 'pill'
   | 'sunrise' | 'sun' | 'sunset' | 'moon' | 'today' | 'chart' | 'sliders' | 'plus' | 'minus'
-  | 'chevron-down' | 'logout' | 'clock' | 'undo' | 'edit' | 'ban' | 'bell' | 'dots';
+  | 'chevron-down' | 'logout' | 'clock' | 'undo' | 'edit' | 'ban' | 'bell' | 'dots' | 'thermometer';
 
 // เส้นไอคอนแบบ inline SVG (ไม่พึ่งฟอนต์ภายนอก ใช้ได้ออฟไลน์) — markup เป็นค่าคงที่ในไฟล์นี้เท่านั้น
 const PATHS: Record<IconName, string> = {
@@ -20,9 +20,9 @@ const PATHS: Record<IconName, string> = {
   alert: '<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.6v.4"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.4"/>',
-  sunrise: '<path d="M7 17a5 5 0 0 1 10 0M3 17h18M12 3v6M9 6l3-3 3 3M5 10.5l1.6 1.6M19 10.5l-1.6 1.6M7 21h10"/>',
+  sunrise: '<path d="M6 16a6 6 0 0 1 12 0M3 16h18M12 3v5M9.5 5.5 12 3l2.5 2.5M4.8 10.2l1.5 1.5M19.2 10.2l-1.5 1.5M8 20h8"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>',
-  sunset: '<path d="M7 17a5 5 0 0 1 10 0M3 17h18M12 3v6M9 6l3 3 3-3M5 10.5l1.6 1.6M19 10.5l-1.6 1.6M7 21h10"/>',
+  sunset: '<path d="M7 14.5a5 5 0 0 1 10 0M3 14.5h18M12 2v4M9.5 4 12 6.5 14.5 4M6 18h12M9 21.5h6"/>',
   moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
   today: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4M8.5 15.5l2.5 2.5 4.5-5"/>',
   chart: '<path d="M5 20V11M11 20V4M17 20v-6M3 20h18"/>',
@@ -35,6 +35,7 @@ const PATHS: Record<IconName, string> = {
   undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>',
   edit: '<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
   ban: '<circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/>',
+  thermometer: '<path d="M10 14V5a2 2 0 0 1 4 0v9a4 4 0 1 1-4 0z"/><path d="M12 10v6"/>',
   dots: '<circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/>',
   bell: '<path d="M6 17v-6a6 6 0 0 1 12 0v6l2 2H4z"/><path d="M10 21h4"/>',
   pill: '<g transform="rotate(-40 12 12)"><rect x="2" y="7.5" width="20" height="9" rx="4.5"/><path d="M12 7.5v9"/></g>',
@@ -47,8 +48,8 @@ const PATHS: Record<IconName, string> = {
                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"
                   [innerHTML]="markup()"></svg>`,
   styles: `
-    :host { display: inline-flex; width: 1.4em; height: 1.4em; flex: none; }
-    svg { width: 100%; height: 100%; }
+    :host { display: inline-flex; width: 1.25em; height: 1.25em; flex-shrink: 0; transform: translateY(var(--icon-optical-offset, 0)); }
+    svg { display: block; width: 100%; height: 100%; }
   `,
 })
 export class IconComponent {
