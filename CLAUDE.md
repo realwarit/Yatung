@@ -31,6 +31,19 @@
 - library ใช้ผ่าน `global.get()`: `jwt`, `bcrypt`, `webpush`, `crypto`, `medicineValidator`, `prompts`
   (กำหนดใน `node-red/data/settings.js` → `functionGlobalContext`; `prompts` = `medicineSystem`, `medicineUser`, `medicineSchema`)
 - env ใช้ `env.get('JWT_SECRET')` เป็นต้น
+- **transaction:** node `mysql` ทำ transaction ไม่ได้ (1 query = 1 connection) → ใช้ `global.get('db')` (`lib/db.js`, pool `mysql2` อ่าน `DB_*` จาก env ไม่ผ่าน credentials; timezone +07:00, `dateStrings`, `decimalNumbers`)
+  ```js
+  const db = global.get('db');
+  const rows = await db.query('SELECT … WHERE user_id = ?', [id]);
+  await db.withTransaction(async (conn) => {                       // throw = ROLLBACK, จบปกติ = COMMIT
+    const [rows] = await conn.query('SELECT … FOR UPDATE', [id]);  // conn.query คืน [rows, fields]
+    await conn.query('UPDATE …', [/* params */]);
+  });
+  ```
+  pool ถูกปิดเองเมื่อได้ SIGTERM/SIGINT (`db.close()`); function node ที่ใช้ DB เขียนเป็น `async` ได้เลย (`await` แล้ว `return msg`)
+- logic ฝั่ง backend แยกเป็น `node-red/data/lib/*-service.js` (global: `medicationService`, `doseService`; รับ `(db, userId, …)` คืน `{status, body}`) function node ใน flow แค่เรียกแล้วใส่ `msg.statusCode/payload`;
+  แก้ `lib/` หรือ `settings.js` ต้อง `docker compose restart nodered`. ข้อมูลที่ไม่ใช่ของ `msg.user.id` = 404 เสมอ (ไม่ใช่ 403)
+- ทดสอบ Day 3A: `DEMO_PASSWORD=… bash scripts/test-day3a.sh` (login ใหม่ในสคริปต์, user ที่ 2 สุ่ม, ลบข้อมูลทดสอบตอนจบ)
 - แบ่ง tab: 0-Middleware, 1-Auth, 2-AI-Scan, 3-Medications, 4-Doses, 5-Dashboard, 6-Scheduler, 7-LINE, 8-Push
 - API prefix `/api/*`, LINE webhook `/line/webhook` (nginx proxy ไว้แล้ว; body สูงสุด 10mb)
 - error response รูปแบบเดียว: `{ error: "CODE", details: "ข้อความไทย" }`
@@ -51,6 +64,18 @@
 - Views: `v_daily_adherence` (taken ÷ (taken+missed), ไม่นับ pending), `v_medication_supply` (days_left)
 - แก้ schema → แก้ไฟล์ SQL แล้ว `docker compose down -v && docker compose up -d --build` (**ข้อมูลหาย**; init รันเฉพาะตอน volume ว่าง)
 - บัญชีเดโม: `demo@yatung.app` / `demo1234`
+
+## กฎ dose_logs ที่ต้องจำ (tab 3/4/6)
+- **สร้างรอบ:** POST/PUT ยา = `INSERT IGNORE … SELECT` เฉพาะรอบของวันนี้ที่ `scheduled_at > NOW()`; cron 00:05 (tab 6) สร้างทั้งวัน; รอบที่เวลาผ่านไปแล้วตอนเพิ่มยาไม่ถูกสร้าง
+  → POST/PUT /api/medications ตอบ `skipped_slots_today: ["morning", …]` ให้ frontend แจ้ง "รอบเช้าของวันนี้ผ่านไปแล้ว จะเริ่มเตือนพรุ่งนี้"
+- **PUT /api/medications/:id:** ไม่ส่ง `remaining_qty` = คงค่าเดิม (POST: = total_qty); ลบ pending ที่ `scheduled_at > NOW()` แล้วสร้างของวันนี้ใหม่
+- **take:** `taken` แล้ว = 409 `ALREADY_TAKEN`; รับ `missed` ได้ (กินช้า); `remaining_qty` ลดไม่ต่ำกว่า 0 (NULL = ไม่แตะ)
+- **undo** (≤ 10 นาทีหลังกด; เกิน = 409 `UNDO_EXPIRED`, ไม่ใช่ taken = 409 `NOT_TAKEN`):
+  `escalated_at IS NOT NULL` → กลับเป็น **missed** (กันแจ้งญาติซ้ำ) · `escalated_at IS NULL` → **pending**; ล้าง `taken_at/source`; คืน `remaining_qty` ไม่เกิน `total_qty`
+  → งาน escalation (วัน 7) ต้องตั้ง `escalated_at` ทุกครั้งที่แจ้งญาติ และห้ามแจ้งซ้ำเมื่อ `escalated_at` ไม่ว่าง
+- **PUT /api/settings/slot-times:** ต้อง HH:MM เรียง เช้า < กลางวัน < เย็น < ก่อนนอน; ย้ายทุก dose ของ**วันนี้**ที่ `status='pending' AND reminded_at IS NULL` ไปเวลาใหม่ (ไม่ว่าเวลาเดิมจะผ่านแล้วหรือไม่);
+  dose ที่ `reminded_at` ไม่ว่างคงเวลาเดิม; ไม่สร้างรอบใหม่ให้มื้อที่เคยถูกข้าม
+- งาน reminder (วัน 5–6) ต้องตั้ง `reminded_at` ตอนส่งเตือน เพราะกฎ slot-times พึ่งคอลัมน์นี้
 
 ## Frontend (`frontend/`)
 - Angular 21 standalone, PWA (`ngsw-config.json`), Capacitor สำหรับ Android (`npx cap sync android`)
