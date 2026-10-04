@@ -375,5 +375,1610 @@
             ]
         ],
         "func": "const m = String((msg.error && msg.error.message) || '');\nif (m.indexOf('ER_DUP_ENTRY') !== -1 || m.indexOf('Duplicate entry') !== -1) {\n  msg.statusCode = 409;\n  msg.payload = { error: 'EMAIL_EXISTS', details: 'อีเมลนี้ถูกใช้สมัครแล้ว' };\n} else {\n  msg.statusCode = 500;\n  msg.payload = { error: 'INTERNAL_ERROR', details: 'ระบบขัดข้อง กรุณาลองใหม่ภายหลัง' };\n}\ndelete msg.loginPassword;\nreturn msg;"
+    },
+    {
+        "id": "tab_meds",
+        "type": "tab",
+        "label": "3-Medications",
+        "disabled": false,
+        "info": "ยา (CRUD, หยุดยา, เติมยา) + เวลามื้อ\nทุก endpoint ผ่าน verify-jwt และกรอง user_id เสมอ (ไม่ใช่ของตัวเอง = 404)\nสีฟ้า = อ่านอย่างเดียว (node mysql) · สีเขียว = เขียน/transaction (lib/db.js + lib/medication-service.js)"
+    },
+    {
+        "id": "med_note_tx",
+        "type": "comment",
+        "z": "tab_meds",
+        "name": "POST/PUT = transaction เดียว",
+        "info": "ทำใน db.withTransaction (lib/db.js): insert/update medications → ลบแล้ว insert medication_slots ใหม่ → (PUT) ลบ dose_logs pending ที่ scheduled_at > NOW() → INSERT IGNORE รอบของวันนี้เฉพาะที่ยังไม่ถึงเวลา\nPOST/PUT ตอบ skipped_slots_today = มื้อของวันนี้ที่เวลาผ่านไปแล้ว (ไม่ถูกสร้างรอบ) ให้ frontend แจ้งผู้ใช้ว่าจะเริ่มเตือนพรุ่งนี้",
+        "x": 260,
+        "y": 50,
+        "wires": []
+    },
+    {
+        "id": "med_note_slot",
+        "type": "comment",
+        "z": "tab_meds",
+        "name": "PUT slot-times: กฎการย้ายรอบ",
+        "info": "ย้ายทุก dose ของ \"วันนี้\" ที่ status=pending และ reminded_at IS NULL ไปเวลามื้อใหม่ ไม่ว่าเวลาเดิมจะผ่านไปแล้วหรือไม่\ndose ที่เตือนไปแล้ว (reminded_at ไม่ว่าง) คงเวลาเดิม เพราะข้อความ LINE/Push ที่ส่งไปแล้วระบุเวลาเดิม\nย้ายสองจังหวะ (+100 ปี แล้วตั้งเวลาจริง) กันชน UNIQUE(medication_id, scheduled_at)",
+        "x": 900,
+        "y": 50,
+        "wires": []
+    },
+    {
+        "id": "med_note_read",
+        "type": "comment",
+        "z": "tab_meds",
+        "name": "กรอบสีฟ้า = อ่านอย่างเดียว",
+        "info": "ใช้ node mysql ตรงๆ: ตรวจ JWT → สร้าง SQL → mysql → จัดรูป response → ตอบ ; ถ้า SQL ล้มเหลวจะเข้า catch (500)",
+        "x": 1400,
+        "y": 50,
+        "wires": []
+    },
+    {
+        "id": "med_list_in",
+        "type": "http in",
+        "z": "tab_meds",
+        "name": "GET /api/medications",
+        "url": "/api/medications",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 170,
+        "wires": [
+            [
+                "med_list_jwt"
+            ]
+        ]
+    },
+    {
+        "id": "med_list_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_meds",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 170,
+        "wires": [
+            [
+                "med_list_build"
+            ]
+        ]
+    },
+    {
+        "id": "med_list_build",
+        "type": "function",
+        "z": "tab_meds",
+        "name": "สร้าง SQL ยาของผู้ใช้",
+        "func": "const q = global.get('medicationService').listQuery(msg.user.id, msg.req.query.active);\nmsg.topic = q.sql;\nmsg.payload = q.params;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 700,
+        "y": 170,
+        "wires": [
+            [
+                "med_list_db"
+            ]
+        ]
+    },
+    {
+        "id": "med_list_db",
+        "type": "mysql",
+        "z": "tab_meds",
+        "mydb": "mysql_cfg",
+        "name": "อ่านจากฐานข้อมูล",
+        "x": 950,
+        "y": 170,
+        "wires": [
+            [
+                "med_list_shape"
+            ]
+        ]
+    },
+    {
+        "id": "med_list_shape",
+        "type": "function",
+        "z": "tab_meds",
+        "name": "จัดรูปรายการยา",
+        "func": "const r = global.get('medicationService').shapeList(msg.payload);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1200,
+        "y": 170,
+        "wires": [
+            [
+                "med_list_ok"
+            ]
+        ]
+    },
+    {
+        "id": "med_list_ok",
+        "type": "http response",
+        "z": "tab_meds",
+        "name": "ตอบ 200 รายการยา",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 170,
+        "wires": []
+    },
+    {
+        "id": "med_list_grp",
+        "type": "group",
+        "z": "tab_meds",
+        "name": "GET /api/medications",
+        "style": {
+            "stroke": "#0070c0",
+            "fill": "#e8f1fa",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0070c0"
+        },
+        "nodes": [
+            "med_list_in",
+            "med_list_jwt",
+            "med_list_build",
+            "med_list_db",
+            "med_list_shape",
+            "med_list_ok"
+        ],
+        "x": 40,
+        "y": 115,
+        "w": 1570,
+        "h": 175
+    },
+    {
+        "id": "med_get_in",
+        "type": "http in",
+        "z": "tab_meds",
+        "name": "GET /api/medications/:id",
+        "url": "/api/medications/:id",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 360,
+        "wires": [
+            [
+                "med_get_jwt"
+            ]
+        ]
+    },
+    {
+        "id": "med_get_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_meds",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 360,
+        "wires": [
+            [
+                "med_get_build"
+            ]
+        ]
+    },
+    {
+        "id": "med_get_build",
+        "type": "function",
+        "z": "tab_meds",
+        "name": "สร้าง SQL ยา 1 รายการ",
+        "func": "const q = global.get('medicationService').getQuery(msg.user.id, msg.req.params.id);\nmsg.topic = q.sql;\nmsg.payload = q.params;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 700,
+        "y": 360,
+        "wires": [
+            [
+                "med_get_db"
+            ]
+        ]
+    },
+    {
+        "id": "med_get_db",
+        "type": "mysql",
+        "z": "tab_meds",
+        "mydb": "mysql_cfg",
+        "name": "อ่านจากฐานข้อมูล",
+        "x": 950,
+        "y": 360,
+        "wires": [
+            [
+                "med_get_shape"
+            ]
+        ]
+    },
+    {
+        "id": "med_get_shape",
+        "type": "function",
+        "z": "tab_meds",
+        "name": "จัดรูปยา / เช็กว่าพบไหม",
+        "func": "const r = global.get('medicationService').shapeOne(msg.payload);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\nreturn r.status === 200 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1200,
+        "y": 360,
+        "wires": [
+            [
+                "med_get_ok"
+            ],
+            [
+                "med_get_404"
+            ]
+        ],
+        "outputLabels": [
+            "พบข้อมูล",
+            "ไม่พบ"
+        ]
+    },
+    {
+        "id": "med_get_ok",
+        "type": "http response",
+        "z": "tab_meds",
+        "name": "ตอบ 200 ข้อมูลยา",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "med_get_404",
+        "type": "http response",
+        "z": "tab_meds",
+        "name": "ตอบ 404 ไม่พบ",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "med_get_grp",
+        "type": "group",
+        "z": "tab_meds",
+        "name": "GET /api/medications/:id",
+        "style": {
+            "stroke": "#0070c0",
+            "fill": "#e8f1fa",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0070c0"
+        },
+        "nodes": [
+            "med_get_in",
+            "med_get_jwt",
+            "med_get_build",
+            "med_get_db",
+            "med_get_shape",
+            "med_get_ok",
+            "med_get_404"
+        ],
+        "x": 40,
+        "y": 305,
+        "w": 1570,
+        "h": 175
+    },
+    {
+        "id": "med_create_in",
+        "type": "http in",
+        "z": "tab_meds",
+        "name": "POST /api/medications",
+        "url": "/api/medications",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 550,
+        "wires": [
+            [
+                "med_create_jwt"
+            ]
+        ]
+    },
+    {
+        "id": "med_create_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_meds",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 550,
+        "wires": [
+            [
+                "med_create_fn"
+            ]
+        ]
+    },
+    {
+        "id": "med_create_fn",
+        "type": "function",
+        "z": "tab_meds",
+        "name": "สร้างยา + รอบวันนี้ (transaction)",
+        "func": "const db = global.get('db');\nconst svc = global.get('medicationService');\nconst r = await svc.create(db, msg.user.id, msg.payload);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ/ซ้ำ (4xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 550,
+        "wires": [
+            [
+                "med_create_ok"
+            ],
+            [
+                "med_create_err"
+            ]
+        ],
+        "outputLabels": [
+            "สำเร็จ",
+            "error 4xx"
+        ]
+    },
+    {
+        "id": "med_create_ok",
+        "type": "http response",
+        "z": "tab_meds",
+        "name": "ตอบ 201 สร้างยาแล้ว",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 550,
+        "wires": []
+    },
+    {
+        "id": "med_create_err",
+        "type": "http response",
+        "z": "tab_meds",
+        "name": "ตอบ 400 ข้อมูลไม่ถูกต้อง",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 610,
+        "wires": []
+    },
+    {
+        "id": "med_create_grp",
+        "type": "group",
+        "z": "tab_meds",
+        "name": "POST /api/medications",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "med_create_in",
+            "med_create_jwt",
+            "med_create_fn",
+            "med_create_ok",
+            "med_create_err"
+        ],
+        "x": 40,
+        "y": 495,
+        "w": 1570,
+        "h": 175
+    },
+    {
+        "id": "med_update_in",
+        "type": "http in",
+        "z": "tab_meds",
+        "name": "PUT /api/medications/:id",
+        "url": "/api/medications/:id",
+        "method": "put",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 740,
+        "wires": [
+            [
+                "med_update_jwt"
+            ]
+        ]
+    },
+    {
+        "id": "med_update_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_meds",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 740,
+        "wires": [
+            [
+                "med_update_fn"
+            ]
+        ]
+    },
+    {
+        "id": "med_update_fn",
+        "type": "function",
+        "z": "tab_meds",
+        "name": "แก้ยา + สร้างรอบใหม่ (transaction)",
+        "func": "const db = global.get('db');\nconst svc = global.get('medicationService');\nconst r = await svc.update(db, msg.user.id, msg.req.params.id, msg.payload);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ/ซ้ำ (4xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 740,
+        "wires": [
+            [
+                "med_update_ok"
+            ],
+            [
+                "med_update_err"
+            ]
+        ],
+        "outputLabels": [
+            "สำเร็จ",
+            "error 4xx"
+        ]
+    },
+    {
+        "id": "med_update_ok",
+        "type": "http response",
+        "z": "tab_meds",
+        "name": "ตอบ 200 แก้ยาแล้ว",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 740,
+        "wires": []
+    },
+    {
+        "id": "med_update_err",
+        "type": "http response",
+        "z": "tab_meds",
+        "name": "ตอบ 400/404 ผิดพลาด",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 800,
+        "wires": []
+    },
+    {
+        "id": "med_update_grp",
+        "type": "group",
+        "z": "tab_meds",
+        "name": "PUT /api/medications/:id",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "med_update_in",
+            "med_update_jwt",
+            "med_update_fn",
+            "med_update_ok",
+            "med_update_err"
+        ],
+        "x": 40,
+        "y": 685,
+        "w": 1570,
+        "h": 175
+    },
+    {
+        "id": "med_stop_in",
+        "type": "http in",
+        "z": "tab_meds",
+        "name": "PATCH /api/medications/:id/stop",
+        "url": "/api/medications/:id/stop",
+        "method": "patch",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 930,
+        "wires": [
+            [
+                "med_stop_jwt"
+            ]
+        ]
+    },
+    {
+        "id": "med_stop_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_meds",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 930,
+        "wires": [
+            [
+                "med_stop_fn"
+            ]
+        ]
+    },
+    {
+        "id": "med_stop_fn",
+        "type": "function",
+        "z": "tab_meds",
+        "name": "หยุดยา + ลบรอบที่ยังไม่ถึง (transaction)",
+        "func": "const db = global.get('db');\nconst svc = global.get('medicationService');\nconst r = await svc.stop(db, msg.user.id, msg.req.params.id);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ/ซ้ำ (4xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 930,
+        "wires": [
+            [
+                "med_stop_ok"
+            ],
+            [
+                "med_stop_err"
+            ]
+        ],
+        "outputLabels": [
+            "สำเร็จ",
+            "error 4xx"
+        ]
+    },
+    {
+        "id": "med_stop_ok",
+        "type": "http response",
+        "z": "tab_meds",
+        "name": "ตอบ 200 หยุดยาแล้ว",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 930,
+        "wires": []
+    },
+    {
+        "id": "med_stop_err",
+        "type": "http response",
+        "z": "tab_meds",
+        "name": "ตอบ 404 ไม่พบ",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 990,
+        "wires": []
+    },
+    {
+        "id": "med_stop_grp",
+        "type": "group",
+        "z": "tab_meds",
+        "name": "PATCH /api/medications/:id/stop",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "med_stop_in",
+            "med_stop_jwt",
+            "med_stop_fn",
+            "med_stop_ok",
+            "med_stop_err"
+        ],
+        "x": 40,
+        "y": 875,
+        "w": 1570,
+        "h": 175
+    },
+    {
+        "id": "med_refill_in",
+        "type": "http in",
+        "z": "tab_meds",
+        "name": "POST /api/medications/:id/refill",
+        "url": "/api/medications/:id/refill",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 1120,
+        "wires": [
+            [
+                "med_refill_jwt"
+            ]
+        ]
+    },
+    {
+        "id": "med_refill_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_meds",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 1120,
+        "wires": [
+            [
+                "med_refill_fn"
+            ]
+        ]
+    },
+    {
+        "id": "med_refill_fn",
+        "type": "function",
+        "z": "tab_meds",
+        "name": "เติมยา (transaction)",
+        "func": "const db = global.get('db');\nconst svc = global.get('medicationService');\nconst r = await svc.refill(db, msg.user.id, msg.req.params.id, msg.payload);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ/ซ้ำ (4xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 1120,
+        "wires": [
+            [
+                "med_refill_ok"
+            ],
+            [
+                "med_refill_err"
+            ]
+        ],
+        "outputLabels": [
+            "สำเร็จ",
+            "error 4xx"
+        ]
+    },
+    {
+        "id": "med_refill_ok",
+        "type": "http response",
+        "z": "tab_meds",
+        "name": "ตอบ 200 เติมยาแล้ว",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1120,
+        "wires": []
+    },
+    {
+        "id": "med_refill_err",
+        "type": "http response",
+        "z": "tab_meds",
+        "name": "ตอบ 400/404 ผิดพลาด",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1180,
+        "wires": []
+    },
+    {
+        "id": "med_refill_grp",
+        "type": "group",
+        "z": "tab_meds",
+        "name": "POST /api/medications/:id/refill",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "med_refill_in",
+            "med_refill_jwt",
+            "med_refill_fn",
+            "med_refill_ok",
+            "med_refill_err"
+        ],
+        "x": 40,
+        "y": 1065,
+        "w": 1570,
+        "h": 175
+    },
+    {
+        "id": "set_get_in",
+        "type": "http in",
+        "z": "tab_meds",
+        "name": "GET /api/settings/slot-times",
+        "url": "/api/settings/slot-times",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 1310,
+        "wires": [
+            [
+                "set_get_jwt"
+            ]
+        ]
+    },
+    {
+        "id": "set_get_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_meds",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 1310,
+        "wires": [
+            [
+                "set_get_build"
+            ]
+        ]
+    },
+    {
+        "id": "set_get_build",
+        "type": "function",
+        "z": "tab_meds",
+        "name": "สร้าง SQL เวลามื้อ",
+        "func": "const q = global.get('medicationService').slotTimesQuery(msg.user.id);\nmsg.topic = q.sql;\nmsg.payload = q.params;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 700,
+        "y": 1310,
+        "wires": [
+            [
+                "set_get_db"
+            ]
+        ]
+    },
+    {
+        "id": "set_get_db",
+        "type": "mysql",
+        "z": "tab_meds",
+        "mydb": "mysql_cfg",
+        "name": "อ่านจากฐานข้อมูล",
+        "x": 950,
+        "y": 1310,
+        "wires": [
+            [
+                "set_get_shape"
+            ]
+        ]
+    },
+    {
+        "id": "set_get_shape",
+        "type": "function",
+        "z": "tab_meds",
+        "name": "จัดรูปเวลามื้อ HH:MM",
+        "func": "const r = global.get('medicationService').shapeSlotTimes(msg.payload);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1200,
+        "y": 1310,
+        "wires": [
+            [
+                "set_get_ok"
+            ]
+        ]
+    },
+    {
+        "id": "set_get_ok",
+        "type": "http response",
+        "z": "tab_meds",
+        "name": "ตอบ 200 เวลามื้อ",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1310,
+        "wires": []
+    },
+    {
+        "id": "set_get_grp",
+        "type": "group",
+        "z": "tab_meds",
+        "name": "GET /api/settings/slot-times",
+        "style": {
+            "stroke": "#0070c0",
+            "fill": "#e8f1fa",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0070c0"
+        },
+        "nodes": [
+            "set_get_in",
+            "set_get_jwt",
+            "set_get_build",
+            "set_get_db",
+            "set_get_shape",
+            "set_get_ok"
+        ],
+        "x": 40,
+        "y": 1255,
+        "w": 1570,
+        "h": 175
+    },
+    {
+        "id": "set_put_in",
+        "type": "http in",
+        "z": "tab_meds",
+        "name": "PUT /api/settings/slot-times",
+        "url": "/api/settings/slot-times",
+        "method": "put",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 1500,
+        "wires": [
+            [
+                "set_put_jwt"
+            ]
+        ]
+    },
+    {
+        "id": "set_put_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_meds",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 1500,
+        "wires": [
+            [
+                "set_put_fn"
+            ]
+        ]
+    },
+    {
+        "id": "set_put_fn",
+        "type": "function",
+        "z": "tab_meds",
+        "name": "บันทึกเวลามื้อ + ย้ายรอบวันนี้ (transaction)",
+        "func": "const db = global.get('db');\nconst svc = global.get('medicationService');\nconst r = await svc.putSlotTimes(db, msg.user.id, msg.payload);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ/ซ้ำ (4xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 1500,
+        "wires": [
+            [
+                "set_put_ok"
+            ],
+            [
+                "set_put_err"
+            ]
+        ],
+        "outputLabels": [
+            "สำเร็จ",
+            "error 4xx"
+        ]
+    },
+    {
+        "id": "set_put_ok",
+        "type": "http response",
+        "z": "tab_meds",
+        "name": "ตอบ 200 บันทึกแล้ว",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1500,
+        "wires": []
+    },
+    {
+        "id": "set_put_err",
+        "type": "http response",
+        "z": "tab_meds",
+        "name": "ตอบ 400/409 ผิดพลาด",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1560,
+        "wires": []
+    },
+    {
+        "id": "set_put_grp",
+        "type": "group",
+        "z": "tab_meds",
+        "name": "PUT /api/settings/slot-times",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "set_put_in",
+            "set_put_jwt",
+            "set_put_fn",
+            "set_put_ok",
+            "set_put_err"
+        ],
+        "x": 40,
+        "y": 1445,
+        "w": 1570,
+        "h": 175
+    },
+    {
+        "id": "med_catch",
+        "type": "catch",
+        "z": "tab_meds",
+        "name": "ดักข้อผิดพลาดของ tab นี้",
+        "scope": null,
+        "uncaught": false,
+        "x": 190,
+        "y": 1690,
+        "wires": [
+            [
+                "med_err"
+            ]
+        ]
+    },
+    {
+        "id": "med_err",
+        "type": "function",
+        "z": "tab_meds",
+        "name": "แปลง error เป็น JSON 500",
+        "func": "node.error(msg.error && msg.error.message ? msg.error.message : 'unknown error');\nmsg.statusCode = 500;\nmsg.payload = { error: 'INTERNAL_ERROR', details: 'ระบบขัดข้อง กรุณาลองใหม่ภายหลัง' };\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 1690,
+        "wires": [
+            [
+                "med_res"
+            ]
+        ]
+    },
+    {
+        "id": "med_res",
+        "type": "http response",
+        "z": "tab_meds",
+        "name": "ตอบ 500 ระบบขัดข้อง",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1690,
+        "wires": []
+    },
+    {
+        "id": "med_grp",
+        "type": "group",
+        "z": "tab_meds",
+        "name": "ข้อผิดพลาดที่ไม่คาดคิด → 500",
+        "style": {
+            "stroke": "#b91c1c",
+            "fill": "#fdeaea",
+            "label": true,
+            "label-position": "nw",
+            "color": "#b91c1c"
+        },
+        "nodes": [
+            "med_catch",
+            "med_err",
+            "med_res"
+        ],
+        "x": 40,
+        "y": 1635,
+        "w": 1570,
+        "h": 115
+    },
+    {
+        "id": "tab_doses",
+        "type": "tab",
+        "label": "4-Doses",
+        "disabled": false,
+        "info": "ตารางกินยาวันนี้ / กินแล้ว / ยกเลิก\nสีฟ้า = อ่านอย่างเดียว (node mysql) · สีเขียว = transaction (lib/dose-service.js)"
+    },
+    {
+        "id": "dose_note_undo",
+        "type": "comment",
+        "z": "tab_doses",
+        "name": "กฎ undo (10 นาที)",
+        "info": "ยกเลิกได้เมื่อ status=taken และกดมาไม่เกิน 10 นาที (เกิน = 409 UNDO_EXPIRED, ไม่ใช่ taken = 409 NOT_TAKEN)\nสถานะที่กลับไป:\n  • escalated_at IS NOT NULL (เคยแจ้งญาติไปแล้ว) → กลับเป็น missed เพื่อไม่ให้ระบบแจ้งญาติซ้ำ\n  • escalated_at IS NULL → กลับเป็น pending\nล้าง taken_at/source และคืน remaining_qty ไม่เกิน total_qty",
+        "x": 260,
+        "y": 50,
+        "wires": []
+    },
+    {
+        "id": "dose_note_take",
+        "type": "comment",
+        "z": "tab_doses",
+        "name": "take: รับ missed ได้ (กินช้า)",
+        "info": "transaction + SELECT … FOR UPDATE กันกดซ้ำพร้อมกัน ; taken แล้ว = 409 ALREADY_TAKEN ; remaining_qty ลดไม่ต่ำกว่า 0 (ถ้าเป็น NULL ไม่แตะ)",
+        "x": 900,
+        "y": 50,
+        "wires": []
+    },
+    {
+        "id": "dose_today_in",
+        "type": "http in",
+        "z": "tab_doses",
+        "name": "GET /api/doses/today",
+        "url": "/api/doses/today",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 170,
+        "wires": [
+            [
+                "dose_today_jwt"
+            ]
+        ]
+    },
+    {
+        "id": "dose_today_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_doses",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 170,
+        "wires": [
+            [
+                "dose_today_build"
+            ]
+        ]
+    },
+    {
+        "id": "dose_today_build",
+        "type": "function",
+        "z": "tab_doses",
+        "name": "สร้าง SQL รอบกินยาวันนี้",
+        "func": "const q = global.get('doseService').todayQuery(msg.user.id);\nmsg.topic = q.sql;\nmsg.payload = q.params;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 700,
+        "y": 170,
+        "wires": [
+            [
+                "dose_today_db"
+            ]
+        ]
+    },
+    {
+        "id": "dose_today_db",
+        "type": "mysql",
+        "z": "tab_doses",
+        "mydb": "mysql_cfg",
+        "name": "อ่านจากฐานข้อมูล",
+        "x": 950,
+        "y": 170,
+        "wires": [
+            [
+                "dose_today_shape"
+            ]
+        ]
+    },
+    {
+        "id": "dose_today_shape",
+        "type": "function",
+        "z": "tab_doses",
+        "name": "จัดกลุ่มตามมื้อ + สรุป",
+        "func": "const r = global.get('doseService').shapeToday(msg.payload);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1200,
+        "y": 170,
+        "wires": [
+            [
+                "dose_today_ok"
+            ]
+        ]
+    },
+    {
+        "id": "dose_today_ok",
+        "type": "http response",
+        "z": "tab_doses",
+        "name": "ตอบ 200 ตารางวันนี้",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 170,
+        "wires": []
+    },
+    {
+        "id": "dose_today_grp",
+        "type": "group",
+        "z": "tab_doses",
+        "name": "GET /api/doses/today",
+        "style": {
+            "stroke": "#0070c0",
+            "fill": "#e8f1fa",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0070c0"
+        },
+        "nodes": [
+            "dose_today_in",
+            "dose_today_jwt",
+            "dose_today_build",
+            "dose_today_db",
+            "dose_today_shape",
+            "dose_today_ok"
+        ],
+        "x": 40,
+        "y": 115,
+        "w": 1570,
+        "h": 175
+    },
+    {
+        "id": "dose_take_in",
+        "type": "http in",
+        "z": "tab_doses",
+        "name": "POST /api/doses/:id/take",
+        "url": "/api/doses/:id/take",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 360,
+        "wires": [
+            [
+                "dose_take_jwt"
+            ]
+        ]
+    },
+    {
+        "id": "dose_take_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_doses",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 360,
+        "wires": [
+            [
+                "dose_take_fn"
+            ]
+        ]
+    },
+    {
+        "id": "dose_take_fn",
+        "type": "function",
+        "z": "tab_doses",
+        "name": "บันทึกกินยา + ตัดสต็อก (transaction)",
+        "func": "const db = global.get('db');\nconst svc = global.get('doseService');\nconst r = await svc.take(db, msg.user.id, msg.req.params.id);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ/ซ้ำ (4xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 360,
+        "wires": [
+            [
+                "dose_take_ok"
+            ],
+            [
+                "dose_take_err"
+            ]
+        ],
+        "outputLabels": [
+            "สำเร็จ",
+            "error 4xx"
+        ]
+    },
+    {
+        "id": "dose_take_ok",
+        "type": "http response",
+        "z": "tab_doses",
+        "name": "ตอบ 200 กินแล้ว",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "dose_take_err",
+        "type": "http response",
+        "z": "tab_doses",
+        "name": "ตอบ 404/409 ผิดพลาด",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "dose_take_grp",
+        "type": "group",
+        "z": "tab_doses",
+        "name": "POST /api/doses/:id/take",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "dose_take_in",
+            "dose_take_jwt",
+            "dose_take_fn",
+            "dose_take_ok",
+            "dose_take_err"
+        ],
+        "x": 40,
+        "y": 305,
+        "w": 1570,
+        "h": 175
+    },
+    {
+        "id": "dose_undo_in",
+        "type": "http in",
+        "z": "tab_doses",
+        "name": "POST /api/doses/:id/undo",
+        "url": "/api/doses/:id/undo",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 550,
+        "wires": [
+            [
+                "dose_undo_jwt"
+            ]
+        ]
+    },
+    {
+        "id": "dose_undo_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_doses",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 550,
+        "wires": [
+            [
+                "dose_undo_fn"
+            ]
+        ]
+    },
+    {
+        "id": "dose_undo_fn",
+        "type": "function",
+        "z": "tab_doses",
+        "name": "ยกเลิกการกิน + คืนสต็อก (transaction)",
+        "func": "const db = global.get('db');\nconst svc = global.get('doseService');\nconst r = await svc.undo(db, msg.user.id, msg.req.params.id);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ/ซ้ำ (4xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 550,
+        "wires": [
+            [
+                "dose_undo_ok"
+            ],
+            [
+                "dose_undo_err"
+            ]
+        ],
+        "outputLabels": [
+            "สำเร็จ",
+            "error 4xx"
+        ]
+    },
+    {
+        "id": "dose_undo_ok",
+        "type": "http response",
+        "z": "tab_doses",
+        "name": "ตอบ 200 ยกเลิกแล้ว",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 550,
+        "wires": []
+    },
+    {
+        "id": "dose_undo_err",
+        "type": "http response",
+        "z": "tab_doses",
+        "name": "ตอบ 404/409 ผิดพลาด",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 610,
+        "wires": []
+    },
+    {
+        "id": "dose_undo_grp",
+        "type": "group",
+        "z": "tab_doses",
+        "name": "POST /api/doses/:id/undo",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "dose_undo_in",
+            "dose_undo_jwt",
+            "dose_undo_fn",
+            "dose_undo_ok",
+            "dose_undo_err"
+        ],
+        "x": 40,
+        "y": 495,
+        "w": 1570,
+        "h": 175
+    },
+    {
+        "id": "dose_catch",
+        "type": "catch",
+        "z": "tab_doses",
+        "name": "ดักข้อผิดพลาดของ tab นี้",
+        "scope": null,
+        "uncaught": false,
+        "x": 190,
+        "y": 740,
+        "wires": [
+            [
+                "dose_err"
+            ]
+        ]
+    },
+    {
+        "id": "dose_err",
+        "type": "function",
+        "z": "tab_doses",
+        "name": "แปลง error เป็น JSON 500",
+        "func": "node.error(msg.error && msg.error.message ? msg.error.message : 'unknown error');\nmsg.statusCode = 500;\nmsg.payload = { error: 'INTERNAL_ERROR', details: 'ระบบขัดข้อง กรุณาลองใหม่ภายหลัง' };\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 740,
+        "wires": [
+            [
+                "dose_res"
+            ]
+        ]
+    },
+    {
+        "id": "dose_res",
+        "type": "http response",
+        "z": "tab_doses",
+        "name": "ตอบ 500 ระบบขัดข้อง",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 740,
+        "wires": []
+    },
+    {
+        "id": "dose_grp",
+        "type": "group",
+        "z": "tab_doses",
+        "name": "ข้อผิดพลาดที่ไม่คาดคิด → 500",
+        "style": {
+            "stroke": "#b91c1c",
+            "fill": "#fdeaea",
+            "label": true,
+            "label-position": "nw",
+            "color": "#b91c1c"
+        },
+        "nodes": [
+            "dose_catch",
+            "dose_err",
+            "dose_res"
+        ],
+        "x": 40,
+        "y": 685,
+        "w": 1570,
+        "h": 115
+    },
+    {
+        "id": "tab_sched",
+        "type": "tab",
+        "label": "6-Scheduler",
+        "disabled": false,
+        "info": "cron สร้างรอบกินยาของวัน (00:05 Asia/Bangkok)"
+    },
+    {
+        "id": "sch_note",
+        "type": "comment",
+        "z": "tab_sched",
+        "name": "ทำไมรันซ้ำได้ (idempotent)",
+        "info": "dose_logs มี UNIQUE(medication_id, scheduled_at) และใช้ INSERT IGNORE … SELECT ตัวเดียว\nรันกี่ครั้งต่อวัน (cron เดินซ้ำ, Node-RED restart, กด \"▶ รันตอนนี้\") ก็ไม่เกิดแถวซ้ำ แถวที่มีอยู่แล้ว (รวมที่ taken/missed) ไม่ถูกแตะ\nเงื่อนไข: is_active=1, as_needed=0, start_date <= วันนี้, end_date null หรือ >= วันนี้ ; join medication_slots กับ user_slot_times",
+        "x": 360,
+        "y": 50,
+        "wires": []
+    },
+    {
+        "id": "sch_cron",
+        "type": "cronplus",
+        "z": "tab_sched",
+        "name": "ทุกวัน 00:05 (เวลาไทย)",
+        "outputField": "payload",
+        "timeZone": "Asia/Bangkok",
+        "persistDynamic": false,
+        "commandResponseMsgOutput": "output1",
+        "outputs": 1,
+        "options": [
+            {
+                "name": "daily-0005",
+                "topic": "daily-dose-logs",
+                "payloadType": "default",
+                "payload": "",
+                "expressionType": "cron",
+                "expression": "0 5 0 * * * *",
+                "location": "",
+                "offset": "0",
+                "solarType": "all",
+                "solarEvents": "sunrise,sunset"
+            }
+        ],
+        "x": 190,
+        "y": 170,
+        "wires": [
+            [
+                "sch_fn"
+            ]
+        ]
+    },
+    {
+        "id": "sch_inject",
+        "type": "inject",
+        "z": "tab_sched",
+        "name": "▶ รันตอนนี้",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 240,
+        "wires": [
+            [
+                "sch_fn"
+            ]
+        ]
+    },
+    {
+        "id": "sch_fn",
+        "type": "function",
+        "z": "tab_sched",
+        "name": "สร้างรอบกินยาของวันนี้ (INSERT IGNORE)",
+        "func": "const r = await global.get('doseService').generateToday(global.get('db'));\nnode.log('dose_logs created: ' + r.inserted);\nmsg.payload = r;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 650,
+        "y": 205,
+        "wires": [
+            [
+                "sch_dbg"
+            ]
+        ]
+    },
+    {
+        "id": "sch_dbg",
+        "type": "debug",
+        "z": "tab_sched",
+        "name": "จำนวนรอบที่สร้าง",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.inserted",
+        "statusType": "auto",
+        "x": 1000,
+        "y": 205,
+        "wires": []
+    },
+    {
+        "id": "sch_grp",
+        "type": "group",
+        "z": "tab_sched",
+        "name": "สร้าง dose_logs รายวัน (cron 00:05 หรือกดเอง)",
+        "style": {
+            "stroke": "#b45309",
+            "fill": "#fdf3e3",
+            "label": true,
+            "label-position": "nw",
+            "color": "#b45309"
+        },
+        "nodes": [
+            "sch_cron",
+            "sch_inject",
+            "sch_fn",
+            "sch_dbg"
+        ],
+        "x": 40,
+        "y": 120,
+        "w": 1100,
+        "h": 180
+    },
+    {
+        "id": "sch_catch",
+        "type": "catch",
+        "z": "tab_sched",
+        "name": "ดักข้อผิดพลาดของ tab นี้",
+        "scope": null,
+        "uncaught": false,
+        "x": 190,
+        "y": 380,
+        "wires": [
+            [
+                "sch_errdbg"
+            ]
+        ]
+    },
+    {
+        "id": "sch_errdbg",
+        "type": "debug",
+        "z": "tab_sched",
+        "name": "แสดง error",
+        "active": true,
+        "tosidebar": true,
+        "console": true,
+        "tostatus": false,
+        "complete": "error",
+        "targetType": "msg",
+        "x": 650,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "sch_errgrp",
+        "type": "group",
+        "z": "tab_sched",
+        "name": "ข้อผิดพลาดที่ไม่คาดคิด",
+        "style": {
+            "stroke": "#b91c1c",
+            "fill": "#fdeaea",
+            "label": true,
+            "label-position": "nw",
+            "color": "#b91c1c"
+        },
+        "nodes": [
+            "sch_catch",
+            "sch_errdbg"
+        ],
+        "x": 40,
+        "y": 335,
+        "w": 1100,
+        "h": 90
     }
 ]
