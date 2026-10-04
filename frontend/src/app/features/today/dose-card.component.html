@@ -1,0 +1,31 @@
+<div class="head">
+  <div class="info">
+    <h3>{{ dose().name }}@if (dose().strength) { <span class="strength"> {{ dose().strength }}</span> }</h3>
+    <p class="how">
+      ครั้งละ {{ dose().dose_per_time | doseQty: dose().unit }}
+      @if (dose().meal_relation | mealLabel; as meal) { · {{ meal }} }
+    </p>
+  </div>
+
+  <p class="badge">
+    @switch (state()) {
+      @case ('taken') {
+        <span class="tick" [class.pop]="pop()"><app-icon name="check" /></span>
+        กินแล้ว @if (takenClock()) { เวลา {{ takenClock() }} }
+      }
+      @case ('overdue') { <app-icon name="alert" /> {{ lateText() }} }
+      @case ('due') { <app-icon name="bell" /> ถึงเวลาแล้ว }
+      @default { <app-icon name="clock" /> รอเวลา }
+    }
+  </p>
+</div>
+
+@if (state() !== 'taken') {
+  <button mat-flat-button class="take" type="button" [disabled]="busy()" (click)="take.emit()">
+    <app-icon name="check" /> กินแล้ว
+  </button>
+} @else if (canUndo()) {
+  <button type="button" class="undo" [disabled]="busy()" (click)="undo.emit()">
+    <app-icon name="undo" /> กดผิด? ยกเลิก
+  </button>
+}

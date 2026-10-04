@@ -43,7 +43,7 @@
   pool ถูกปิดเองเมื่อได้ SIGTERM/SIGINT (`db.close()`); function node ที่ใช้ DB เขียนเป็น `async` ได้เลย (`await` แล้ว `return msg`)
 - logic ฝั่ง backend แยกเป็น `node-red/data/lib/*-service.js` (global: `medicationService`, `doseService`; รับ `(db, userId, …)` คืน `{status, body}`) function node ใน flow แค่เรียกแล้วใส่ `msg.statusCode/payload`;
   แก้ `lib/` หรือ `settings.js` ต้อง `docker compose restart nodered`. ข้อมูลที่ไม่ใช่ของ `msg.user.id` = 404 เสมอ (ไม่ใช่ 403)
-- ทดสอบ Day 3A: `DEMO_PASSWORD=… bash scripts/test-day3a.sh` (login ใหม่ในสคริปต์, user ที่ 2 สุ่ม, ลบข้อมูลทดสอบตอนจบ)
+- ทดสอบ Day 3A (รวมเคส stop/resume): `DEMO_PASSWORD=… bash scripts/test-day3a.sh` (login ใหม่ในสคริปต์, user ที่ 2 สุ่ม, ลบข้อมูลทดสอบตอนจบ)
 - แบ่ง tab: 0-Middleware, 1-Auth, 2-AI-Scan, 3-Medications, 4-Doses, 5-Dashboard, 6-Scheduler, 7-LINE, 8-Push
 - API prefix `/api/*`, LINE webhook `/line/webhook` (nginx proxy ไว้แล้ว; body สูงสุด 10mb)
 - error response รูปแบบเดียว: `{ error: "CODE", details: "ข้อความไทย" }`
@@ -68,6 +68,9 @@
 ## กฎ dose_logs ที่ต้องจำ (tab 3/4/6)
 - **สร้างรอบ:** POST/PUT ยา = `INSERT IGNORE … SELECT` เฉพาะรอบของวันนี้ที่ `scheduled_at > NOW()`; cron 00:05 (tab 6) สร้างทั้งวัน; รอบที่เวลาผ่านไปแล้วตอนเพิ่มยาไม่ถูกสร้าง
   → POST/PUT /api/medications ตอบ `skipped_slots_today: ["morning", …]` ให้ frontend แจ้ง "รอบเช้าของวันนี้ผ่านไปแล้ว จะเริ่มเตือนพรุ่งนี้"
+- **PATCH /api/medications/:id/stop:** `is_active=0, end_date=วันนี้` และลบ dose_logs ที่ `pending` ของยานั้น**ทั้งหมด** (ทั้งที่เลยเวลาแล้วและยังไม่ถึง; คง taken/missed เป็นประวัติ);
+  `GET /api/doses/today` แสดงเฉพาะยา `is_active=1` ยกเว้น dose ที่ `taken` แล้ววันนี้ (ยังแสดงเป็นประวัติ)
+- **PATCH /api/medications/:id/resume:** `is_active=1, end_date=NULL` + สร้างรอบวันนี้เฉพาะที่ `scheduled_at > NOW()` (SQL กลางเดิม) ตอบ `skipped_slots_today` เหมือน POST/PUT; ยาที่ใช้งานอยู่แล้ว = 200 ไม่สร้างซ้ำ
 - **PUT /api/medications/:id:** ไม่ส่ง `remaining_qty` = คงค่าเดิม (POST: = total_qty); ลบ pending ที่ `scheduled_at > NOW()` แล้วสร้างของวันนี้ใหม่
 - **take:** `taken` แล้ว = 409 `ALREADY_TAKEN`; รับ `missed` ได้ (กินช้า); `remaining_qty` ลดไม่ต่ำกว่า 0 (NULL = ไม่แตะ)
 - **undo** (≤ 10 นาทีหลังกด; เกิน = 409 `UNDO_EXPIRED`, ไม่ใช่ taken = 409 `NOT_TAKEN`):
@@ -79,8 +82,14 @@
 
 ## Frontend (`frontend/`)
 - Angular 21 standalone, PWA (`ngsw-config.json`), Capacitor สำหรับ Android (`npx cap sync android`)
-- โครง: `src/app/core/` (api models, auth ที่จะเพิ่ม), `src/app/features/<name>/` (ตอนนี้มี `scan`)
-- JWT แนบโดย `auth.interceptor` (ยังไม่สร้าง), route ใช้ `authGuard` (comment ไว้ใน `app.routes.ts`)
+- โครง: `src/app/core/` (`api/` = interface + service ต่อ resource ตรงกับ response จริง, `auth/`, `i18n/` = label/pipe ไทย, `time.ts` = เวลาไทย UTC+7), `src/app/features/<name>/`
+  (`shell` โครงแอป [มือถือ: แถบเมนูล่างเป็นพี่น้องในแนวตั้งของ `.main` ไม่ใช่ `position:fixed` จึงไม่บังเนื้อหา; header มือถือมีแต่โลโก้ ปรับขนาดตัวอักษรอยู่ในหน้าตั้งค่า], `today`, `medications` (+ฟอร์ม/dialog เติมยา), `overview` (placeholder วัน 8), `settings`, `scan`, `auth`)
+- route หลัง login อยู่ใต้ `ShellComponent` (มือถือ = bottom nav 5 ช่อง, ≥1024px = sidebar): `/today` (หน้าเริ่มต้น), `/medications`, `/medications/new`, `/medications/:id/edit`, `/overview`, `/settings`; `/scan` (Ionic) อยู่นอก shell
+- JWT แนบโดย `auth.interceptor`, ทุก route ใช้ `authGuard`; ฟอร์มยามี `unsavedChangesGuard` (`core/unsaved-changes.guard.ts`)
+- หน้าวันนี้: สถานะรอบ (รอเวลา/ถึงเวลา/เลยเวลา) คำนวณฝั่ง client จากเวลาปัจจุบัน (เลยเวลา = > 30 นาที ตรงกับ `is_overdue`); สถานะหลัง take/undo ใช้ตาม response ของ API เท่านั้น
+- ตัวกลางที่ใช้ซ้ำ: `app-stepper` (− / +), `app-segmented`, `app-time-row` (ตั้งเวลามื้อ ทีละ 15 นาที + dialog พิมพ์เอง), `appHoldRepeat` (directive กดค้างเปลี่ยนต่อเนื่อง ใช้กับปุ่ม −/+), `app-progress-ring`, `app-confetti`, `app-confirm-dialog`
+- backend ตอบ error validation เป็นข้อความเดียว ไม่ระบุฟิลด์ → ฟอร์มยา map จากคำขึ้นต้นข้อความ (`FIELD_BY_MESSAGE` ใน `med-form.page.ts`); ถ้าแก้ข้อความใน `validate-medication.js` ต้องแก้ตารางนี้ด้วย
+- dev server สำหรับ preview: `.claude/launch.json` (ชื่อ `frontend`, พอร์ต 4200)
 
 ## UI (ผู้ใช้หลักคือผู้สูงอายุ)
 - ตัวหนังสือ ≥ 18px, ปุ่มสูง ≥ 56px, ข้อความภาษาไทยทั้งหมด

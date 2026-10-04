@@ -1,0 +1,105 @@
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--yt-space-3);
+  margin-bottom: var(--yt-space-4);
+}
+.head__actions { display: flex; flex-wrap: wrap; gap: var(--yt-space-3); }
+
+.grid {
+  display: grid;
+  gap: var(--yt-space-4);
+  grid-template-columns: minmax(0, 1fr);
+  margin: var(--yt-space-4) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.med {
+  display: flex;
+  flex-direction: column;
+  gap: var(--yt-space-2);
+  padding: var(--yt-space-4);
+  border: 2px solid var(--yt-border);
+  border-radius: var(--yt-radius-md);
+  background: var(--yt-surface);
+  box-shadow: var(--yt-shadow-sm);
+  h2 { font-size: 1.35rem; }
+  p { margin: 0; }
+}
+.med.low { border-color: var(--yt-warning); }
+.med.stopped { background: var(--yt-field-bg); }
+.strength { font: 500 var(--yt-text-base) var(--yt-font-body); color: var(--yt-text-muted); }
+.ind { color: var(--yt-text-muted); }
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--yt-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  li {
+    padding: 2px var(--yt-space-3);
+    border-radius: var(--yt-radius-pill);
+    background: var(--yt-primary-soft);
+    color: var(--yt-primary-deep);
+    font-size: var(--yt-text-sm);
+    font-weight: 600;
+  }
+}
+
+.supply {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--yt-space-2);
+  padding: var(--yt-space-2) var(--yt-space-3);
+  border-radius: var(--yt-radius-sm);
+  background: var(--yt-field-bg);
+  font-weight: 500;
+  app-icon { margin-top: 0.15em; flex: none; }
+}
+.supply--low { background: var(--yt-warning-soft); color: var(--yt-on-warning-soft); font-weight: 600; }
+.stopped-note { display: flex; align-items: center; gap: var(--yt-space-2); color: var(--yt-text-muted); font-weight: 500; }
+
+.actions { display: flex; flex-wrap: wrap; gap: var(--yt-space-2); margin-top: var(--yt-space-2); }
+.actions > * { flex: 1 1 auto; }
+// เติมยาตอนยังไม่ใกล้หมด: ปุ่มรอง (ใกล้หมด = ปุ่มหลักสีเต็ม)
+.quiet { --mat-button-filled-container-color: var(--yt-primary-soft); --mat-button-filled-label-text-color: var(--yt-primary-deep); }
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--yt-space-2);
+  margin: var(--yt-space-4) 0;
+  padding: var(--yt-space-6) var(--yt-space-4);
+  text-align: center;
+  p { margin: 0; color: var(--yt-text-muted); }
+}
+
+.sk { height: 12rem; }
+
+@media (min-width: 768px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1280px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+.med__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--yt-space-2); }
+.more {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  margin: -6px -8px 0 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--yt-text);
+  cursor: pointer;
+  &:hover { background: var(--yt-primary-soft); }
+}
+
+// มือถือมีปุ่มสแกนในแถบเมนูล่างแล้ว → ซ่อนปุ่มสแกนที่หัวหน้า (จอคอมไม่มีแถบล่าง จึงคงไว้)
+@media (max-width: 1023.98px) { .scan-btn { display: none; } }

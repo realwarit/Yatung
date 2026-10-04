@@ -170,13 +170,33 @@ req PUT /api/settings/slot-times "$TOKEN_A" '{"morning":"00:01","noon":"00:02","
 expect "dose ที่ยังไม่เตือน ย้ายไปเวลาใหม่ (23:50)" "$(sql "SELECT TIME(scheduled_at) FROM dose_logs WHERE id=$D_EVE;")" "23:50:00"
 expect "dose ที่ taken แล้วไม่ถูกย้าย" "$(sql "SELECT TIME(scheduled_at) FROM dose_logs WHERE id=$D_BED;")" "23:58:00"
 
-section "7) หยุดยา → is_active=0, end_date=วันนี้, ลบ pending ที่ยังไม่ถึงเวลา"
+section "7) หยุดยา → is_active=0, end_date=วันนี้, ลบ pending ทั้งหมด (รวมที่เลยเวลาแล้ว)"
+sql "UPDATE dose_logs SET scheduled_at = NOW() - INTERVAL 2 HOUR WHERE id = $D_EVE;"   # จำลองรอบที่เลยเวลาแล้วและยังไม่กิน
+expect "ก่อนหยุด: ยานี้อยู่ใน /doses/today (2 รอบ: เลยเวลา 1 + taken 1)" "$(dose_count "$MED")" "2"
 req PATCH /api/medications/$MED/stop "$TOKEN_A"; show
 expect "stop → is_active false" "$(jget 'o.is_active')" "false"
-expect "pending ในอนาคตถูกลบ" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE medication_id=$MED AND status='pending' AND scheduled_at > NOW();")" "0"
+expect "pending ทั้งหมดถูกลบ (ทั้งเลยเวลาและยังไม่ถึง)" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE medication_id=$MED AND status='pending';")" "0"
+expect "หยุดแล้ว: /doses/today เหลือเฉพาะ dose ที่ taken (ไม่มีรอบเลยเวลาค้าง)" "$(dose_count "$MED")" "1"
+req GET /api/doses/today "$TOKEN_A"
+expect "dose ที่เหลือคือ taken" "$(jget "o.slots.flatMap(s=>s.doses).filter(d=>d.medication_id==$MED).map(d=>d.status)")" '["taken"]'
 expect "dose ที่ taken ยังอยู่" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE id=$D_BED AND status='taken';")" "1"
 req GET "/api/medications?active=1" "$TOKEN_A"
 expect "ไม่อยู่ใน list active=1" "$(jget "o.some(m=>m.id==$MED)")" "false"
+
+section "7b) กลับมาใช้ยา (resume) → is_active=1, end_date=NULL, สร้างรอบวันนี้ที่ยังไม่ถึงเวลา"
+req PATCH /api/medications/$MED/resume "$TOKEN_B"; expect "resume ยาของ demo ด้วย token B → 404" "$STATUS" "404"
+req PATCH /api/medications/$MED/resume "" ;       expect "resume ไม่มี token → 401" "$STATUS" "401"
+req PATCH /api/medications/$MED/resume "$TOKEN_A"; show
+expect "resume → 200 is_active true" "$STATUS $(jget 'o.is_active')" "200 true"
+expect "end_date เป็น null" "$(jget 'o.end_date')" "null"
+expect "skipped_slots_today ว่าง (ยาเหลือมื้อเย็น/ก่อนนอนที่ยังไม่ถึงเวลา)" "$(jget 'o.skipped_slots_today')" "[]"
+expect "สร้างรอบเย็นที่ยังไม่ถึงเวลา" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE medication_id=$MED AND slot='evening' AND status='pending' AND scheduled_at > NOW();")" "1"
+req PATCH /api/medications/$MED/resume "$TOKEN_A"
+expect "resume ซ้ำ (ใช้งานอยู่แล้ว) ไม่พัง → 200" "$STATUS" "200"
+expect "resume ซ้ำไม่สร้างรอบซ้ำ" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE medication_id=$MED AND slot='evening' AND status='pending';")" "1"
+req PATCH /api/medications/9999999/resume "$TOKEN_A"; expect "resume id ที่ไม่มี → 404" "$STATUS" "404"
+req PATCH /api/medications/$MED/stop "$TOKEN_A"
+expect "หยุดอีกครั้ง → pending หมด" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE medication_id=$MED AND status='pending';")" "0"
 
 section "8) cron: รัน 2 ครั้งติดกัน → จำนวน dose_logs ไม่เพิ่ม"
 req POST /api/medications "$TOKEN_A" '{"name":"TEST-day3a-cron","dose_per_time":1,"unit":"tablet","meal_relation":"any","as_needed":false,"slots":["morning","noon","evening","bedtime"],"total_qty":20}'
