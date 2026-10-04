@@ -15,7 +15,7 @@ function todayQuery(userId) {
       "(d.status = 'pending' AND NOW() > d.scheduled_at + INTERVAL 30 MINUTE) AS is_overdue, " +
       'm.name, m.strength, m.dose_per_time, m.unit, m.meal_relation ' +
       'FROM dose_logs d JOIN medications m ON m.id = d.medication_id ' +
-      'WHERE d.user_id = ? AND DATE(d.scheduled_at) = CURDATE() ORDER BY d.scheduled_at, m.name, d.id',
+      'WHERE d.user_id = ? AND DATE(d.scheduled_at) = CURDATE() AND (m.is_active = 1 OR d.status = \'taken\') ORDER BY d.scheduled_at, m.name, d.id',
     params: [userId]
   };
 }

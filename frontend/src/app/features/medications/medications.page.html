@@ -2,7 +2,7 @@
   <header class="head">
     <h1 class="yt-page-title">ยาของฉัน</h1>
     <div class="head__actions">
-      <a mat-stroked-button routerLink="/scan"><app-icon name="camera" /> สแกนซองยา</a>
+      <a mat-stroked-button class="scan-btn" routerLink="/scan"><app-icon name="camera" /> สแกนซองยา</a>
       <a mat-flat-button routerLink="/medications/new"><app-icon name="plus" /> เพิ่มยา</a>
     </div>
   </header>
@@ -30,7 +30,15 @@
     <ul class="grid yt-enter">
       @for (m of shown(); track m.id) {
         <li class="med" [class.low]="isLow(m)" [class.stopped]="!m.is_active">
-          <h2>{{ m.name }}@if (m.strength) { <span class="strength"> {{ m.strength }}</span> }</h2>
+          <div class="med__head">
+            <h2>{{ m.name }}@if (m.strength) { <span class="strength"> {{ m.strength }}</span> }</h2>
+            @if (m.is_active) {
+              <button type="button" class="more" [matMenuTriggerFor]="menu" [matMenuTriggerData]="{ m: m }"
+                      [attr.aria-label]="'ตัวเลือกของ ' + m.name">
+                <app-icon name="dots" />
+              </button>
+            }
+          </div>
           <p class="how">
             ครั้งละ {{ m.dose_per_time | doseQty: m.unit }}
             @if (m.meal_relation | mealLabel; as meal) { · {{ meal }} }
@@ -65,7 +73,10 @@
                 <app-icon name="plus" /> เติมยา
               </button>
               <a mat-stroked-button [routerLink]="['/medications', m.id, 'edit']"><app-icon name="edit" /> แก้ไข</a>
-              <button mat-stroked-button type="button" (click)="stop(m)"><app-icon name="ban" /> หยุดใช้</button>
+            </div>
+          } @else {
+            <div class="actions">
+              <button mat-flat-button type="button" (click)="resume(m)"><app-icon name="undo" /> กลับมาใช้อีกครั้ง</button>
             </div>
           }
         </li>
@@ -73,8 +84,11 @@
     </ul>
   }
 
-  <!-- ปุ่มลอยบนมือถือ (ปุ่มสแกนอยู่กลางแถบเมนูล่างอยู่แล้ว); จอกว้างใช้ปุ่มที่หัวหน้า -->
-  <a mat-flat-button class="fab" routerLink="/medications/new"><app-icon name="plus" /> เพิ่มยา</a>
+  <mat-menu #menu="matMenu" xPosition="before">
+    <ng-template matMenuContent let-m="m">
+      <button mat-menu-item type="button" (click)="stop(m)"><app-icon name="ban" /> หยุดใช้ยา</button>
+    </ng-template>
+  </mat-menu>
 
   <p class="yt-disclaimer">ไม่ใช่คำแนะนำทางการแพทย์ · ปรึกษาแพทย์หรือเภสัชกรเมื่อมีข้อสงสัย</p>
 </div>

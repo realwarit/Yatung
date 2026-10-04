@@ -5,10 +5,9 @@
   h2 { display: flex; align-items: center; gap: var(--yt-space-2); margin-bottom: var(--yt-space-2); font-size: 1.35rem; }
   @media (min-width: 768px) { padding: var(--yt-space-5); }
 }
-.hint { margin: 0 0 var(--yt-space-4); color: var(--yt-text-muted); }
+.hint { margin: 0 0 var(--yt-space-3); color: var(--yt-text-muted); }
 
 .slot { padding: var(--yt-space-3) 0; border-top: 1px solid var(--yt-border); }
-.slot__name { display: flex; align-items: center; gap: var(--yt-space-2); margin: 0 0 var(--yt-space-2); font-weight: 600; color: var(--yt-primary-dark); }
 
 .save { width: 100%; margin-top: var(--yt-space-3); }
 .soon { display: flex; align-items: center; gap: var(--yt-space-2); margin: 0; color: var(--yt-text-muted); font-weight: 500; }

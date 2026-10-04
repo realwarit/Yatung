@@ -11,14 +11,13 @@
     } @else if (times(); as t) {
       @for (s of slots; track s) {
         <div class="slot">
-          <p class="slot__name"><app-icon [name]="icon[s]" /> {{ label[s] }}</p>
-          <app-time-picker [value]="t[s]" (valueChange)="setTime(s, $event)" [label]="'เวลามื้อ' + label[s]" />
+          <app-time-row [value]="t[s]" (valueChange)="setTime(s, $event)" [label]="label[s]" [icon]="icon[s]" [error]="orderErrors()[s] ?? null" />
         </div>
       }
       @if (saveError(); as se) {
         <div class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span>{{ se }}</span></div>
       }
-      <button mat-flat-button type="button" class="save" [disabled]="saving() || !dirty" (click)="save()">
+      <button mat-flat-button type="button" class="save" [disabled]="saving() || !dirty || hasOrderError()" (click)="save()">
         {{ saving() ? 'กำลังบันทึก…' : 'บันทึกเวลา' }}
       </button>
     } @else {
@@ -37,7 +36,8 @@
   </section>
 
   <section class="card yt-card" aria-labelledby="h-font">
-    <h2 id="h-font">ขนาดตัวอักษร</h2>
+    <h2 id="h-font">การแสดงผล</h2>
+    <p class="hint">ขนาดตัวอักษร</p>
     <app-font-size-toggle />
   </section>
 

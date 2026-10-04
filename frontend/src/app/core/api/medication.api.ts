@@ -17,5 +17,6 @@ export class MedicationApi {
   create(body: MedicationInput): Observable<Medication> { return this.http.post<Medication>('/api/medications', body); }
   update(id: number, body: MedicationInput): Observable<Medication> { return this.http.put<Medication>(`/api/medications/${id}`, body); }
   stop(id: number): Observable<Medication> { return this.http.patch<Medication>(`/api/medications/${id}/stop`, {}); }
+  resume(id: number): Observable<Medication> { return this.http.patch<Medication>(`/api/medications/${id}/resume`, {}); }
   refill(id: number, qty: number): Observable<Medication> { return this.http.post<Medication>(`/api/medications/${id}/refill`, { qty }); }
 }

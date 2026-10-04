@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MatButton } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
+import { MatOption, MatSelect } from '@angular/material/select';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable, map } from 'rxjs';
@@ -31,7 +32,7 @@ const DEFAULT_TIMES: SlotTimes = { morning: '08:00', noon: '12:00', evening: '18
 
 @Component({
   selector: 'app-med-form-page',
-  imports: [FormsModule, RouterLink, MatButton, MatSlideToggle, IconComponent, SegmentedComponent, StepperComponent],
+  imports: [FormsModule, RouterLink, MatButton, MatSlideToggle, MatSelect, MatOption, IconComponent, SegmentedComponent, StepperComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './med-form.page.html',
   styleUrl: './med-form.page.scss',

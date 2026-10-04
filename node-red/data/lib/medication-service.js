@@ -150,9 +150,28 @@ async function stop(db, userId, rawId) {
     if (!cur.length) return notFound();
     if (cur[0].is_active) {
       await conn.query('UPDATE medications SET is_active = 0, end_date = CURDATE() WHERE id = ?', [id]);
-      await conn.query("DELETE FROM dose_logs WHERE medication_id = ? AND status = 'pending' AND scheduled_at > NOW()", [id]);
+      // ลบ pending ทั้งหมด (ทั้งที่เลยเวลาแล้วและยังไม่ถึง) — คงไว้เฉพาะ taken/missed เป็นประวัติ
+      await conn.query("DELETE FROM dose_logs WHERE medication_id = ? AND status = 'pending'", [id]);
     }
     return { status: 200, body: await fetchOne(q, userId, id) };
+  });
+}
+
+// กลับมาใช้ยาที่หยุดไว้: สร้างรอบของวันนี้เฉพาะที่ยังไม่ถึงเวลา (SQL กลางเดิม) แล้วตอบ skipped_slots_today
+async function resume(db, userId, rawId) {
+  const id = toId(rawId);
+  if (!id) return notFound();
+  return db.withTransaction(async (conn) => {
+    const q = connQ(conn);
+    const [cur] = await conn.query('SELECT is_active FROM medications WHERE id = ? AND user_id = ? FOR UPDATE', [id, userId]);
+    if (!cur.length) return notFound();
+    if (!cur[0].is_active) {
+      await conn.query('UPDATE medications SET is_active = 1, end_date = NULL WHERE id = ?', [id]);
+      await conn.query(GENERATE_TODAY_SQL(true, true), [id]);
+    }
+    const med = await fetchOne(q, userId, id);
+    med.skipped_slots_today = await skippedSlotsToday(q, id);
+    return { status: 200, body: med };
   });
 }
 
@@ -227,5 +246,5 @@ async function putSlotTimes(db, userId, body) {
 
 module.exports = {
   listQuery, shapeList, getQuery, shapeOne, slotTimesQuery, shapeSlotTimes,
-  create, update, stop, refill, putSlotTimes, GENERATE_TODAY_SQL
+  create, update, stop, resume, refill, putSlotTimes, GENERATE_TODAY_SQL
 };

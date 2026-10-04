@@ -85,12 +85,21 @@
 @media (min-width: 768px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 1280px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
-// ปุ่มลอย "+ เพิ่มยา" เหนือแถบเมนูล่าง (เฉพาะมือถือ/แท็บเล็ต)
-.fab {
-  position: fixed;
-  right: var(--yt-space-4);
-  bottom: calc(72px + 28px + env(safe-area-inset-bottom));
-  z-index: 40;
-  box-shadow: var(--yt-shadow-lg);
+.med__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--yt-space-2); }
+.more {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  margin: -6px -8px 0 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--yt-text);
+  cursor: pointer;
+  &:hover { background: var(--yt-primary-soft); }
 }
-@media (min-width: 1024px) { .fab { display: none; } }
+
+// มือถือมีปุ่มสแกนในแถบเมนูล่างแล้ว → ซ่อนปุ่มสแกนที่หัวหน้า (จอคอมไม่มีแถบล่าง จึงคงไว้)
+@media (max-width: 1023.98px) { .scan-btn { display: none; } }

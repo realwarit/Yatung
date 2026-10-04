@@ -2,10 +2,12 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { RouterLink } from '@angular/router';
 import { MatButton } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
+import { MatMenu, MatMenuContent, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { errorText } from '../../core/api/api-error';
 import { MedicationApi } from '../../core/api/medication.api';
 import { Medication } from '../../core/api/models';
+import { SLOT_LABEL, thaiJoin } from '../../core/i18n/labels';
 import { DoseQtyPipe, MealLabelPipe, SlotLabelPipe, UnitLabelPipe } from '../../core/i18n/labels.pipe';
 import { thaiShortDate } from '../../core/time';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -16,7 +18,7 @@ import { RefillDialogComponent } from './refill-dialog.component';
 
 @Component({
   selector: 'app-medications-page',
-  imports: [RouterLink, MatButton, IconComponent, MascotComponent, SegmentedComponent,
+  imports: [RouterLink, MatButton, MatMenu, MatMenuContent, MatMenuItem, MatMenuTrigger, IconComponent, MascotComponent, SegmentedComponent,
     DoseQtyPipe, MealLabelPipe, SlotLabelPipe, UnitLabelPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './medications.page.html',
@@ -81,6 +83,20 @@ export class MedicationsPage {
         next: (updated) => { this.replace(updated); this.snack.open(`หยุดใช้ ${m.name} แล้ว`, undefined, { duration: 5000, panelClass: 'yt-snack' }); },
         error: (e) => this.snack.open(errorText(e), 'ตกลง', { duration: 8000, panelClass: 'yt-snack' }),
       });
+    });
+  }
+
+  protected resume(m: Medication): void {
+    this.api.resume(m.id).subscribe({
+      next: (updated) => {
+        this.replace(updated);
+        const skipped = updated.skipped_slots_today ?? [];
+        const extra = skipped.length
+          ? ` · รอบ${thaiJoin(skipped.map((s) => SLOT_LABEL[s]), true)}ของวันนี้ผ่านไปแล้ว จะเริ่มเตือนพรุ่งนี้` : '';
+        this.snack.open(`กลับมาใช้ ${m.name} แล้ว${extra}`, 'ตกลง', { duration: skipped.length ? 10_000 : 5000, panelClass: 'yt-snack' });
+        this.tab.set('active');
+      },
+      error: (e) => this.snack.open(errorText(e), 'ตกลง', { duration: 8000, panelClass: 'yt-snack' }),
     });
   }
 

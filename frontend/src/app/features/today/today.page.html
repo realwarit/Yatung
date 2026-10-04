@@ -1,6 +1,7 @@
 <div class="yt-page">
   <header class="head">
-    <h1 class="yt-page-title">{{ hello() }}</h1>
+    <p class="greet">{{ greet() }}</p>
+    <h1 class="yt-page-title name">{{ who() }}</h1>
     <p class="date">{{ today() }}</p>
   </header>
 
@@ -29,25 +30,31 @@
       <!-- ความคืบหน้า + รอบถัดไป (จอกว้าง: คอลัมน์ขวา sticky) -->
       <div class="aside">
         <section class="progress yt-card" aria-label="ความคืบหน้าวันนี้">
-          <app-progress-ring [done]="taken()" [total]="total()" />
-          <div class="progress__text">
+          <div class="progress__top">
+            <app-progress-ring [done]="taken()" [total]="total()" />
             <p class="progress__num">กินแล้ว {{ taken() }} จาก {{ total() }}</p>
-            <app-mascot [mood]="mood()" [size]="96" />
+          </div>
+          <div class="mascot-row">
+            <app-mascot [mood]="mood()" [size]="130" />
+            <p class="say" aria-hidden="true">{{ bubble() }}</p>
           </div>
         </section>
 
-        <p class="next" [class.next--done]="allDone()" role="status">
-          <app-icon [name]="allDone() ? 'check' : 'clock'" />
+        <div class="next" [class.next--done]="allDone()" role="status">
           @if (total() === 0) {
-            <span>วันนี้ไม่มีรอบกินยาที่ต้องเตือน</span>
+            <p><app-icon name="clock" /> <span>วันนี้ไม่มีรอบกินยาที่ต้องเตือน</span></p>
           } @else if (allDone()) {
-            <span>วันนี้กินครบทุกรอบแล้ว เก่งมากค่ะ</span>
-          } @else if (next(); as n) {
-            <span>รอบถัดไป: {{ n.label }} {{ n.time }} (อีก {{ n.remain }})</span>
+            <p><app-icon name="check" /> <span>กินครบแล้ว · ไม่มีรอบถัดไปของวันนี้</span></p>
           } @else {
-            <span>ไม่มีรอบถัดไปของวันนี้</span>
+            @if (notTaken() > 0) {
+              <p class="next__late"><app-icon name="alert" /> <span>ยังมี {{ notTaken() }} รายการที่ยังไม่ได้กิน</span></p>
+              <button type="button" class="next__go" (click)="goFirstNotTaken()">ดูรายการ</button>
+            }
+            @if (next(); as n) {
+              <p><app-icon name="clock" /> <span>รอบถัดไป: {{ n.label }} {{ n.time }} (อีก {{ n.remain }})</span></p>
+            }
           }
-        </p>
+        </div>
       </div>
 
       <div class="list">

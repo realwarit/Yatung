@@ -14,6 +14,7 @@ fieldset { margin: 0 0 var(--yt-space-4); padding: 0; border: 0; min-width: 0; }
 legend { padding: 0; }
 
 .yt-control {
+  mat-select { flex: 1; min-height: var(--yt-tap); display: flex; align-items: center; cursor: pointer; }
   select, textarea {
     flex: 1;
     min-width: 0;

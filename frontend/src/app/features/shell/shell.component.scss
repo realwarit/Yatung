@@ -4,6 +4,7 @@
   position: fixed;
   inset: 0;
   display: flex;
+  flex-direction: column;   // มือถือ: เนื้อหา + แถบเมนูล่างเรียงในแนวตั้ง (แถบไม่ลอย จึงไม่บังการ์ดสุดท้าย)
   background: var(--yt-bg);
 }
 
@@ -89,31 +90,27 @@
 // ---------- พื้นที่เนื้อหา ----------
 .main {
   flex: 1;
+  min-height: 0;
   min-width: 0;
   overflow-y: auto;
-  // เว้นที่ให้แถบล่างบนมือถือ (+ safe area ของ iPhone/Android)
-  padding-bottom: calc(var(--yt-nav-h) + 40px + env(safe-area-inset-bottom));
+  // แถบล่างเป็นพี่น้องในแนวตั้ง (ไม่ลอย) เนื้อหาจึงไม่ถูกบัง; .yt-page มี padding ล่าง 24px อยู่แล้ว รวมกับตรงนี้พ้นปุ่มสแกนที่ยื่นขึ้นมา
+  padding-bottom: 1rem;
 }
 main:focus { outline: none; }
 
 .top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--yt-space-2);
   padding: var(--yt-space-2) var(--yt-space-4);
 }
 
 // ---------- bottom nav (มือถือ/แท็บเล็ต) ----------
 .bottom {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: relative;
   z-index: 50;
+  flex: none;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(0, 1.25fr) repeat(2, minmax(0, 1fr));   // ช่องกลาง (สแกน) กว้างกว่าเล็กน้อย
-  align-items: end;
   min-height: var(--yt-nav-h);
   padding-bottom: env(safe-area-inset-bottom);
   background: var(--yt-surface);
@@ -123,30 +120,35 @@ main:focus { outline: none; }
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;   // ไอคอนและป้ายอยู่ระดับเดียวกันทุกช่อง (ไม่ขึ้นกับจำนวนบรรทัดของป้าย)
     gap: 2px;
     min-height: var(--yt-nav-h);
-    padding: var(--yt-space-1) 2px;
+    padding: 10px 2px var(--yt-space-1);
     color: var(--yt-text-muted);
     font-size: 0.8rem;
     font-weight: 500;
-    line-height: 1.6;
+    line-height: 1.5;
     text-align: center;
     text-decoration: none;
-    app-icon { font-size: 1.15rem; }
     &.active { color: var(--yt-primary-deep); font-weight: 600; }
     &.active app-icon { color: var(--yt-primary); }
   }
   // ตัวบอกหน้าปัจจุบันไม่ใช้สีอย่างเดียว: ขีดบนไอคอน
   a.active:not(.scan) { box-shadow: inset 0 3px 0 var(--yt-primary); }
 
+  .ico, .scan__slot { position: relative; display: grid; place-items: center; width: 100%; height: 1.6rem; flex: none; }
+  .ico app-icon { font-size: 1.15rem; }
+
   .scan { color: var(--yt-primary-deep); font-weight: 600; }
   .scan__btn {
+    position: absolute;
+    left: 50%;
+    bottom: 0.2rem;        // ขอบล่างของปุ่มกลมอยู่เหนือป้าย "สแกน" เล็กน้อย; ตัวปุ่มยื่นขึ้นเหนือแถบ
+    transform: translateX(-50%);
     display: grid;
     place-items: center;
-    width: 4.2rem;
-    height: 4.2rem;
-    margin-top: -1.6rem;   // ยกสูงกว่าแถบ
+    width: 4rem;
+    height: 4rem;
     border: 4px solid var(--yt-surface);
     border-radius: 50%;
     background: linear-gradient(135deg, var(--yt-primary), var(--yt-primary-light));
@@ -157,6 +159,7 @@ main:focus { outline: none; }
 }
 
 @media (min-width: 1024px) {
+  :host { flex-direction: row; }
   .side { display: flex; }
   .top, .bottom { display: none; }
   .main { padding-bottom: 0; }

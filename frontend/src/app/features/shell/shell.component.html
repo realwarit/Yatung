@@ -19,11 +19,8 @@
 </aside>
 
 <div class="main">
-  <!-- มือถือ: แถบบนมีโลโก้ + ปรับขนาดตัวอักษร -->
-  <header class="top">
-    <app-logo tone="light" [iconOnly]="true" />
-    <app-font-size-toggle />
-  </header>
+  <!-- มือถือ: แถบบนมีเฉพาะโลโก้ (ปรับขนาดตัวอักษรอยู่ในหน้าตั้งค่า) -->
+  <header class="top"><app-logo tone="light" [iconOnly]="true" /></header>
   <main id="main" tabindex="-1"><router-outlet /></main>
 </div>
 
@@ -31,15 +28,15 @@
 <nav class="bottom" aria-label="เมนูหลัก">
   @for (n of left; track n.path) {
     <a [routerLink]="n.path" routerLinkActive="active" ariaCurrentWhenActive="page">
-      <app-icon [name]="n.icon" /><span>{{ n.label }}</span>
+      <span class="ico"><app-icon [name]="n.icon" /></span><span>{{ n.label }}</span>
     </a>
   }
   <a class="scan" routerLink="/scan" aria-label="สแกนซองยา">
-    <span class="scan__btn"><app-icon name="camera" /></span><span>สแกน</span>
+    <span class="scan__slot"><span class="scan__btn"><app-icon name="camera" /></span></span><span>สแกน</span>
   </a>
   @for (n of right; track n.path) {
     <a [routerLink]="n.path" routerLinkActive="active" ariaCurrentWhenActive="page">
-      <app-icon [name]="n.icon" /><span>{{ n.label }}</span>
+      <span class="ico"><app-icon [name]="n.icon" /></span><span>{{ n.label }}</span>
     </a>
   }
 </nav>

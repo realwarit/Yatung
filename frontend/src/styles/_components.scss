@@ -147,5 +147,12 @@
 
 // snackbar: บนมือถือต้องลอยเหนือแถบเมนูล่าง
 .yt-snack {
-  @media (max-width: 1023.98px) { margin-bottom: calc(72px + 28px + env(safe-area-inset-bottom)) !important; }
+  @media (max-width: 1023.98px) { margin-bottom: calc(7rem + env(safe-area-inset-bottom)) !important; }
 }
+
+// ปุ่ม Material ที่มีไอคอน + ข้อความ: จัดกึ่งกลางแนวตั้งให้ตรงกัน (ไอคอนไม่ลอยเหนือตัวอักษรไทย)
+.mdc-button__label { display: inline-flex; align-items: center; justify-content: center; gap: var(--yt-space-2); }
+
+// รายการในเมนู ⋮ และตัวเลือกของ select (overlay นอก component) สูง ≥ 48px
+.mat-mdc-menu-item, .mat-mdc-option { min-height: max(48px, 2.7rem); }
+.mat-mdc-menu-item .mdc-list-item__primary-text { display: inline-flex; align-items: center; gap: var(--yt-space-2); }

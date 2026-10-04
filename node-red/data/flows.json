@@ -1980,5 +1980,109 @@
         "y": 335,
         "w": 1100,
         "h": 90
+    },
+    {
+        "id": "med_resume_in",
+        "type": "http in",
+        "z": "tab_meds",
+        "name": "PATCH /api/medications/:id/resume",
+        "url": "/api/medications/:id/resume",
+        "method": "patch",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 1810,
+        "wires": [
+            [
+                "med_resume_jwt"
+            ]
+        ]
+    },
+    {
+        "id": "med_resume_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_meds",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 1810,
+        "wires": [
+            [
+                "med_resume_fn"
+            ]
+        ]
+    },
+    {
+        "id": "med_resume_fn",
+        "type": "function",
+        "z": "tab_meds",
+        "name": "กลับมาใช้ยา + สร้างรอบวันนี้ที่ยังไม่ถึงเวลา (transaction)",
+        "func": "const db = global.get('db');\nconst svc = global.get('medicationService');\nconst r = await svc.resume(db, msg.user.id, msg.req.params.id);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ/ซ้ำ (4xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 1810,
+        "wires": [
+            [
+                "med_resume_ok"
+            ],
+            [
+                "med_resume_err"
+            ]
+        ],
+        "outputLabels": [
+            "สำเร็จ",
+            "error 4xx"
+        ]
+    },
+    {
+        "id": "med_resume_ok",
+        "type": "http response",
+        "z": "tab_meds",
+        "name": "ตอบ 200 กลับมาใช้ยาแล้ว",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1810,
+        "wires": []
+    },
+    {
+        "id": "med_resume_err",
+        "type": "http response",
+        "z": "tab_meds",
+        "name": "ตอบ 404 ไม่พบ",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1870,
+        "wires": []
+    },
+    {
+        "id": "med_resume_grp",
+        "type": "group",
+        "z": "tab_meds",
+        "name": "PATCH /api/medications/:id/stop",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "med_stop_in",
+            "med_stop_jwt",
+            "med_stop_fn",
+            "med_stop_ok",
+            "med_stop_err"
+        ],
+        "x": 40,
+        "y": 1755,
+        "w": 1570,
+        "h": 175,
+        "wires": []
     }
 ]

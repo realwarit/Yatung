@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { MatButton } from '@angular/material/button';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { errorText } from '../../core/api/api-error';
@@ -6,7 +6,7 @@ import { SettingsApi } from '../../core/api/settings.api';
 import { Slot, SlotTimes } from '../../core/api/models';
 import { AuthService } from '../../core/auth/auth.service';
 import { SLOT_LABEL, SLOT_ORDER } from '../../core/i18n/labels';
-import { TimePickerComponent } from '../../shared/components/time-picker/time-picker.component';
+import { TimeRowComponent } from '../../shared/components/time-row/time-row.component';
 import { FontSizeToggleComponent } from '../../shared/font-size-toggle.component';
 import { IconComponent, IconName } from '../../shared/icon.component';
 
@@ -14,7 +14,7 @@ const SLOT_ICON: Record<Slot, IconName> = { morning: 'sunrise', noon: 'sun', eve
 
 @Component({
   selector: 'app-settings-page',
-  imports: [MatButton, IconComponent, TimePickerComponent, FontSizeToggleComponent],
+  imports: [MatButton, IconComponent, TimeRowComponent, FontSizeToggleComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './settings.page.html',
   styleUrl: './settings.page.scss',
@@ -51,16 +51,22 @@ export class SettingsPage {
 
   protected get dirty(): boolean { return JSON.stringify(this.times()) !== this.original; }
 
+  /** ข้อความเตือนของแต่ละมื้อที่เวลาไม่เรียง (เช้า < กลางวัน < เย็น < ก่อนนอน) */
+  protected readonly orderErrors = computed<Partial<Record<Slot, string>>>(() => {
+    const t = this.times();
+    const out: Partial<Record<Slot, string>> = {};
+    if (!t) return out;
+    for (let i = 1; i < SLOT_ORDER.length; i++) {
+      const cur = SLOT_ORDER[i], prev = SLOT_ORDER[i - 1];
+      if (t[cur] <= t[prev]) out[cur] = `เวลามื้อ${SLOT_LABEL[cur]}ต้องหลังมื้อ${SLOT_LABEL[prev]} (${t[prev]})`;
+    }
+    return out;
+  });
+  protected readonly hasOrderError = computed(() => Object.keys(this.orderErrors()).length > 0);
+
   protected save(): void {
     const t = this.times();
-    if (!t) return;
-    // ตรวจลำดับก่อนส่ง (backend ตรวจซ้ำอีกชั้น)
-    for (let i = 1; i < SLOT_ORDER.length; i++) {
-      if (t[SLOT_ORDER[i]] <= t[SLOT_ORDER[i - 1]]) {
-        this.saveError.set(`เวลามื้อ${SLOT_LABEL[SLOT_ORDER[i]]}ต้องหลังมื้อ${SLOT_LABEL[SLOT_ORDER[i - 1]]}`);
-        return;
-      }
-    }
+    if (!t || this.hasOrderError()) return;   // ปุ่มถูกปิดอยู่แล้ว; backend ตรวจซ้ำอีกชั้น
     this.saving.set(true);
     this.saveError.set(null);
     this.api.saveSlotTimes(t).subscribe({

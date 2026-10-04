@@ -1,18 +1,19 @@
 import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
+import { HoldRepeatDirective } from '../../directives/hold-repeat.directive';
 import { IconComponent } from '../../icon.component';
 
 /** ปุ่ม − / + ใหญ่ๆ พร้อมตัวเลขตรงกลาง (ใช้กับปริมาณยา จำนวนเติมยา เวลา) */
 @Component({
   selector: 'app-stepper',
-  imports: [IconComponent],
+  imports: [IconComponent, HoldRepeatDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="stepper" role="group" [attr.aria-label]="label()">
-      <button type="button" (click)="bump(-1)" [disabled]="value() <= min()" [attr.aria-label]="'ลด' + label()">
+      <button type="button" (appHoldRepeat)="bump(-1)" [disabled]="value() <= min()" [attr.aria-label]="'ลด' + label()">
         <app-icon name="minus" />
       </button>
       <output aria-live="polite">{{ text() }}</output>
-      <button type="button" (click)="bump(1)" [disabled]="value() >= max()" [attr.aria-label]="'เพิ่ม' + label()">
+      <button type="button" (appHoldRepeat)="bump(1)" [disabled]="value() >= max()" [attr.aria-label]="'เพิ่ม' + label()">
         <app-icon name="plus" />
       </button>
     </div>
@@ -38,6 +39,8 @@ import { IconComponent } from '../../icon.component';
       color: var(--yt-primary-dark);
       font-size: 1.1rem;
       cursor: pointer;
+      touch-action: manipulation;
+      user-select: none;
       transition: background var(--yt-duration);
     }
     button:hover:not(:disabled) { background: var(--yt-primary-soft); }

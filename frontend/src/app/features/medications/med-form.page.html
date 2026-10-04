@@ -61,11 +61,12 @@
           @if (errors().dose) { <p class="yt-error-text" role="alert"><app-icon name="alert" /> {{ errors().dose }}</p> }
         </div>
         <div class="yt-field">
-          <label class="yt-label" for="f-unit">หน่วย</label>
+          <span class="yt-label" id="l-unit">หน่วย</span>
           <div class="yt-control" [class.is-invalid]="errors().unit">
-            <select id="f-unit" name="unit" [ngModel]="unit()" (ngModelChange)="unit.set($event)">
-              @for (u of units; track u) { <option [value]="u">{{ unitLabel[u] }}</option> }
-            </select>
+            <mat-select id="f-unit" aria-labelledby="l-unit" [ngModel]="unit()" (ngModelChange)="unit.set($event)" name="unit"
+                        panelClass="yt-select-panel">
+              @for (u of units; track u) { <mat-option [value]="u">{{ unitLabel[u] }}</mat-option> }
+            </mat-select>
           </div>
           @if (errors().unit) { <p class="yt-error-text" role="alert"><app-icon name="alert" /> {{ errors().unit }}</p> }
         </div>

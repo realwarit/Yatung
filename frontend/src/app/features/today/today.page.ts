@@ -62,10 +62,10 @@ export class TodayPage {
   private scrolled = false;
 
   protected readonly today = computed(() => thaiDate(this.now()));
-  protected readonly hello = computed(() => {
+  protected readonly greet = computed(() => greeting(this.now()));
+  protected readonly who = computed(() => {
     const n = this.auth.currentUser()?.display_name?.trim() ?? '';
-    const name = !n ? '' : n.startsWith('คุณ') ? n : `คุณ${n}`;   // ชื่อที่ขึ้นต้นด้วย "คุณ" อยู่แล้วไม่ต้องเติมซ้ำ
-    return `${greeting(this.now())} ${name}`.trim();
+    return !n ? '' : n.startsWith('คุณ') ? n : `คุณ${n}`;   // ชื่อที่ขึ้นต้นด้วย "คุณ" อยู่แล้วไม่ต้องเติมซ้ำ
   });
 
   protected readonly slots = computed<SlotVM[]>(() => {
@@ -101,10 +101,12 @@ export class TodayPage {
   protected readonly taken = computed(() =>
     this.slots().reduce((n, s) => n + s.doses.filter((x) => x.state === 'taken').length, 0));
   protected readonly allDone = computed(() => this.total() > 0 && this.taken() === this.total());
-  protected readonly hasOverdue = computed(() => this.slots().some((s) => s.doses.some((x) => x.state === 'overdue')));
+  /** รอบที่ถึงเวลา/เลยเวลาแล้วแต่ยังไม่ได้กิน */
+  protected readonly notTaken = computed(() =>
+    this.slots().reduce((n, s) => n + s.doses.filter((x) => x.state === 'overdue' || x.state === 'due').length, 0));
 
   protected readonly mood = computed<MascotMood>(() =>
-    this.allDone() ? 'celebrate' : this.hasOverdue() ? 'reminder' : 'happy');
+    this.allDone() ? 'celebrate' : this.notTaken() > 0 ? 'reminder' : 'happy');
 
   /** รอบถัดไป = มื้อที่เวลายังไม่ถึงและยังไม่กินครบ */
   protected readonly next = computed(() => {
@@ -116,6 +118,13 @@ export class TodayPage {
       }
     }
     return null;
+  });
+
+  protected readonly bubble = computed(() => {
+    if (this.allDone()) return 'เก่งมากค่ะ วันนี้กินครบแล้ว!';
+    if (this.notTaken() > 0) return 'ยังมียาที่ยังไม่ได้กินนะคะ';
+    const n = this.next();
+    return n ? `รอบถัดไป ${n.label} ${n.time} ค่ะ` : 'สบายใจได้เลยค่ะ';
   });
 
   protected readonly noMeds = computed(() => !this.loading() && !this.loadError() && this.activeMeds() === 0);
@@ -229,6 +238,13 @@ export class TodayPage {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     this.confetti.set(true);
     setTimeout(() => this.confetti.set(false), 2200);
+  }
+
+  /** ปุ่ม "ดูรายการ": เลื่อนไปมื้อแรกที่ยังมียาถึงเวลาแล้วแต่ยังไม่ได้กิน */
+  protected goFirstNotTaken(): void {
+    const s = this.slots().find((v) => v.doses.some((x) => x.state === 'overdue' || x.state === 'due'));
+    this.host.nativeElement.querySelector<HTMLElement>(`[data-slot="${s?.slot}"]`)
+      ?.scrollIntoView({ block: 'start', behavior: 'smooth' });
   }
 
   /** เลื่อนไปมื้อปัจจุบัน (มื้อแรกที่ยังไม่ครบและถึง/เลยเวลาแล้ว ไม่งั้นมื้อถัดไป) ถ้ายังไม่อยู่ในสายตา */

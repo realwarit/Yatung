@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { MatButton } from '@angular/material/button';
 import { Dose } from '../../core/api/models';
 import { DoseQtyPipe, MealLabelPipe } from '../../core/i18n/labels.pipe';
-import { duration } from '../../core/time';
 import { IconComponent } from '../../shared/icon.component';
 
 export type DoseState = 'waiting' | 'due' | 'overdue' | 'taken';
@@ -31,5 +30,9 @@ export class DoseCardComponent {
   readonly take = output<void>();
   readonly undo = output<void>();
 
-  protected readonly lateText = computed(() => `เลยเวลามา ${duration(this.lateMin())}`);
+  /** < 1 ชม.: "เลยเวลามา 45 นาที" · ≥ 1 ชม.: "ยังไม่ได้กิน · เลยเวลามา 13 ชม." (ไม่แสดงนาที) */
+  protected readonly lateText = computed(() => {
+    const m = this.lateMin();
+    return m < 60 ? `เลยเวลามา ${m} นาที` : `ยังไม่ได้กิน · เลยเวลามา ${Math.floor(m / 60)} ชม.`;
+  });
 }
