@@ -5,6 +5,9 @@ const fs = require('fs');
 const path = require('path');
 const Ajv2020 = require('ajv/dist/2020');
 const addFormats = require('ajv-formats');
+const db = require('./lib/db');
+const medicationService = require('./lib/medication-service');
+const doseService = require('./lib/dose-service');
 
 const PROMPT_DIR = path.join(__dirname, 'prompts');
 const readPrompt = (file) => fs.readFileSync(path.join(PROMPT_DIR, file), 'utf8');
@@ -41,6 +44,9 @@ module.exports = {
     webpush: require('web-push'),
     crypto: require('crypto'),
     medicineValidator,
+    db,                                       // db.query / db.withTransaction (ดู lib/db.js)
+    medicationService,
+    doseService,
     prompts: {
       medicineSystem: readPrompt('medicine-parse.system.txt'),
       medicineUser: readPrompt('medicine-parse.user.txt'),

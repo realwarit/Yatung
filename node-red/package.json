@@ -5,6 +5,7 @@
   "dependencies": {
     "node-red-node-mysql": "^2.0.0",
     "node-red-contrib-cron-plus": "^2.1.0",
+    "mysql2": "^3.11.0",
     "jsonwebtoken": "^9.0.2",
     "bcryptjs": "^2.4.3",
     "web-push": "^3.6.7",
