@@ -17,9 +17,11 @@
       @if (saveError(); as se) {
         <div class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span>{{ se }}</span></div>
       }
-      <button mat-flat-button type="button" class="save" [disabled]="saving() || !dirty || hasOrderError()" (click)="save()">
-        {{ saving() ? 'กำลังบันทึก…' : 'บันทึกเวลา' }}
-      </button>
+      <div class="savebar" [class.dirty]="dirty">
+        <button mat-flat-button type="button" class="save" [disabled]="saving() || !dirty || hasOrderError()" (click)="save()">
+          {{ saving() ? 'กำลังบันทึก…' : 'บันทึกเวลา' }}
+        </button>
+      </div>
     } @else {
       <div class="yt-skeleton sk" aria-busy="true" aria-label="กำลังโหลดเวลามื้อ"></div>
     }
@@ -39,6 +41,7 @@
     <h2 id="h-font">การแสดงผล</h2>
     <p class="hint">ขนาดตัวอักษร</p>
     <app-font-size-toggle />
+    <p class="sample"><span class="sample__cap">ตัวอย่าง:</span>&ngsp;<strong>Metformin</strong> ครั้งละ <span class="num">1</span> เม็ด หลังอาหาร</p>
   </section>
 
   <button mat-stroked-button type="button" class="logout" (click)="logout()">

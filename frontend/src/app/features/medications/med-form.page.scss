@@ -98,6 +98,18 @@ legend { padding: 0; }
 .preview__cap { display: flex; align-items: center; gap: var(--yt-space-2); font-size: var(--yt-text-sm); font-weight: 600; }
 .preview__text { margin-top: var(--yt-space-1) !important; font: 500 1.2rem / 1.6 var(--yt-font-display); }
 
-.actions { display: flex; flex-wrap: wrap; gap: var(--yt-space-3); margin-bottom: var(--yt-space-4); }
-.actions > * { flex: 1 1 10rem; }
+.actions { display: flex; gap: var(--yt-space-3); margin-bottom: var(--yt-space-4); }
+.actions > * { flex: 1 1 0; }
+/* มือถือ: ปุ่มบันทึก/ยกเลิกติดล่างจอ เหนือแถบเมนู (sticky ใน scroll container ของ shell ซึ่งแถบเมนูเป็นพี่น้อง จึงอยู่เหนือแถบพอดี) */
+@media (max-width: 1023.98px) {
+  .actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin: 0 calc(var(--yt-space-4) * -1) var(--yt-space-4);
+    padding: var(--yt-space-3) var(--yt-space-4);
+    background: var(--yt-surface);
+    box-shadow: 0 -4px 16px rgb(var(--yt-shadow-color) / 0.12);
+  }
+}
 .sk { height: 18rem; margin-top: var(--yt-space-4); }

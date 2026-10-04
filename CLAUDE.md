@@ -158,6 +158,15 @@
 - ไอคอนแอป: `cd frontend && node tools/make-icons.mjs` (ใช้ `sharp`) สร้าง `public/favicon.svg|ico`, `public/icons/*` (any + maskable 192/512 + apple-touch), และ `frontend/resources/icon-only|icon-foreground|icon-background.png` 1024px
   สำหรับ `npx @capacitor/assets generate --android` ในวันที่ 9 — ถ้าแก้หน้า/สีมาสคอต ต้องแก้ค่าซ้ำใน `tools/make-icons.mjs` แล้วรันใหม่
 
+## รอบเก็บงาน UI (Day 3C)
+- **ไอคอนข้างข้อความ:** `app-icon` ขยับด้วย `--icon-optical-offset` (0.08em, `_tokens.scss`) เพราะฟอนต์ไทยเผื่อสระบน; ปุ่ม/ลิงก์ที่มี `app-icon` เป็นลูกตรงใช้ `inline-flex` + gap 0.5em + line-height 1 อัตโนมัติ (`:where(...):has(> app-icon)` ใน `_components.scss`); ปุ่มไอคอนล้วนตั้ง `--icon-optical-offset: 0` (หรือ class `.yt-icon-only`)
+- **ตัวเลข:** เลข 0 ของ Mitr คล้าย Ø → `_base.scss` ประกาศ @font-face 'Mitr' ช่วง U+0030-0039 ดึงจาก Noto Sans Thai Looped (ทั้งแอปโดยไม่ต้องแก้ทีละจุด); ตัวเลขเด่น (เวลา จำนวน วงแหวน) ใช้ class `.num` (Noto 700 + tabular-nums)
+- คอมโพเนนต์/class กลางที่เพิ่ม: `app-segmented [pill]`, `.yt-chip`, `.yt-choices/.yt-choice` (ตัวเลือกใหญ่ 2 ช่อง), `.yt-collapse` (ซ่อน/แสดงนุ่มๆ); `app-stepper` เป็น pill ใบเดียว
+- ปุ่ม sticky ล่างบนมือถือ (ฟอร์มยา, บันทึกเวลา): `position: sticky; bottom: 0` ใน `.main` ของ shell (แถบเมนูล่างเป็นพี่น้องในแนวตั้ง จึงอยู่เหนือแถบพอดี); `.yt-page` เว้นล่างเผื่อปุ่มสแกนที่ยื่นขึ้นมา
+- ตรวจด้วยภาพ: `cd frontend && node tools/shots.mjs [หน้า…] [--sizes=390x844,1440x900] [--scale=125]` (Playwright ใช้ Edge/Chrome ในเครื่อง ไม่ต้องโหลด chromium; ต้องมี `ng serve` และ `DEMO_PASSWORD` ใน env หรือ `.env`) → `docs/screenshots/day3/`; ซูมดูรายละเอียด `node tools/crop.mjs <png> x y w h`; หน้า `/dev/buttons` (เฉพาะ ng serve) แสดงปุ่มทุกแบบพร้อมเส้นกึ่งกลาง
+- เนื้อไฟล์ใน repo เป็น CRLF → สคริปต์แก้ไฟล์ที่ match ข้อความหลายบรรทัดต้อง normalize `
+` ก่อน
+
 ## วิธีทำงาน
 - จบงานแต่ละส่วนต้องทดสอบจริง: API ทดสอบด้วย `curl`, frontend ต้อง `ng build` ผ่าน
 - ห้าม commit `.env` หรือ `flows_cred.json`

@@ -121,10 +121,11 @@ export class TodayPage {
   });
 
   protected readonly bubble = computed(() => {
+    if (this.total() === 0) return 'วันนี้ไม่มียาที่ต้องกินค่ะ';
     if (this.allDone()) return 'เก่งมากค่ะ วันนี้กินครบแล้ว!';
     if (this.notTaken() > 0) return 'ยังมียาที่ยังไม่ได้กินนะคะ';
     const n = this.next();
-    return n ? `รอบถัดไป ${n.label} ${n.time} ค่ะ` : 'สบายใจได้เลยค่ะ';
+    return n ? `รอบถัดไป ${n.label} ${n.time} ค่ะ` : 'วันนี้ไม่มียาที่ต้องกินค่ะ';
   });
 
   protected readonly noMeds = computed(() => !this.loading() && !this.loadError() && this.activeMeds() === 0);

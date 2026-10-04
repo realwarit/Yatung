@@ -36,7 +36,10 @@ export const routes: Routes = [
     ],
   },
   // หน้าตรวจมาสคอต: เปิดเฉพาะ dev (ng serve) ไม่มีใน production build
-  ...(isDevMode() ? [{ path: 'dev/mascot', loadComponent: () => import('./features/dev/mascot-showcase.page').then(m => m.MascotShowcasePage) }] : []),
+  ...(isDevMode() ? [
+    { path: 'dev/mascot', loadComponent: () => import('./features/dev/mascot-showcase.page').then(m => m.MascotShowcasePage) },
+    { path: 'dev/buttons', loadComponent: () => import('./features/dev/buttons-showcase.page').then(m => m.ButtonsShowcasePage) },
+  ] : []),
   // { path: 'review/:id', loadComponent: () => import('./features/review/review.page').then(m => m.ReviewPage) },
   { path: '**', redirectTo: 'today' },
 ];

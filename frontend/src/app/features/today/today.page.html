@@ -30,28 +30,25 @@
       <!-- ความคืบหน้า + รอบถัดไป (จอกว้าง: คอลัมน์ขวา sticky) -->
       <div class="aside">
         <section class="progress yt-card" aria-label="ความคืบหน้าวันนี้">
-          <div class="progress__top">
+          <div class="progress__row">
             <app-progress-ring [done]="taken()" [total]="total()" />
-            <p class="progress__num">กินแล้ว {{ taken() }} จาก {{ total() }}</p>
-          </div>
-          <div class="mascot-row">
             <app-mascot [mood]="mood()" [size]="130" />
-            <p class="say" aria-hidden="true">{{ bubble() }}</p>
           </div>
+          <p class="say" aria-hidden="true">{{ bubble() }}</p>
         </section>
 
-        <div class="next" [class.next--done]="allDone()" role="status">
+        <div class="next" [class.next--late]="notTaken() > 0" [class.next--done]="allDone()" role="status">
           @if (total() === 0) {
             <p><app-icon name="clock" /> <span>วันนี้ไม่มีรอบกินยาที่ต้องเตือน</span></p>
           } @else if (allDone()) {
-            <p><app-icon name="check" /> <span>กินครบแล้ว · ไม่มีรอบถัดไปของวันนี้</span></p>
+            <p><app-icon name="check" /> <span>กินครบทุกรอบแล้ว</span></p>
           } @else {
             @if (notTaken() > 0) {
-              <p class="next__late"><app-icon name="alert" /> <span>ยังมี {{ notTaken() }} รายการที่ยังไม่ได้กิน</span></p>
+              <p class="next__late"><app-icon name="alert" /> <span>ยังมี <span class="num">{{ notTaken() }}</span> รายการที่ยังไม่ได้กิน</span></p>
               <button type="button" class="next__go" (click)="goFirstNotTaken()">ดูรายการ</button>
             }
             @if (next(); as n) {
-              <p><app-icon name="clock" /> <span>รอบถัดไป: {{ n.label }} {{ n.time }} (อีก {{ n.remain }})</span></p>
+              <p><app-icon name="clock" /> <span>รอบถัดไป: {{ n.label }} <span class="num">{{ n.time }}</span> (อีก {{ n.remain }})</span></p>
             }
           }
         </div>
@@ -64,13 +61,13 @@
               <button type="button" class="slot__done" [attr.aria-expanded]="!s.collapsed" (click)="toggle(s.slot)">
                 <app-icon name="check" />
                 <span id="h-{{ s.slot }}">{{ s.slot | slotLabel }} กินครบแล้ว</span>
-                <span class="slot__time">{{ s.time }}</span>
+                <span class="slot__time num">{{ s.time }}</span>
                 <app-icon name="chevron-down" class="chev" [class.open]="!s.collapsed" />
               </button>
             } @else {
               <h2 class="slot__head" id="h-{{ s.slot }}">
                 <app-icon [name]="s.icon" /> {{ s.slot | slotLabel }}
-                <span class="slot__time">{{ s.time }}</span>
+                <span class="slot__time num">{{ s.time }}</span>
               </h2>
             }
             @if (!s.collapsed) {

@@ -1,6 +1,6 @@
 // body ถูก Ionic structure.css ตั้งเป็น overflow:hidden → shell เป็น container เองและให้ .main เลื่อน
 :host {
-  --yt-nav-h: 72px;
+  --yt-nav-h: 4.4rem;
   position: fixed;
   inset: 0;
   display: flex;
@@ -94,7 +94,7 @@
   min-width: 0;
   overflow-y: auto;
   // แถบล่างเป็นพี่น้องในแนวตั้ง (ไม่ลอย) เนื้อหาจึงไม่ถูกบัง; .yt-page มี padding ล่าง 24px อยู่แล้ว รวมกับตรงนี้พ้นปุ่มสแกนที่ยื่นขึ้นมา
-  padding-bottom: 1rem;
+  padding-bottom: 0;
 }
 main:focus { outline: none; }
 
@@ -129,6 +129,7 @@ main:focus { outline: none; }
     font-weight: 500;
     line-height: 1.5;
     text-align: center;
+    white-space: nowrap;
     text-decoration: none;
     &.active { color: var(--yt-primary-deep); font-weight: 600; }
     &.active app-icon { color: var(--yt-primary); }
@@ -136,7 +137,7 @@ main:focus { outline: none; }
   // ตัวบอกหน้าปัจจุบันไม่ใช้สีอย่างเดียว: ขีดบนไอคอน
   a.active:not(.scan) { box-shadow: inset 0 3px 0 var(--yt-primary); }
 
-  .ico, .scan__slot { position: relative; display: grid; place-items: center; width: 100%; height: 1.6rem; flex: none; }
+  .ico, .scan__slot { --icon-optical-offset: 0; position: relative; display: grid; place-items: center; width: 100%; height: 1.6rem; flex: none; }
   .ico app-icon { font-size: 1.15rem; }
 
   .scan { color: var(--yt-primary-deep); font-weight: 600; }

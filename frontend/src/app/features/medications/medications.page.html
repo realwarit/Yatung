@@ -7,7 +7,7 @@
     </div>
   </header>
 
-  <app-segmented [options]="tabs()" [(value)]="tab" label="กรองรายการยา" />
+  <app-segmented [options]="tabs()" [(value)]="tab" label="กรองรายการยา" [pill]="true" />
 
   @if (error(); as err) {
     <div class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span>{{ err }}</span></div>
@@ -56,14 +56,14 @@
           } @else if (m.remaining_qty !== null) {
             <p class="supply" [class.supply--low]="isLow(m)">
               <app-icon [name]="isLow(m) ? 'alert' : 'pill'" />
-              <span>
+              <span class="supply__txt">
                 @if (m.remaining_qty === 0) { ยาหมดแล้ว }
                 @else {
                   เหลือ {{ m.remaining_qty }} {{ m.unit | unitLabel }}
                   @if (m.days_left !== null) { · พอใช้ {{ m.days_left }} วัน }
                 }
-                @if (isLow(m)) { — ใกล้หมดแล้ว }
               </span>
+              @if (isLow(m)) { <span class="low-tag">ใกล้หมด</span> }
             </p>
           }
 

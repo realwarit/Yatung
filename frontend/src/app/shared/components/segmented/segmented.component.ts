@@ -10,13 +10,14 @@ export interface SegmentedOption {
 /** ปุ่มเลือก 1 ใน N แบบแบ่งช่อง (radiogroup) — ใช้เป็นแท็บและตัวเลือกก่อน/หลังอาหาร */
 @Component({
   selector: 'app-segmented',
+  host: { '[class.pill]': 'pill()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="seg" role="radiogroup" [attr.aria-label]="label()">
+    <div class="seg" [class.pill]="pill()" role="radiogroup" [attr.aria-label]="label()">
       @for (o of options(); track o.value) {
         <button type="button" role="radio" [attr.aria-checked]="value() === o.value"
                 [class.on]="value() === o.value" (click)="value.set(o.value)">
-          {{ o.label }}@if (o.count !== undefined) { <span class="count">{{ o.count }}</span> }
+          {{ o.label }}@if (o.count !== undefined) { <span class="count num">{{ o.count }}</span> }
         </button>
       }
     </div>
@@ -48,10 +49,33 @@ export interface SegmentedOption {
       font-weight: 600;
     }
     .count { margin-left: var(--yt-space-2); opacity: 0.85; }
+
+    /* แบบ pill (แท็บ): กว้างตามเนื้อหา ตัวที่เลือก = primary-soft + ตัวอักษรเข้ม (ไม่ใช่สีทึบ) */
+    :host(.pill) { display: inline-block; max-width: 100%; }
+    .pill {
+      display: inline-flex;
+      flex-wrap: nowrap;
+      gap: var(--yt-space-1);
+      padding: var(--yt-space-1);
+      border: 2px solid var(--yt-border);
+      border-radius: var(--yt-radius-pill);
+      background: var(--yt-surface);
+    }
+    .pill button {
+      flex: none;
+      padding: var(--yt-space-2) var(--yt-space-5);
+      border: 0;
+      border-radius: var(--yt-radius-pill);
+      background: transparent;
+    }
+    .pill button:hover { background: var(--yt-primary-softer); }
+    .pill button.on { background: var(--yt-primary-soft); color: var(--yt-primary-deep); box-shadow: inset 0 0 0 2px var(--yt-primary); }
   `,
 })
 export class SegmentedComponent {
   readonly options = input.required<SegmentedOption[]>();
   readonly value = model('');
   readonly label = input('ตัวเลือก');
+  /** true = แท็บรูป pill กว้างตามเนื้อหา */
+  readonly pill = input(false);
 }

@@ -21,13 +21,26 @@
         @if (errors().name) { <p class="yt-error-text" id="e-name" role="alert"><app-icon name="alert" /> {{ errors().name }}</p> }
       </div>
 
-      <!-- ยาเมื่อมีอาการ -->
-      <div class="yt-field">
-        <mat-slide-toggle [checked]="asNeeded()" (change)="setAsNeeded($event.checked)">ยาเมื่อมีอาการ (ไม่กินเป็นเวลา)</mat-slide-toggle>
-      </div>
+      <!-- รูปแบบการกิน: 2 ตัวเลือกใหญ่ -->
+      <fieldset class="yt-field">
+        <legend class="yt-label">กินยานี้อย่างไร</legend>
+        <div class="yt-choices" role="radiogroup" aria-label="รูปแบบการกินยา">
+          <button type="button" role="radio" class="yt-choice" [class.on]="!asNeeded()" [attr.aria-checked]="!asNeeded()" (click)="setAsNeeded(false)">
+            <span class="yt-choice__ic"><app-icon name="clock" /></span>
+            <span class="yt-choice__txt"><strong>กินตามเวลา</strong><small>มีมื้อประจำทุกวัน</small></span>
+            @if (!asNeeded()) { <app-icon name="check" class="yt-choice__tick" /> }
+          </button>
+          <button type="button" role="radio" class="yt-choice" [class.on]="asNeeded()" [attr.aria-checked]="asNeeded()" (click)="setAsNeeded(true)">
+            <span class="yt-choice__ic"><app-icon name="thermometer" /></span>
+            <span class="yt-choice__txt"><strong>กินเมื่อมีอาการ</strong><small>เช่น ปวด มีไข้</small></span>
+            @if (asNeeded()) { <app-icon name="check" class="yt-choice__tick" /> }
+          </button>
+        </div>
+      </fieldset>
 
-      <!-- มื้อ -->
-      @if (!asNeeded()) {
+      <!-- มื้อ (ซ่อนแบบนุ่มๆ เมื่อเลือกกินเมื่อมีอาการ) -->
+      <div class="yt-collapse" [class.open]="!asNeeded()" [attr.inert]="asNeeded() ? '' : null">
+       <div class="yt-collapse__in">
         <fieldset class="yt-field">
           <legend class="yt-label">กินมื้อไหน (เลือกได้หลายมื้อ)</legend>
           <div class="tiles" id="f-slots" tabindex="-1" [attr.aria-invalid]="errors().slots ? 'true' : null"
@@ -37,14 +50,15 @@
                       (click)="toggleSlot(s)">
                 <app-icon [name]="slotIcon[s]" />
                 <span class="tile__name">{{ slotLabel[s] }}</span>
-                <span class="tile__time">{{ times()[s] }}</span>
+                <span class="tile__time num">{{ times()[s] }}</span>
                 @if (slots().includes(s)) { <app-icon name="check" class="tile__tick" /> }
               </button>
             }
           </div>
           @if (errors().slots) { <p class="yt-error-text" id="e-slots" role="alert"><app-icon name="alert" /> {{ errors().slots }}</p> }
         </fieldset>
-      }
+       </div>
+      </div>
 
       <!-- ก่อน/หลังอาหาร -->
       <div class="yt-field">
@@ -124,8 +138,8 @@
       </section>
 
       <div class="actions">
-        <button mat-flat-button type="submit" [disabled]="saving()">{{ saving() ? 'กำลังบันทึก…' : 'บันทึก' }}</button>
         <a mat-stroked-button routerLink="/medications">ยกเลิก</a>
+        <button mat-flat-button type="submit" [disabled]="saving()">{{ saving() ? 'กำลังบันทึก…' : 'บันทึก' }}</button>
       </div>
       <p class="yt-disclaimer">ไม่ใช่คำแนะนำทางการแพทย์ · กินยาตามที่แพทย์หรือเภสัชกรสั่งเท่านั้น</p>
     </form>

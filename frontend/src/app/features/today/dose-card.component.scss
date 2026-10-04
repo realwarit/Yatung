@@ -8,10 +8,12 @@
   transition: background var(--yt-duration), border-color var(--yt-duration);
 }
 
-// ถึงเวลาแล้ว: ขอบ primary เด่น
-:host(.state-due) { border-color: var(--yt-primary); box-shadow: 0 0 0 3px var(--yt-primary-soft), var(--yt-shadow-md); }
-// เลยเวลา: พื้นส้มอ่อน
-:host(.state-overdue) { border-color: var(--yt-warning); background: var(--yt-warning-soft); }
+// 4 สถานะ ต้องมีทั้งสี ไอคอน และข้อความเสมอ (ไม่ทาพื้นสีทั้งการ์ดยกเว้น "กินแล้ว")
+// รอเวลา: พื้นขาว ขอบเทาอ่อน (ค่าตั้งต้น)
+// ถึงเวลาแล้ว: ขอบ primary 2px + ป้าย primary
+:host(.state-due) { border-color: var(--yt-primary); }
+// เลยเวลา: พื้นขาว แถบส้มหนา 6px ด้านซ้าย + ป้ายส้ม
+:host(.state-overdue) { border-left: 6px solid var(--yt-warning); padding-left: calc(var(--yt-space-4) - 4px); }
 // กินแล้ว: พื้นเขียวอ่อน
 :host(.state-taken) { border-color: var(--yt-success); background: var(--yt-success-soft); }
 
@@ -23,16 +25,21 @@ h3 { font-size: 1.3rem; line-height: var(--yt-line-height-tight); }
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--yt-space-2);
+  gap: 0.5em;
   align-self: flex-start;
   margin: 0;
+  padding: 0.1em 0.8em 0.1em 0.65em;
+  border-radius: var(--yt-radius-pill);
+  background: var(--yt-field-bg);
   font-size: var(--yt-text-sm);
   font-weight: 600;
+  line-height: 1.6;
   color: var(--yt-text-muted);
 }
-:host(.state-due) .badge { color: var(--yt-primary-dark); }
-:host(.state-overdue) .badge { color: var(--yt-on-warning-soft); }
-:host(.state-taken) .badge, :host(.state-taken) .how { color: var(--yt-on-success-soft); }
+:host(.state-due) .badge { background: var(--yt-primary-soft); color: var(--yt-primary-deep); }
+:host(.state-overdue) .badge { background: var(--yt-warning-soft); color: var(--yt-on-warning-soft); }
+:host(.state-taken) .badge { padding-left: 0; background: transparent; color: var(--yt-on-success-soft); }
+:host(.state-taken) .how { color: var(--yt-on-success-soft); }
 
 .tick {
   display: inline-grid;
@@ -43,6 +50,7 @@ h3 { font-size: 1.3rem; line-height: var(--yt-line-height-tight); }
   background: var(--yt-success);
   color: var(--yt-on-primary);
   font-size: 0.9rem;
+  --icon-optical-offset: 0;
 }
 .pop { animation: pop 280ms var(--yt-ease) both; }
 @keyframes pop {
