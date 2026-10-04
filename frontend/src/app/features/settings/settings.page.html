@@ -1,0 +1,49 @@
+<div class="yt-page set">
+  <h1 class="yt-page-title">ตั้งค่า</h1>
+
+  <section class="card yt-card" aria-labelledby="h-times">
+    <h2 id="h-times">เวลากินยาแต่ละมื้อ</h2>
+    <p class="hint">เปลี่ยนแล้ว ระบบจะย้ายรอบของวันนี้ที่ยังไม่ได้เตือนให้ตามเวลาใหม่</p>
+
+    @if (loadError(); as err) {
+      <div class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span>{{ err }}</span></div>
+      <button mat-flat-button type="button" (click)="load()">ลองใหม่</button>
+    } @else if (times(); as t) {
+      @for (s of slots; track s) {
+        <div class="slot">
+          <p class="slot__name"><app-icon [name]="icon[s]" /> {{ label[s] }}</p>
+          <app-time-picker [value]="t[s]" (valueChange)="setTime(s, $event)" [label]="'เวลามื้อ' + label[s]" />
+        </div>
+      }
+      @if (saveError(); as se) {
+        <div class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span>{{ se }}</span></div>
+      }
+      <button mat-flat-button type="button" class="save" [disabled]="saving() || !dirty" (click)="save()">
+        {{ saving() ? 'กำลังบันทึก…' : 'บันทึกเวลา' }}
+      </button>
+    } @else {
+      <div class="yt-skeleton sk" aria-busy="true" aria-label="กำลังโหลดเวลามื้อ"></div>
+    }
+  </section>
+
+  <section class="card yt-card" aria-labelledby="h-line">
+    <h2 id="h-line"><app-icon name="chat" /> เชื่อม LINE</h2>
+    <p class="soon"><app-icon name="clock" /> พร้อมใช้งานเร็วๆ นี้</p>
+  </section>
+
+  <section class="card yt-card" aria-labelledby="h-cg">
+    <h2 id="h-cg"><app-icon name="heart" /> ผู้ดูแล</h2>
+    <p class="soon"><app-icon name="clock" /> พร้อมใช้งานเร็วๆ นี้</p>
+  </section>
+
+  <section class="card yt-card" aria-labelledby="h-font">
+    <h2 id="h-font">ขนาดตัวอักษร</h2>
+    <app-font-size-toggle />
+  </section>
+
+  <button mat-stroked-button type="button" class="logout" (click)="logout()">
+    <app-icon name="logout" /> ออกจากระบบ
+  </button>
+
+  <p class="yt-disclaimer">ไม่ใช่คำแนะนำทางการแพทย์ · ปรึกษาแพทย์หรือเภสัชกรเมื่อมีข้อสงสัย</p>
+</div>
