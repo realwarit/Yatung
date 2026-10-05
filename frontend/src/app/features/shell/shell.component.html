@@ -20,11 +20,14 @@
 
 <div class="main">
   <!-- มือถือ: แถบบนมีเฉพาะโลโก้ (ปรับขนาดตัวอักษรอยู่ในหน้าตั้งค่า) -->
-  <header class="top"><app-logo tone="light" [iconOnly]="true" /></header>
+  @if (!focusMode()) {
+    <header class="top"><app-logo tone="light" [iconOnly]="true" /></header>
+  }
   <main id="main" tabindex="-1"><router-outlet /></main>
 </div>
 
 <!-- มือถือ: bottom navigation -->
+@if (!focusMode()) {
 <nav class="bottom" aria-label="เมนูหลัก">
   @for (n of left; track n.path) {
     <a [routerLink]="n.path" routerLinkActive="active" ariaCurrentWhenActive="page">
@@ -40,3 +43,4 @@
     </a>
   }
 </nav>
+}

@@ -54,3 +54,29 @@
   --ion-color-dark-shade: #102a28;
   --ion-color-dark-tint: #2a4541;
 }
+
+// ปุ่ม Ionic ตามกฎปุ่มกลาง (ใช้ class .yt-btn ในหน้า Scan): สูง ≥ 56px, ทรงแคปซูล, ฟอนต์หัวข้อ, ไอคอนตรงกึ่งกลางข้อความไทย
+ion-button.yt-btn {
+  --border-radius: var(--yt-radius-pill);
+  --box-shadow: var(--yt-shadow-md);
+  --padding-start: var(--yt-space-5);
+  --padding-end: var(--yt-space-5);
+  min-height: var(--yt-tap);
+  margin: 0;
+  font-family: var(--yt-font-display);
+  font-size: var(--yt-text-lg);
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+
+  &::part(native) { min-height: var(--yt-tap); line-height: 1.2; }
+  ion-icon { font-size: 1.35em; margin: 0 0.5em 0 0; transform: translateY(var(--icon-optical-offset)); }
+  ion-icon[slot='icon-only'] { margin: 0; transform: none; }
+  &[fill='outline'] {
+    --border-width: 2px;
+    --border-color: var(--yt-primary);
+    --color: var(--yt-primary-dark);
+    --background: var(--yt-surface);
+    --box-shadow: none;
+  }
+}

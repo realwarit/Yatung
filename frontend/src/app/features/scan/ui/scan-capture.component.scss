@@ -1,0 +1,97 @@
+:host { display: block; }
+
+.frame {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 24px;
+  background: var(--yt-primary-soft);
+  overflow: hidden;
+}
+
+// ---------- กรอบเล็ง (ยังไม่มีรูป) ----------
+.frame--empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--yt-space-3);
+  padding: var(--yt-space-5);
+  border: 3px solid transparent;
+  color: var(--yt-primary);
+  font: inherit;
+  cursor: pointer;
+  transition: background var(--yt-duration), border-color var(--yt-duration);
+
+  &:hover { background: var(--yt-primary-soft-strong); }
+  &:disabled { cursor: default; }
+  &.is-drag { border: 3px dashed var(--yt-primary); background: var(--yt-primary-soft-strong); }
+}
+
+// มุมทั้ง 4 = วงเล็บมุม primary หนา 4px
+.corner {
+  position: absolute;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 0 solid var(--yt-primary);
+  pointer-events: none;
+  &.tl { top: 14px; left: 14px; border-width: 4px 0 0 4px; border-top-left-radius: 14px; }
+  &.tr { top: 14px; right: 14px; border-width: 4px 4px 0 0; border-top-right-radius: 14px; }
+  &.bl { bottom: 14px; left: 14px; border-width: 0 0 4px 4px; border-bottom-left-radius: 14px; }
+  &.br { bottom: 14px; right: 14px; border-width: 0 4px 4px 0; border-bottom-right-radius: 14px; }
+}
+
+.art { width: min(9rem, 42%); opacity: 0.45; }
+
+.hint {
+  max-width: 24ch;
+  color: var(--yt-primary-deep);
+  font-family: var(--yt-font-display);
+  font-size: var(--yt-text-base);
+  font-weight: 500;
+  line-height: var(--yt-line-height-tight);
+  text-align: center;
+  text-wrap: balance;
+}
+
+// ---------- รูปที่เลือก ----------
+.frame--image img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+.tools {
+  position: absolute;
+  top: var(--yt-space-3);
+  right: var(--yt-space-3);
+  display: flex;
+  gap: var(--yt-space-2);
+}
+
+.tool {
+  width: 3rem;
+  height: 3rem;
+  margin: 0;
+  --padding-start: 0;
+  --padding-end: 0;
+  --border-radius: 50%;
+  --background: var(--yt-surface);
+  --color: var(--yt-primary-deep);
+  --box-shadow: var(--yt-shadow-md);
+  font-size: 1.4rem;
+  &::part(native) { min-height: 3rem; }
+  &--danger { --color: var(--yt-danger); }
+}
+
+.info {
+  margin: var(--yt-space-2) 0 0;
+  text-align: right;
+  font-size: var(--yt-text-sm);
+  color: var(--yt-text-muted);
+}
+
+.yt-alert { margin: var(--yt-space-3) 0 0; }
+
+.buttons { display: grid; gap: var(--yt-space-3); margin-top: var(--yt-space-4); }
+
+@media (prefers-reduced-motion: reduce) {
+  .frame--empty { transition: none; }
+}
