@@ -272,6 +272,7 @@ export class ScanPage implements OnDestroy {
     if (err instanceof HttpErrorResponse) {
       if (err.status === 0) msg = 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจสอบอินเทอร์เน็ต';
       else if (err.status === 413) msg = 'รูปใหญ่เกินไป ลองถ่ายใหม่';
+      else if (err.status === 404 || err.status >= 500) msg = 'ระบบอ่านซองยายังไม่พร้อมใช้งาน ลองใหม่ภายหลังนะคะ';
       else if (err.status === 422) {
         unreadable = true;
         msg = err.error?.details && typeof err.error.details === 'string'
