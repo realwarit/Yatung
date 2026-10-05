@@ -1,137 +1,38 @@
-<ion-header>
-  <ion-toolbar color="primary">
-    <ion-buttons slot="start">
-      <ion-button routerLink="/today" aria-label="กลับหน้าหลัก">
-        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
-      </ion-button>
-    </ion-buttons>
-    <ion-title>เพิ่มยาใหม่</ion-title>
-    <ion-buttons slot="end">
-      <app-font-size-toggle />
-    </ion-buttons>
-  </ion-toolbar>
-
-  <ion-toolbar>
-    <ion-segment mode="ios" [value]="mode()" (ionChange)="onModeChange($event.detail.value)" [disabled]="busy()">
-      <ion-segment-button value="photo">
-        <ion-icon name="camera-outline"></ion-icon>
-        <ion-label>ถ่ายรูปซองยา</ion-label>
-      </ion-segment-button>
-      <ion-segment-button value="text">
-        <ion-icon name="create-outline"></ion-icon>
-        <ion-label>พิมพ์เอง</ion-label>
-      </ion-segment-button>
-    </ion-segment>
-  </ion-toolbar>
-</ion-header>
-
-<ion-content class="ion-padding">
-  @if (mode() === 'photo') {
-    <!-- ===== โหมดถ่ายรูป ===== -->
-    @if (previewUrl(); as src) {
-      <div class="preview">
-        <img [src]="src" alt="รูปซองยาที่เลือก" />
-        @if (!busy()) {
-          <ion-button class="preview__clear" fill="clear" color="light" (click)="clearImage()" aria-label="ลบรูป">
-            <ion-icon slot="icon-only" name="close-circle-outline"></ion-icon>
-          </ion-button>
-        }
-      </div>
-      <ion-note class="preview__info">{{ imageInfo() }}</ion-note>
-
-      <ion-button expand="block" fill="outline" size="large" (click)="pick('camera')" [disabled]="busy()">
-        <ion-icon slot="start" name="refresh-outline"></ion-icon>
-        ถ่ายใหม่
-      </ion-button>
-    } @else {
-      <div class="picker">
-        <ion-button class="picker__main" expand="block" size="large" (click)="pick('camera')" [disabled]="busy()">
-          <ion-icon slot="start" name="camera-outline"></ion-icon>
-          ถ่ายรูปซองยา
+<div class="scan">
+  <!-- Ionic: ion-header / ion-toolbar (พื้นโปร่งใส) / ion-buttons / ion-button / ion-title / ion-icon -->
+  <ion-header class="ion-no-border" mode="md">
+    <ion-toolbar mode="md">
+      <ion-buttons slot="start">
+        <ion-button class="back" routerLink="/today" aria-label="กลับหน้าหลัก">
+          <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
         </ion-button>
-        <ion-button expand="block" fill="outline" size="large" (click)="pick('gallery')" [disabled]="busy()">
-          <ion-icon slot="start" name="images-outline"></ion-icon>
-          เลือกรูปจากเครื่อง
-        </ion-button>
-      </div>
+      </ion-buttons>
+      <ion-title>เพิ่มยาใหม่</ion-title>
+    </ion-toolbar>
+  </ion-header>
 
-      <ion-card class="tips">
-        <ion-card-content>
-          <h3><ion-icon name="bulb-outline"></ion-icon> ถ่ายให้อ่านง่าย</h3>
-          <ul>
-            <li>วางซองยาบนพื้นเรียบ สีพื้นตัดกับซอง</li>
-            <li>ถ่ายตรงๆ ให้เห็นตัวหนังสือครบ ไม่เอียง</li>
-            <li>ใช้แสงสว่าง ไม่มีเงามือบังตัวหนังสือ</li>
-            <li>รองรับซองยาที่พิมพ์ด้วยเครื่องเท่านั้น</li>
-          </ul>
-        </ion-card-content>
-      </ion-card>
-    }
-  } @else {
-    <!-- ===== โหมดพิมพ์เอง ===== -->
-    <!-- label อยู่เหนือช่องกรอกเสมอ (ไม่ใช้ floating label) -->
-    <label class="field-label" id="manual-label">ข้อความบนซองยา</label>
-    <p class="hint">พิมพ์ข้อความบนซองยา เช่น ชื่อยา จำนวนเม็ด และวิธีกิน</p>
-    <ion-textarea
-      class="manual"
-      fill="outline"
-      aria-labelledby="manual-label"
-      placeholder="เช่น Metformin 500 mg ครั้งละ 1 เม็ด วันละ 2 ครั้ง หลังอาหาร เช้า-เย็น"
-      [autoGrow]="true"
-      [rows]="6"
-      [counter]="true"
-      [maxlength]="1000"
-      [disabled]="busy()"
-      [ngModel]="manualText()"
-      (ngModelChange)="manualText.set($event ?? '')"
-    ></ion-textarea>
-  }
+  <ol class="steps" aria-label="ขั้นตอนการเพิ่มยา">
+    <li class="s is-current" aria-current="step"><span class="dot num">1</span><span class="t">ถ่ายรูป</span></li>
+    <li class="s"><span class="dot num">2</span><span class="t">ตรวจข้อมูล</span></li>
+    <li class="s"><span class="dot num">3</span><span class="t">บันทึก</span></li>
+  </ol>
 
-  <!-- ===== กำลังประมวลผล ===== -->
-  @if (busy()) {
-    <div class="loading" role="status" aria-live="polite">
-      <app-mascot mood="thinking" [size]="120" />
-      <p>{{ phase() === 'compressing' ? 'กำลังเตรียมรูป…' : waitMessage() }}</p>
-      @if (phase() === 'reading') {
-        <ion-button fill="clear" color="medium" (click)="cancel()">ยกเลิก</ion-button>
-      }
-    </div>
-  }
+  <app-scan-stage
+    [mode]="mode()" [phase]="phase()" [desktop]="desktop()" [dragging]="dragging()"
+    [previewUrl]="previewUrl()" [imageInfo]="imageInfo()" [warnings]="warnings()"
+    [text]="manualText()" [errorMessage]="errorMessage()" [step]="step()"
+    (modeChange)="onModeChange($event)" (textChange)="manualText.set($event)"
+    (upload)="upload()" (camera)="pick('camera')" (gallery)="pick('gallery')"
+    (rotate)="rotate()" (clear)="clearImage()" (submit)="submit()" (cancel)="cancel()"
+    (retry)="retry()" (switchToText)="switchToText()" (dismissError)="dismissError()" />
 
-  <!-- ===== error พร้อมทางเลือกไปพิมพ์เอง ===== -->
-  @if (phase() === 'error' && mode() === 'photo') {
-    <ion-card color="warning" class="fallback">
-      <ion-card-content>
-        <div class="fallback__msg">
-          <app-mascot mood="worried" [size]="72" />
-          <p>{{ errorMessage() }}</p>
-        </div>
-        <ion-button expand="block" fill="solid" color="dark" (click)="switchToText()">
-          <ion-icon slot="start" name="create-outline"></ion-icon>
-          พิมพ์ข้อมูลยาเอง
-        </ion-button>
-      </ion-card-content>
-    </ion-card>
-  }
-
-  <p class="disclaimer">
-    ผลจาก AI อาจผิดพลาดได้ คุณจะได้ตรวจและแก้ไขก่อนบันทึกทุกครั้ง
-    · แอปนี้ไม่ใช่คำแนะนำทางการแพทย์
-  </p>
-
+  <!-- error ระดับระบบ (เน็ตหลุด, 401, เปิดกล้องไม่ได้, ไฟล์ไม่ใช่รูป) -->
   <ion-toast
-    [isOpen]="!!errorMessage() && !(phase() === 'error' && mode() === 'photo')"
-    [message]="errorMessage() ?? ''"
-    [duration]="4000"
+    [isOpen]="!!toastMessage()"
+    [message]="toastMessage() ?? ''"
+    [duration]="4500"
     color="danger"
     position="top"
-    (didDismiss)="errorMessage.set(null)"
+    (didDismiss)="toastMessage.set(null)"
   ></ion-toast>
-</ion-content>
-
-<ion-footer class="ion-padding">
-  <ion-button expand="block" size="large" [disabled]="!canSubmit()" (click)="submit()">
-    <ion-icon slot="start" name="sparkles-outline"></ion-icon>
-    {{ mode() === 'photo' ? 'ให้ AI อ่านซองยา' : 'ให้ AI จัดตารางยา' }}
-  </ion-button>
-</ion-footer>
+</div>

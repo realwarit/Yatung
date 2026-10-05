@@ -1,0 +1,93 @@
+:host { display: block; }
+
+.proc {
+  display: grid;
+  justify-items: center;
+  gap: var(--yt-space-4);
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: var(--yt-space-3) 0;
+  text-align: center;
+}
+
+// รูปที่ถ่ายจางลง 40% + เส้นสแกนเรืองแสงเลื่อนขึ้นลง
+.media {
+  position: relative;
+  width: min(100%, 20rem);
+  aspect-ratio: 4 / 3;
+  border-radius: 24px;
+  background: var(--yt-primary-soft);
+  overflow: hidden;
+  img { display: block; width: 100%; height: 100%; object-fit: contain; opacity: 0.4; }
+}
+.ghost {
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+  padding: var(--yt-space-4);
+  color: var(--yt-text);
+  opacity: 0.4;
+  font-size: var(--yt-text-base);
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 4px;
+  background: var(--yt-primary-light);
+  box-shadow: 0 0 16px 6px rgb(var(--yt-primary-rgb) / 0.45);
+  animation: scan 2s ease-in-out infinite alternate;
+}
+@keyframes scan { to { top: calc(100% - 4px); } }
+
+.who { position: relative; padding: 0 var(--yt-space-6); }
+.dots {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  gap: 5px;
+  i {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: var(--yt-primary);
+    animation: float 1.2s ease-in-out infinite;
+    &:nth-child(2) { animation-delay: 0.2s; }
+    &:nth-child(3) { animation-delay: 0.4s; }
+  }
+}
+@keyframes float { 50% { transform: translateY(-0.5rem); opacity: 0.5; } }
+
+.title { margin: 0; font-size: var(--yt-text-lg); color: var(--yt-primary-dark); }
+
+.steps { display: grid; gap: var(--yt-space-3); width: min(100%, 22rem); margin: 0; padding: 0; list-style: none; text-align: left; }
+.step { display: flex; align-items: center; gap: var(--yt-space-3); font-weight: 500; line-height: var(--yt-line-height-tight); }
+.mark {
+  --icon-optical-offset: 0;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid var(--yt-border-strong);
+  border-radius: 50%;
+  ion-spinner { width: 1.4rem; height: 1.4rem; }
+}
+.step[data-state='active'] .mark { border-color: transparent; }
+.step[data-state='active'] .label { color: var(--yt-primary-deep); font-weight: 600; }
+.step[data-state='done'] .mark { border-color: var(--yt-success); background: var(--yt-success); color: var(--yt-on-primary); font-size: 0.9rem; }
+.step[data-state='todo'] { color: var(--yt-text-muted); }
+
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .scan { animation: none; top: 50%; }
+  .dots i { animation: none; }
+}

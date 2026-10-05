@@ -1,0 +1,90 @@
+// การ์ดเดียวกลางพื้นที่: มือถือ = คอลัมน์เดียว (ปุ่มหลัก sticky ล่าง) · กว้าง = 58% / 42% (ปุ่มหลักท้ายคอลัมน์ขวา)
+// ตัดสินด้วย container query ของ host (ไม่ใช่ viewport) เพราะจอ ≥1024px มี sidebar กินที่อยู่ 260px
+:host { display: block; container: scan / inline-size; }
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--yt-space-4);
+  padding: var(--yt-space-4);
+  border-radius: var(--yt-radius-lg);
+  background: var(--yt-surface);
+  box-shadow: var(--yt-shadow-md);
+}
+
+// ion-segment: pill กว้างตามเนื้อหา ตัวที่เลือกพื้นขาวมีเงา บนรางสี primary-soft
+.mode {
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
+  --background: var(--yt-primary-soft);
+  padding: var(--yt-space-1);
+  border-radius: var(--yt-radius-pill);
+}
+ion-segment-button {
+  --color: var(--yt-primary-deep);
+  --color-checked: var(--yt-primary-deep);
+  --indicator-color: var(--yt-surface);
+  --indicator-box-shadow: var(--yt-shadow-sm);
+  --border-radius: var(--yt-radius-pill);
+  --padding-start: var(--yt-space-3);
+  --padding-end: var(--yt-space-3);
+  min-height: var(--yt-tap);
+  min-width: 0;
+  font-family: var(--yt-font-display);
+  font-size: var(--yt-text-base);
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  ion-icon { font-size: 1.35em; margin-inline-end: 0.5em; transform: translateY(var(--icon-optical-offset)); }
+  ion-label { margin: 0; overflow: visible; text-overflow: clip; line-height: var(--yt-line-height-tight); white-space: nowrap; }
+}
+
+// มือถือแคบ (โดยเฉพาะ ก++): segment เต็มความกว้างการ์ด ปุ่มแบ่งครึ่ง ไม่ให้ป้ายถูกตัด
+@container scan (max-width: 479px) {
+  .mode { align-self: stretch; width: 100%; }
+  ion-segment-button {
+    --padding-start: var(--yt-space-2);
+    --padding-end: var(--yt-space-2);
+    flex: 1 1 0;
+    font-size: 0.9rem;
+    ion-icon { font-size: 1.2em; margin-inline-end: 0.25em; }
+  }
+}
+
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'main' 'side' 'act';
+  gap: var(--yt-space-4);
+}
+.main { grid-area: main; min-width: 0; }
+.side { grid-area: side; display: flex; flex-direction: column; gap: var(--yt-space-4); min-width: 0; }
+
+// ปุ่มหลักบนมือถือติดล่างจอ (อยู่ใน .body จึงหยุดที่ท้ายเนื้อหา ไม่บังข้อความ disclaimer)
+.act {
+  grid-area: act;
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: grid;
+  gap: var(--yt-space-3);
+  margin: 0 calc(var(--yt-space-4) * -1);
+  padding: var(--yt-space-3) var(--yt-space-4) calc(var(--yt-space-3) + env(safe-area-inset-bottom));
+  background: var(--yt-surface);
+  box-shadow: 0 -4px 16px rgb(var(--yt-shadow-color) / 0.10);
+  &.is-static { position: static; margin: 0; padding: 0; box-shadow: none; }
+}
+
+@container scan (min-width: 720px) {
+  .card { gap: var(--yt-space-5); padding: var(--yt-space-5); }
+  .body {
+    grid-template-columns: 58fr 42fr;
+    grid-template-areas: 'main side' 'main act';
+    grid-template-rows: auto 1fr;
+    gap: var(--yt-space-5);
+  }
+  .act { position: static; align-self: start; margin: 0; padding: 0; box-shadow: none; }
+}
+
+.yt-disclaimer { margin: 0; }
