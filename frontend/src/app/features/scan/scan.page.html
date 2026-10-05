@@ -11,7 +11,7 @@
     </ion-toolbar>
   </ion-header>
 
-  <ol class="steps" aria-label="ขั้นตอนการเพิ่มยา">
+  <ol class="steps" id="scan-steps" aria-label="ขั้นตอนการเพิ่มยา">
     <li class="s is-current" aria-current="step"><span class="dot num">1</span><span class="t">ถ่ายรูป</span></li>
     <li class="s"><span class="dot num">2</span><span class="t">ตรวจข้อมูล</span></li>
     <li class="s"><span class="dot num">3</span><span class="t">บันทึก</span></li>
@@ -33,6 +33,7 @@
     [duration]="4500"
     color="danger"
     position="top"
+    positionAnchor="scan-steps"
     (didDismiss)="toastMessage.set(null)"
   ></ion-toast>
 </div>
