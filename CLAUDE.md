@@ -1,11 +1,11 @@
 # CLAUDE.md — YaTung (ยาตรง)
 
 ## โปรเจกต์
-โปรเจกต์จบวิชาพัฒนาเว็บแอป ระยะเวลา 10 วัน: แปลงรูปซองยาเป็นตารางกินยาด้วย OCR + LLM,
+โปรเจกต์จบวิชาพัฒนาเว็บแอป ระยะเวลา 10 วัน: แปลงรูปซองยาเป็นตารางกินยาด้วย Gemini multimodal (อ่านรูป + ตีความในครั้งเดียว),
 เตือนผ่าน LINE, แจ้งญาติเมื่อไม่กดยืนยัน, dashboard adherence 7 วัน, เตือนยาใกล้หมด, TTS อ่านรายละเอียดยา
 
 - เกณฑ์คะแนน: Angular, Node-RED, REST API, JWT, Docker, Ionic, PWA, Android Studio
-  + ความรู้นอกเหนือที่สอน (OCR, LLM, LINE Messaging API)
+  + ความรู้นอกเหนือที่สอน (Gemini multimodal, LINE Messaging API)
 - นอกสโคป: ลายมือแพทย์, เชื่อม HIS, ปรึกษาแพทย์, ระบบ role หลายระดับ
 
 ## สภาพแวดล้อม
@@ -28,8 +28,8 @@
 - Auth: JWT HS256 payload `{ sub, email }`; subflow `verify-jwt` (tab 0) ตอบ 401 เองและใส่ `msg.user = { id, email }`;
   login ผิดเกิน 5 ครั้ง/5 นาที/email → 429 (flow context `loginFails`, หายเมื่อ restart Node-RED)
 - node id ทุกตัวต้องไม่ซ้ำ, ทุก `http in` ต้องมี `http response` ปลายทาง
-- library ใช้ผ่าน `global.get()`: `jwt`, `bcrypt`, `webpush`, `crypto`, `medicineValidator`, `prompts`
-  (กำหนดใน `node-red/data/settings.js` → `functionGlobalContext`; `prompts` = `medicineSystem`, `medicineUser`, `medicineSchema`)
+- library ใช้ผ่าน `global.get()`: `jwt`, `bcrypt`, `webpush`, `crypto`, `medicineValidator`, `prompts`, `scanService`, `llmOutput`
+  (กำหนดใน `node-red/data/settings.js` → `functionGlobalContext`; `prompts` = `medicineSystem`, `medicineUserImage`, `medicineUserText`, `medicineSchema`, `medicineGeminiSchema`, `mockResponse`)
 - env ใช้ `env.get('JWT_SECRET')` เป็นต้น
 - **transaction:** node `mysql` ทำ transaction ไม่ได้ (1 query = 1 connection) → ใช้ `global.get('db')` (`lib/db.js`, pool `mysql2` อ่าน `DB_*` จาก env ไม่ผ่าน credentials; timezone +07:00, `dateStrings`, `decimalNumbers`)
   ```js
@@ -45,17 +45,46 @@
   แก้ `lib/` หรือ `settings.js` ต้อง `docker compose restart nodered`. ข้อมูลที่ไม่ใช่ของ `msg.user.id` = 404 เสมอ (ไม่ใช่ 403)
 - ทดสอบ Day 3A (รวมเคส stop/resume): `DEMO_PASSWORD=… bash scripts/test-day3a.sh` (login ใหม่ในสคริปต์, user ที่ 2 สุ่ม, ลบข้อมูลทดสอบตอนจบ)
 - แบ่ง tab: 0-Middleware, 1-Auth, 2-AI-Scan, 3-Medications, 4-Doses, 5-Dashboard, 6-Scheduler, 7-LINE, 8-Push
+- **กฎการจัด flow (ใช้กับทุก tab):** ทุก endpoint มี `group` ครอบ (ชื่อ = `METHOD /path`; สี: เขียว = เขียนข้อมูล, ฟ้า = อ่านอย่างเดียว, แดง = error/catch, เหลืองน้ำตาล = cron/เรียกภายนอก)
+  endpoint ที่มีหลายขั้นตอน (เช่น `POST /api/scan`) ให้มี group ย่อยแยกตามขั้นตอนซ้อนใน group นั้น; ทุก node ตั้งชื่อเป็นภาษาไทยที่อ่านแล้วรู้ว่าทำอะไร
+  (ชื่อ `http in` ใช้ `METHOD /path`); ใส่ `g` ให้ node สมาชิกทุกตัว; ทุก tab มี `catch` + group "ข้อผิดพลาดที่ไม่คาดคิด → 500"
+  (ถ้ามี `http request` ที่ต้องดัก timeout เอง ให้กำหนด `scope` ของ catch ทั่วไปไม่รวม node นั้น)
 - API prefix `/api/*`, LINE webhook `/line/webhook` (nginx proxy ไว้แล้ว; body สูงสุด 10mb)
 - error response รูปแบบเดียว: `{ error: "CODE", details: "ข้อความไทย" }`
-- AI pipeline `POST /api/scan` รับ `{image: base64}` หรือ `{text}` → OCR → LLM → `lib/validate-llm-output.js`
-  (parse → Ajv → business rules → `review_flags`; 2 outputs, ล้มเหลว = 422)
-  prompt/schema อยู่ `node-red/data/prompts/medicine-parse.{system.txt,user.txt,schema.json}`
-  (user template แทน `{{OCR_TEXT}}`) — ถ้า LLM API ปฏิเสธ schema ให้ลบ keyword ตรวจค่าออกเฉพาะสำเนาที่ส่ง LLM
+- **AI pipeline (tab 2-AI-Scan)** — ไม่ใช้ OCR/Cloud Vision (ไม่มี billing) ส่งรูปให้ **Gemini ครั้งเดียว** ทั้งอ่านตัวหนังสือและตีความ (key เดียว = `LLM_API_KEY`)
+  - `POST /api/scan` รับ `{image: base64}` หรือ `{text}` อย่างใดอย่างหนึ่ง → ตรวจ input (magic bytes JPEG/PNG/WEBP, ≤ 8 MB หลังถอด base64, ข้อความ 5–1000 ตัว; ผิด = 400 `VALIDATION`)
+    → จำกัดการใช้ (4 ครั้ง/นาที, 15 ครั้ง/วัน/ผู้ใช้ ใน flow context `scanHits`; เกิน = 429 `RATE_LIMIT`) → บันทึกรูป `/data/uploads/<userId>/<ts>.<ext>` (`image_path` เก็บแบบ relative `uploads/…`)
+    → node `http request` ยิง `generateContent` (header `x-goog-api-key` เท่านั้น, timeout 30 วินาที, `msg.requestTimeout`) → `scan_decide` (ดู retry) → ดึงข้อความ JSON (บล็อก/ว่าง = 422 `AI_NO_RESULT`)
+    → `llmOutput.process` (parse → Ajv → ปิดเลขบัตร 13 หลัก/เบอร์โทรซ้ำฝั่ง server → business rules → `review_flags`; ล้มเหลว = 422 `AI_INVALID_JSON` / `AI_SCHEMA_MISMATCH`)
+    → INSERT `prescriptions` (draft, `llm_model` = รุ่นที่ใช้จริง) → ตอบ `{ prescription_id, ocr_text, result, review_flags }` (= `ScanResponse`)
+  - `GET /api/prescriptions/:id` เจ้าของเท่านั้น (ไม่ใช่เจ้าของ/ไม่มี = 404) — `review_flags` คำนวณใหม่จาก `llm_json`
+  - **ชื่อ field ของ Gemini (generateContent, camelCase):** `systemInstruction`, `contents[].parts[]` (`inlineData{mimeType,data}` / `text`), `generationConfig{responseMimeType, responseJsonSchema, thinkingConfig}`;
+    คำตอบ `candidates[0].content.parts[].text`, `promptFeedback.blockReason` — ห้ามเปลี่ยนไปใช้ Interactions API; ไม่ตั้ง `temperature` (ใช้ค่าเริ่มต้นตามคำแนะนำ Gemini 3); `maxOutputTokens: 4096` กันคำตอบยาวไม่หยุด (`finishReason = MAX_TOKENS` → 422 `AI_NO_RESULT` ไม่ retry); `thinkingConfig.thinkingLevel` ตามรุ่น (`scanService.thinkingLevelFor`): ชื่อรุ่นมี `lite` = `minimal`, รุ่นอื่น = `low` เพราะ `gemini-3.8-flash` ตอบ 400 "Thinking level MINIMAL is not supported for this model"; ตอน fallback ไปรุ่นอื่นต้องปรับระดับใหม่ (`bodyForModel`). ทำไมต้องลด thinking: ค่าเริ่มต้นทำให้ Lite ช้ามาก (ข้อความ PRN 32 วินาที, รูป 2 ค้างเกิน 60–250 วินาที) — เมื่อตั้ง minimal ทุกเคสของ Lite ใช้ 3–4 วินาที
+  - **schema ที่ส่ง Gemini = `responseJsonSchema`** (JSON Schema ต้นฉบับ inline `$defs`/`$ref` แล้ว ตัด `$schema/$id` และ **`maxItems`**) จาก `scanService.toGeminiSchema()`; `type: ["x","null"]`, `enum`, `minimum/maximum`, `minLength/maxLength`, `additionalProperties` ใช้ได้ปกติ; Ajv ฝั่งเรายังบังคับ `maxItems` จากไฟล์ต้นฉบับ `prompts/medicine-parse.schema.json`
+  - **บทเรียน 400 `INVALID_ARGUMENT` "Request contains an invalid argument." (ไม่ระบุ field, 7 ต.ค.):** สาเหตุ = **`maxItems` ใน schema** (ทดสอบด้วย gemini-3.5-flash-lite แบบแบ่งครึ่ง: ข้อความล้วน/systemInstruction/responseMimeType ผ่าน, schema เล็กผ่าน, schema เต็มไม่ผ่าน,
+    ตัด enum/min/max ยังไม่ผ่าน, ตัดเฉพาะ `maxItems` ผ่านแม้ยังมี null/minLength/additionalProperties) ; `responseSchema` (OpenAPI subset) ก็ 400 เพราะมี `maxItems` เหมือนกัน
+    ถ้าเจออีก: ดู log `gemini error <status>: {…}` (error body เต็ม) แล้วแบ่งครึ่ง schema ทีละ keyword กับรุ่น Lite; `scripts/fake-gemini.js` ตอบ 400 ถ้า body มี `maxItems`/`responseSchema`/`temperature`/`maxOutputTokens` เพื่อกันถอยหลัง
+  - system prompt มีกฎ "Ambiguity": ช่วงค่า/ช่วงเวลากำกวม ("1–2 เม็ด", "ทุก 4–6 ชม.") ให้ใช้ค่าน้อยสุด ลด confidence ≤ 0.5 และบันทึกใน `unreadable_parts` ทันที ห้ามคิดวนหาคำตอบที่ถูกที่สุด
+  - ปิด HN: โมเดลมักปิดชื่อแต่ลืม HN → `redactPii` ปิด `HN/AN/VN` + ตัวเลขฝั่ง server ด้วย
+  - log `gemini error <status>: {…}` มี error body เต็ม (ช่วยได้จริง: บอกเหตุผล thinking level / 503 high demand)
+  - **timeout:** เวลารวมของการยิง Gemini ต่อ 1 คำขอ ≤ **40 วินาที** (รวม retry/fallback): ครั้งแรก `msg.requestTimeout` = 20 วินาที, ครั้งถัดไปใช้เวลาที่เหลือหลังหน่วง, เหลือไม่ถึง 8 วินาที = ไม่ลองใหม่ → 503 `AI_UNAVAILABLE`; frontend timeout 50 วินาที
+    node `http request` เมื่อ timeout/เครือข่ายล่ม ส่ง msg ออก output ปกติโดย `statusCode` เป็น string (เช่น `ETIMEDOUT`) และยิง catch ด้วย → **อย่าต่อ catch node ไปที่ `scan_decide`** (จะตัดสินซ้ำสองรอบ) ให้ถือ `typeof statusCode !== 'number'` เป็น error
+  - **retry/สลับรุ่น (งบ 1 ครั้ง/คำขอ):** 429 / 5xx (503) / timeout / เครือข่าย → **สลับไป `LLM_MODEL_FALLBACK` ทันที** (คนละรุ่น ไม่หน่วง); ถ้าไม่มีรุ่นสำรองที่ต่างรุ่น: 5xx/timeout → รุ่นเดิมเว้น 2 วินาที, 429 → ล้มเหลว (ห้ามซ้ำรุ่นเดิม) · 4xx อื่นไม่ retry · `finishReason=MAX_TOKENS` ไม่ retry (422) · ล้มเหลวทั้งหมด = 503 `AI_UNAVAILABLE`; ทุก HTTP request ถูก log เป็น `gemini_http model=… status=… ms=…`; `GEMINI_NO_RETRY=true` (เฉพาะทดสอบ) ปิดการลองใหม่เพื่อคุมจำนวน request
+  - **ปิดข้อมูลส่วนตัว:** `ocr_text`/`source_text` ที่เก็บใน DB ต้องแทนชื่อผู้ป่วย→`[ชื่อผู้ป่วย]` HN→`[HN]` เลขบัตร→`[เลขบัตร]` เบอร์→`[เบอร์โทร]` (ชื่อยา/โรงพยาบาลห้ามแทน) — prompt สั่งโมเดล + `redactPii` ซ้ำใน `lib/validate-llm-output.js`;
+    ห้าม log API key, base64, `ocr_text` ทั้งก้อน (log ได้แค่ความยาว/เวลา/status)
+  - **เก็บรูปเท่าที่จำเป็น:** confirm/discard (วันที่ 5) ต้องเรียก `scanService.deleteUploadForPrescription` (มี `TODO วันที่ 5` ใน lib) · cron 03:00 ใน tab 6 ลบไฟล์ > 7 วัน + `image_path = NULL` · สแกนล้มเหลวลบรูปทันที
+  - **`AI_MOCK=true`:** ข้าม Gemini ตอบ `prompts/mock-response.json` หลังรอ 2 วินาที ผ่าน extract + validator จริง, `llm_model = "mock"`, บันทึก prescriptions/รูปตามปกติ; ใส่ `[[mock:no_result|invalid_json|schema|unavailable]]` ในข้อความเพื่อจำลอง error
+  - prompt/schema อยู่ `node-red/data/prompts/medicine-parse.{system.txt,user.image.txt,user.text.txt,schema.json}` (user.text แทน `{{USER_TEXT}}`); schema มี `ocr_text` (required, ≤ 4000)
+  - **รุ่นที่ใช้จริง (ตัดสินใจ 7 ต.ค.):** `LLM_MODEL=gemini-3.5-flash-lite` (ตัวหลัก เร็ว 3–4 วินาที) · `LLM_MODEL_FALLBACK=gemini-3.1-flash-lite` (ตัวสำรอง 11–12 วินาที; รับ `thinkingLevel: minimal` + schema แล้ว ทดสอบจริงรูป 1–2) · **ไม่ใช้ `gemini-3.8-flash`** (minimal ไม่รองรับ, `low` ได้ 503 high demand ยังไม่เคยสำเร็จ) · สำรองสุดท้าย `AI_MOCK=true`; ขีดจริงของ Google ที่ใช้อยู่ 500 ครั้ง/วัน แต่แอปจำกัดผู้ใช้ละ 4 ครั้ง/นาที, 15 ครั้ง/วัน
+  - รายงานผลทดสอบทั้งหมด (ใช้ทำสไลด์): `docs/ai-test-report.md` ; ทดสอบจริง: `scripts/test-day4.sh real` (7 เคสของตัวหลัก) / `fb` (รูป 1–2 กับตัวสำรอง, ≤ 2 request) — เรียกจริงเฉพาะเมื่อจำเป็น นับทุก request ใน `scripts/.day4-results/_*_calls` และหยุดทันทีเมื่อ 429
+  - ทดสอบ Day 4: `DEMO_PASSWORD=… bash scripts/test-day4.sh mock|real|all` (mock = ไม่เปลืองโควตา; real นับ request ใน `scripts/.day4-results/_calls`, หยุดเมื่อ 429/ไม่ใช่ 200) · ผ่านหน้าเว็บ: `cd frontend && node tools/scan-review-e2e.mjs` (ใช้กับ `AI_MOCK=true`)
+  - รูปทดสอบ (ข้อมูลสมมติ) `docs/sample-images/` สร้างด้วย `cd frontend && node tools/make-sample-images.mjs`
+  - body สูงสุด 12mb (`apiMaxLength` + nginx `client_max_body_size 12m`) เพราะรูป 8 MB เป็น base64 ≈ 10.7 MB
 
 ## Database (MySQL 8.4, `db/init/01_schema.sql` + `02_seed.sql`)
 - `users` (line_user_id, line_link_code, tts_rate), `user_slot_times` (เวลามื้อต่อคน; trigger สร้าง default 08/12/18/21)
 - `caregivers` (ญาติ, line_user_id, link_code, escalate_after_min 10–720)
-- `prescriptions` (1 scan = 1 แถว; ocr_text, llm_json, status draft/confirmed/discarded)
+- `prescriptions` (1 scan = 1 แถว; image_path (ลบเมื่อ confirm/discard หรือ > 7 วัน), ocr_text (ปิดชื่อ/HN แล้ว), llm_json, llm_model, status draft/confirmed/discarded)
 - `medications` (dose_per_time, unit, meal_relation, as_needed, warnings JSON, remaining_qty, refill_alert_days, refill_alerted_at)
 - `medication_slots` (ยากินมื้อไหน: morning/noon/evening/bedtime)
 - **`dose_logs` คือหัวใจ:** 1 แถว = ยา 1 ตัว × 1 รอบ, สถานะ pending → taken | missed,
@@ -90,7 +119,8 @@
   - หลักปุ่ม: แต่ละ state มีปุ่มหลักสีทึบได้ปุ่มเดียว ไม่มีปุ่มหลัก disabled · พรีวิวเป็น object URL (revoke ทุกครั้งที่เปลี่ยน/ลบ/ออกจากหน้า) · `submitted=true` ก่อน navigate ไป `/review` เพื่อไม่ให้ canDeactivate ถาม · 422 = state error (น้อง worried), error อื่น (เน็ตหลุด/401/413/timeout/เปิดไฟล์ไม่ได้) = `ion-toast`
   - layout สองคอลัมน์ตัดด้วย container query ของ `app-scan-stage` (≥720px) ไม่ใช่ viewport; ปุ่ม `desktop` (อัปโหลด/ใช้กล้อง) ตัดจาก `matchMedia('(min-width:1024px) and (pointer:fine)')`
   - Ionic ถอด `aria-label` ออกจาก host `ion-button` ไปไว้ที่ปุ่มข้างใน → ทดสอบด้วย `getByRole('button', { name })` ไม่ใช่ selector `[aria-label]`
-- **หน้า Review ชั่วคราว** (`features/review/review.page.ts`, ป้าย "หน้าทดสอบชั่วคราว — ทำจริงวันที่ 5", มี `TODO วันที่ 5`): อ่าน `ScanResponse` จาก navigation state / `history.state` (รีเฟรชแล้วยังอยู่เพราะ history.state คงอยู่; เปิด URL ตรงๆ = "ไม่พบข้อมูล กรุณาสแกนใหม่" + ปุ่มกลับหน้า Scan) แสดงยา, `review_flags`, `unreadable_parts`, กล่องพับ OCR — วันที่ 5 ต้องแทนด้วยหน้าจริง + fallback `GET /api/prescriptions/:id`
+- **หน้า Review ชั่วคราว** (`features/review/review.page.ts`, ป้าย "หน้าทดสอบชั่วคราว — ทำจริงวันที่ 5", มี `TODO วันที่ 5`): อ่าน `ScanResponse` จาก navigation state / `history.state` ก่อน ถ้าไม่มี (เปิด URL ตรงๆ) โหลด `GET /api/prescriptions/:id` (404 = "ไม่พบข้อมูล กรุณาสแกนใหม่" + ปุ่มกลับหน้า Scan) แสดงยา, `review_flags`, `unreadable_parts`, กล่องพับ `ocr_text` — วันที่ 5 ต้องแทนด้วยหน้าจริง (แก้ไขรายการ + confirm)
+- **error ของหน้า Scan:** `features/scan/scan-errors.ts` map code `AI_UNAVAILABLE | AI_NO_RESULT | AI_INVALID_JSON | AI_SCHEMA_MISMATCH` เป็นข้อความไทย (`VALIDATION`/`RATE_LIMIT` ใช้ `details` จาก backend) แสดงในสถานะ error ของน้องยาตรง (worried); error อื่นยังเป็น `ion-toast`; `scan.service` timeout 45 วินาที
 - JWT แนบโดย `auth.interceptor`, ทุก route ใช้ `authGuard`; ฟอร์มยามี `unsavedChangesGuard` (`core/unsaved-changes.guard.ts`)
 - หน้าวันนี้: สถานะรอบ (รอเวลา/ถึงเวลา/เลยเวลา) คำนวณฝั่ง client จากเวลาปัจจุบัน (เลยเวลา = > 30 นาที ตรงกับ `is_overdue`); สถานะหลัง take/undo ใช้ตาม response ของ API เท่านั้น
 - ตัวกลางที่ใช้ซ้ำ: `app-stepper` (− / +), `app-segmented`, `app-time-row` (ตั้งเวลามื้อ ทีละ 15 นาที + dialog พิมพ์เอง), `appHoldRepeat` (directive กดค้างเปลี่ยนต่อเนื่อง ใช้กับปุ่ม −/+), `app-progress-ring`, `app-confetti`, `app-confirm-dialog`
@@ -177,4 +207,4 @@
 ## วิธีทำงาน
 - จบงานแต่ละส่วนต้องทดสอบจริง: API ทดสอบด้วย `curl`, frontend ต้อง `ng build` ผ่าน
 - ห้าม commit `.env` หรือ `flows_cred.json`
-- ห้ามส่ง API key ไป frontend (OCR/LLM/LINE เรียกจาก Node-RED เท่านั้น)
+- ห้ามส่ง API key ไป frontend (Gemini/LINE เรียกจาก Node-RED เท่านั้น)

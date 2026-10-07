@@ -13,6 +13,7 @@ import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 
 import { ScanService } from './scan.service';
+import { scanErrorMessage } from './scan-errors';
 import { compressImage } from './image-compress';
 import { assessImageQuality } from './image-quality';
 import { ScanResponse } from '../../core/api/medicine-parse.model';
@@ -268,17 +269,16 @@ export class ScanPage implements OnDestroy {
     this.stopSteps();
 
     let msg = 'เกิดข้อผิดพลาด กรุณาลองใหม่';
-    let unreadable = false;   // true = AI อ่านซองนี้ไม่ได้ (แสดงโดยน้องยาตรง) · false = ปัญหาระดับระบบ (ion-toast)
+    let unreadable = false;   // true = ขึ้นกรอบคำพูดน้องยาตรง (worried) · false = ปัญหาระดับระบบ (ion-toast)
     if (err instanceof HttpErrorResponse) {
-      if (err.status === 0) msg = 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจสอบอินเทอร์เน็ต';
+      const mapped = scanErrorMessage(err);
+      if (mapped) {
+        msg = mapped;
+        unreadable = true;
+      } else if (err.status === 0) msg = 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจสอบอินเทอร์เน็ต';
       else if (err.status === 413) msg = 'รูปใหญ่เกินไป ลองถ่ายใหม่';
       else if (err.status === 404 || err.status >= 500) msg = 'ระบบอ่านซองยายังไม่พร้อมใช้งาน ลองใหม่ภายหลังนะคะ';
-      else if (err.status === 422) {
-        unreadable = true;
-        msg = err.error?.details && typeof err.error.details === 'string'
-          ? err.error.details
-          : 'AI อ่านซองยานี้ไม่ได้ ลองถ่ายให้ชัดขึ้น หรือพิมพ์เอง';
-      } else if (err.status === 401) msg = 'กรุณาเข้าสู่ระบบใหม่';
+      else if (err.status === 401) msg = 'กรุณาเข้าสู่ระบบใหม่';
     } else if (err instanceof Error && err.name === 'TimeoutError') {
       msg = 'ใช้เวลานานเกินไป ลองใหม่อีกครั้ง';
     }

@@ -2,7 +2,9 @@
   <p class="temp"><app-icon name="info" /> หน้าทดสอบชั่วคราว — ทำจริงวันที่ 5</p>
   <h1 class="yt-page-title">ตรวจข้อมูลยา</h1>
 
-  @if (scan; as s) {
+  @if (loading()) {
+    <p class="yt-card empty" role="status">กำลังโหลดข้อมูล…</p>
+  } @else if (scan(); as s) {
     @if (s.result.medications.length === 0) {
       <p class="yt-alert yt-alert--warning"><app-icon name="alert" /> <span>AI ไม่พบรายการยาในข้อมูลนี้</span></p>
     }
@@ -39,14 +41,14 @@
     }
 
     <details class="block ocr">
-      <summary>ข้อความที่อ่านได้ (OCR)</summary>
+      <summary>ข้อความที่อ่านได้จากรูป (ปิดชื่อและ HN แล้ว)</summary>
       <pre>{{ s.ocr_text || '(ไม่มีข้อความ — สแกนจากข้อความที่พิมพ์เอง)' }}</pre>
     </details>
 
     <a mat-stroked-button routerLink="/scan">สแกนซองอื่น</a>
   } @else {
     <div class="yt-card empty">
-      <p>ไม่พบข้อมูล กรุณาสแกนใหม่</p>
+      <p>{{ loadError() ?? 'ไม่พบข้อมูล กรุณาสแกนใหม่' }}</p>
       <a mat-flat-button routerLink="/scan">กลับไปหน้าสแกน</a>
     </div>
   }

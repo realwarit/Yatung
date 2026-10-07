@@ -113,7 +113,8 @@
             [
                 "reg_validate"
             ]
-        ]
+        ],
+        "g": "auth_grp_reg"
     },
     {
         "type": "function",
@@ -125,7 +126,7 @@
         "libs": [],
         "id": "reg_validate",
         "z": "tab_auth",
-        "name": "validate + bcrypt hash",
+        "name": "ตรวจข้อมูล + เข้ารหัสรหัสผ่าน (bcrypt)",
         "x": 400,
         "y": 80,
         "wires": [
@@ -136,21 +137,23 @@
                 "auth_res"
             ]
         ],
-        "func": "const b = (msg.payload && typeof msg.payload === 'object') ? msg.payload : {};\nconst email = typeof b.email === 'string' ? b.email.trim().toLowerCase() : '';\nconst pw = typeof b.password === 'string' ? b.password : '';\nconst name = typeof b.display_name === 'string' ? b.display_name.trim() : '';\nconst bad = (details) => { msg.statusCode = 400; msg.payload = { error: 'VALIDATION', details: details }; return [null, msg]; };\nif (!email || email.length > 191 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return bad('รูปแบบอีเมลไม่ถูกต้อง');\nif (pw.length < 8) return bad('รหัสผ่านต้องยาวอย่างน้อย 8 ตัวอักษร');\nif (Buffer.byteLength(pw, 'utf8') > 72) return bad('รหัสผ่านยาวเกินไป');\nif (!name || name.length > 100) return bad('กรุณากรอกชื่อที่ใช้แสดง (ไม่เกิน 100 ตัวอักษร)');\nconst hash = await global.get('bcrypt').hash(pw, 10);\nmsg.topic = 'INSERT INTO users (email, password_hash, display_name) VALUES (?, ?, ?)';\nmsg.payload = [email, hash, name];\nmsg.newUser = { email: email, display_name: name };\nreturn [msg, null];"
+        "func": "const b = (msg.payload && typeof msg.payload === 'object') ? msg.payload : {};\nconst email = typeof b.email === 'string' ? b.email.trim().toLowerCase() : '';\nconst pw = typeof b.password === 'string' ? b.password : '';\nconst name = typeof b.display_name === 'string' ? b.display_name.trim() : '';\nconst bad = (details) => { msg.statusCode = 400; msg.payload = { error: 'VALIDATION', details: details }; return [null, msg]; };\nif (!email || email.length > 191 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return bad('รูปแบบอีเมลไม่ถูกต้อง');\nif (pw.length < 8) return bad('รหัสผ่านต้องยาวอย่างน้อย 8 ตัวอักษร');\nif (Buffer.byteLength(pw, 'utf8') > 72) return bad('รหัสผ่านยาวเกินไป');\nif (!name || name.length > 100) return bad('กรุณากรอกชื่อที่ใช้แสดง (ไม่เกิน 100 ตัวอักษร)');\nconst hash = await global.get('bcrypt').hash(pw, 10);\nmsg.topic = 'INSERT INTO users (email, password_hash, display_name) VALUES (?, ?, ?)';\nmsg.payload = [email, hash, name];\nmsg.newUser = { email: email, display_name: name };\nreturn [msg, null];",
+        "g": "auth_grp_reg"
     },
     {
         "id": "reg_insert",
         "type": "mysql",
         "z": "tab_auth",
         "mydb": "mysql_cfg",
-        "name": "INSERT users",
+        "name": "บันทึกผู้ใช้ใหม่",
         "x": 640,
         "y": 60,
         "wires": [
             [
                 "reg_token"
             ]
-        ]
+        ],
+        "g": "auth_grp_reg"
     },
     {
         "type": "function",
@@ -162,7 +165,7 @@
         "libs": [],
         "id": "reg_token",
         "z": "tab_auth",
-        "name": "issue JWT (201)",
+        "name": "ออก JWT (201)",
         "x": 860,
         "y": 80,
         "wires": [
@@ -170,7 +173,8 @@
                 "auth_res"
             ]
         ],
-        "func": "const id = msg.payload.insertId;\nconst jwt = global.get('jwt');\nconst token = jwt.sign({ sub: String(id), email: msg.newUser.email }, env.get('JWT_SECRET'),\n  { algorithm: 'HS256', expiresIn: env.get('JWT_EXPIRES_IN') || '7d' });\nmsg.statusCode = 201;\nmsg.payload = { token: token, user: { id: id, email: msg.newUser.email, display_name: msg.newUser.display_name } };\ndelete msg.newUser;\nreturn msg;"
+        "func": "const id = msg.payload.insertId;\nconst jwt = global.get('jwt');\nconst token = jwt.sign({ sub: String(id), email: msg.newUser.email }, env.get('JWT_SECRET'),\n  { algorithm: 'HS256', expiresIn: env.get('JWT_EXPIRES_IN') || '7d' });\nmsg.statusCode = 201;\nmsg.payload = { token: token, user: { id: id, email: msg.newUser.email, display_name: msg.newUser.display_name } };\ndelete msg.newUser;\nreturn msg;",
+        "g": "auth_grp_reg"
     },
     {
         "id": "login_in",
@@ -187,7 +191,8 @@
             [
                 "login_throttle"
             ]
-        ]
+        ],
+        "g": "auth_grp_login"
     },
     {
         "type": "function",
@@ -199,7 +204,7 @@
         "libs": [],
         "id": "login_throttle",
         "z": "tab_auth",
-        "name": "validate + brute-force check",
+        "name": "ตรวจข้อมูล + กันเดารหัสผ่าน",
         "x": 420,
         "y": 220,
         "wires": [
@@ -210,21 +215,23 @@
                 "auth_res"
             ]
         ],
-        "func": "// กัน brute force: ผิดครบ 5 ครั้งใน 5 นาทีต่อ email → 429 (เก็บใน flow context ชื่อ loginFails)\nconst WINDOW = 5 * 60 * 1000, MAX = 5;\nconst b = (msg.payload && typeof msg.payload === 'object') ? msg.payload : {};\nconst email = typeof b.email === 'string' ? b.email.trim().toLowerCase() : '';\nconst pw = typeof b.password === 'string' ? b.password : '';\nif (!email || !pw) {\n  msg.statusCode = 400;\n  msg.payload = { error: 'VALIDATION', details: 'กรุณากรอกอีเมลและรหัสผ่าน' };\n  return [null, msg];\n}\nconst now = Date.now();\nconst fails = flow.get('loginFails') || {};\nfor (const k of Object.keys(fails)) {\n  fails[k] = fails[k].filter(t => now - t < WINDOW);\n  if (!fails[k].length) delete fails[k];\n}\nflow.set('loginFails', fails);\nconst arr = fails[email] || [];\nif (arr.length >= MAX) {\n  const wait = Math.ceil((WINDOW - (now - arr[0])) / 1000);\n  msg.statusCode = 429;\n  msg.headers = { 'Retry-After': String(wait) };\n  msg.payload = { error: 'TOO_MANY_ATTEMPTS', details: 'ลองเข้าสู่ระบบผิดหลายครั้งเกินไป กรุณารอประมาณ ' + Math.ceil(wait / 60) + ' นาทีแล้วลองใหม่' };\n  return [null, msg];\n}\nmsg.loginEmail = email;\nmsg.loginPassword = pw;\nmsg.topic = 'SELECT id, email, password_hash, display_name FROM users WHERE email = ? LIMIT 1';\nmsg.payload = [email];\nreturn [msg, null];"
+        "func": "// กัน brute force: ผิดครบ 5 ครั้งใน 5 นาทีต่อ email → 429 (เก็บใน flow context ชื่อ loginFails)\nconst WINDOW = 5 * 60 * 1000, MAX = 5;\nconst b = (msg.payload && typeof msg.payload === 'object') ? msg.payload : {};\nconst email = typeof b.email === 'string' ? b.email.trim().toLowerCase() : '';\nconst pw = typeof b.password === 'string' ? b.password : '';\nif (!email || !pw) {\n  msg.statusCode = 400;\n  msg.payload = { error: 'VALIDATION', details: 'กรุณากรอกอีเมลและรหัสผ่าน' };\n  return [null, msg];\n}\nconst now = Date.now();\nconst fails = flow.get('loginFails') || {};\nfor (const k of Object.keys(fails)) {\n  fails[k] = fails[k].filter(t => now - t < WINDOW);\n  if (!fails[k].length) delete fails[k];\n}\nflow.set('loginFails', fails);\nconst arr = fails[email] || [];\nif (arr.length >= MAX) {\n  const wait = Math.ceil((WINDOW - (now - arr[0])) / 1000);\n  msg.statusCode = 429;\n  msg.headers = { 'Retry-After': String(wait) };\n  msg.payload = { error: 'TOO_MANY_ATTEMPTS', details: 'ลองเข้าสู่ระบบผิดหลายครั้งเกินไป กรุณารอประมาณ ' + Math.ceil(wait / 60) + ' นาทีแล้วลองใหม่' };\n  return [null, msg];\n}\nmsg.loginEmail = email;\nmsg.loginPassword = pw;\nmsg.topic = 'SELECT id, email, password_hash, display_name FROM users WHERE email = ? LIMIT 1';\nmsg.payload = [email];\nreturn [msg, null];",
+        "g": "auth_grp_login"
     },
     {
         "id": "login_select",
         "type": "mysql",
         "z": "tab_auth",
         "mydb": "mysql_cfg",
-        "name": "SELECT user by email",
+        "name": "ค้นหาผู้ใช้จากอีเมล",
         "x": 680,
         "y": 200,
         "wires": [
             [
                 "login_verify"
             ]
-        ]
+        ],
+        "g": "auth_grp_login"
     },
     {
         "type": "function",
@@ -236,7 +243,7 @@
         "libs": [],
         "id": "login_verify",
         "z": "tab_auth",
-        "name": "compare password + issue JWT",
+        "name": "เทียบรหัสผ่าน + ออก JWT",
         "x": 920,
         "y": 220,
         "wires": [
@@ -244,7 +251,8 @@
                 "auth_res"
             ]
         ],
-        "func": "const row = Array.isArray(msg.payload) ? msg.payload[0] : null;\n// ไม่พบ email ก็ยัง compare กับ hash หลอก เพื่อให้เวลาตอบใกล้เคียงกัน (กัน user enumeration)\nlet dummy = context.get('dummy');\nif (!dummy) { dummy = await global.get('bcrypt').hash('yatung-dummy-password', 10); context.set('dummy', dummy); }\nconst ok = await global.get('bcrypt').compare(msg.loginPassword, row ? row.password_hash : dummy);\nconst email = msg.loginEmail;\nconst fails = flow.get('loginFails') || {};\ndelete msg.loginPassword; delete msg.loginEmail;\nif (!row || !ok) {\n  (fails[email] = fails[email] || []).push(Date.now());\n  flow.set('loginFails', fails);\n  msg.statusCode = 401;\n  msg.payload = { error: 'INVALID_CREDENTIALS', details: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' };\n  return msg;\n}\ndelete fails[email];\nflow.set('loginFails', fails);\nconst jwt = global.get('jwt');\nconst token = jwt.sign({ sub: String(row.id), email: row.email }, env.get('JWT_SECRET'),\n  { algorithm: 'HS256', expiresIn: env.get('JWT_EXPIRES_IN') || '7d' });\nmsg.statusCode = 200;\nmsg.payload = { token: token, user: { id: row.id, email: row.email, display_name: row.display_name } };\nreturn msg;"
+        "func": "const row = Array.isArray(msg.payload) ? msg.payload[0] : null;\n// ไม่พบ email ก็ยัง compare กับ hash หลอก เพื่อให้เวลาตอบใกล้เคียงกัน (กัน user enumeration)\nlet dummy = context.get('dummy');\nif (!dummy) { dummy = await global.get('bcrypt').hash('yatung-dummy-password', 10); context.set('dummy', dummy); }\nconst ok = await global.get('bcrypt').compare(msg.loginPassword, row ? row.password_hash : dummy);\nconst email = msg.loginEmail;\nconst fails = flow.get('loginFails') || {};\ndelete msg.loginPassword; delete msg.loginEmail;\nif (!row || !ok) {\n  (fails[email] = fails[email] || []).push(Date.now());\n  flow.set('loginFails', fails);\n  msg.statusCode = 401;\n  msg.payload = { error: 'INVALID_CREDENTIALS', details: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' };\n  return msg;\n}\ndelete fails[email];\nflow.set('loginFails', fails);\nconst jwt = global.get('jwt');\nconst token = jwt.sign({ sub: String(row.id), email: row.email }, env.get('JWT_SECRET'),\n  { algorithm: 'HS256', expiresIn: env.get('JWT_EXPIRES_IN') || '7d' });\nmsg.statusCode = 200;\nmsg.payload = { token: token, user: { id: row.id, email: row.email, display_name: row.display_name } };\nreturn msg;",
+        "g": "auth_grp_login"
     },
     {
         "id": "me_in",
@@ -261,7 +269,8 @@
             [
                 "me_jwt"
             ]
-        ]
+        ],
+        "g": "auth_grp_me"
     },
     {
         "id": "me_jwt",
@@ -274,7 +283,8 @@
             [
                 "me_query"
             ]
-        ]
+        ],
+        "g": "auth_grp_me"
     },
     {
         "type": "function",
@@ -286,7 +296,7 @@
         "libs": [],
         "id": "me_query",
         "z": "tab_auth",
-        "name": "build query",
+        "name": "สร้างคำสั่งค้นหา",
         "x": 560,
         "y": 360,
         "wires": [
@@ -294,21 +304,23 @@
                 "me_select"
             ]
         ],
-        "func": "msg.topic = 'SELECT u.id, u.email, u.display_name, u.line_user_id, u.line_link_code, u.tts_rate, s.slot, s.slot_time ' +\n  'FROM users u LEFT JOIN user_slot_times s ON s.user_id = u.id WHERE u.id = ?';\nmsg.payload = [msg.user.id];\nreturn msg;"
+        "func": "msg.topic = 'SELECT u.id, u.email, u.display_name, u.line_user_id, u.line_link_code, u.tts_rate, s.slot, s.slot_time ' +\n  'FROM users u LEFT JOIN user_slot_times s ON s.user_id = u.id WHERE u.id = ?';\nmsg.payload = [msg.user.id];\nreturn msg;",
+        "g": "auth_grp_me"
     },
     {
         "id": "me_select",
         "type": "mysql",
         "z": "tab_auth",
         "mydb": "mysql_cfg",
-        "name": "SELECT user + slot times",
+        "name": "อ่านผู้ใช้ + เวลามื้อ",
         "x": 760,
         "y": 340,
         "wires": [
             [
                 "me_shape"
             ]
-        ]
+        ],
+        "g": "auth_grp_me"
     },
     {
         "type": "function",
@@ -320,7 +332,7 @@
         "libs": [],
         "id": "me_shape",
         "z": "tab_auth",
-        "name": "shape response",
+        "name": "จัดรูปคำตอบ",
         "x": 970,
         "y": 360,
         "wires": [
@@ -328,24 +340,26 @@
                 "auth_res"
             ]
         ],
-        "func": "const rows = Array.isArray(msg.payload) ? msg.payload : [];\nif (!rows.length) {\n  msg.statusCode = 401;\n  msg.payload = { error: 'UNAUTHORIZED', details: 'ไม่พบบัญชีผู้ใช้ กรุณาเข้าสู่ระบบใหม่' };\n  return msg;\n}\nconst u = rows[0];\nconst order = ['morning', 'noon', 'evening', 'bedtime'];\nconst times = {};\nfor (const r of rows) if (r.slot) times[r.slot] = String(r.slot_time).slice(0, 5);\nconst slot_times = {};\nfor (const s of order) if (times[s]) slot_times[s] = times[s];\nmsg.statusCode = 200;\nmsg.payload = {\n  id: u.id, email: u.email, display_name: u.display_name,\n  line_linked: !!u.line_user_id, line_link_code: u.line_link_code,\n  tts_rate: Number(u.tts_rate), slot_times: slot_times\n};\nreturn msg;"
+        "func": "const rows = Array.isArray(msg.payload) ? msg.payload : [];\nif (!rows.length) {\n  msg.statusCode = 401;\n  msg.payload = { error: 'UNAUTHORIZED', details: 'ไม่พบบัญชีผู้ใช้ กรุณาเข้าสู่ระบบใหม่' };\n  return msg;\n}\nconst u = rows[0];\nconst order = ['morning', 'noon', 'evening', 'bedtime'];\nconst times = {};\nfor (const r of rows) if (r.slot) times[r.slot] = String(r.slot_time).slice(0, 5);\nconst slot_times = {};\nfor (const s of order) if (times[s]) slot_times[s] = times[s];\nmsg.statusCode = 200;\nmsg.payload = {\n  id: u.id, email: u.email, display_name: u.display_name,\n  line_linked: !!u.line_user_id, line_link_code: u.line_link_code,\n  tts_rate: Number(u.tts_rate), slot_times: slot_times\n};\nreturn msg;",
+        "g": "auth_grp_me"
     },
     {
         "id": "auth_res",
         "type": "http response",
         "z": "tab_auth",
-        "name": "respond",
+        "name": "ตอบกลับ",
         "statusCode": "",
         "headers": {},
         "x": 1200,
         "y": 220,
-        "wires": []
+        "wires": [],
+        "g": "auth_grp_res"
     },
     {
         "id": "auth_catch",
         "type": "catch",
         "z": "tab_auth",
-        "name": "catch all (this tab)",
+        "name": "ดักข้อผิดพลาดของ tab นี้",
         "scope": null,
         "uncaught": false,
         "x": 160,
@@ -354,7 +368,8 @@
             [
                 "auth_err"
             ]
-        ]
+        ],
+        "g": "auth_grp_res"
     },
     {
         "type": "function",
@@ -366,7 +381,7 @@
         "libs": [],
         "id": "auth_err",
         "z": "tab_auth",
-        "name": "map error → JSON",
+        "name": "แปลง error เป็น JSON",
         "x": 420,
         "y": 480,
         "wires": [
@@ -374,7 +389,8 @@
                 "auth_res"
             ]
         ],
-        "func": "const m = String((msg.error && msg.error.message) || '');\nif (m.indexOf('ER_DUP_ENTRY') !== -1 || m.indexOf('Duplicate entry') !== -1) {\n  msg.statusCode = 409;\n  msg.payload = { error: 'EMAIL_EXISTS', details: 'อีเมลนี้ถูกใช้สมัครแล้ว' };\n} else {\n  msg.statusCode = 500;\n  msg.payload = { error: 'INTERNAL_ERROR', details: 'ระบบขัดข้อง กรุณาลองใหม่ภายหลัง' };\n}\ndelete msg.loginPassword;\nreturn msg;"
+        "func": "const m = String((msg.error && msg.error.message) || '');\nif (m.indexOf('ER_DUP_ENTRY') !== -1 || m.indexOf('Duplicate entry') !== -1) {\n  msg.statusCode = 409;\n  msg.payload = { error: 'EMAIL_EXISTS', details: 'อีเมลนี้ถูกใช้สมัครแล้ว' };\n} else {\n  msg.statusCode = 500;\n  msg.payload = { error: 'INTERNAL_ERROR', details: 'ระบบขัดข้อง กรุณาลองใหม่ภายหลัง' };\n}\ndelete msg.loginPassword;\nreturn msg;",
+        "g": "auth_grp_res"
     },
     {
         "id": "tab_meds",
@@ -428,7 +444,8 @@
             [
                 "med_list_jwt"
             ]
-        ]
+        ],
+        "g": "med_list_grp"
     },
     {
         "id": "med_list_jwt",
@@ -441,7 +458,8 @@
             [
                 "med_list_build"
             ]
-        ]
+        ],
+        "g": "med_list_grp"
     },
     {
         "id": "med_list_build",
@@ -461,7 +479,8 @@
             [
                 "med_list_db"
             ]
-        ]
+        ],
+        "g": "med_list_grp"
     },
     {
         "id": "med_list_db",
@@ -475,7 +494,8 @@
             [
                 "med_list_shape"
             ]
-        ]
+        ],
+        "g": "med_list_grp"
     },
     {
         "id": "med_list_shape",
@@ -495,7 +515,8 @@
             [
                 "med_list_ok"
             ]
-        ]
+        ],
+        "g": "med_list_grp"
     },
     {
         "id": "med_list_ok",
@@ -506,7 +527,8 @@
         "headers": {},
         "x": 1470,
         "y": 170,
-        "wires": []
+        "wires": [],
+        "g": "med_list_grp"
     },
     {
         "id": "med_list_grp",
@@ -548,7 +570,8 @@
             [
                 "med_get_jwt"
             ]
-        ]
+        ],
+        "g": "med_get_grp"
     },
     {
         "id": "med_get_jwt",
@@ -561,7 +584,8 @@
             [
                 "med_get_build"
             ]
-        ]
+        ],
+        "g": "med_get_grp"
     },
     {
         "id": "med_get_build",
@@ -581,7 +605,8 @@
             [
                 "med_get_db"
             ]
-        ]
+        ],
+        "g": "med_get_grp"
     },
     {
         "id": "med_get_db",
@@ -595,7 +620,8 @@
             [
                 "med_get_shape"
             ]
-        ]
+        ],
+        "g": "med_get_grp"
     },
     {
         "id": "med_get_shape",
@@ -622,7 +648,8 @@
         "outputLabels": [
             "พบข้อมูล",
             "ไม่พบ"
-        ]
+        ],
+        "g": "med_get_grp"
     },
     {
         "id": "med_get_ok",
@@ -633,7 +660,8 @@
         "headers": {},
         "x": 1470,
         "y": 360,
-        "wires": []
+        "wires": [],
+        "g": "med_get_grp"
     },
     {
         "id": "med_get_404",
@@ -644,7 +672,8 @@
         "headers": {},
         "x": 1470,
         "y": 420,
-        "wires": []
+        "wires": [],
+        "g": "med_get_grp"
     },
     {
         "id": "med_get_grp",
@@ -687,7 +716,8 @@
             [
                 "med_create_jwt"
             ]
-        ]
+        ],
+        "g": "med_create_grp"
     },
     {
         "id": "med_create_jwt",
@@ -700,7 +730,8 @@
             [
                 "med_create_fn"
             ]
-        ]
+        ],
+        "g": "med_create_grp"
     },
     {
         "id": "med_create_fn",
@@ -727,7 +758,8 @@
         "outputLabels": [
             "สำเร็จ",
             "error 4xx"
-        ]
+        ],
+        "g": "med_create_grp"
     },
     {
         "id": "med_create_ok",
@@ -738,7 +770,8 @@
         "headers": {},
         "x": 1470,
         "y": 550,
-        "wires": []
+        "wires": [],
+        "g": "med_create_grp"
     },
     {
         "id": "med_create_err",
@@ -749,7 +782,8 @@
         "headers": {},
         "x": 1470,
         "y": 610,
-        "wires": []
+        "wires": [],
+        "g": "med_create_grp"
     },
     {
         "id": "med_create_grp",
@@ -790,7 +824,8 @@
             [
                 "med_update_jwt"
             ]
-        ]
+        ],
+        "g": "med_update_grp"
     },
     {
         "id": "med_update_jwt",
@@ -803,7 +838,8 @@
             [
                 "med_update_fn"
             ]
-        ]
+        ],
+        "g": "med_update_grp"
     },
     {
         "id": "med_update_fn",
@@ -830,7 +866,8 @@
         "outputLabels": [
             "สำเร็จ",
             "error 4xx"
-        ]
+        ],
+        "g": "med_update_grp"
     },
     {
         "id": "med_update_ok",
@@ -841,7 +878,8 @@
         "headers": {},
         "x": 1470,
         "y": 740,
-        "wires": []
+        "wires": [],
+        "g": "med_update_grp"
     },
     {
         "id": "med_update_err",
@@ -852,7 +890,8 @@
         "headers": {},
         "x": 1470,
         "y": 800,
-        "wires": []
+        "wires": [],
+        "g": "med_update_grp"
     },
     {
         "id": "med_update_grp",
@@ -893,7 +932,8 @@
             [
                 "med_stop_jwt"
             ]
-        ]
+        ],
+        "g": "med_resume_grp"
     },
     {
         "id": "med_stop_jwt",
@@ -906,7 +946,8 @@
             [
                 "med_stop_fn"
             ]
-        ]
+        ],
+        "g": "med_resume_grp"
     },
     {
         "id": "med_stop_fn",
@@ -933,7 +974,8 @@
         "outputLabels": [
             "สำเร็จ",
             "error 4xx"
-        ]
+        ],
+        "g": "med_resume_grp"
     },
     {
         "id": "med_stop_ok",
@@ -944,7 +986,8 @@
         "headers": {},
         "x": 1470,
         "y": 930,
-        "wires": []
+        "wires": [],
+        "g": "med_resume_grp"
     },
     {
         "id": "med_stop_err",
@@ -955,7 +998,8 @@
         "headers": {},
         "x": 1470,
         "y": 990,
-        "wires": []
+        "wires": [],
+        "g": "med_resume_grp"
     },
     {
         "id": "med_stop_grp",
@@ -996,7 +1040,8 @@
             [
                 "med_refill_jwt"
             ]
-        ]
+        ],
+        "g": "med_refill_grp"
     },
     {
         "id": "med_refill_jwt",
@@ -1009,7 +1054,8 @@
             [
                 "med_refill_fn"
             ]
-        ]
+        ],
+        "g": "med_refill_grp"
     },
     {
         "id": "med_refill_fn",
@@ -1036,7 +1082,8 @@
         "outputLabels": [
             "สำเร็จ",
             "error 4xx"
-        ]
+        ],
+        "g": "med_refill_grp"
     },
     {
         "id": "med_refill_ok",
@@ -1047,7 +1094,8 @@
         "headers": {},
         "x": 1470,
         "y": 1120,
-        "wires": []
+        "wires": [],
+        "g": "med_refill_grp"
     },
     {
         "id": "med_refill_err",
@@ -1058,7 +1106,8 @@
         "headers": {},
         "x": 1470,
         "y": 1180,
-        "wires": []
+        "wires": [],
+        "g": "med_refill_grp"
     },
     {
         "id": "med_refill_grp",
@@ -1099,7 +1148,8 @@
             [
                 "set_get_jwt"
             ]
-        ]
+        ],
+        "g": "set_get_grp"
     },
     {
         "id": "set_get_jwt",
@@ -1112,7 +1162,8 @@
             [
                 "set_get_build"
             ]
-        ]
+        ],
+        "g": "set_get_grp"
     },
     {
         "id": "set_get_build",
@@ -1132,7 +1183,8 @@
             [
                 "set_get_db"
             ]
-        ]
+        ],
+        "g": "set_get_grp"
     },
     {
         "id": "set_get_db",
@@ -1146,7 +1198,8 @@
             [
                 "set_get_shape"
             ]
-        ]
+        ],
+        "g": "set_get_grp"
     },
     {
         "id": "set_get_shape",
@@ -1166,7 +1219,8 @@
             [
                 "set_get_ok"
             ]
-        ]
+        ],
+        "g": "set_get_grp"
     },
     {
         "id": "set_get_ok",
@@ -1177,7 +1231,8 @@
         "headers": {},
         "x": 1470,
         "y": 1310,
-        "wires": []
+        "wires": [],
+        "g": "set_get_grp"
     },
     {
         "id": "set_get_grp",
@@ -1219,7 +1274,8 @@
             [
                 "set_put_jwt"
             ]
-        ]
+        ],
+        "g": "set_put_grp"
     },
     {
         "id": "set_put_jwt",
@@ -1232,7 +1288,8 @@
             [
                 "set_put_fn"
             ]
-        ]
+        ],
+        "g": "set_put_grp"
     },
     {
         "id": "set_put_fn",
@@ -1259,7 +1316,8 @@
         "outputLabels": [
             "สำเร็จ",
             "error 4xx"
-        ]
+        ],
+        "g": "set_put_grp"
     },
     {
         "id": "set_put_ok",
@@ -1270,7 +1328,8 @@
         "headers": {},
         "x": 1470,
         "y": 1500,
-        "wires": []
+        "wires": [],
+        "g": "set_put_grp"
     },
     {
         "id": "set_put_err",
@@ -1281,7 +1340,8 @@
         "headers": {},
         "x": 1470,
         "y": 1560,
-        "wires": []
+        "wires": [],
+        "g": "set_put_grp"
     },
     {
         "id": "set_put_grp",
@@ -1320,7 +1380,8 @@
             [
                 "med_err"
             ]
-        ]
+        ],
+        "g": "med_grp"
     },
     {
         "id": "med_err",
@@ -1340,7 +1401,8 @@
             [
                 "med_res"
             ]
-        ]
+        ],
+        "g": "med_grp"
     },
     {
         "id": "med_res",
@@ -1351,7 +1413,8 @@
         "headers": {},
         "x": 1470,
         "y": 1690,
-        "wires": []
+        "wires": [],
+        "g": "med_grp"
     },
     {
         "id": "med_grp",
@@ -1417,7 +1480,8 @@
             [
                 "dose_today_jwt"
             ]
-        ]
+        ],
+        "g": "dose_today_grp"
     },
     {
         "id": "dose_today_jwt",
@@ -1430,7 +1494,8 @@
             [
                 "dose_today_build"
             ]
-        ]
+        ],
+        "g": "dose_today_grp"
     },
     {
         "id": "dose_today_build",
@@ -1450,7 +1515,8 @@
             [
                 "dose_today_db"
             ]
-        ]
+        ],
+        "g": "dose_today_grp"
     },
     {
         "id": "dose_today_db",
@@ -1464,7 +1530,8 @@
             [
                 "dose_today_shape"
             ]
-        ]
+        ],
+        "g": "dose_today_grp"
     },
     {
         "id": "dose_today_shape",
@@ -1484,7 +1551,8 @@
             [
                 "dose_today_ok"
             ]
-        ]
+        ],
+        "g": "dose_today_grp"
     },
     {
         "id": "dose_today_ok",
@@ -1495,7 +1563,8 @@
         "headers": {},
         "x": 1470,
         "y": 170,
-        "wires": []
+        "wires": [],
+        "g": "dose_today_grp"
     },
     {
         "id": "dose_today_grp",
@@ -1537,7 +1606,8 @@
             [
                 "dose_take_jwt"
             ]
-        ]
+        ],
+        "g": "dose_take_grp"
     },
     {
         "id": "dose_take_jwt",
@@ -1550,7 +1620,8 @@
             [
                 "dose_take_fn"
             ]
-        ]
+        ],
+        "g": "dose_take_grp"
     },
     {
         "id": "dose_take_fn",
@@ -1577,7 +1648,8 @@
         "outputLabels": [
             "สำเร็จ",
             "error 4xx"
-        ]
+        ],
+        "g": "dose_take_grp"
     },
     {
         "id": "dose_take_ok",
@@ -1588,7 +1660,8 @@
         "headers": {},
         "x": 1470,
         "y": 360,
-        "wires": []
+        "wires": [],
+        "g": "dose_take_grp"
     },
     {
         "id": "dose_take_err",
@@ -1599,7 +1672,8 @@
         "headers": {},
         "x": 1470,
         "y": 420,
-        "wires": []
+        "wires": [],
+        "g": "dose_take_grp"
     },
     {
         "id": "dose_take_grp",
@@ -1640,7 +1714,8 @@
             [
                 "dose_undo_jwt"
             ]
-        ]
+        ],
+        "g": "dose_undo_grp"
     },
     {
         "id": "dose_undo_jwt",
@@ -1653,7 +1728,8 @@
             [
                 "dose_undo_fn"
             ]
-        ]
+        ],
+        "g": "dose_undo_grp"
     },
     {
         "id": "dose_undo_fn",
@@ -1680,7 +1756,8 @@
         "outputLabels": [
             "สำเร็จ",
             "error 4xx"
-        ]
+        ],
+        "g": "dose_undo_grp"
     },
     {
         "id": "dose_undo_ok",
@@ -1691,7 +1768,8 @@
         "headers": {},
         "x": 1470,
         "y": 550,
-        "wires": []
+        "wires": [],
+        "g": "dose_undo_grp"
     },
     {
         "id": "dose_undo_err",
@@ -1702,7 +1780,8 @@
         "headers": {},
         "x": 1470,
         "y": 610,
-        "wires": []
+        "wires": [],
+        "g": "dose_undo_grp"
     },
     {
         "id": "dose_undo_grp",
@@ -1741,7 +1820,8 @@
             [
                 "dose_err"
             ]
-        ]
+        ],
+        "g": "dose_grp"
     },
     {
         "id": "dose_err",
@@ -1761,7 +1841,8 @@
             [
                 "dose_res"
             ]
-        ]
+        ],
+        "g": "dose_grp"
     },
     {
         "id": "dose_res",
@@ -1772,7 +1853,8 @@
         "headers": {},
         "x": 1470,
         "y": 740,
-        "wires": []
+        "wires": [],
+        "g": "dose_grp"
     },
     {
         "id": "dose_grp",
@@ -1843,7 +1925,8 @@
             [
                 "sch_fn"
             ]
-        ]
+        ],
+        "g": "sch_grp"
     },
     {
         "id": "sch_inject",
@@ -1868,7 +1951,8 @@
             [
                 "sch_fn"
             ]
-        ]
+        ],
+        "g": "sch_grp"
     },
     {
         "id": "sch_fn",
@@ -1888,7 +1972,8 @@
             [
                 "sch_dbg"
             ]
-        ]
+        ],
+        "g": "sch_grp"
     },
     {
         "id": "sch_dbg",
@@ -1905,7 +1990,8 @@
         "statusType": "auto",
         "x": 1000,
         "y": 205,
-        "wires": []
+        "wires": [],
+        "g": "sch_grp"
     },
     {
         "id": "sch_grp",
@@ -1943,7 +2029,8 @@
             [
                 "sch_errdbg"
             ]
-        ]
+        ],
+        "g": "sch_errgrp"
     },
     {
         "id": "sch_errdbg",
@@ -1958,7 +2045,8 @@
         "targetType": "msg",
         "x": 650,
         "y": 380,
-        "wires": []
+        "wires": [],
+        "g": "sch_errgrp"
     },
     {
         "id": "sch_errgrp",
@@ -2084,5 +2172,1005 @@
         "w": 1570,
         "h": 175,
         "wires": []
+    },
+    {
+        "id": "tab_scan",
+        "type": "tab",
+        "label": "2-AI-Scan",
+        "disabled": false,
+        "info": "POST /api/scan (Gemini multimodal: อ่านรูป + ตีความในครั้งเดียว) · GET /api/prescriptions/:id\nlogic อยู่ lib/scan-service.js + lib/validate-llm-output.js · prompt อยู่ prompts/medicine-parse.*\nenv: LLM_API_KEY, LLM_MODEL, LLM_MODEL_FALLBACK, AI_MOCK (true = ข้าม Gemini ใช้ prompts/mock-response.json)\nห้าม log API key / base64 / ocr_text ทั้งก้อน · ทุก http request ที่ยิง Gemini ถูก log เป็นบรรทัด \"gemini_http\""
+    },
+    {
+        "id": "scan_in",
+        "type": "http in",
+        "z": "tab_scan",
+        "name": "POST /api/scan",
+        "url": "/api/scan",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 120,
+        "wires": [
+            [
+                "scan_jwt"
+            ]
+        ],
+        "g": "scan_stage1"
+    },
+    {
+        "id": "scan_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_scan",
+        "name": "ตรวจ JWT",
+        "x": 360,
+        "y": 120,
+        "wires": [
+            [
+                "scan_check"
+            ]
+        ],
+        "g": "scan_stage1"
+    },
+    {
+        "id": "scan_check",
+        "type": "function",
+        "z": "tab_scan",
+        "name": "ตรวจรูป/ข้อความที่ส่งมา",
+        "func": "// รับ { image: base64 } หรือ { text } อย่างใดอย่างหนึ่ง (ดู lib/scan-service.js checkInput)\nconst r = global.get('scanService').checkInput(msg.payload);\nif (!r.ok) {\n  msg.statusCode = r.status;\n  msg.payload = r.body;\n  return [null, msg];\n}\nmsg.input = r;          // รูปอยู่ใน msg.input จนบันทึกไฟล์แล้วจะลบทิ้ง\nmsg.payload = null;\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 600,
+        "y": 120,
+        "wires": [
+            [
+                "scan_rate"
+            ],
+            [
+                "scan_res400"
+            ]
+        ],
+        "outputLabels": [
+            "ผ่าน",
+            "ผิดรูปแบบ 400"
+        ],
+        "g": "scan_stage1"
+    },
+    {
+        "id": "scan_res400",
+        "type": "http response",
+        "z": "tab_scan",
+        "name": "ตอบ 400 ข้อมูลไม่ถูกต้อง",
+        "statusCode": "",
+        "headers": {},
+        "x": 880,
+        "y": 190,
+        "wires": [],
+        "g": "scan_stage1"
+    },
+    {
+        "id": "scan_rate",
+        "type": "function",
+        "z": "tab_scan",
+        "name": "จำกัดการใช้ 4 ครั้ง/นาที · 15 ครั้ง/วัน",
+        "func": "// นับเฉพาะคำขอที่ผ่านการตรวจ input ; เก็บใน flow context (หายเมื่อ restart)\nconst hits = flow.get('scanHits') || {};\nconst r = global.get('scanService').rateLimit(hits, msg.user.id, Date.now());\nflow.set('scanHits', hits);\nif (!r.ok) {\n  msg.statusCode = r.status;\n  msg.payload = r.body;\n  return [null, msg];\n}\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 120,
+        "wires": [
+            [
+                "scan_prep"
+            ],
+            [
+                "scan_res429"
+            ]
+        ],
+        "outputLabels": [
+            "ไม่เกินโควตา",
+            "เกินโควตา 429"
+        ],
+        "g": "scan_stage2"
+    },
+    {
+        "id": "scan_res429",
+        "type": "http response",
+        "z": "tab_scan",
+        "name": "ตอบ 429 สแกนบ่อยเกินไป",
+        "statusCode": "",
+        "headers": {},
+        "x": 1180,
+        "y": 190,
+        "wires": [],
+        "g": "scan_stage2"
+    },
+    {
+        "id": "scan_prep",
+        "type": "function",
+        "z": "tab_scan",
+        "name": "บันทึกรูป + สร้างคำขอ Gemini",
+        "func": "const svc = global.get('scanService');\nconst input = msg.input;\nconst mock = env.get('AI_MOCK') === 'true';\nconst model = env.get('LLM_MODEL');\nmsg.t0 = Date.now();\nmsg.deadline = msg.t0 + svc.TOTAL_BUDGET_MS;   // เวลารวมสูงสุดของคำขอนี้ (รวม retry/fallback)\nmsg.inputType = input.kind;\nmsg.imagePath = input.kind === 'image' ? svc.saveUpload(msg.user.id, input.buf, input.ext) : null;\nmsg.ai = { model: mock ? 'mock' : model, fallbackModel: env.get('LLM_MODEL_FALLBACK') || null, retried: false, noRetry: env.get('GEMINI_NO_RETRY') === 'true', calls: 0 };\nnode.log('scan start user=' + msg.user.id + ' type=' + input.kind + ' size=' + (input.kind === 'image' ? input.bytes + 'B' : input.text.length + 'ch') + ' mock=' + mock);\n\nif (mock) {\n  msg.mockText = input.kind === 'text' ? input.text : '';   // ใช้เฉพาะเลือก error จำลอง [[mock:...]] ในโหมดนี้\n  delete msg.input;\n  return [null, msg, null];\n}\nif (!env.get('LLM_API_KEY') || !model) {\n  node.error('LLM_API_KEY หรือ LLM_MODEL ยังไม่ได้ตั้งค่า');\n  svc.deleteUploadFile(msg.imagePath);\n  msg.statusCode = 503;\n  msg.payload = { error: 'AI_UNAVAILABLE', details: 'ระบบ AI ไม่ว่างชั่วคราว ลองใหม่อีกครั้งนะคะ' };\n  return [null, null, msg];\n}\n\n// คำขอ generateContent (ใช้ header x-goog-api-key เท่านั้น — ห้ามใส่ key ใน URL)\nmsg.aiBody = svc.buildGeminiBody(input, global.get('prompts'), model);\nmsg.payload = msg.aiBody;\nmsg.url = svc.geminiUrl(model);\nmsg.headers = { 'x-goog-api-key': env.get('LLM_API_KEY'), 'content-type': 'application/json' };\nmsg.requestTimeout = svc.FIRST_TIMEOUT_MS;      // ครั้งแรก 20 วินาที ครั้งถัดไปใช้เวลาที่เหลือ\nmsg.t1 = Date.now();\ndelete msg.input;\nreturn [msg, null, null];",
+        "outputs": 3,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1480,
+        "y": 120,
+        "wires": [
+            [
+                "scan_http"
+            ],
+            [
+                "scan_mock_delay"
+            ],
+            [
+                "scan_res503"
+            ]
+        ],
+        "outputLabels": [
+            "เรียก Gemini",
+            "โหมดจำลอง",
+            "ยังไม่ตั้ง key 503"
+        ],
+        "g": "scan_stage3"
+    },
+    {
+        "id": "scan_http",
+        "type": "http request",
+        "z": "tab_scan",
+        "name": "เรียก Gemini generateContent",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1780,
+        "y": 120,
+        "wires": [
+            [
+                "scan_decide"
+            ]
+        ],
+        "g": "scan_stage4"
+    },
+    {
+        "id": "scan_decide",
+        "type": "function",
+        "z": "tab_scan",
+        "name": "ตัดสิน: ผ่าน / สลับรุ่น-ลองซ้ำ 1 ครั้ง / ล้มเหลว",
+        "func": "const svc = global.get('scanService');\n// timeout/เครือข่าย: node http request ส่ง msg ออก output เดียวกัน โดย statusCode เป็นรหัส error (string เช่น 'ETIMEDOUT') ไม่ใช่ตัวเลข\n// (ไม่ใช้ catch node เพราะ http request ส่งทั้งสองทาง ทำให้ตัดสินซ้ำสองรอบ)\nconst status = msg.statusCode;\nconst errored = typeof status !== 'number';\nmsg.ai.calls++;\nnode.log('gemini_http model=' + msg.ai.model + ' call=' + msg.ai.calls + ' status=' + (errored ? 'error:' + status : status) + ' ms=' + (Date.now() - msg.t1));\nif (!errored && (status < 200 || status >= 300) && msg.payload && msg.payload.error) {\n  // error body ฉบับเต็ม (status, message, details[] ที่ Google ใช้บอก field ที่ผิด) — ไม่มี key/รูป/ocr_text\n  node.warn('gemini error ' + status + ': ' + JSON.stringify(msg.payload.error).slice(0, 3000));\n}\nconst step = svc.nextStep(msg.ai, status, errored, msg.deadline - Date.now());\ndelete msg.headers;                              // header ของ Gemini / API key ห้ามหลุดไปกับ http response\n\nif (step.action === 'ok') return [msg, null, null];\n\nif (step.action === 'retry') {\n  // 429/5xx/timeout → สลับรุ่นสำรองทันที (ถ้าเป็นคนละรุ่น) ไม่เช่นนั้นรุ่นเดิมเว้น 2 วินาที (งบ retry = 1 ครั้ง) ; timeout ครั้งนี้ = เวลาที่เหลือของงบ 40 วินาที\n  msg.ai.retried = true;\n  msg.ai.model = step.model;\n  msg.delay = step.delayMs;\n  msg.url = svc.geminiUrl(step.model);\n  msg.aiBody = svc.bodyForModel(msg.aiBody, step.model);   // thinkingLevel ต้องตรงรุ่นที่ลอง (Lite=minimal, รุ่นอื่น=low)\n  msg.payload = msg.aiBody;\n  msg.headers = { 'x-goog-api-key': env.get('LLM_API_KEY'), 'content-type': 'application/json' };\n  msg.requestTimeout = step.timeoutMs;\n  delete msg.statusCode;\n  msg.t1 = Date.now() + step.delayMs;\n  return [null, msg, null];\n}\n\nsvc.deleteUploadFile(msg.imagePath);\nnode.warn('scan failed reason=' + step.reason + ' calls=' + msg.ai.calls + ' ms=' + (Date.now() - msg.t0));\nmsg.statusCode = 503;\nmsg.payload = { error: 'AI_UNAVAILABLE', details: 'ระบบ AI ไม่ว่างชั่วคราว ลองใหม่อีกครั้งนะคะ' };\nreturn [null, null, msg];",
+        "outputs": 3,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2080,
+        "y": 120,
+        "wires": [
+            [
+                "scan_extract"
+            ],
+            [
+                "scan_delay"
+            ],
+            [
+                "scan_res503"
+            ]
+        ],
+        "outputLabels": [
+            "สำเร็จ",
+            "ลองซ้ำ",
+            "ล้มเหลว 503"
+        ],
+        "g": "scan_stage4"
+    },
+    {
+        "id": "scan_delay",
+        "type": "delay",
+        "z": "tab_scan",
+        "name": "รอก่อนลองซ้ำ (msg.delay)",
+        "pauseType": "delayv",
+        "timeout": "2",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1930,
+        "y": 250,
+        "wires": [
+            [
+                "scan_http"
+            ]
+        ],
+        "g": "scan_stage4"
+    },
+    {
+        "id": "scan_res503",
+        "type": "http response",
+        "z": "tab_scan",
+        "name": "ตอบ 503 ระบบ AI ไม่ว่าง",
+        "statusCode": "",
+        "headers": {},
+        "x": 2380,
+        "y": 250,
+        "wires": [],
+        "g": "scan_stage4"
+    },
+    {
+        "id": "scan_mock_delay",
+        "type": "delay",
+        "z": "tab_scan",
+        "name": "รอ 2 วินาที (เหมือนเรียกจริง)",
+        "pauseType": "delay",
+        "timeout": "2",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1780,
+        "y": 340,
+        "wires": [
+            [
+                "scan_mock"
+            ]
+        ],
+        "g": "scan_stage5"
+    },
+    {
+        "id": "scan_mock",
+        "type": "function",
+        "z": "tab_scan",
+        "name": "ตอบผลตัวอย่าง (AI_MOCK=true)",
+        "func": "// ผลตัวอย่างจาก prompts/mock-response.json ผ่าน extract + validator จริง ; llm_model = \"mock\"\n// ใส่ [[mock:no_result]] [[mock:invalid_json]] [[mock:schema]] [[mock:unavailable]] ในข้อความ เพื่อทดสอบการแปลง error\nconst hint = (/\\[\\[mock:(\\w+)\\]\\]/.exec(msg.mockText || '') || [])[1];\nconst wrap = (text) => ({ candidates: [{ content: { parts: [{ text }] }, finishReason: 'STOP' }] });\nmsg.statusCode = 200;\ndelete msg.mockText;\nif (hint === 'unavailable') {\n  msg.statusCode = 503;\n  msg.payload = { error: 'AI_UNAVAILABLE', details: 'ระบบ AI ไม่ว่างชั่วคราว ลองใหม่อีกครั้งนะคะ' };\n  return [null, msg];\n}\nif (hint === 'no_result') msg.payload = { promptFeedback: { blockReason: 'SAFETY' } };\nelse if (hint === 'invalid_json') msg.payload = wrap('ไม่ใช่ JSON {');\nelse if (hint === 'schema') msg.payload = wrap('{\"foo\":1}');\nelse msg.payload = wrap(JSON.stringify(global.get('prompts').mockResponse));\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2080,
+        "y": 340,
+        "wires": [
+            [
+                "scan_extract"
+            ],
+            [
+                "scan_res503"
+            ]
+        ],
+        "outputLabels": [
+            "ผลจำลอง",
+            "จำลอง 503"
+        ],
+        "g": "scan_stage5"
+    },
+    {
+        "id": "scan_extract",
+        "type": "function",
+        "z": "tab_scan",
+        "name": "ดึงข้อความ JSON จากคำตอบ",
+        "func": "const r = global.get('scanService').extractText(msg.payload);\ndelete msg.headers;\nif (!r.ok) {\n  node.warn('scan no_result why=' + r.why);\n  global.get('scanService').deleteUploadFile(msg.imagePath);\n  msg.statusCode = r.status;\n  msg.payload = r.body;\n  return [null, msg];\n}\nnode.log('scan ai_text len=' + r.text.length + ' finish=' + r.finishReason);\ndelete msg.aiBody;\nmsg.payload = r.text;\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2380,
+        "y": 120,
+        "wires": [
+            [
+                "scan_validate"
+            ],
+            [
+                "scan_res422"
+            ]
+        ],
+        "outputLabels": [
+            "มีข้อความ",
+            "ไม่มีผล 422"
+        ],
+        "g": "scan_stage6"
+    },
+    {
+        "id": "scan_validate",
+        "type": "function",
+        "z": "tab_scan",
+        "name": "ตรวจผล: parse → Ajv → ปิดข้อมูลส่วนตัว → review_flags",
+        "func": "const out = global.get('llmOutput').process(msg.payload, global.get('medicineValidator'));\nif (!out.ok) {\n  node.warn('scan validate failed code=' + out.body.error);\n  global.get('scanService').deleteUploadFile(msg.imagePath);\n  msg.statusCode = out.status;\n  msg.payload = out.body;\n  return [null, msg];\n}\nmsg.llmResult = out.result;\nmsg.reviewFlags = out.review_flags;\nmsg.payload = null;\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2680,
+        "y": 120,
+        "wires": [
+            [
+                "scan_save"
+            ],
+            [
+                "scan_res422"
+            ]
+        ],
+        "outputLabels": [
+            "ผ่าน",
+            "ไม่ผ่าน 422"
+        ],
+        "g": "scan_stage6"
+    },
+    {
+        "id": "scan_res422",
+        "type": "http response",
+        "z": "tab_scan",
+        "name": "ตอบ 422 อ่านผลไม่ได้",
+        "statusCode": "",
+        "headers": {},
+        "x": 2980,
+        "y": 190,
+        "wires": [],
+        "g": "scan_stage6"
+    },
+    {
+        "id": "scan_save",
+        "type": "function",
+        "z": "tab_scan",
+        "name": "บันทึก prescriptions (draft)",
+        "func": "const id = await global.get('scanService').savePrescription(global.get('db'), msg.user.id, {\n  inputType: msg.inputType, imagePath: msg.imagePath, result: msg.llmResult, model: msg.ai.model\n});\nnode.log('scan done id=' + id + ' user=' + msg.user.id + ' model=' + msg.ai.model + ' meds=' + msg.llmResult.medications.length +\n  ' ocr_len=' + msg.llmResult.ocr_text.length + ' flags=' + msg.reviewFlags.length + ' calls=' + msg.ai.calls + ' ms=' + (Date.now() - msg.t0));\nmsg.statusCode = 200;\nmsg.payload = { prescription_id: id, ocr_text: msg.llmResult.ocr_text, result: msg.llmResult, review_flags: msg.reviewFlags };\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 3000,
+        "y": 120,
+        "wires": [
+            [
+                "scan_res200"
+            ]
+        ],
+        "g": "scan_stage7"
+    },
+    {
+        "id": "scan_res200",
+        "type": "http response",
+        "z": "tab_scan",
+        "name": "ตอบ 200 ผลการสแกน",
+        "statusCode": "",
+        "headers": {},
+        "x": 3280,
+        "y": 120,
+        "wires": [],
+        "g": "scan_stage7"
+    },
+    {
+        "id": "scan_get_in",
+        "type": "http in",
+        "z": "tab_scan",
+        "name": "GET /api/prescriptions/:id",
+        "url": "/api/prescriptions/:id",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 520,
+        "wires": [
+            [
+                "scan_get_jwt"
+            ]
+        ],
+        "g": "scan_get_grp"
+    },
+    {
+        "id": "scan_get_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_scan",
+        "name": "ตรวจ JWT",
+        "x": 400,
+        "y": 520,
+        "wires": [
+            [
+                "scan_get_fn"
+            ]
+        ],
+        "g": "scan_get_grp"
+    },
+    {
+        "id": "scan_get_fn",
+        "type": "function",
+        "z": "tab_scan",
+        "name": "อ่านผลสแกน (เจ้าของเท่านั้น)",
+        "func": "// ไม่ใช่เจ้าของ = 404 เสมอ ; review_flags คำนวณใหม่จาก llm_json ที่เก็บไว้\nconst r = await global.get('scanService').getPrescription(global.get('db'), msg.user.id, msg.req.params.id, global.get('llmOutput').reviewFlags);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\nreturn r.status === 200 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 700,
+        "y": 520,
+        "wires": [
+            [
+                "scan_get_ok"
+            ],
+            [
+                "scan_get_404"
+            ]
+        ],
+        "outputLabels": [
+            "พบข้อมูล",
+            "ไม่พบ"
+        ],
+        "g": "scan_get_grp"
+    },
+    {
+        "id": "scan_get_ok",
+        "type": "http response",
+        "z": "tab_scan",
+        "name": "ตอบ 200 ผลการสแกน",
+        "statusCode": "",
+        "headers": {},
+        "x": 1000,
+        "y": 520,
+        "wires": [],
+        "g": "scan_get_grp"
+    },
+    {
+        "id": "scan_get_404",
+        "type": "http response",
+        "z": "tab_scan",
+        "name": "ตอบ 404 ไม่พบ",
+        "statusCode": "",
+        "headers": {},
+        "x": 1000,
+        "y": 580,
+        "wires": [],
+        "g": "scan_get_grp"
+    },
+    {
+        "id": "scan_catch",
+        "type": "catch",
+        "z": "tab_scan",
+        "name": "ดักข้อผิดพลาดของ tab นี้",
+        "scope": [
+            "scan_in",
+            "scan_jwt",
+            "scan_check",
+            "scan_res400",
+            "scan_rate",
+            "scan_res429",
+            "scan_prep",
+            "scan_decide",
+            "scan_delay",
+            "scan_res503",
+            "scan_mock_delay",
+            "scan_mock",
+            "scan_extract",
+            "scan_validate",
+            "scan_res422",
+            "scan_save",
+            "scan_res200",
+            "scan_get_in",
+            "scan_get_jwt",
+            "scan_get_fn",
+            "scan_get_ok",
+            "scan_get_404"
+        ],
+        "uncaught": false,
+        "x": 150,
+        "y": 700,
+        "wires": [
+            [
+                "scan_err"
+            ]
+        ],
+        "g": "scan_err_grp"
+    },
+    {
+        "id": "scan_err",
+        "type": "function",
+        "z": "tab_scan",
+        "name": "แปลง error เป็น JSON 500",
+        "func": "node.error(msg.error && msg.error.message ? msg.error.message : 'unknown error');\ndelete msg.headers;\nmsg.statusCode = 500;\nmsg.payload = { error: 'INTERNAL_ERROR', details: 'ระบบขัดข้อง กรุณาลองใหม่ภายหลัง' };\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 700,
+        "wires": [
+            [
+                "scan_res500"
+            ]
+        ],
+        "g": "scan_err_grp"
+    },
+    {
+        "id": "scan_res500",
+        "type": "http response",
+        "z": "tab_scan",
+        "name": "ตอบ 500 ระบบขัดข้อง",
+        "statusCode": "",
+        "headers": {},
+        "x": 750,
+        "y": 700,
+        "wires": [],
+        "g": "scan_err_grp"
+    },
+    {
+        "id": "scan_stage1",
+        "type": "group",
+        "z": "tab_scan",
+        "name": "1 ตรวจสิทธิ์ + ตรวจข้อมูลที่ส่งมา",
+        "style": {
+            "stroke": "#6b7280",
+            "fill": "#f3f4f6",
+            "color": "#6b7280",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "scan_in",
+            "scan_jwt",
+            "scan_check",
+            "scan_res400"
+        ],
+        "x": 30,
+        "y": 78,
+        "w": 1008,
+        "h": 154,
+        "g": "scan_grp"
+    },
+    {
+        "id": "scan_stage2",
+        "type": "group",
+        "z": "tab_scan",
+        "name": "2 จำกัดการใช้งาน",
+        "style": {
+            "stroke": "#6b7280",
+            "fill": "#f3f4f6",
+            "color": "#6b7280",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "scan_rate",
+            "scan_res429"
+        ],
+        "x": 674,
+        "y": 78,
+        "w": 654,
+        "h": 154,
+        "g": "scan_grp"
+    },
+    {
+        "id": "scan_stage3",
+        "type": "group",
+        "z": "tab_scan",
+        "name": "3 บันทึกรูป + เตรียมคำขอ",
+        "style": {
+            "stroke": "#6b7280",
+            "fill": "#f3f4f6",
+            "color": "#6b7280",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "scan_prep"
+        ],
+        "x": 1304,
+        "y": 78,
+        "w": 352,
+        "h": 84,
+        "g": "scan_grp"
+    },
+    {
+        "id": "scan_stage4",
+        "type": "group",
+        "z": "tab_scan",
+        "name": "4 เรียก Gemini (เวลารวม ≤ 40 วินาที · ลองซ้ำได้ 1 ครั้ง)",
+        "style": {
+            "stroke": "#b45309",
+            "fill": "#fdf3e3",
+            "color": "#b45309",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "scan_http",
+            "scan_decide",
+            "scan_delay",
+            "scan_res503"
+        ],
+        "x": 1604,
+        "y": 78,
+        "w": 929,
+        "h": 214,
+        "g": "scan_grp"
+    },
+    {
+        "id": "scan_stage5",
+        "type": "group",
+        "z": "tab_scan",
+        "name": "4b โหมดจำลอง (AI_MOCK=true)",
+        "style": {
+            "stroke": "#6b7280",
+            "fill": "#f3f4f6",
+            "color": "#6b7280",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "scan_mock_delay",
+            "scan_mock"
+        ],
+        "x": 1599,
+        "y": 298,
+        "w": 656,
+        "h": 84,
+        "g": "scan_grp"
+    },
+    {
+        "id": "scan_stage6",
+        "type": "group",
+        "z": "tab_scan",
+        "name": "5 ตรวจผลลัพธ์จาก AI",
+        "style": {
+            "stroke": "#6b7280",
+            "fill": "#f3f4f6",
+            "color": "#6b7280",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "scan_extract",
+            "scan_validate",
+            "scan_res422"
+        ],
+        "x": 2222,
+        "y": 78,
+        "w": 898,
+        "h": 154,
+        "g": "scan_grp"
+    },
+    {
+        "id": "scan_stage7",
+        "type": "group",
+        "z": "tab_scan",
+        "name": "6 บันทึกและตอบกลับ",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "color": "#0f766e",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "scan_save",
+            "scan_res200"
+        ],
+        "x": 2824,
+        "y": 78,
+        "w": 582,
+        "h": 84,
+        "g": "scan_grp"
+    },
+    {
+        "id": "scan_grp",
+        "type": "group",
+        "z": "tab_scan",
+        "name": "POST /api/scan",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "color": "#0f766e",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "scan_stage1",
+            "scan_stage2",
+            "scan_stage3",
+            "scan_stage4",
+            "scan_stage5",
+            "scan_stage6",
+            "scan_stage7"
+        ],
+        "x": 10,
+        "y": 50,
+        "w": 3416,
+        "h": 352
+    },
+    {
+        "id": "scan_get_grp",
+        "type": "group",
+        "z": "tab_scan",
+        "name": "GET /api/prescriptions/:id",
+        "style": {
+            "stroke": "#0070c0",
+            "fill": "#e8f1fa",
+            "color": "#0070c0",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "scan_get_in",
+            "scan_get_jwt",
+            "scan_get_fn",
+            "scan_get_ok",
+            "scan_get_404"
+        ],
+        "x": -17,
+        "y": 478,
+        "w": 1143,
+        "h": 144
+    },
+    {
+        "id": "scan_err_grp",
+        "type": "group",
+        "z": "tab_scan",
+        "name": "ข้อผิดพลาดที่ไม่คาดคิด → 500",
+        "style": {
+            "stroke": "#b91c1c",
+            "fill": "#fdeaea",
+            "color": "#b91c1c",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "scan_catch",
+            "scan_err",
+            "scan_res500"
+        ],
+        "x": 20,
+        "y": 658,
+        "w": 865,
+        "h": 84
+    },
+    {
+        "id": "sch_clean_cron",
+        "type": "cronplus",
+        "z": "tab_sched",
+        "name": "ทุกวัน 03:00 (เวลาไทย)",
+        "outputField": "payload",
+        "timeZone": "Asia/Bangkok",
+        "persistDynamic": false,
+        "commandResponseMsgOutput": "output1",
+        "outputs": 1,
+        "options": [
+            {
+                "name": "daily-0300",
+                "topic": "cleanup-uploads",
+                "payloadType": "default",
+                "payload": "",
+                "expressionType": "cron",
+                "expression": "0 0 3 * * * *",
+                "location": "",
+                "offset": "0",
+                "solarType": "all",
+                "solarEvents": "sunrise,sunset"
+            }
+        ],
+        "x": 190,
+        "y": 500,
+        "wires": [
+            [
+                "sch_clean_fn"
+            ]
+        ],
+        "g": "sch_clean_grp"
+    },
+    {
+        "id": "sch_clean_inject",
+        "type": "inject",
+        "z": "tab_sched",
+        "name": "▶ รันตอนนี้",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 570,
+        "wires": [
+            [
+                "sch_clean_fn"
+            ]
+        ],
+        "g": "sch_clean_grp"
+    },
+    {
+        "id": "sch_clean_fn",
+        "type": "function",
+        "z": "tab_sched",
+        "name": "ลบรูปที่เก่ากว่า 7 วัน + image_path = NULL",
+        "func": "// นโยบาย: เก็บรูปไม่เกิน 7 วัน (confirm/discard จะลบทันที — ทำวันที่ 5) ดู README \"ความเป็นส่วนตัวของข้อมูล\"\nconst r = await global.get('scanService').cleanupOldUploads(global.get('db'), 7);\nnode.log('cleanup uploads rows=' + r.rows + ' files=' + r.files + ' orphans=' + r.orphans);\nmsg.payload = r;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 650,
+        "y": 535,
+        "wires": [
+            [
+                "sch_clean_dbg"
+            ]
+        ],
+        "g": "sch_clean_grp"
+    },
+    {
+        "id": "sch_clean_dbg",
+        "type": "debug",
+        "z": "tab_sched",
+        "name": "จำนวนรูปที่ลบ",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.files",
+        "statusType": "auto",
+        "x": 1000,
+        "y": 535,
+        "wires": [],
+        "g": "sch_clean_grp"
+    },
+    {
+        "id": "sch_clean_grp",
+        "type": "group",
+        "z": "tab_sched",
+        "name": "ลบรูปซองยาที่เก่ากว่า 7 วัน (cron 03:00 หรือกดเอง)",
+        "style": {
+            "stroke": "#b45309",
+            "fill": "#fdf3e3",
+            "color": "#b45309",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "sch_clean_cron",
+            "sch_clean_inject",
+            "sch_clean_fn",
+            "sch_clean_dbg"
+        ],
+        "x": 41,
+        "y": 458,
+        "w": 1079,
+        "h": 154
+    },
+    {
+        "id": "auth_grp_reg",
+        "type": "group",
+        "z": "tab_auth",
+        "name": "POST /api/auth/register",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "color": "#0f766e",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "reg_in",
+            "reg_validate",
+            "reg_insert",
+            "reg_token"
+        ],
+        "x": 6,
+        "y": 18,
+        "w": 973,
+        "h": 104
+    },
+    {
+        "id": "auth_grp_login",
+        "type": "group",
+        "z": "tab_auth",
+        "name": "POST /api/auth/login",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "color": "#0f766e",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "login_in",
+            "login_throttle",
+            "login_select",
+            "login_verify"
+        ],
+        "x": 20,
+        "y": 158,
+        "w": 1053,
+        "h": 104
+    },
+    {
+        "id": "auth_grp_me",
+        "type": "group",
+        "z": "tab_auth",
+        "name": "GET /api/me",
+        "style": {
+            "stroke": "#0070c0",
+            "fill": "#e8f1fa",
+            "color": "#0070c0",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "me_in",
+            "me_jwt",
+            "me_query",
+            "me_select",
+            "me_shape"
+        ],
+        "x": 40,
+        "y": 298,
+        "w": 1050,
+        "h": 104
+    },
+    {
+        "id": "auth_grp_res",
+        "type": "group",
+        "z": "tab_auth",
+        "name": "ตอบกลับ + ข้อผิดพลาดที่ไม่คาดคิด (ใช้ร่วมกันทั้ง tab)",
+        "style": {
+            "stroke": "#b91c1c",
+            "fill": "#fdeaea",
+            "color": "#b91c1c",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "auth_res",
+            "auth_catch",
+            "auth_err"
+        ],
+        "x": 30,
+        "y": 178,
+        "w": 1290,
+        "h": 344
     }
 ]

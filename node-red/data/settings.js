@@ -8,6 +8,8 @@ const addFormats = require('ajv-formats');
 const db = require('./lib/db');
 const medicationService = require('./lib/medication-service');
 const doseService = require('./lib/dose-service');
+const scanService = require('./lib/scan-service');
+const llmOutput = require('./lib/validate-llm-output');
 
 const PROMPT_DIR = path.join(__dirname, 'prompts');
 const readPrompt = (file) => fs.readFileSync(path.join(PROMPT_DIR, file), 'utf8');
@@ -24,8 +26,8 @@ module.exports = {
   flowFilePretty: true,                       // diff ใน git อ่านง่าย
   credentialSecret: process.env.NODE_RED_CREDENTIAL_SECRET,
 
-  // รับรูปซองยาแบบ base64 ได้ (default ของ Node-RED คือ 5mb)
-  apiMaxLength: '10mb',
+  // รับรูปซองยาแบบ base64 ได้ (default ของ Node-RED คือ 5mb; รูป 8 MB เป็น base64 ≈ 10.7 MB จึงตั้ง 12mb)
+  apiMaxLength: '12mb',
 
   // ล็อก editor ด้วยรหัสผ่าน (สำคัญเมื่อเปิด tunnel)
   adminAuth: process.env.NODE_RED_ADMIN_HASH ? {
@@ -47,10 +49,15 @@ module.exports = {
     db,                                       // db.query / db.withTransaction (ดู lib/db.js)
     medicationService,
     doseService,
+    scanService,
+    llmOutput,                                // process / reviewFlags / redactPii (lib/validate-llm-output.js)
     prompts: {
       medicineSystem: readPrompt('medicine-parse.system.txt'),
-      medicineUser: readPrompt('medicine-parse.user.txt'),
-      medicineSchema
+      medicineUserImage: readPrompt('medicine-parse.user.image.txt'),
+      medicineUserText: readPrompt('medicine-parse.user.text.txt'),
+      medicineSchema,
+      medicineGeminiSchema: scanService.toGeminiSchema(medicineSchema),   // สำเนาที่ตัด keyword ที่ Gemini ไม่รองรับ
+      mockResponse: JSON.parse(readPrompt('mock-response.json'))
     }
   },
   functionExternalModules: true,

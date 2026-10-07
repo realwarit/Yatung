@@ -1,0 +1,22 @@
+{
+  "ocr_text": "โรงพยาบาลตัวอย่าง  [HN]\n[ชื่อผู้ป่วย]\nMetformin 500 mg   จำนวน 60 เม็ด\nรับประทานครั้งละ 1 เม็ด วันละ 2 ครั้ง\nหลังอาหาร เช้า - เย็น\nยาเบาหวาน",
+  "is_medicine_label": true,
+  "medications": [
+    {
+      "name": "Metformin",
+      "strength": "500 mg",
+      "dose_per_time": 1,
+      "unit": "tablet",
+      "slots": ["morning", "evening"],
+      "meal_relation": "after",
+      "as_needed": false,
+      "total_qty": 60,
+      "indication": "ยาเบาหวาน",
+      "warnings": [],
+      "source_text": "Metformin 500 mg   จำนวน 60 เม็ด\nรับประทานครั้งละ 1 เม็ด วันละ 2 ครั้ง\nหลังอาหาร เช้า - เย็น\nยาเบาหวาน",
+      "confidence": { "name": 0.97, "dose": 0.95, "slots": 0.95, "meal_relation": 0.95 }
+    }
+  ],
+  "unreadable_parts": [],
+  "overall_note": "ผลตัวอย่างจากโหมดจำลอง (AI_MOCK) ไม่ได้อ่านจากรูปจริง"
+}
