@@ -1,0 +1,64 @@
+@if (previewUrl(); as src) {
+  <div class="frame frame--image">
+    <img [src]="src" alt="รูปซองยาที่เลือก" />
+    @if (interactive()) {
+      <div class="tools" role="toolbar" aria-label="เครื่องมือจัดการรูป">
+        <ion-button class="tool" title="หมุนรูป 90°" aria-label="หมุนรูป 90 องศา" (click)="rotate.emit()">
+          <ion-icon slot="icon-only" name="reload-outline"></ion-icon>
+        </ion-button>
+        <ion-button class="tool" [title]="desktop() ? 'เลือกรูปใหม่' : 'ถ่ายรูปใหม่'"
+                    [attr.aria-label]="desktop() ? 'เลือกรูปใหม่' : 'ถ่ายรูปใหม่'" (click)="onFrame()">
+          <ion-icon slot="icon-only" name="camera-reverse-outline"></ion-icon>
+        </ion-button>
+        <ion-button class="tool tool--danger" title="ลบรูป" aria-label="ลบรูป" (click)="clear.emit()">
+          <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+        </ion-button>
+      </div>
+    }
+  </div>
+  <p class="info num">{{ info() }}</p>
+  @for (w of warnings(); track w) {
+    <p class="yt-alert yt-alert--warning" role="status"><app-icon name="alert" /> <span>{{ w }}</span></p>
+  }
+} @else {
+  <!-- กรอบเล็งทั้งกรอบเป็นปุ่ม: Enter/Space ได้ -->
+  <button type="button" class="frame frame--empty" [class.is-drag]="dragging()"
+          [attr.aria-label]="desktop() ? 'เลือกไฟล์รูปซองยา' : 'ถ่ายรูปซองยา'"
+          [disabled]="!interactive()" (click)="onFrame()">
+    <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+    <svg class="art" viewBox="0 0 120 90" fill="none" stroke="currentColor" stroke-width="2.5"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <path d="M22 14h76a4 4 0 0 1 4 4v54a4 4 0 0 1-4 4H22a4 4 0 0 1-4-4V18a4 4 0 0 1 4-4z"/>
+      <path d="M18 28h84"/>
+      <path d="M30 42h38M30 52h30M30 62h22"/>
+      <g transform="rotate(-40 86 54)"><rect x="74" y="49" width="24" height="10" rx="5"/><path d="M86 49v10"/></g>
+    </svg>
+    @if (dragging()) {
+      <span class="hint hint--drag">ปล่อยรูปตรงนี้ได้เลย</span>
+    } @else if (desktop()) {
+      <span class="hint">ลากรูปมาวางตรงนี้ · หรือกดเพื่อเลือกไฟล์ · หรือกด Ctrl+V เพื่อวางรูป</span>
+    } @else {
+      <span class="hint">แตะเพื่อถ่ายรูปซองยา</span>
+    }
+  </button>
+
+  @if (interactive()) {
+    <div class="buttons">
+      @if (desktop()) {
+        <ion-button class="yt-btn" expand="block" (click)="upload.emit()">
+          <ion-icon slot="start" name="cloud-upload-outline"></ion-icon>อัปโหลดรูปซองยา
+        </ion-button>
+        <ion-button class="yt-btn" expand="block" fill="outline" (click)="camera.emit()">
+          <ion-icon slot="start" name="camera-outline"></ion-icon>ใช้กล้อง
+        </ion-button>
+      } @else {
+        <ion-button class="yt-btn" expand="block" (click)="camera.emit()">
+          <ion-icon slot="start" name="camera-outline"></ion-icon>ถ่ายรูปซองยา
+        </ion-button>
+        <ion-button class="yt-btn" expand="block" fill="outline" (click)="gallery.emit()">
+          <ion-icon slot="start" name="images-outline"></ion-icon>เลือกรูปจากเครื่อง
+        </ion-button>
+      }
+    </div>
+  }
+}

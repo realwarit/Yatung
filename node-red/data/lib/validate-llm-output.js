@@ -1,89 +1,89 @@
 // =====================================================================
-// Node-RED function node: "Validate LLM output"
-// วางโค้ดนี้ใน function node ที่ต่อจาก http request ที่เรียก LLM (tab 2-AI-Scan)
-//
-// input : msg.payload = ข้อความดิบจาก LLM (string) หรือ object ที่ parse แล้ว
-// output 1 (สำเร็จ): msg.payload = { result, review_flags }
-// output 2 (ล้มเหลว): msg.statusCode = 422, msg.payload = { error, details }
-// ตั้งค่า node ให้มี 2 outputs
+// ตรวจผลลัพธ์จาก LLM (ใช้ผ่าน global.get('llmOutput'))
+//   process(raw, validate) : parse → Ajv → ปิดข้อมูลส่วนตัวซ้ำฝั่ง server → business rules → review_flags
+//     สำเร็จ  → { ok: true, result, review_flags }
+//     ล้มเหลว → { ok: false, status: 422, body: { error, details } }
+//   reviewFlags(data)      : กฎ business เดี่ยวๆ (ใช้ซ้ำตอนโหลดจาก GET /api/prescriptions/:id)
+//   redactPii(text)        : แทน HN / เลขบัตร 13 หลัก / เบอร์โทร ที่ LLM ปิดไม่หมด
 // =====================================================================
-
-const validate = global.get('medicineValidator'); // compile ไว้ครั้งเดียวใน settings.js
-
-// 1) Parse — LLM บางตัวครอบ ```json ... ``` มาให้ แม้จะสั่งว่าไม่ต้อง
-let data = msg.payload;
-if (typeof data === 'string') {
-  const raw = data;
-  const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '');
-  try {
-    data = JSON.parse(cleaned);
-  } catch (e) {
-    node.warn({ step: 'parse', raw: raw.slice(0, 500) });
-    msg.statusCode = 422;
-    msg.payload = { error: 'AI_INVALID_JSON', details: 'ระบบอ่านผล AI ไม่ได้ กรุณาลองใหม่หรือกรอกเอง' };
-    return [null, msg];
-  }
-}
-
-// 2) Validate กับ JSON Schema (Ajv)
-if (!validate(data)) {
-  msg.statusCode = 422;
-  msg.payload = {
-    error: 'AI_SCHEMA_MISMATCH',
-    details: validate.errors.map(e => `${e.instancePath || '/'} ${e.message}`).slice(0, 10)
-  };
-  return [null, msg];
-}
-
-// 3) Business rules ที่ JSON Schema ตรวจไม่ได้
 const LOW = 0.7;
 const SLOT_ORDER = ['morning', 'noon', 'evening', 'bedtime'];
-const reviewFlags = []; // [{ index, field, reason }] → หน้า Review ใช้ไฮไลต์สีเหลือง
 
-data.medications.forEach((m, i) => {
-  // ยาเมื่อมีอาการ ต้องไม่มีรอบเตือน
-  if (m.as_needed && m.slots.length) m.slots = [];
+// เลขบัตร 13 หลัก (มีหรือไม่มีขีด/เว้นวรรค) — ทำก่อนเบอร์โทร
+const ID_CARD_RE = /(?<!\d)\d(?:[\s-]?\d){12}(?!\d)/g;
+// เบอร์ไทย 9–10 หลักขึ้นต้น 0 หรือ +66 (เช่น 081-234-5678, 02 123 4567)
+const PHONE_RE = /(?<![\d.])(?:\+66[\s-]?|0)\d{1,2}[\s-]?\d{3}[\s-]?\d{3,4}(?!\d)/g;
 
-  // ยาปกติแต่ไม่มีมื้อ → ผู้ใช้ต้องเลือกเอง
-  if (!m.as_needed && m.slots.length === 0) {
-    reviewFlags.push({ index: i, field: 'slots', reason: 'ไม่พบมื้อที่ต้องกิน กรุณาเลือก' });
-  }
+// HN / AN / VN + เลขผู้ป่วย (ป้าย + ตัวเลขรวมกัน) เช่น "HN: 123456", "HN 12-34567", "AN.998877"
+const HN_RE = /(?<![A-Za-z])(?:HN|AN|VN)\s*(?:no\.?|number)?\s*[:.#-]?\s*\d[\d/-]*/gi;
 
-  // จัดลำดับมื้อให้คงที่ (เช้า → ก่อนนอน)
-  m.slots.sort((a, b) => SLOT_ORDER.indexOf(a) - SLOT_ORDER.indexOf(b));
-
-  if (m.meal_relation === 'unknown') {
-    reviewFlags.push({ index: i, field: 'meal_relation', reason: 'ซองยาไม่ระบุก่อน/หลังอาหาร' });
-  }
-  if (m.dose_per_time === null) {
-    reviewFlags.push({ index: i, field: 'dose_per_time', reason: 'ไม่พบจำนวนต่อครั้ง' });
-  }
-
-  // ความมั่นใจต่ำ (ค่านี้ LLM ประเมินตัวเอง จึงใช้เป็นสัญญาณช่วยเท่านั้น ไม่ใช่ความจริง)
-  for (const [field, score] of Object.entries(m.confidence)) {
-    if (score < LOW) {
-      reviewFlags.push({ index: i, field, reason: `AI มั่นใจต่ำ (${Math.round(score * 100)}%)` });
-    }
-  }
-
-  // กันค่าแปลก: กินเกิน 4 เม็ดต่อครั้งพบได้น้อย → ให้ตรวจ
-  if (m.dose_per_time !== null && m.dose_per_time > 4 && ['tablet', 'capsule'].includes(m.unit)) {
-    reviewFlags.push({ index: i, field: 'dose_per_time', reason: 'จำนวนต่อครั้งสูงผิดปกติ กรุณาตรวจ' });
-  }
-});
-
-if (!data.is_medicine_label) {
-  reviewFlags.push({ index: -1, field: 'is_medicine_label', reason: 'ภาพนี้อาจไม่ใช่ซองยา' });
+function redactPii(text) {
+  if (typeof text !== 'string') return text;
+  return text.replace(ID_CARD_RE, '[เลขบัตร]').replace(HN_RE, '[HN]').replace(PHONE_RE, '[เบอร์โทร]');
 }
 
-// ช่องเดียวกันถูก flag หลายเหตุผลได้ → เก็บเหตุผลแรกไว้อันเดียว
-const seen = new Set();
-const uniqueFlags = reviewFlags.filter(f => {
-  const key = f.index + ':' + f.field;
-  if (seen.has(key)) return false;
-  seen.add(key);
-  return true;
-});
+function parseRaw(raw) {
+  if (typeof raw !== 'string') return raw;
+  // LLM บางตัวครอบ ```json ... ``` มาให้ แม้จะสั่งว่าไม่ต้อง
+  const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '');
+  try { return JSON.parse(cleaned); } catch (e) { return null; }
+}
 
-msg.payload = { result: data, review_flags: uniqueFlags };
-return [msg, null];
+function reviewFlags(data) {
+  const flags = []; // [{ index, field, reason }] → หน้า Review ใช้ไฮไลต์สีเหลือง
+  data.medications.forEach((m, i) => {
+    if (!m.as_needed && m.slots.length === 0) {
+      flags.push({ index: i, field: 'slots', reason: 'ไม่พบมื้อที่ต้องกิน กรุณาเลือก' });
+    }
+    if (m.meal_relation === 'unknown') {
+      flags.push({ index: i, field: 'meal_relation', reason: 'ซองยาไม่ระบุก่อน/หลังอาหาร' });
+    }
+    if (m.dose_per_time === null) {
+      flags.push({ index: i, field: 'dose_per_time', reason: 'ไม่พบจำนวนต่อครั้ง' });
+    }
+    // ความมั่นใจต่ำ (LLM ประเมินตัวเอง จึงใช้เป็นสัญญาณช่วยเท่านั้น ไม่ใช่ความจริง)
+    for (const [field, score] of Object.entries(m.confidence)) {
+      if (score < LOW) flags.push({ index: i, field, reason: `AI มั่นใจต่ำ (${Math.round(score * 100)}%)` });
+    }
+    // กินเกิน 4 เม็ดต่อครั้งพบได้น้อย → ให้ตรวจ
+    if (m.dose_per_time !== null && m.dose_per_time > 4 && ['tablet', 'capsule'].includes(m.unit)) {
+      flags.push({ index: i, field: 'dose_per_time', reason: 'จำนวนต่อครั้งสูงผิดปกติ กรุณาตรวจ' });
+    }
+  });
+  if (!data.is_medicine_label) {
+    flags.push({ index: -1, field: 'is_medicine_label', reason: 'ภาพนี้อาจไม่ใช่ซองยา' });
+  }
+  // ช่องเดียวกันถูก flag หลายเหตุผลได้ → เก็บเหตุผลแรกไว้อันเดียว
+  const seen = new Set();
+  return flags.filter((f) => {
+    const key = f.index + ':' + f.field;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function process(raw, validate) {
+  const data = parseRaw(raw);
+  if (data === null || typeof data !== 'object') {
+    return { ok: false, status: 422, body: { error: 'AI_INVALID_JSON', details: 'ระบบอ่านผล AI ไม่ได้ กรุณาลองใหม่หรือกรอกเอง' } };
+  }
+  if (!validate(data)) {
+    return {
+      ok: false, status: 422,
+      body: { error: 'AI_SCHEMA_MISMATCH', details: validate.errors.map((e) => `${e.instancePath || '/'} ${e.message}`).slice(0, 10) }
+    };
+  }
+
+  // ปิดข้อมูลส่วนตัวซ้ำอีกชั้น (เผื่อ LLM ปิดไม่หมด)
+  data.ocr_text = redactPii(data.ocr_text);
+  data.medications.forEach((m) => { m.source_text = redactPii(m.source_text); });
+
+  data.medications.forEach((m) => {
+    if (m.as_needed && m.slots.length) m.slots = [];   // ยาเมื่อมีอาการ ต้องไม่มีรอบเตือน
+    m.slots.sort((a, b) => SLOT_ORDER.indexOf(a) - SLOT_ORDER.indexOf(b));
+  });
+  return { ok: true, result: data, review_flags: reviewFlags(data) };
+}
+
+module.exports = { process, reviewFlags, redactPii };

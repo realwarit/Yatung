@@ -29,6 +29,8 @@ export interface ParsedMedication {
 }
 
 export interface MedicineParseResult {
+  /** ข้อความที่ Gemini ถอดจากรูป (ปิดชื่อผู้ป่วย/HN/เลขบัตร/เบอร์โทรแล้ว) */
+  ocr_text: string;
   is_medicine_label: boolean;
   medications: ParsedMedication[];
   unreadable_parts: string[];

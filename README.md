@@ -80,21 +80,55 @@ npx cap open android
 ## AI pipeline (`POST /api/scan`)
 
 ```
-{image: base64} ──► OCR ──┐
-                          ├─► LLM (system prompt + JSON schema) ──► validate-llm-output.js ──► draft
-{text: "..."} ────────────┘
+{image: base64} ──┐
+                  ├─► Gemini (generateContent: รูป/ข้อความ + system prompt + responseSchema)
+{text: "..."} ────┘        │ ครั้งเดียว: ถอดข้อความลง ocr_text (ปิดชื่อ/HN) แล้วตีความเป็น medications
+                           ▼
+        validate-llm-output.js (parse → Ajv → ปิดข้อมูลส่วนตัวซ้ำ → business rules → review_flags)
+                           ▼
+                prescriptions (status = draft) + ตอบ { prescription_id, ocr_text, result, review_flags }
 ```
+
+**ทำไมเปลี่ยนจาก OCR → LLM เป็น Gemini แบบ multimodal:** ไม่มี billing account สำหรับ Google Cloud Vision
+ส่วน Gemini อ่านรูปได้เองโดยตรง การส่งรูปครั้งเดียวทำให้ "อ่านตัวหนังสือ" กับ "ตีความ" เกิดพร้อมกัน
+(โมเดลเห็นบริบทของซองทั้งใบ แก้ตัวอักษรที่อ่านผิดได้ดีกว่า OCR แยก), ใช้ key เดียว (`LLM_API_KEY`) และมีขั้นตอนน้อยลง
 
 | ไฟล์ | ใช้ทำอะไร |
 |---|---|
-| `node-red/data/prompts/medicine-parse.system.txt` | system prompt (กฎการตีความ + กัน prompt injection + ตัวอย่าง) |
-| `node-red/data/prompts/medicine-parse.user.txt` | template ฝั่ง user — แทน `{{OCR_TEXT}}` ด้วยข้อความ OCR |
-| `node-red/data/prompts/medicine-parse.schema.json` | JSON Schema ของผลลัพธ์ ส่งให้ LLM และใช้ validate |
-| `node-red/data/lib/validate-llm-output.js` | โค้ด function node: parse → Ajv → business rules → review_flags |
+| `node-red/data/prompts/medicine-parse.system.txt` | system prompt (ถอดข้อความ + ปิดข้อมูลส่วนตัว + กฎตีความ + กัน prompt injection + ตัวอย่าง) |
+| `node-red/data/prompts/medicine-parse.user.image.txt` / `.user.text.txt` | template ฝั่ง user สำหรับรูป / ข้อความ (แทน `{{USER_TEXT}}`) |
+| `node-red/data/prompts/medicine-parse.schema.json` | JSON Schema ของผลลัพธ์ (มี `ocr_text`) ใช้ validate ด้วย Ajv |
+| `node-red/data/prompts/mock-response.json` | ผลตัวอย่างของโหมดจำลอง |
+| `node-red/data/lib/scan-service.js` | ตรวจ input, rate limit, บันทึก/ลบรูป, สร้าง request Gemini, กฎลองซ้ำ, บันทึก prescriptions |
+| `node-red/data/lib/validate-llm-output.js` | parse → Ajv → ปิดเลขบัตร/เบอร์ซ้ำ → review_flags |
 
-ทั้งหมดถูกโหลดใน `settings.js` และเรียกใช้ผ่าน `global.get('prompts')` / `global.get('medicineValidator')`
+ทั้งหมดถูกโหลดใน `settings.js` (`global.get('prompts' | 'scanService' | 'llmOutput' | 'medicineValidator')`)
+การเรียก Gemini เป็น node `http request` ใน tab `2-AI-Scan` ที่มองเห็นได้ใน flow (ใช้ header `x-goog-api-key` เท่านั้น)
 
-**การส่ง schema ให้ LLM แต่ละเจ้า:** แต่ละผู้ให้บริการรองรับ keyword ของ JSON Schema ไม่เท่ากัน
-ถ้า API ตอบ error เรื่อง schema ให้ลบ keyword ที่ใช้แค่ตรวจค่า (`minLength`, `maxLength`, `maxItems`,
-`uniqueItems`, `minimum`, `maximum`, `exclusiveMinimum`) ออกจากสำเนาที่ส่งให้ LLM
-ส่วนไฟล์ต้นฉบับให้เก็บไว้ครบ เพราะ Ajv ฝั่ง Node-RED ใช้ตรวจซ้ำอยู่แล้ว
+**การส่ง schema ให้ Gemini:** ส่งเป็น `generationConfig.responseJsonSchema` โดย `scanService.toGeminiSchema()` สร้างสำเนาจาก schema ต้นฉบับ
+(inline `$defs`/`$ref`, ตัด `maxItems` — Gemini ตอบ 400 ถ้ามี) ส่วนไฟล์ต้นฉบับเก็บไว้ครบให้ Ajv ตรวจซ้ำ (รวม `maxItems`)
+**เวลา:** ยิง Gemini รวมไม่เกิน 40 วินาทีต่อคำขอ (รวมลองซ้ำ) แล้วตอบ 503 `AI_UNAVAILABLE`
+
+**ตัวแปรสภาพแวดล้อม:** `LLM_API_KEY`, `LLM_MODEL` (`gemini-3.5-flash-lite`), `LLM_MODEL_FALLBACK` (`gemini-3.1-flash-lite` — ใช้ทันทีเมื่อรุ่นหลักตอบ 429/503 หรือ timeout), `AI_MOCK`
+
+**รุ่นและโควตา:** ตัวหลัก `gemini-3.5-flash-lite` (ทดสอบ 7 เคสถูกหมด ตอบใน 3–4 วินาที) · ตัวสำรอง `gemini-3.1-flash-lite` (11–12 วินาที) ·
+ไม่ใช้ `gemini-3.8-flash` (โควตาฟรีน้อย 5 ครั้ง/นาที, 20 ครั้ง/วัน และตอบ 503 บ่อย) — แอปจำกัดผู้ใช้ละ 4 ครั้ง/นาที และ 15 ครั้ง/วัน ·
+`thinkingLevel: minimal` ทำให้เร็วขึ้นมาก (32 → 10 วินาทีในเคสทดสอบ) · ผลทดสอบทั้งหมดดู [`docs/ai-test-report.md`](docs/ai-test-report.md)
+
+> **ถ้าเน็ตล่มหรือโควตาหมดวันนำเสนอ ให้ตั้ง `AI_MOCK=true` แล้ว `docker compose up -d nodered`**
+> (ตอบผลตัวอย่าง Metformin หลังรอ 2 วินาที ผ่าน validator จริง และยังบันทึก prescriptions ตามปกติ, `llm_model = "mock"`)
+> ใส่ `[[mock:no_result]]`, `[[mock:invalid_json]]`, `[[mock:schema]]`, `[[mock:unavailable]]` ในข้อความเพื่อจำลอง error
+
+### ความเป็นส่วนตัวของข้อมูล
+
+- **รูปซองยาถูกส่งให้ Gemini เพื่ออ่าน** (รูปยังมีชื่อผู้ป่วย/HN อยู่ตามที่พิมพ์บนซอง) — ผู้ใช้ควรรู้ข้อนี้ก่อนสแกน
+- **เก็บรูปไม่เกิน 7 วัน** ที่ `/data/uploads/<userId>/` (ไม่อยู่ใน git): ลบทันทีเมื่อ confirm/discard (ทำวันที่ 5 — `scanService.deleteUploadForPrescription`),
+  และมี cron 03:00 ใน tab `6-Scheduler` ลบไฟล์ที่เก่ากว่า 7 วันพร้อมตั้ง `prescriptions.image_path = NULL`
+  (สแกนล้มเหลวจะลบรูปทิ้งทันที)
+- **ข้อความที่เก็บถาวร** (`prescriptions.ocr_text`, `llm_json`) **ปิดชื่อผู้ป่วย → `[ชื่อผู้ป่วย]`, HN → `[HN]`, เลขบัตร → `[เลขบัตร]`,
+  เบอร์โทร → `[เบอร์โทร]` แล้ว** — Gemini ปิดตอนถอดข้อความ และ server ปิดเลขบัตร 13 หลัก/เบอร์โทรซ้ำอีกชั้น
+- log ของ Node-RED ไม่บันทึก API key, base64 ของรูป หรือ `ocr_text` (บันทึกเฉพาะความยาว เวลา และ status)
+
+docker compose up -d           # เริ่มระบบ (หลังเปิดเครื่อง)
+docker compose down            # หยุดระบบ (ข้อมูลยังอยู่)
+docker compose logs -f nodered # ดู log ของ Node-RED

@@ -1,48 +1,45 @@
 .head { margin-bottom: var(--yt-space-4); }
-.greet { margin: 0; font-size: 1.1rem; color: var(--yt-text-muted); }   // 20px
+.greet { margin: 0; font-size: 1.1rem; color: var(--yt-text-muted); }   // มือถือ 20px · จอคอม 24px
 .name {
   margin: 0;
   max-width: 100%;
-  font-size: 1.55rem;   // 28px
-  white-space: nowrap;
+  font-size: 1.55rem;   // มือถือ 28px · จอคอม 40px (ดู @media ล่าง)
+  white-space: nowrap;   // ชื่อห้ามตัดบรรทัด ยาวเกินแสดง …
   overflow: hidden;
   text-overflow: ellipsis;
-  text-wrap: balance;
 }
 .date { margin: 0; font-size: var(--yt-text-lg); color: var(--yt-text-muted); }
 
 .layout { display: grid; gap: var(--yt-space-4); grid-template-columns: minmax(0, 1fr); }
 .aside, .list { display: flex; flex-direction: column; gap: var(--yt-space-4); min-width: 0; }
 
-.progress { display: flex; flex-direction: column; gap: var(--yt-space-3); padding: var(--yt-space-4); }
-.progress__top { display: flex; align-items: center; gap: var(--yt-space-4); }
-.progress__num { margin: 0; font: 600 1.25rem / 1.6 var(--yt-font-display); color: var(--yt-primary-deep); }
-app-progress-ring { width: 7rem; }
-.mascot-row { display: flex; align-items: center; gap: var(--yt-space-3); }
+.progress { display: flex; flex-direction: column; align-items: center; gap: var(--yt-space-3); padding: var(--yt-space-4); }
+.progress__row { display: flex; align-items: center; justify-content: center; gap: var(--yt-space-4); }
+app-progress-ring { width: 8rem; }
 .say {
   position: relative;
-  flex: 1;
-  min-width: 0;
+  align-self: stretch;
   margin: 0;
   padding: var(--yt-space-3) var(--yt-space-4);
   border-radius: var(--yt-radius-md);
   background: var(--yt-primary-softer);
   border: 2px solid var(--yt-primary-soft);
-  font: 500 1rem / 1.6 var(--yt-font-display);
+  font: 500 1.05rem / 1.6 var(--yt-font-display);
   color: var(--yt-primary-deep);
+  text-align: center;
   text-wrap: balance;
+  // หางกรอบคำพูดชี้ขึ้นไปหาน้องยาตรง (อยู่ขวาของแถว)
   &::before {
     content: '';
     position: absolute;
-    left: -9px;
-    top: 50%;
+    right: 18%;
+    top: -9px;
     width: 14px;
     height: 14px;
-    margin-top: -7px;
-    background: inherit;
-    border: inherit;
+    background: var(--yt-primary-softer);
+    border: 2px solid var(--yt-primary-soft);
     border-right: 0;
-    border-top: 0;
+    border-bottom: 0;
     transform: rotate(45deg);
   }
 }
@@ -62,7 +59,7 @@ app-progress-ring { width: 7rem; }
 }
 .next--done { background: var(--yt-success-soft); color: var(--yt-on-success-soft); }
 .next__late { color: var(--yt-on-warning-soft); }
-.next:has(.next__late) { background: var(--yt-warning-soft); }
+.next--late { background: var(--yt-warning-soft); color: var(--yt-on-warning-soft); }
 .next__go {
   min-height: var(--yt-tap);
   padding: 0 var(--yt-space-5);
@@ -84,7 +81,7 @@ app-progress-ring { width: 7rem; }
   font-size: 1.4rem;
   color: var(--yt-primary-dark);
 }
-.slot__time { margin-left: auto; font: 600 1.15rem var(--yt-font-display); color: var(--yt-text-muted); }
+.slot__time { margin-left: auto; font-size: 1.25rem; color: var(--yt-text-muted); }
 .slot__done {
   display: flex;
   align-items: center;
@@ -140,8 +137,7 @@ app-progress-ring { width: 7rem; }
   .layout { grid-template-columns: minmax(0, 1fr) 22rem; align-items: start; gap: var(--yt-space-6); }
   .aside { order: 2; position: sticky; top: var(--yt-space-6); }
   .list { order: 1; }
-  .name { font-size: var(--yt-text-title); }
+  .greet { font-size: 1.35rem; }
+  .name { font-size: 2.2rem; }
   .progress { padding: var(--yt-space-5); }
-  .progress__top { flex-direction: column; text-align: center; }
-  app-progress-ring { width: 8.5rem; }
 }

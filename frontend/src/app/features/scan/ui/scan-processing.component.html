@@ -1,0 +1,37 @@
+<div class="proc">
+  <div class="media" aria-hidden="true">
+    @if (mode() === 'photo' && previewUrl()) {
+      <img [src]="previewUrl()" alt="" />
+    } @else {
+      <p class="ghost">{{ text() }}</p>
+    }
+    <span class="scan"></span>
+  </div>
+
+  <div class="who">
+    <app-mascot mood="thinking" [size]="140" />
+    <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+  </div>
+
+  <p class="sr-only" aria-live="polite" role="status">{{ announce() }}</p>
+  <h2 class="title">{{ preparing() ? 'กำลังเตรียมรูป…' : 'น้องยาตรงกำลังอ่านให้อยู่ค่ะ' }}</h2>
+
+  <ol class="steps">
+    @for (l of labels; track l; let i = $index) {
+      <li class="step" [attr.data-state]="state(i)">
+        <span class="mark">
+          @switch (state(i)) {
+            @case ('done') { <app-icon name="check" /> }
+            @case ('active') { <ion-spinner name="crescent" color="primary"></ion-spinner> }
+          }
+        </span>
+        <span class="label">{{ l }}</span>
+        <span class="sr-only">{{ state(i) === 'done' ? ' เสร็จแล้ว' : state(i) === 'active' ? ' กำลังทำ' : ' รอคิว' }}</span>
+      </li>
+    }
+  </ol>
+
+  @if (!preparing()) {
+    <ion-button class="yt-btn" fill="outline" (click)="cancel.emit()">ยกเลิก</ion-button>
+  }
+</div>

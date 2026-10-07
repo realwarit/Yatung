@@ -49,10 +49,13 @@ services:
       NODE_RED_CREDENTIAL_SECRET: ${NODE_RED_CREDENTIAL_SECRET}
       NODE_RED_ADMIN_USER: ${NODE_RED_ADMIN_USER}
       NODE_RED_ADMIN_HASH: ${NODE_RED_ADMIN_HASH}
-      OCR_API_KEY: ${OCR_API_KEY}
       LLM_PROVIDER: ${LLM_PROVIDER}
       LLM_API_KEY: ${LLM_API_KEY}
       LLM_MODEL: ${LLM_MODEL}
+      LLM_MODEL_FALLBACK: ${LLM_MODEL_FALLBACK}
+      AI_MOCK: ${AI_MOCK:-false}
+      GEMINI_NO_RETRY: ${GEMINI_NO_RETRY:-false}   # เฉพาะทดสอบ: true = ไม่ลองใหม่/ไม่สลับรุ่น เพื่อคุมจำนวน request
+      GEMINI_BASE_URL: ${GEMINI_BASE_URL:-}   # เฉพาะทดสอบกับ Gemini ปลอม (scripts/fake-gemini.js) ปล่อยว่างตามปกติ
       LINE_CHANNEL_ACCESS_TOKEN: ${LINE_CHANNEL_ACCESS_TOKEN}
       LINE_CHANNEL_SECRET: ${LINE_CHANNEL_SECRET}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}

@@ -26,10 +26,10 @@ export function clockTime(ms: number): string {
   return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
 }
 
-/** 'อาทิตย์ 4 ตุลาคม 2569' */
+/** 'วันอาทิตย์ที่ 4 ตุลาคม 2569' */
 export function thaiDate(ms: number): string {
   const d = new Date(ms + OFFSET_MS);
-  return `${DAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear() + 543}`;
+  return `วัน${DAYS[d.getUTCDay()]}ที่ ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear() + 543}`;
 }
 
 /** 'YYYY-MM-DD' → '4 ตุลาคม 2569' */

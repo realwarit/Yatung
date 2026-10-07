@@ -40,7 +40,7 @@ export function normalizeTime(raw: string): string | null {
   `,
   styles: `
     mat-dialog-actions { flex-wrap: wrap; gap: var(--yt-space-2); padding: var(--yt-space-3) var(--yt-space-5) var(--yt-space-5); }
-    .yt-control input { font: 600 1.6rem / 1.6 var(--yt-font-display); }
+    .yt-control input { font: 700 1.6rem / 1.6 var(--yt-font-body); font-variant-numeric: tabular-nums; }
   `,
 })
 export class TimeInputDialogComponent {

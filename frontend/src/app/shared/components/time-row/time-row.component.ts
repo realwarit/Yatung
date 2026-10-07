@@ -22,7 +22,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
       <button type="button" class="step" (appHoldRepeat)="bump(-1)" [attr.aria-label]="'ลดเวลามื้อ' + label() + ' 15 นาที'">
         <app-icon name="minus" />
       </button>
-      <button type="button" class="time" [class.bad]="error()" (click)="edit()" [attr.aria-label]="'เวลามื้อ' + label() + ' ' + value() + ' กดเพื่อพิมพ์เวลาเอง'">
+      <button type="button" class="time num" [class.bad]="error()" (click)="edit()" [attr.aria-label]="'เวลามื้อ' + label() + ' ' + value() + ' กดเพื่อพิมพ์เวลาเอง'">
         {{ value() }}
       </button>
       <button type="button" class="step" (appHoldRepeat)="bump(1)" [attr.aria-label]="'เพิ่มเวลามื้อ' + label() + ' 15 นาที'">
@@ -38,11 +38,13 @@ const pad = (n: number) => String(n).padStart(2, '0');
     .name { display: flex; align-items: center; gap: var(--yt-space-2); margin: 0 0 var(--yt-space-2); font-weight: 600; color: var(--yt-primary-dark); }
     .ctl { display: flex; align-items: center; gap: var(--yt-space-3); }
     .step {
+      --icon-optical-offset: 0;
       display: grid;
       place-items: center;
       flex: none;
       width: 56px;
       height: 56px;
+      font-size: 1.5rem;
       border: 2px solid var(--yt-primary);
       border-radius: 50%;
       background: var(--yt-surface);
@@ -60,7 +62,8 @@ const pad = (n: number) => String(n).padStart(2, '0');
       border-radius: var(--yt-radius-field);
       background: transparent;
       color: var(--yt-text);
-      font: 600 2rem / 1.6 var(--yt-font-display);   // 32px ที่สเกล 100%
+      font-size: 2rem;   /* 32px ที่สเกล 100% (ฟอนต์/น้ำหนักมาจาก .num) */
+      line-height: 1.6;
       text-align: center;
       cursor: pointer;
       &:hover { border-color: var(--yt-border-strong); }

@@ -1,0 +1,52 @@
+<section class="card" [attr.aria-busy]="busy()">
+  <!-- Ionic: ion-segment (pill กว้างตามเนื้อหา) — เปลี่ยนโหมดแล้วรูป/ข้อความเดิมยังอยู่ -->
+  <ion-segment mode="ios" class="mode" [value]="mode()" [disabled]="busy()"
+               aria-label="เลือกวิธีใส่ข้อมูลยา" (ionChange)="onMode($event.detail.value)">
+    <ion-segment-button value="photo" layout="icon-start">
+      <ion-icon name="camera-outline"></ion-icon>
+      <ion-label>ถ่ายรูปซองยา</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="text" layout="icon-start">
+      <ion-icon name="create-outline"></ion-icon>
+      <ion-label>พิมพ์เอง</ion-label>
+    </ion-segment-button>
+  </ion-segment>
+
+  @if (busy()) {
+    <app-scan-processing [mode]="mode()" [previewUrl]="previewUrl()" [text]="text()" [step]="step()"
+                         (cancel)="cancel.emit()" />
+  } @else {
+    <div class="body">
+      <div class="main">
+        @if (mode() === 'photo') {
+          <app-scan-capture [previewUrl]="previewUrl()" [info]="imageInfo()" [warnings]="warnings()"
+                            [desktop]="desktop()" [dragging]="dragging()" [interactive]="!failed()"
+                            (upload)="upload.emit()" (camera)="camera.emit()" (gallery)="gallery.emit()"
+                            (rotate)="rotate.emit()" (clear)="clear.emit()" />
+        } @else {
+          <app-scan-text-input [text]="text()" [disabled]="failed()" (textChange)="textChange.emit($event)" />
+        }
+      </div>
+
+      <div class="side" [class.is-error]="failed()">
+        <app-scan-coach [mood]="coach().mood" [text]="coach().text" />
+        @if (showTips()) { <app-scan-tips /> }
+      </div>
+
+      @if (action(); as a) {
+        <div class="act" [class.is-static]="!stickyAction()">
+          <ion-button class="yt-btn" expand="block" (click)="onPrimary()">
+            <ion-icon slot="start" [name]="a.icon"></ion-icon>{{ a.primary }}
+          </ion-button>
+          @if (a.secondary) {
+            <ion-button class="yt-btn" expand="block" fill="outline" (click)="onSecondary()">
+              <ion-icon slot="start" [name]="mode() === 'photo' ? 'create-outline' : 'create-outline'"></ion-icon>{{ a.secondary }}
+            </ion-button>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <p class="yt-disclaimer">ผลจาก AI อาจผิดพลาดได้ คุณจะได้ตรวจก่อนบันทึกทุกครั้ง · ไม่ใช่คำแนะนำทางการแพทย์</p>
+</section>

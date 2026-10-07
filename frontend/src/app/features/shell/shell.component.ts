@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter, map, startWith } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { FontSizeToggleComponent } from '../../shared/font-size-toggle.component';
 import { IconComponent, IconName } from '../../shared/icon.component';
@@ -17,6 +19,22 @@ interface NavItem { path: string; label: string; icon: IconName; }
 })
 export class ShellComponent {
   protected readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+
+  /** route data `hideBottomNav: true` = หน้าโฟกัส (เช่น /scan): มือถือซ่อนแถบเมนูล่างและแถบโลโก้ด้านบน */
+  protected readonly focusMode = toSignal(
+    this.router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      startWith(null),
+      map(() => {
+        let r = this.route.snapshot;
+        while (r.firstChild) r = r.firstChild;
+        return r.data['hideBottomNav'] === true;
+      }),
+    ),
+    { initialValue: false },
+  );
 
   protected readonly left: NavItem[] = [
     { path: '/today', label: 'วันนี้', icon: 'today' },

@@ -68,3 +68,29 @@ a {
     scroll-behavior: auto !important;
   }
 }
+
+// ---------- ตัวเลข ----------
+// เลข 0 ของ Mitr มีขีดคล้าย Ø ("08:00" อ่านผิด) → ให้ Mitr ดึงเฉพาะตัวเลข 0-9 จาก Noto Sans Thai Looped แทน
+// (ประกาศหลัง @fontsource จึงมีผลก่อนในช่วง unicode-range นี้) ใช้ได้ทั้งแอปโดยไม่ต้องแก้ทีละจุด
+@font-face {
+  font-family: 'Mitr';
+  font-style: normal;
+  font-weight: 500;
+  unicode-range: U+0030-0039;
+  src: url('../../node_modules/@fontsource/noto-sans-thai-looped/files/noto-sans-thai-looped-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Mitr';
+  font-style: normal;
+  font-weight: 600;
+  unicode-range: U+0030-0039;
+  src: url('../../node_modules/@fontsource/noto-sans-thai-looped/files/noto-sans-thai-looped-latin-700-normal.woff2') format('woff2');
+}
+
+// ตัวเลขเด่น (เวลา จำนวน วงแหวน ตั้งค่า): ใช้ทั้งแอป
+.num {
+  font-family: var(--yt-font-body);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
