@@ -24,11 +24,38 @@ function redactPii(text) {
   return text.replace(ID_CARD_RE, '[เลขบัตร]').replace(HN_RE, '[HN]').replace(PHONE_RE, '[เบอร์โทร]');
 }
 
+// หน่วยความแรงที่ซองพิมพ์เป็นภาษาไทย/ตัวพิมพ์ต่างกัน → รูปมาตรฐาน (mg, mcg, g, ml) ; เรียงยาวไปสั้นเพราะ "มิลลิกรัม" มี "กรัม" อยู่ข้างใน
+// lookbehind/lookahead กันไม่ให้ไปแทนตัวอักษรกลางคำอื่น (ภาษาไทยไม่มี )
+const STRENGTH_UNITS = [
+  [/ไมโครกรัม|มคก\.?/g, 'mcg'], [/มิลลิกรัม|มก\.?/g, 'mg'], [/กรัม/g, 'g'],
+  [/มิลลิลิตร|มล\.?|ซีซี|cc/gi, 'ml'], [/mcg|mg|g|ml/gi, (u) => u.toLowerCase()]
+];
+function normalizeStrength(text) {
+  if (typeof text !== 'string') return text;
+  let out = text;
+  for (const [re, to] of STRENGTH_UNITS) {
+    const guarded = new RegExp('(?<![ก-๙A-Za-z])(?:' + re.source + ')(?![ก-๙A-Za-z])', re.flags);
+    out = out.replace(guarded, to);
+  }
+  return out.replace(/\s+/g, ' ').trim();
+}
+
 function parseRaw(raw) {
   if (typeof raw !== 'string') return raw;
   // LLM บางตัวครอบ ```json ... ``` มาให้ แม้จะสั่งว่าไม่ต้อง
   const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '');
   try { return JSON.parse(cleaned); } catch (e) { return null; }
+}
+
+// "ก่อนนอน" คือมื้อ (bedtime) ไม่ใช่ความสัมพันธ์กับอาหาร — โมเดลเคยตอบ before ทั้งที่ซองเขียนแค่ "ก่อนนอน"
+// เตือนอย่างเดียว ไม่แก้ค่าให้ ; ถ้าซองมี "ก่อนอาหาร" (หรือ ac / before meal) อยู่ด้วย ถือว่าถูกต้อง ไม่เตือน
+const BEFORE_NIGHT_RE = /ก่อน\s*นอน/;
+const BEFORE_MEAL_RE = /ก่อน\s*อาหาร|(?<![a-z])ac(?![a-z])|before\s+(?:meals?|food)/i;
+function bedtimeMealReason(m) {
+  if (m.meal_relation !== 'before') return null;
+  const t = String(m.source_text || '');
+  if (BEFORE_NIGHT_RE.test(t) && !BEFORE_MEAL_RE.test(t)) return "ซองเขียน 'ก่อนนอน' ไม่ได้ระบุก่อนอาหาร กรุณาตรวจ";
+  return null;
 }
 
 function reviewFlags(data) {
@@ -40,6 +67,8 @@ function reviewFlags(data) {
     if (m.meal_relation === 'unknown') {
       flags.push({ index: i, field: 'meal_relation', reason: 'ซองยาไม่ระบุก่อน/หลังอาหาร' });
     }
+    const bedtime = bedtimeMealReason(m);
+    if (bedtime) flags.push({ index: i, field: 'meal_relation', reason: bedtime });
     if (m.dose_per_time === null) {
       flags.push({ index: i, field: 'dose_per_time', reason: 'ไม่พบจำนวนต่อครั้ง' });
     }
@@ -84,7 +113,7 @@ function process(raw, validate) {
 
   // ปิดข้อมูลส่วนตัวซ้ำอีกชั้น (เผื่อ LLM ปิดไม่หมด)
   data.ocr_text = redactPii(data.ocr_text);
-  data.medications.forEach((m) => { m.source_text = redactPii(m.source_text); });
+  data.medications.forEach((m) => { m.source_text = redactPii(m.source_text); m.strength = normalizeStrength(m.strength); });
 
   data.medications.forEach((m) => {
     if (m.as_needed && m.slots.length) m.slots = [];   // ยาเมื่อมีอาการ ต้องไม่มีรอบเตือน
@@ -93,4 +122,4 @@ function process(raw, validate) {
   return { ok: true, result: data, review_flags: reviewFlags(data) };
 }
 
-module.exports = { process, reviewFlags, redactPii };
+module.exports = { process, reviewFlags, redactPii, bedtimeMealReason, normalizeStrength };

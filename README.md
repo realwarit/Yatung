@@ -77,6 +77,20 @@ npx cap open android
 <uses-permission android:name="android.permission.CAMERA" />
 ```
 
+## ก่อนนำเสนอ
+
+```bash
+bash scripts/demo-check.sh
+```
+
+สรุป ✓/✗ ทีละข้อ (ไม่ผ่านข้อใดจะ exit 1): container db/nodered/frontend · เว็บ :8080 และ proxy `/api` · MySQL credentials · warm-up Gemini ใน log ·
+login บัญชีเดโม · **สแกนข้อความสั้น 1 ครั้งจริง** (เรียก Gemini 1 request ของโควตาบัญชีเดโม แล้วลบ draft ทิ้ง) ·
+รหัสผ่านเดโมอ่านจาก `DEMO_PASSWORD` (env หรือ `.env`; ไม่มี = `demo1234`)
+
+- สแกนช้า > 15 วินาที = รุ่นหลักไม่ตอบแล้วสลับรุ่นสำรองอัตโนมัติ (ยังใช้ได้) — ดู `docker compose logs nodered | grep gemini_http`; Gemini ฝั่ง Google ช้าเป็นช่วงๆ ไม่เกี่ยวกับการเปิด container ใหม่
+- ถ้าสแกนไม่ได้เลยตอนนำเสนอ: ตั้ง `AI_MOCK=true` ใน `.env` แล้ว `docker compose up -d --force-recreate nodered` (ตอบผลตัวอย่างหลังรอ 2 วินาที)
+- Node-RED เรียก Gemini `models.get` 1 ครั้งตอนเริ่ม (log `gemini_warmup … status=200`) เพื่ออุ่น DNS/TLS และให้เห็นว่า key/เครือข่ายใช้ได้ก่อนสแกนจริง
+
 ## AI pipeline (`POST /api/scan`)
 
 ```

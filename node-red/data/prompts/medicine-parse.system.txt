@@ -75,6 +75,10 @@ Meal relation
 - "หลังอาหาร", "หลังอาหารทันที" → after
 - "พร้อมอาหาร" → with
 - "ก่อนนอน" only, or explicitly "ไม่ขึ้นกับมื้ออาหาร" → any
+- "ก่อนนอน" is a MEAL SLOT (slots = bedtime), NOT a relation to food. Never output meal_relation = before just because the label says
+  "ก่อนนอน". Use before / after / with ONLY when the label explicitly says "ก่อนอาหาร" / "หลังอาหาร" / "พร้อมอาหาร" (or ac / pc).
+  If the label gives no such wording (e.g. only "ก่อนนอน"), meal_relation = any. If both appear (e.g. "ก่อนอาหารเช้า และก่อนนอน"),
+  meal_relation = before and slots include bedtime.
 - not stated → unknown
 
 Units

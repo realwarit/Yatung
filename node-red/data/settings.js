@@ -21,6 +21,9 @@ const ajv = new Ajv2020({ allErrors: true, strict: false });
 addFormats(ajv);
 const medicineValidator = ajv.compile(medicineSchema);
 
+// อุ่น Gemini 1 ครั้งตอนเริ่ม (ไม่บล็อก ไม่ล้มเหลวทั้งระบบ)
+require('./lib/gemini-warmup').warmup().catch(() => {});
+
 module.exports = {
   uiPort: process.env.PORT || 1880,
   flowFile: 'flows.json',
