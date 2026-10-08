@@ -24,6 +24,22 @@ function redactPii(text) {
   return text.replace(ID_CARD_RE, '[เลขบัตร]').replace(HN_RE, '[HN]').replace(PHONE_RE, '[เบอร์โทร]');
 }
 
+// หน่วยความแรงที่ซองพิมพ์เป็นภาษาไทย/ตัวพิมพ์ต่างกัน → รูปมาตรฐาน (mg, mcg, g, ml) ; เรียงยาวไปสั้นเพราะ "มิลลิกรัม" มี "กรัม" อยู่ข้างใน
+// lookbehind/lookahead กันไม่ให้ไปแทนตัวอักษรกลางคำอื่น (ภาษาไทยไม่มี )
+const STRENGTH_UNITS = [
+  [/ไมโครกรัม|มคก\.?/g, 'mcg'], [/มิลลิกรัม|มก\.?/g, 'mg'], [/กรัม/g, 'g'],
+  [/มิลลิลิตร|มล\.?|ซีซี|cc/gi, 'ml'], [/mcg|mg|g|ml/gi, (u) => u.toLowerCase()]
+];
+function normalizeStrength(text) {
+  if (typeof text !== 'string') return text;
+  let out = text;
+  for (const [re, to] of STRENGTH_UNITS) {
+    const guarded = new RegExp('(?<![ก-๙A-Za-z])(?:' + re.source + ')(?![ก-๙A-Za-z])', re.flags);
+    out = out.replace(guarded, to);
+  }
+  return out.replace(/\s+/g, ' ').trim();
+}
+
 function parseRaw(raw) {
   if (typeof raw !== 'string') return raw;
   // LLM บางตัวครอบ ```json ... ``` มาให้ แม้จะสั่งว่าไม่ต้อง
@@ -97,7 +113,7 @@ function process(raw, validate) {
 
   // ปิดข้อมูลส่วนตัวซ้ำอีกชั้น (เผื่อ LLM ปิดไม่หมด)
   data.ocr_text = redactPii(data.ocr_text);
-  data.medications.forEach((m) => { m.source_text = redactPii(m.source_text); });
+  data.medications.forEach((m) => { m.source_text = redactPii(m.source_text); m.strength = normalizeStrength(m.strength); });
 
   data.medications.forEach((m) => {
     if (m.as_needed && m.slots.length) m.slots = [];   // ยาเมื่อมีอาการ ต้องไม่มีรอบเตือน
@@ -106,4 +122,4 @@ function process(raw, validate) {
   return { ok: true, result: data, review_flags: reviewFlags(data) };
 }
 
-module.exports = { process, reviewFlags, redactPii, bedtimeMealReason };
+module.exports = { process, reviewFlags, redactPii, bedtimeMealReason, normalizeStrength };
