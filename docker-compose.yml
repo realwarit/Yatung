@@ -55,6 +55,8 @@ services:
       LLM_MODEL_FALLBACK: ${LLM_MODEL_FALLBACK}
       AI_MOCK: ${AI_MOCK:-false}
       GEMINI_NO_RETRY: ${GEMINI_NO_RETRY:-false}   # เฉพาะทดสอบ: true = ไม่ลองใหม่/ไม่สลับรุ่น เพื่อคุมจำนวน request
+      GEMINI_BREAKER_OPEN_MS: ${GEMINI_BREAKER_OPEN_MS:-}   # เฉพาะทดสอบ: เวลาเปิดเบรกเกอร์ (มิลลิวินาที) ว่าง = 10 นาที
+      GEMINI_BREAKER_WINDOW_MS: ${GEMINI_BREAKER_WINDOW_MS:-}   # เฉพาะทดสอบ: หน้าต่างนับความล้มเหลว (มิลลิวินาที) ว่าง = 5 นาที
       GEMINI_BASE_URL: ${GEMINI_BASE_URL:-}   # เฉพาะทดสอบกับ Gemini ปลอม (scripts/fake-gemini.js) ปล่อยว่างตามปกติ
       LINE_CHANNEL_ACCESS_TOKEN: ${LINE_CHANNEL_ACCESS_TOKEN}
       LINE_CHANNEL_SECRET: ${LINE_CHANNEL_SECRET}

@@ -1,6 +1,7 @@
 // Gemini ปลอมสำหรับทดสอบ backend โดยไม่เปลืองโควตา: node scripts/fake-gemini.js [port]
 // พฤติกรรมตามชื่อรุ่นใน URL (/v1beta/models/<model>:generateContent):
 //   down* → 503 เสมอ    slow  → ไม่ตอบ (ค้าง 120 วินาที)    rl → 429    flaky → ครั้งแรก 503 ครั้งต่อไป 200
+//   trip2 → 2 ครั้งแรก 503 แล้วเป็น 200 (รุ่นหลักที่กลับมาปกติ)    slow2 → 2 ครั้งแรกค้าง (timeout) แล้วเป็น 200
 //   bad   → 400    maxtok → 200 แต่ finishReason=MAX_TOKENS (ถูกตัด)    ok → 200 (ผลจาก prompts/mock-response.json)
 // ตรวจ body แบบเดียวกับที่ Gemini จริงเคยปฏิเสธ: มี maxItems / responseSchema / temperature, ไม่มี maxOutputTokens=4096 หรือ thinkingLevel ไม่ตรงรุ่น (ชื่อรุ่นมี lite = minimal, อื่นๆ = low) → 400 (กันถอยหลัง)
 // บันทึกแต่ละคำขอที่ stdout: "REQ <model> <status>"
@@ -24,6 +25,8 @@ http.createServer((req, res) => {
     if (/maxItems/.test(body) || gc.responseSchema || 'temperature' in gc || gc.maxOutputTokens !== 4096 || think !== wantThink || !gc.responseJsonSchema || !b.systemInstruction || !b.contents) {
       return send(400, { error: { code: 400, message: 'Request contains an invalid argument.', status: 'INVALID_ARGUMENT' } });
     }
+    if (model === 'slow2' && seen[model] <= 2) return void setTimeout(() => { try { send(200, {}); } catch (e) {} }, 120000);
+    if (model === 'trip2' && seen[model] <= 2) return send(503, { error: { code: 503, message: 'high demand', status: 'UNAVAILABLE' } });
     if (model === 'slow') return void setTimeout(() => { try { send(200, {}); } catch (e) {} }, 120000);
     if (model.startsWith('down')) return send(503, { error: { code: 503, message: 'high demand', status: 'UNAVAILABLE' } });
     if (model === 'rl' || model === 'flash-rl') return send(429, { error: { code: 429, message: 'quota' } });

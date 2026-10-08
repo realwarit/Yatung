@@ -57,13 +57,29 @@ else
   pid="$(printf '%s' "$body" | jget 'o.prescription_id')"
   name="$(printf '%s' "$body" | jget 'o.result.medications[0].name')"
   if [ "$st" = "200" ] && [ -n "$name" ]; then
-    ok "สแกนได้ \"$name\" ใน ${secs} วินาที"
+    used="$(docker compose logs nodered 2>/dev/null | grep "scan done id=$pid " | tail -1 | grep -o 'model=[^ ]*' | cut -d= -f2)"
+    ok "สแกนได้ \"$name\" ใน ${secs} วินาที (รุ่นที่ใช้จริง: ${used:-ไม่ทราบ})"
+    main_model="$(docker compose exec -T nodered printenv LLM_MODEL 2>/dev/null | tr -d '\r')"
+    [ -n "$used" ] && [ -n "$main_model" ] && [ "$used" != "$main_model" ] && [ "$used" != "mock" ] && warn "ใช้รุ่นสำรอง ($used) แทนรุ่นหลัก ($main_model) — รุ่นหลักล้มเหลวหรือเบรกเกอร์เปิดอยู่"
     [ "$secs" -le 15 ] || warn "ช้า (${secs} วินาที) — อาจสลับไปรุ่นสำรอง ดู log: docker compose logs nodered | grep gemini_http"
   else
     bad "สแกนไม่สำเร็จ HTTP $st: $(printf '%s' "$body" | head -c 150)"
   fi
   [ -n "$pid" ] && curl -s -m 10 -o /dev/null -X POST "$API/api/prescriptions/$pid/discard" -H "Authorization: Bearer $TOKEN" && echo "  · ลบ draft #$pid ที่สร้างตอนเช็กแล้ว"
 fi
+
+echo "== 6) circuit breaker ของรุ่นหลัก (เก็บใน memory ของ Node-RED; ดูจากเหตุการณ์ล่าสุดใน log)"
+ev="$(docker compose logs nodered 2>&1 | grep -o 'gemini_breaker \(open\|close\).*' | tail -1 | tr -d '\r')"
+case "$ev" in
+  "") ok "ปิด (ไม่เคยเปิดตั้งแต่ Node-RED เริ่ม)" ;;
+  "gemini_breaker close"*) ok "ปิด — $ev" ;;
+  *) until="$(echo "$ev" | grep -o 'until=[^ ]*' | cut -d= -f2)"
+     if [ -n "$until" ] && [ "$(node -e 'console.log(Date.now()<Date.parse(process.argv[1])?1:0)' "$until")" = "1" ]; then
+       warn "เปิดอยู่จนถึง $until — สแกนจะใช้รุ่นสำรองตรงๆ ($ev)"
+     else
+       ok "เปิดมาก่อนแล้วครบเวลา (คำขอถัดไปจะลองรุ่นหลักใหม่ 1 ครั้ง) — $ev"
+     fi ;;
+esac
 
 echo
 if [ "$FAIL" = 0 ]; then echo "สรุป: ✓ พร้อมนำเสนอ"; else echo "สรุป: ✗ ไม่ผ่าน $FAIL ข้อ — แก้ก่อนนำเสนอ"; exit 1; fi

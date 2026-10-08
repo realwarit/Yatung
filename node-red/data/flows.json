@@ -2297,7 +2297,7 @@
         "type": "function",
         "z": "tab_scan",
         "name": "บันทึกรูป + สร้างคำขอ Gemini",
-        "func": "const svc = global.get('scanService');\nconst input = msg.input;\nconst mock = env.get('AI_MOCK') === 'true';\nconst model = env.get('LLM_MODEL');\nmsg.t0 = Date.now();\nmsg.deadline = msg.t0 + svc.TOTAL_BUDGET_MS;   // เวลารวมสูงสุดของคำขอนี้ (รวม retry/fallback)\nmsg.inputType = input.kind;\nmsg.imagePath = input.kind === 'image' ? svc.saveUpload(msg.user.id, input.buf, input.ext) : null;\nmsg.ai = { model: mock ? 'mock' : model, fallbackModel: env.get('LLM_MODEL_FALLBACK') || null, retried: false, noRetry: env.get('GEMINI_NO_RETRY') === 'true', calls: 0 };\nnode.log('scan start user=' + msg.user.id + ' type=' + input.kind + ' size=' + (input.kind === 'image' ? input.bytes + 'B' : input.text.length + 'ch') + ' mock=' + mock);\n\nif (mock) {\n  msg.mockText = input.kind === 'text' ? input.text : '';   // ใช้เฉพาะเลือก error จำลอง [[mock:...]] ในโหมดนี้\n  delete msg.input;\n  return [null, msg, null];\n}\nif (!env.get('LLM_API_KEY') || !model) {\n  node.error('LLM_API_KEY หรือ LLM_MODEL ยังไม่ได้ตั้งค่า');\n  svc.deleteUploadFile(msg.imagePath);\n  msg.statusCode = 503;\n  msg.payload = { error: 'AI_UNAVAILABLE', details: 'ระบบ AI ไม่ว่างชั่วคราว ลองใหม่อีกครั้งนะคะ' };\n  return [null, null, msg];\n}\n\n// คำขอ generateContent (ใช้ header x-goog-api-key เท่านั้น — ห้ามใส่ key ใน URL)\nmsg.aiBody = svc.buildGeminiBody(input, global.get('prompts'), model);\nmsg.payload = msg.aiBody;\nmsg.url = svc.geminiUrl(model);\nmsg.headers = { 'x-goog-api-key': env.get('LLM_API_KEY'), 'content-type': 'application/json' };\nmsg.requestTimeout = svc.FIRST_TIMEOUT_MS;      // ครั้งแรก 20 วินาที ครั้งถัดไปใช้เวลาที่เหลือ\nmsg.t1 = Date.now();\ndelete msg.input;\nreturn [msg, null, null];",
+        "func": "const svc = global.get('scanService');\nconst input = msg.input;\nconst mock = env.get('AI_MOCK') === 'true';\nconst model = env.get('LLM_MODEL');\nmsg.t0 = Date.now();\nmsg.deadline = msg.t0 + svc.TOTAL_BUDGET_MS;   // เวลารวมสูงสุดของคำขอนี้ (รวม retry/fallback)\nmsg.inputType = input.kind;\nmsg.imagePath = input.kind === 'image' ? svc.saveUpload(msg.user.id, input.buf, input.ext) : null;\nmsg.ai = { model: mock ? 'mock' : model, fallbackModel: env.get('LLM_MODEL_FALLBACK') || null, retried: false, noRetry: env.get('GEMINI_NO_RETRY') === 'true', calls: 0 };\nnode.log('scan start user=' + msg.user.id + ' type=' + input.kind + ' size=' + (input.kind === 'image' ? input.bytes + 'B' : input.text.length + 'ch') + ' mock=' + mock);\n\nif (mock) {\n  msg.mockText = input.kind === 'text' ? input.text : '';   // ใช้เฉพาะเลือก error จำลอง [[mock:...]] ในโหมดนี้\n  delete msg.input;\n  return [null, msg, null];\n}\nif (!env.get('LLM_API_KEY') || !model) {\n  node.error('LLM_API_KEY หรือ LLM_MODEL ยังไม่ได้ตั้งค่า');\n  svc.deleteUploadFile(msg.imagePath);\n  msg.statusCode = 503;\n  msg.payload = { error: 'AI_UNAVAILABLE', details: 'ระบบ AI ไม่ว่างชั่วคราว ลองใหม่อีกครั้งนะคะ' };\n  return [null, null, msg];\n}\n\n// circuit breaker ของรุ่นหลัก (ดู comment ใน tab นี้ + lib/scan-service.js): เปิดอยู่ = ยิงรุ่นสำรองตรงๆ ; ครบเวลา = คำขอแรกลองรุ่นหลัก (probe)\n// ใช้เฉพาะเมื่อมีรุ่นสำรองต่างรุ่น และไม่ใช่โหมดทดสอบ GEMINI_NO_RETRY\nconst fb = msg.ai.fallbackModel;\nlet useModel = model;\nmsg.ai.primaryModel = model;\nmsg.ai.breaker = !!fb && fb !== model && !msg.ai.noRetry;\nmsg.ai.probe = false;\nmsg.requestTimeout = svc.FIRST_TIMEOUT_MS;      // รุ่นหลัก 10 วินาที ; รุ่นสำรองได้เวลาที่เหลือของงบ 40 วินาที\nif (msg.ai.breaker) {\n  const b = global.get('geminiBreaker') || svc.newBreaker();\n  const plan = svc.breakerPlan(b, Date.now());\n  global.set('geminiBreaker', b);\n  if (plan === 'fallback') {\n    useModel = fb;\n    msg.ai.retried = true;                        // สลับรุ่นไปแล้ว ไม่มีงบลองซ้ำอีก\n    msg.ai.model = fb;\n    msg.requestTimeout = msg.deadline - Date.now();\n    node.log('gemini_breaker skip_primary model=' + model + ' use=' + fb);\n  } else if (plan === 'probe') {\n    msg.ai.probe = true;\n    node.warn('gemini_breaker probe model=' + model);\n  }\n}\n\n// คำขอ generateContent (ใช้ header x-goog-api-key เท่านั้น — ห้ามใส่ key ใน URL)\nmsg.aiBody = svc.buildGeminiBody(input, global.get('prompts'), useModel);\nmsg.payload = msg.aiBody;\nmsg.url = svc.geminiUrl(useModel);\nmsg.headers = { 'x-goog-api-key': env.get('LLM_API_KEY'), 'content-type': 'application/json' };\nmsg.t1 = Date.now();\ndelete msg.input;\nreturn [msg, null, null];",
         "outputs": 3,
         "timeout": 0,
         "noerr": 0,
@@ -2354,7 +2354,7 @@
         "type": "function",
         "z": "tab_scan",
         "name": "ตัดสิน: ผ่าน / สลับรุ่น-ลองซ้ำ 1 ครั้ง / ล้มเหลว",
-        "func": "const svc = global.get('scanService');\n// timeout/เครือข่าย: node http request ส่ง msg ออก output เดียวกัน โดย statusCode เป็นรหัส error (string เช่น 'ETIMEDOUT') ไม่ใช่ตัวเลข\n// (ไม่ใช้ catch node เพราะ http request ส่งทั้งสองทาง ทำให้ตัดสินซ้ำสองรอบ)\nconst status = msg.statusCode;\nconst errored = typeof status !== 'number';\nmsg.ai.calls++;\nnode.log('gemini_http model=' + msg.ai.model + ' call=' + msg.ai.calls + ' status=' + (errored ? 'error:' + status : status) + ' ms=' + (Date.now() - msg.t1));\nif (!errored && (status < 200 || status >= 300) && msg.payload && msg.payload.error) {\n  // error body ฉบับเต็ม (status, message, details[] ที่ Google ใช้บอก field ที่ผิด) — ไม่มี key/รูป/ocr_text\n  node.warn('gemini error ' + status + ': ' + JSON.stringify(msg.payload.error).slice(0, 3000));\n}\nconst step = svc.nextStep(msg.ai, status, errored, msg.deadline - Date.now());\ndelete msg.headers;                              // header ของ Gemini / API key ห้ามหลุดไปกับ http response\n\nif (step.action === 'ok') return [msg, null, null];\n\nif (step.action === 'retry') {\n  // 429/5xx/timeout → สลับรุ่นสำรองทันที (ถ้าเป็นคนละรุ่น) ไม่เช่นนั้นรุ่นเดิมเว้น 2 วินาที (งบ retry = 1 ครั้ง) ; timeout ครั้งนี้ = เวลาที่เหลือของงบ 40 วินาที\n  msg.ai.retried = true;\n  msg.ai.model = step.model;\n  msg.delay = step.delayMs;\n  msg.url = svc.geminiUrl(step.model);\n  msg.aiBody = svc.bodyForModel(msg.aiBody, step.model);   // thinkingLevel ต้องตรงรุ่นที่ลอง (Lite=minimal, รุ่นอื่น=low)\n  msg.payload = msg.aiBody;\n  msg.headers = { 'x-goog-api-key': env.get('LLM_API_KEY'), 'content-type': 'application/json' };\n  msg.requestTimeout = step.timeoutMs;\n  delete msg.statusCode;\n  msg.t1 = Date.now() + step.delayMs;\n  return [null, msg, null];\n}\n\nsvc.deleteUploadFile(msg.imagePath);\nnode.warn('scan failed reason=' + step.reason + ' calls=' + msg.ai.calls + ' ms=' + (Date.now() - msg.t0));\nmsg.statusCode = 503;\nmsg.payload = { error: 'AI_UNAVAILABLE', details: 'ระบบ AI ไม่ว่างชั่วคราว ลองใหม่อีกครั้งนะคะ' };\nreturn [null, null, msg];",
+        "func": "const svc = global.get('scanService');\n// timeout/เครือข่าย: node http request ส่ง msg ออก output เดียวกัน โดย statusCode เป็นรหัส error (string เช่น 'ETIMEDOUT') ไม่ใช่ตัวเลข\n// (ไม่ใช้ catch node เพราะ http request ส่งทั้งสองทาง ทำให้ตัดสินซ้ำสองรอบ)\nconst status = msg.statusCode;\nconst errored = typeof status !== 'number';\nmsg.ai.calls++;\nnode.log('gemini_http model=' + msg.ai.model + ' call=' + msg.ai.calls + ' status=' + (errored ? 'error:' + status : status) + ' ms=' + (Date.now() - msg.t1));\nif (!errored && (status < 200 || status >= 300) && msg.payload && msg.payload.error) {\n  // error body ฉบับเต็ม (status, message, details[] ที่ Google ใช้บอก field ที่ผิด) — ไม่มี key/รูป/ocr_text\n  node.warn('gemini error ' + status + ': ' + JSON.stringify(msg.payload.error).slice(0, 3000));\n}\n// circuit breaker: นับเฉพาะการเรียก \"รุ่นหลัก\" (timeout/เครือข่าย/429/5xx = ล้มเหลว, 2xx = สำเร็จ, 4xx อื่นไม่นับ)\nif (msg.ai.breaker && msg.ai.model === msg.ai.primaryModel) {\n  const okCall = !errored && status >= 200 && status < 300;\n  if (okCall || svc.isBreakerFailure(status, errored)) {\n    const b = global.get('geminiBreaker') || svc.newBreaker();\n    const ev = svc.breakerRecord(b, Date.now(), okCall, msg.ai.probe);\n    global.set('geminiBreaker', b);\n    if (ev === 'open') node.warn('gemini_breaker open model=' + msg.ai.primaryModel + ' probe=' + msg.ai.probe + ' open_min=' + (svc.BREAKER_OPEN_MS / 60000) + ' until=' + new Date(b.openUntil).toISOString());\n    if (ev === 'close') node.warn('gemini_breaker close model=' + msg.ai.primaryModel);\n  }\n}\nconst step = svc.nextStep(msg.ai, status, errored, msg.deadline - Date.now());\ndelete msg.headers;                              // header ของ Gemini / API key ห้ามหลุดไปกับ http response\n\nif (step.action === 'ok') return [msg, null, null];\n\nif (step.action === 'retry') {\n  // 429/5xx/timeout → สลับรุ่นสำรองทันที (ถ้าเป็นคนละรุ่น) ไม่เช่นนั้นรุ่นเดิมเว้น 2 วินาที (งบ retry = 1 ครั้ง) ; timeout ครั้งนี้ = เวลาที่เหลือของงบ 40 วินาที\n  msg.ai.retried = true;\n  msg.ai.model = step.model;\n  msg.delay = step.delayMs;\n  msg.url = svc.geminiUrl(step.model);\n  msg.aiBody = svc.bodyForModel(msg.aiBody, step.model);   // thinkingLevel ต้องตรงรุ่นที่ลอง (Lite=minimal, รุ่นอื่น=low)\n  msg.payload = msg.aiBody;\n  msg.headers = { 'x-goog-api-key': env.get('LLM_API_KEY'), 'content-type': 'application/json' };\n  msg.requestTimeout = step.timeoutMs;\n  delete msg.statusCode;\n  msg.t1 = Date.now() + step.delayMs;\n  return [null, msg, null];\n}\n\nsvc.deleteUploadFile(msg.imagePath);\nnode.warn('scan failed reason=' + step.reason + ' calls=' + msg.ai.calls + ' ms=' + (Date.now() - msg.t0));\nmsg.statusCode = 503;\nmsg.payload = { error: 'AI_UNAVAILABLE', details: 'ระบบ AI ไม่ว่างชั่วคราว ลองใหม่อีกครั้งนะคะ' };\nreturn [null, null, msg];",
         "outputs": 3,
         "timeout": 0,
         "noerr": 0,
@@ -2922,7 +2922,8 @@
             "scan_stage4",
             "scan_stage5",
             "scan_stage6",
-            "scan_stage7"
+            "scan_stage7",
+            "scan_breaker_group"
         ],
         "x": 10,
         "y": 50,
@@ -3574,5 +3575,37 @@
         "y": 1136,
         "w": 1110,
         "h": 148
+    },
+    {
+        "id": "scan_breaker_group",
+        "type": "group",
+        "z": "tab_scan",
+        "name": "4c เบรกเกอร์รุ่นหลัก (circuit breaker)",
+        "style": {
+            "stroke": "#b45309",
+            "fill": "#fdf3e3",
+            "color": "#b45309",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "scan_breaker_note"
+        ],
+        "x": 2290,
+        "y": 298,
+        "w": 560,
+        "h": 84,
+        "g": "scan_grp"
+    },
+    {
+        "id": "scan_breaker_note",
+        "type": "comment",
+        "z": "tab_scan",
+        "name": "รุ่นหลักล้มเหลว 2 ครั้ง/5 นาที → ใช้รุ่นสำรองตรงๆ 10 นาที",
+        "info": "Circuit breaker ของรุ่นหลัก (LLM_MODEL) — logic อยู่ใน lib/scan-service.js (breakerPlan / breakerRecord), ค่าคงที่ปรับได้ที่หัวไฟล์\n\n- นับเฉพาะการเรียกรุ่นหลักที่ล้มเหลว: timeout (10 วินาที), เครือข่าย, 429, 5xx ; 4xx อื่นไม่นับ\n- ล้มเหลว 2 ครั้งภายใน 5 นาที → เปิดเบรกเกอร์ 10 นาที : scan_prep ยิงรุ่นสำรอง (LLM_MODEL_FALLBACK) ตรงๆ ได้เวลาเต็ม 40 วินาที ไม่แตะรุ่นหลัก\n- ครบ 10 นาที: คำขอแรกลองรุ่นหลัก 1 ครั้ง (probe) คำขออื่นที่มาพร้อมกันยังไปรุ่นสำรอง ; probe สำเร็จ → ปิดเบรกเกอร์, ล้มเหลว → เปิดต่ออีก 10 นาที\n- state เก็บใน global context key \"geminiBreaker\" (หายเมื่อ restart Node-RED)\n- log: gemini_breaker open|close|probe|skip_primary ; รุ่นที่ใช้จริงบันทึกใน prescriptions.llm_model ตามเดิม\n- ไม่ใช้เมื่อไม่มีรุ่นสำรองต่างรุ่น หรือ GEMINI_NO_RETRY=true ; ทดสอบด้วยเวลาสั้นผ่าน env GEMINI_BREAKER_OPEN_MS / GEMINI_BREAKER_WINDOW_MS",
+        "x": 2570,
+        "y": 340,
+        "wires": [],
+        "g": "scan_breaker_group"
     }
 ]
