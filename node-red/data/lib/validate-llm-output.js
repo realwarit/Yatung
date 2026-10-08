@@ -31,6 +31,17 @@ function parseRaw(raw) {
   try { return JSON.parse(cleaned); } catch (e) { return null; }
 }
 
+// "ก่อนนอน" คือมื้อ (bedtime) ไม่ใช่ความสัมพันธ์กับอาหาร — โมเดลเคยตอบ before ทั้งที่ซองเขียนแค่ "ก่อนนอน"
+// เตือนอย่างเดียว ไม่แก้ค่าให้ ; ถ้าซองมี "ก่อนอาหาร" (หรือ ac / before meal) อยู่ด้วย ถือว่าถูกต้อง ไม่เตือน
+const BEFORE_NIGHT_RE = /ก่อน\s*นอน/;
+const BEFORE_MEAL_RE = /ก่อน\s*อาหาร|(?<![a-z])ac(?![a-z])|before\s+(?:meals?|food)/i;
+function bedtimeMealReason(m) {
+  if (m.meal_relation !== 'before') return null;
+  const t = String(m.source_text || '');
+  if (BEFORE_NIGHT_RE.test(t) && !BEFORE_MEAL_RE.test(t)) return "ซองเขียน 'ก่อนนอน' ไม่ได้ระบุก่อนอาหาร กรุณาตรวจ";
+  return null;
+}
+
 function reviewFlags(data) {
   const flags = []; // [{ index, field, reason }] → หน้า Review ใช้ไฮไลต์สีเหลือง
   data.medications.forEach((m, i) => {
@@ -40,6 +51,8 @@ function reviewFlags(data) {
     if (m.meal_relation === 'unknown') {
       flags.push({ index: i, field: 'meal_relation', reason: 'ซองยาไม่ระบุก่อน/หลังอาหาร' });
     }
+    const bedtime = bedtimeMealReason(m);
+    if (bedtime) flags.push({ index: i, field: 'meal_relation', reason: bedtime });
     if (m.dose_per_time === null) {
       flags.push({ index: i, field: 'dose_per_time', reason: 'ไม่พบจำนวนต่อครั้ง' });
     }
@@ -93,4 +106,4 @@ function process(raw, validate) {
   return { ok: true, result: data, review_flags: reviewFlags(data) };
 }
 
-module.exports = { process, reviewFlags, redactPii };
+module.exports = { process, reviewFlags, redactPii, bedtimeMealReason };

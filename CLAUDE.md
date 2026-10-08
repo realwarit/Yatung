@@ -92,6 +92,11 @@
     ชั้น 2 `lib/dose-check.js` (`doseConflictReason`) ใช้ใน `reviewFlags`: ดึงขนาดยาจาก `source_text` (½ ครึ่ง เลขไทย ทศนิยม เศษส่วน ช่วง "1–2" = 1 แบบ) ถ้าเจอ ≥ 2 แบบ → flag `dose_per_time` ("ซองเขียนขนาดยาไว้ 2 แบบ (1 และ ½) กรุณาตรวจ");
     นับเฉพาะที่ตามหลัง Sig/take/use/ครั้งละ/รับประทาน/กิน/ทาน หรือมีคำความถี่ (po bid …) — **ไม่นับ** Disp/#30/จำนวน/x30/Qty/mg/วันละ N ครั้ง ; flag `dose` (AI) กับ `dose_per_time` (server) นับเป็นช่องเดียว เหตุผลของ server ชนะ ;
     unit test: `node --test "node-red/test/*.test.js"` (ไม่ใช้ docker; ใช้ผลจริงใน `docs/ai-real-review/before-prompt-fix/`) · รายละเอียดก่อน/หลัง: `docs/ai-test-report.md` หัวข้อ 9
+  - **AI eval (รันเองเมื่อแก้ prompt/schema/lib ฝั่ง AI — ไม่อยู่ในชุดทดสอบปกติ เรียก Gemini จริง ~11 request):** `bash scripts/ai-eval.sh` (ไม่ต้องใช้ `DEMO_PASSWORD` — สร้าง user สุ่มเองแล้วลบ; ต้องมี docker + `.env` ที่ `LLM_MODEL` เป็นรุ่น lite) ·
+    ยิงซองทุกใบใน `docs/sample-images/` เทียบเฉลย `docs/ai-eval/expected.json` ทีละช่อง (ชื่อ ขนาด จำนวนต่อครั้ง มื้อ ก่อน/หลังอาหาร as_needed จำนวนทั้งหมด flag + ไม่มีชื่อ/HN/เบอร์ + จำนวนยา) → ตารางซอง ผ่าน/ไม่ผ่าน + คะแนน "N/M ช่อง" + เทียบรอบก่อน ·
+    บันทึกทุกรอบที่ `docs/ai-eval/runs/<วันเวลา>.{md,json}` (commit เก็บไว้เทียบย้อนหลัง) · สคริปต์สร้าง nodered ใหม่ด้วย `GEMINI_NO_RETRY=true` (ไม่ retry/ไม่สลับรุ่น) เว้น 16 วินาทีต่อซอง (แอปจำกัด 4/นาที) หยุดทันทีเมื่อเจอ 429 ·
+    ซองที่ได้ HTTP ไม่ใช่ 200 (เช่น 503 / ETIMEDOUT ช่วงแรกหลัง recreate) = "ไม่ได้ผล" ไม่นับคะแนน → รันซ้ำเฉพาะซองนั้น `bash scripts/ai-eval.sh <ไฟล์>…` · เพิ่มซองใหม่ = ใส่รูปใน `docs/sample-images/` + เพิ่มเฉลยใน expected.json (ช่องที่ไม่ใส่ = ไม่ตรวจ)
+  - **ก่อนนอน ≠ ก่อนอาหาร (8 ต.ค.):** prompt มีกฎ "ก่อนนอน" = มื้อ (bedtime) ไม่ใช่ความสัมพันธ์กับอาหาร (ไม่มี ก่อน/หลัง/พร้อมอาหาร ชัดเจน → `any`) + server `bedtimeMealReason` ใน `lib/validate-llm-output.js`: `meal_relation=before` แต่ `source_text` มี "ก่อนนอน" และไม่มี "ก่อนอาหาร"/ac/before meal → flag `meal_relation` "ซองเขียน 'ก่อนนอน' ไม่ได้ระบุก่อนอาหาร กรุณาตรวจ" (เตือนอย่างเดียว ไม่แก้ค่า) · test: `node-red/test/bedtime-meal.test.js` · รายละเอียด `docs/ai-test-report.md` หัวข้อ 10
   - รูปทดสอบ (ข้อมูลสมมติ) `docs/sample-images/` สร้างด้วย `cd frontend && node tools/make-sample-images.mjs`
   - body สูงสุด 12mb (`apiMaxLength` + nginx `client_max_body_size 12m`) เพราะรูป 8 MB เป็น base64 ≈ 10.7 MB
 
