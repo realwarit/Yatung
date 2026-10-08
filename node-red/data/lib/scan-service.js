@@ -12,10 +12,14 @@ const RATE_PER_MINUTE = 4;
 const RATE_PER_DAY = 15;
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/';
 const TOTAL_BUDGET_MS = 40000;   // เวลารวมสูงสุดของ /api/scan ที่ยิง Gemini (รวม retry/fallback)
-const FIRST_TIMEOUT_MS = 20000;
+const FIRST_TIMEOUT_MS = 10000;   // timeout ของการยิงรุ่นหลักครั้งแรก (รุ่นสำรองได้เวลาที่เหลือของงบ 40 วินาที)
 const MAX_OUTPUT_TOKENS = 4096;
 const MIN_RETRY_MS = 8000;
 const RETRY_DELAY_MS = 2000;
+// circuit breaker ของรุ่นหลัก (ปรับได้ที่นี่; env GEMINI_BREAKER_* ใช้เฉพาะทดสอบให้เวลาสั้นลง)
+const BREAKER_FAILS = 2;                                                              // ล้มเหลวกี่ครั้ง ...
+const BREAKER_WINDOW_MS = Number(process.env.GEMINI_BREAKER_WINDOW_MS) || 5 * 60 * 1000;  // ... ภายในกี่มิลลิวินาที จึงเปิดเบรกเกอร์
+const BREAKER_OPEN_MS = Number(process.env.GEMINI_BREAKER_OPEN_MS) || 10 * 60 * 1000;      // เปิดนานเท่าไร ก่อนลองรุ่นหลักใหม่ 1 ครั้ง
 
 const err = (status, error, details) => ({ status, body: { error, details } });
 
@@ -177,7 +181,7 @@ function buildGeminiBody(input, prompts, model) {
 const geminiUrl = (model) => `${process.env.GEMINI_BASE_URL || GEMINI_BASE}${encodeURIComponent(model)}:generateContent`;
 
 // ---------- 5) ตัดสินใจหลังเรียก Gemini ----------
-// เวลารวมของ /api/scan ไม่เกิน TOTAL_BUDGET_MS (นับ retry/fallback ทุกครั้ง): ครั้งแรก timeout FIRST_TIMEOUT_MS,
+// เวลารวมของ /api/scan ไม่เกิน TOTAL_BUDGET_MS (นับ retry/fallback ทุกครั้ง): ครั้งแรก (รุ่นหลัก) timeout FIRST_TIMEOUT_MS,
 // ครั้งถัดไปใช้เวลาที่เหลือ (หลังหน่วง) ; เหลือไม่ถึง MIN_RETRY_MS ไม่ลองใหม่
 // ai = { model, fallbackModel, retried, noRetry } ; งบ retry = 1 ครั้งต่อคำขอ (สลับรุ่นก็นับในงบนี้)
 //   429 / 5xx (เช่น 503) / timeout / เครือข่าย → สลับไปรุ่นสำรองทันที (คนละรุ่นกัน จึงไม่ซ้ำรุ่นเดิม) ไม่หน่วง
@@ -204,6 +208,43 @@ function nextStep(ai, statusCode, errored, msLeft) {
   return { ...step, timeoutMs: left };
 }
 
+// ---------- 5.1) circuit breaker ของรุ่นหลัก ----------
+// state เก็บใน global context (key 'geminiBreaker', หายเมื่อ restart) : { failures: [ts], openUntil: ts|0, probing: ts|0 }
+//   รุ่นหลักล้มเหลว (timeout / เครือข่าย / 429 / 5xx) BREAKER_FAILS ครั้งภายใน BREAKER_WINDOW_MS → เปิด BREAKER_OPEN_MS
+//   ระหว่างเปิด: ยิงรุ่นสำรองตรงๆ (ได้เวลาเต็มงบ 40 วินาที) ไม่แตะรุ่นหลัก
+//   ครบเวลา: คำขอแรกลองรุ่นหลัก 1 ครั้ง ("probe") คำขออื่นที่มาพร้อมกันไปรุ่นสำรอง ; probe สำเร็จ → ปิด, ล้มเหลว → เปิดต่ออีก BREAKER_OPEN_MS
+// ไม่ใช้เมื่อไม่มีรุ่นสำรองที่ต่างรุ่น หรือ GEMINI_NO_RETRY=true (ผู้เรียกเป็นคนตัดสิน)
+const newBreaker = () => ({ failures: [], openUntil: 0, probing: 0 });
+
+// → 'primary' | 'fallback' | 'probe' (ถ้า 'probe' จะตั้ง b.probing ให้ ผู้เรียกต้องเก็บ state กลับ)
+function breakerPlan(b, now) {
+  if (!b.openUntil) return 'primary';
+  if (now < b.openUntil) return 'fallback';
+  if (b.probing && now - b.probing < TOTAL_BUDGET_MS) return 'fallback';   // มี probe ค้างอยู่ รอผลก่อน
+  b.probing = now;
+  return 'probe';
+}
+
+// บันทึกผลการเรียกรุ่นหลัก (ok = สำเร็จ) → 'open' | 'close' | null ; คำขอเก่าที่ยิงก่อนเบรกเกอร์เปิดและจบทีหลัง (ไม่ใช่ probe) ถูกเมิน
+function breakerRecord(b, now, ok, probe) {
+  if (b.openUntil && !probe) return null;
+  if (ok) {
+    if (!b.openUntil) return null;
+    b.failures = []; b.openUntil = 0; b.probing = 0;
+    return 'close';
+  }
+  b.failures = b.failures.filter((t) => now - t < BREAKER_WINDOW_MS);
+  b.failures.push(now);
+  if (probe || b.failures.length >= BREAKER_FAILS) {
+    b.failures = []; b.probing = 0; b.openUntil = now + BREAKER_OPEN_MS;
+    return 'open';
+  }
+  return null;
+}
+
+// ล้มเหลวที่นับกับเบรกเกอร์ = timeout / เครือข่าย / 429 / 5xx (4xx อื่นเป็นความผิดของคำขอ ไม่ใช่ของรุ่น)
+const isBreakerFailure = (statusCode, errored) => errored || statusCode === 429 || statusCode >= 500;
+
 // ---------- 6) ดึงข้อความ JSON จากคำตอบ ----------
 function extractText(resp) {
   const noResult = (why) => ({ ok: false, ...err(422, 'AI_NO_RESULT', 'AI ไม่สามารถอ่านรูป/ข้อความนี้ได้ ลองถ่ายใหม่หรือกรอกเอง'), why });
@@ -227,6 +268,7 @@ async function savePrescription(db, userId, p) {
 
 module.exports = {
   checkInput, rateLimit, saveUpload, deleteUploadFile, deleteUploadForPrescription, cleanupOldUploads,
-  toGeminiSchema, buildGeminiBody, bodyForModel, thinkingLevelFor, geminiUrl, nextStep, TOTAL_BUDGET_MS, FIRST_TIMEOUT_MS, extractText, savePrescription, resolveUpload,
+  toGeminiSchema, buildGeminiBody, bodyForModel, thinkingLevelFor, geminiUrl, nextStep, TOTAL_BUDGET_MS, FIRST_TIMEOUT_MS,
+  newBreaker, breakerPlan, breakerRecord, isBreakerFailure, BREAKER_FAILS, BREAKER_WINDOW_MS, BREAKER_OPEN_MS, extractText, savePrescription, resolveUpload,
   UPLOAD_DIR, RATE_PER_MINUTE, RATE_PER_DAY
 };

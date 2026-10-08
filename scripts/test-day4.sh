@@ -219,11 +219,68 @@ run_fake() {
   fake_case "503 → สลับรุ่นสำรองทันที" down ok 200 0 8 2 ok
   fake_case "503 ไม่มีรุ่นสำรองต่างรุ่น → ลองรุ่นเดิมหลังเว้น 2 วินาที" flaky flaky 200 2 10 2 flaky
   fake_case "503 ทั้งสองรุ่น → 503 (ยิง 2 ครั้ง ไม่วน)" down down2 503 0 8 2 -
-  fake_case "Gemini ช้า → สลับรุ่นสำรองหลัง timeout 20 วินาที" slow ok 200 20 24 2 ok
+  fake_case "Gemini ช้า → สลับรุ่นสำรองหลัง timeout 10 วินาที" slow ok 200 10 14 2 ok
   fake_case "400 → ไม่ retry" bad ok 503 0 8 1 -
   fake_case "คำตอบถูกตัด (MAX_TOKENS) → 422 ไม่ retry" maxtok ok 422 0 8 1 -
   fake_case "Gemini ช้า (ค้างตลอดทั้งสองครั้ง) → ตอบ 503 ภายใน 40 วินาที" slow slow 503 38 42 2 -
+  run_breaker
   kill "$FAKE_PID" 2>/dev/null; FAKE_PID=""
+}
+
+# circuit breaker: เวลาเปิดย่อเหลือ 20 วินาทีในโหมดทดสอบ (ค่าจริง 10 นาที) — nodered ถูกสร้างใหม่ทุกเคส จึงเริ่มจากเบรกเกอร์ปิดเสมอ
+BRK_OPEN_MS=20000
+brk_start() { # brk_start MODEL FALLBACK → ตั้ง BTOK
+  restart_nodered AI_MOCK=false LLM_API_KEY=fake-key-for-test LLM_MODEL="$1" LLM_MODEL_FALLBACK="$2" GEMINI_BASE_URL="http://host.docker.internal:8799/v1beta/models/" GEMINI_BREAKER_OPEN_MS=$BRK_OPEN_MS || { bad "nodered ไม่พร้อม"; return 1; }
+  BTOK="$(login)"; BCALLS=0
+}
+brk_scan() { # brk_scan ชื่อ ต่ำสุด สูงสุด request_ที่เพิ่ม รุ่นใน_DB
+  local name="$1" lo="$2" hi="$3" want="$4" wmodel="$5" t0 secs calls id
+  t0=$(date +%s); req POST /api/scan "$BTOK" '{"text":"Metformin 500 mg วันละ 2 ครั้ง หลังอาหาร เช้า-เย็น"}'; secs=$(( $(date +%s) - t0 ))
+  calls="$(docker compose logs nodered 2>/dev/null | grep -c gemini_http)"
+  echo "    $name: HTTP $STATUS · ${secs}s · request ใหม่ $((calls - BCALLS))"
+  expect "$name: สถานะ" "$STATUS" "200"
+  [ "$secs" -ge "$lo" ] && [ "$secs" -le "$hi" ] && ok "$name: ใช้เวลา ${secs}s (อยู่ในช่วง $lo–$hi)" || bad "$name: ใช้เวลา ${secs}s นอกช่วง $lo–$hi"
+  expect "$name: จำนวน request ที่ยิงไป Gemini" "$((calls - BCALLS))" "$want"
+  BCALLS=$calls
+  id="$(jget 'o.prescription_id')"; TEST_PRESC+=("$id")
+  expect "$name: llm_model ที่บันทึก" "$(sql "SELECT llm_model FROM prescriptions WHERE id=$id;")" "$wmodel"
+}
+brk_log() { docker compose logs nodered 2>/dev/null | grep -c "gemini_breaker $1"; }
+run_breaker() {
+  section "circuit breaker: รุ่นหลักค้าง (timeout 10 วินาที) 2 ครั้ง → ครั้งที่ 3 ไปรุ่นสำรองทันที → ครบเวลาลองรุ่นหลักใหม่ → กลับมาปกติ"
+  brk_start slow2 ok || return
+  brk_scan "ครั้งที่ 1 (รุ่นหลักค้าง → สลับที่ 10 วินาที)" 10 14 2 ok
+  expect "  ยังไม่เปิดเบรกเกอร์ (ล้มเหลว 1 ครั้ง)" "$(brk_log open)" "0"
+  brk_scan "ครั้งที่ 2 (ค้างอีก → เปิดเบรกเกอร์)" 10 14 2 ok
+  expect "  log เปิดเบรกเกอร์ 1 ครั้ง" "$(brk_log open)" "1"
+  brk_scan "ครั้งที่ 3 (เบรกเกอร์เปิด → รุ่นสำรองตรงๆ ไม่แตะรุ่นหลัก)" 0 8 1 ok
+  expect "  log skip_primary" "$(brk_log skip_primary)" "1"
+  sleep $(( BRK_OPEN_MS / 1000 + 1 ))
+  brk_scan "ครั้งที่ 4 (ครบเวลา → ลองรุ่นหลัก 1 ครั้ง สำเร็จ)" 0 8 1 slow2
+  expect "  log probe" "$(brk_log probe)" "1"
+  expect "  log ปิดเบรกเกอร์" "$(brk_log close)" "1"
+
+  section "circuit breaker: รุ่นหลักล้มเหลว 503 2 ครั้ง (trip2) แล้วฟื้น — ใช้ใน demo-check ได้"
+  brk_start trip2 ok || return
+  brk_scan "ครั้งที่ 1 (503 → รุ่นสำรอง)" 0 8 2 ok
+  brk_scan "ครั้งที่ 2 (503 → เปิดเบรกเกอร์)" 0 8 2 ok
+  brk_scan "ครั้งที่ 3 (รุ่นสำรองตรงๆ)" 0 8 1 ok
+  sleep $(( BRK_OPEN_MS / 1000 + 1 ))
+  brk_scan "ครั้งที่ 4 (probe สำเร็จ)" 0 8 1 trip2
+  expect "  log ปิดเบรกเกอร์" "$(brk_log close)" "1"
+
+  section "circuit breaker: probe ล้มเหลว → เปิดต่ออีกรอบ"
+  brk_start slow ok || return
+  brk_scan "ครั้งที่ 1" 10 14 2 ok
+  brk_scan "ครั้งที่ 2 (เปิดเบรกเกอร์)" 10 14 2 ok
+  brk_scan "ครั้งที่ 3 (รุ่นสำรองตรงๆ)" 0 8 1 ok
+  sleep $(( BRK_OPEN_MS / 1000 + 1 ))
+  brk_scan "ครั้งที่ 4 (probe ค้าง → สลับรุ่นสำรองที่ 10 วินาที)" 10 14 2 ok
+  expect "  log เปิดเบรกเกอร์รวม 2 ครั้ง (รอบแรก + หลัง probe ล้มเหลว)" "$(brk_log open)" "2"
+  expect "  log ไม่มี API key" "$(docker compose logs nodered 2>/dev/null | grep -c fake-key-for-test)" "0"
+
+  section "unit: circuit breaker (node --test)"
+  if node --test node-red/test/breaker.test.js >"$RES/_breaker_unit.log" 2>&1; then ok "breaker.test.js ผ่าน"; else bad "breaker.test.js ไม่ผ่าน (ดู $RES/_breaker_unit.log)"; fi
 }
 
 # ====================================================================================
