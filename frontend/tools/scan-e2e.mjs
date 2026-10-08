@@ -185,14 +185,14 @@ await page.screenshot({ path: OUT + 'e2e-01-empty-desktop.png' });
 
 // ---- ส่งจริง (ไม่มี API วันที่ 4 → error) + state error ----
 {
-  await page.route('**/api/scan', async (route) => { await new Promise((r) => setTimeout(r, 1500)); await route.fulfill({ status: 422, contentType: 'application/json', body: JSON.stringify({ error: 'UNREADABLE', details: 'AI อ่านซองยานี้ไม่ได้ ลองถ่ายให้ชัดขึ้น หรือพิมพ์เอง' }) }); });
+  await page.route('**/api/scan', async (route) => { await new Promise((r) => setTimeout(r, 1500)); await route.fulfill({ status: 422, contentType: 'application/json', body: JSON.stringify({ error: 'AI_NO_RESULT', details: 'AI อ่านซองยานี้ไม่ได้ ลองถ่ายให้ชัดขึ้น หรือพิมพ์เอง' }) }); });
   await page.locator('.act ion-button').click();
   await page.waitForSelector('app-scan-processing');
   check('กำลังประมวลผล: aria-busy บนการ์ด', (await page.locator('section.card').getAttribute('aria-busy')) === 'true');
   check('กำลังประมวลผล: segment ถูกปิด', await page.locator('ion-segment').evaluate((e) => e.disabled));
   await page.screenshot({ path: OUT + 'e2e-06-processing.png' });
   await page.waitForSelector('.side.is-error', { timeout: 8000 });
-  check('422: แสดง state error (น้อง worried + ข้อความ)', (await page.locator('app-scan-coach .full').innerText()).includes('AI อ่านซองยานี้ไม่ได้'));
+  check('422: แสดง state error (น้อง worried + ข้อความ)', (await page.locator('app-scan-coach .full').innerText()).includes('น้องอ่านซองนี้ไม่ได้'));
   check('error: ปุ่มหลักปุ่มเดียว "ลองถ่ายใหม่"', (await page.locator('.act ion-button').count()) === 2 && (await page.locator('.act ion-button').first().innerText()).includes('ลองถ่ายใหม่'));
   await page.screenshot({ path: OUT + 'e2e-07-error-desktop.png' });
   // พิมพ์ข้อมูลยาเอง: รูปเดิมยังอยู่ กลับมาได้
@@ -217,20 +217,23 @@ await page.screenshot({ path: OUT + 'e2e-01-empty-desktop.png' });
 {
   const scan = { prescription_id: 99, ocr_text: 'Metformin 500 mg', result: { is_medicine_label: true, medications: [{ name: 'Metformin', strength: '500 mg', dose_per_time: 1, unit: 'tablet', slots: ['morning', 'evening'], meal_relation: 'after', as_needed: false, total_qty: 30, indication: null, warnings: [], source_text: '', confidence: { name: 1, dose: 1, slots: 1, meal_relation: 1 } }], unreadable_parts: ['ขอบซองขาด'], overall_note: null }, review_flags: [{ index: 0, field: 'dose', reason: 'ควรตรวจขนาดยา' }] };
   await page.route('**/api/scan', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(scan) }));
+  // หน้า Review โหลด GET /api/prescriptions/:id เองเสมอ (ทดสอบหน้า Review จริงใน tools/review-e2e.mjs) — ที่นี่แค่จำลองคำตอบให้เห็นว่า scan ส่งต่อมาถูก
+  await page.route('**/api/prescriptions/99', (route) => route.fulfill({ status: 200, contentType: 'application/json',
+    body: JSON.stringify({ ...scan, status: 'draft', input_type: 'text', has_image: false, existing_matches: [] }) }));
   await page.waitForTimeout(500);
   await page.locator('.act ion-button').click();
   await page.waitForURL('**/review/99', { timeout: 10000 });
   check('ส่งสำเร็จ: ไป /review/99 โดยไม่ถามยืนยัน', (await page.locator('mat-dialog-container').count()) === 0);
-  await page.waitForSelector('.temp');
-  check('Review: ป้ายทดสอบชั่วคราว + รายชื่อยา + flags', (await page.locator('.temp').innerText()).includes('ทำจริงวันที่ 5') && (await page.locator('.med h2').innerText()).includes('Metformin') && (await page.locator('.block').first().innerText()).includes('ควรตรวจขนาดยา'));
+  await page.waitForSelector('app-review-card');
+  check('Review: แสดงยาที่สแกนได้ + ช่องที่ต้องตรวจ', (await page.locator('app-review-card .title').innerText()).includes('Metformin') && (await page.locator('app-review-card .flag').count()) >= 1);
   await page.screenshot({ path: OUT + 'e2e-08-review.png' });
-  await page.reload();
-  await page.waitForSelector('.temp');
-  check('Review หลังรีเฟรช: history.state ยังอยู่ จึงแสดงข้อมูลเดิม', (await page.locator('.med h2').count()) === 1);
+  await page.unroute('**/api/prescriptions/99');
+  await page.route('**/api/prescriptions/99', (route) => route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'NOT_FOUND', details: 'ไม่พบข้อมูลที่ต้องการ' }) }));
   await page.goto(BASE + '/today');
   await page.goto(BASE + '/review/99');
-  await page.waitForSelector('.empty');
-  check('Review เปิดตรงๆ (ไม่มี state): "ไม่พบข้อมูล กรุณาสแกนใหม่"', (await page.locator('.empty').innerText()).includes('ไม่พบข้อมูล กรุณาสแกนใหม่'));
+  await page.waitForSelector('.state');
+  check('Review id ที่ไม่มี: "ไม่พบข้อมูล กรุณาสแกนใหม่"', (await page.locator('.state').innerText()).includes('ไม่พบข้อมูล กรุณาสแกนใหม่'));
+  await page.unroute('**/api/prescriptions/99');
   await page.unroute('**/api/scan');
 }
 

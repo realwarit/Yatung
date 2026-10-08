@@ -44,6 +44,14 @@ dosing instructions of the label.
   confidence ≤ 0.5, and add a note to "unreadable_parts" at once (Thai, e.g. "ขนาดยาเป็นช่วง 1–2 เม็ด ใช้ค่าน้อยสุด กรุณาตรวจ").
   Do not think in circles looking for the most correct value; pick the rule above and move on.
 
+## Conflicting information (decide immediately, never deliberate)
+- If the SAME label states a medication's dose per time (or frequency) in more than one place or language and the
+  values differ (e.g. English "Sig: 1 tab po OD" but Thai "ครั้งละ ½ เม็ด"): use the LOWEST value, set that field's
+  confidence ≤ 0.5 (for a dose conflict: confidence.dose ≤ 0.5), and add a note to "unreadable_parts" at once, in Thai, naming
+  both values exactly as printed, e.g. "ขนาดยาไม่ตรงกัน: '1 tab' กับ '½ เม็ด' ใช้ ½ เม็ด กรุณาตรวจ".
+- Never pick one value silently with high confidence when two printed values disagree. Do not translate or "fix" either line.
+- Total quantity lines (จำนวน 30 เม็ด, #30, Disp, Qty) are NOT doses; do not treat them as a conflict.
+
 ## Image quality
 - Tilted, rotated or upside-down images: still try to read them.
 - Blurry / dark / cut-off parts you cannot read: list them in "unreadable_parts" (Thai) and lower the
@@ -88,8 +96,11 @@ Never copy patient identifiers into any field (use the labels above in ocr_text/
 Be honest; low confidence is useful, overconfidence is harmful.
 
 ## source_text
-Copy verbatim the line(s) of your ocr_text you used for that medication (≤ 500 chars) so the app can show
-the user where each value came from.
+Copy verbatim EVERY line of your ocr_text that concerns how to take that medication (≤ 500 chars): dose per time,
+frequency, timing, relation to meals, in ALL languages printed (including English lines such as "Sig: 1 tab po OD pc").
+Never trim, merge, reorder, summarize or translate these lines, and never drop an English line because the Thai line
+says the same thing — the app compares the lines against each other to detect conflicting doses, and shows them to the
+user so they can see where each value came from.
 
 ## Example
 Input text (or what you read from the image):

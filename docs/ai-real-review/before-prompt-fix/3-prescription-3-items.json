@@ -1,0 +1,81 @@
+{
+  "status": 200,
+  "ms": 3035,
+  "body": {
+    "prescription_id": 226,
+    "ocr_text": "ใบสั่งยา\nโรงพยาบาลตัวอย่าง · ห้องจ่ายยา\nโทร [เบอร์โทร]\nชื่อผู้ป่วย: [ชื่อผู้ป่วย] HN: [HN] วันที่จ่าย: 7/10/2569\n1. Metformin 500 mg — ครั้งละ 1 เม็ด วันละ 2 ครั้ง หลังอาหาร เช้า-เย็น จำนวน 60 เม็ด\n2. Amlodipine 5 mg — ครั้งละ 1 เม็ด วันละ 1 ครั้ง หลังอาหารเช้า จำนวน 30 เม็ด\n3. Simvastatin 20 mg — ครั้งละ 1 เม็ด ก่อนนอน จำนวน 30 เม็ด\nแพทย์ผู้สั่ง: นพ.ตัวอย่าง ทดสอบ (ข้อมูลสมมติ)",
+    "result": {
+      "ocr_text": "ใบสั่งยา\nโรงพยาบาลตัวอย่าง · ห้องจ่ายยา\nโทร [เบอร์โทร]\nชื่อผู้ป่วย: [ชื่อผู้ป่วย] HN: [HN] วันที่จ่าย: 7/10/2569\n1. Metformin 500 mg — ครั้งละ 1 เม็ด วันละ 2 ครั้ง หลังอาหาร เช้า-เย็น จำนวน 60 เม็ด\n2. Amlodipine 5 mg — ครั้งละ 1 เม็ด วันละ 1 ครั้ง หลังอาหารเช้า จำนวน 30 เม็ด\n3. Simvastatin 20 mg — ครั้งละ 1 เม็ด ก่อนนอน จำนวน 30 เม็ด\nแพทย์ผู้สั่ง: นพ.ตัวอย่าง ทดสอบ (ข้อมูลสมมติ)",
+      "is_medicine_label": true,
+      "medications": [
+        {
+          "name": "Metformin",
+          "strength": "500 mg",
+          "dose_per_time": 1,
+          "unit": "tablet",
+          "slots": [
+            "morning",
+            "evening"
+          ],
+          "meal_relation": "after",
+          "as_needed": false,
+          "total_qty": 60,
+          "indication": null,
+          "warnings": [],
+          "source_text": "1. Metformin 500 mg — ครั้งละ 1 เม็ด วันละ 2 ครั้ง หลังอาหาร เช้า-เย็น จำนวน 60 เม็ด",
+          "confidence": {
+            "name": 0.99,
+            "dose": 0.99,
+            "slots": 0.99,
+            "meal_relation": 0.99
+          }
+        },
+        {
+          "name": "Amlodipine",
+          "strength": "5 mg",
+          "dose_per_time": 1,
+          "unit": "tablet",
+          "slots": [
+            "morning"
+          ],
+          "meal_relation": "after",
+          "as_needed": false,
+          "total_qty": 30,
+          "indication": null,
+          "warnings": [],
+          "source_text": "2. Amlodipine 5 mg — ครั้งละ 1 เม็ด วันละ 1 ครั้ง หลังอาหารเช้า จำนวน 30 เม็ด",
+          "confidence": {
+            "name": 0.99,
+            "dose": 0.99,
+            "slots": 0.99,
+            "meal_relation": 0.99
+          }
+        },
+        {
+          "name": "Simvastatin",
+          "strength": "20 mg",
+          "dose_per_time": 1,
+          "unit": "tablet",
+          "slots": [
+            "bedtime"
+          ],
+          "meal_relation": "any",
+          "as_needed": false,
+          "total_qty": 30,
+          "indication": null,
+          "warnings": [],
+          "source_text": "3. Simvastatin 20 mg — ครั้งละ 1 เม็ด ก่อนนอน จำนวน 30 เม็ด",
+          "confidence": {
+            "name": 0.99,
+            "dose": 0.99,
+            "slots": 0.99,
+            "meal_relation": 0.99
+          }
+        }
+      ],
+      "unreadable_parts": [],
+      "overall_note": null
+    },
+    "review_flags": []
+  }
+}

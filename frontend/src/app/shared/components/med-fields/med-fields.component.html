@@ -1,0 +1,142 @@
+<ng-template #flagTpl let-f="f">
+  @if (flagOf(f); as fl) {
+    <div class="flag" [id]="id('flag-' + f)">
+      <app-icon name="alert" />
+      <span class="flag__txt">ตรวจอีกครั้ง: {{ fl.reason }}</span>
+      @if (fl.canAck) {
+        <button type="button" class="flag__ack" (click)="ack.emit(f)"><app-icon name="check" /> ถูกต้องแล้ว</button>
+      }
+    </div>
+  }
+</ng-template>
+<ng-template #errTpl let-f="f">
+  @if (errText(f)) { <p class="yt-error-text" [id]="id('e-' + f)" role="alert"><app-icon name="alert" /> {{ errText(f) }}</p> }
+</ng-template>
+
+<!-- ชื่อยา -->
+<div class="yt-field" [class.flagged]="flags().name">
+  <label class="yt-label" [for]="id('name')">ชื่อยา</label>
+  <div class="yt-control" [class.is-invalid]="errors().name">
+    <input [id]="id('name')" type="text" autocomplete="off" maxlength="150"
+           [ngModel]="draft().name" (ngModelChange)="set('name', $event, 'name')" [ngModelOptions]="{ standalone: true }"
+           [attr.aria-invalid]="errors().name ? 'true' : null" [attr.aria-describedby]="describedBy('name')" />
+  </div>
+  <ng-container *ngTemplateOutlet="errTpl; context: { f: 'name' }" />
+  <ng-container *ngTemplateOutlet="flagTpl; context: { f: 'name' }" />
+</div>
+
+<!-- รูปแบบการกิน: 2 ตัวเลือกใหญ่ -->
+<fieldset class="yt-field">
+  <legend class="yt-label">กินยานี้อย่างไร</legend>
+  <div class="yt-choices" role="radiogroup" aria-label="รูปแบบการกินยา">
+    <button type="button" role="radio" class="yt-choice" [class.on]="!draft().asNeeded" [attr.aria-checked]="!draft().asNeeded" (click)="setAsNeeded(false)">
+      <span class="yt-choice__ic"><app-icon name="clock" /></span>
+      <span class="yt-choice__txt"><strong>กินตามเวลา</strong><small>มีมื้อประจำทุกวัน</small></span>
+      @if (!draft().asNeeded) { <app-icon name="check" class="yt-choice__tick" /> }
+    </button>
+    <button type="button" role="radio" class="yt-choice" [class.on]="draft().asNeeded" [attr.aria-checked]="draft().asNeeded" (click)="setAsNeeded(true)">
+      <span class="yt-choice__ic"><app-icon name="thermometer" /></span>
+      <span class="yt-choice__txt"><strong>กินเมื่อมีอาการ</strong><small>เช่น ปวด มีไข้</small></span>
+      @if (draft().asNeeded) { <app-icon name="check" class="yt-choice__tick" /> }
+    </button>
+  </div>
+</fieldset>
+
+<!-- มื้อ (ซ่อนแบบนุ่มๆ เมื่อเลือกกินเมื่อมีอาการ) -->
+<div class="yt-collapse" [class.open]="!draft().asNeeded" [attr.inert]="draft().asNeeded ? '' : null">
+ <div class="yt-collapse__in">
+  <fieldset class="yt-field" [class.flagged]="flags().slots">
+    <legend class="yt-label">กินมื้อไหน (เลือกได้หลายมื้อ)</legend>
+    <div class="tiles" [id]="id('slots')" tabindex="-1" [attr.aria-invalid]="errors().slots ? 'true' : null"
+         [attr.aria-describedby]="describedBy('slots')">
+      @for (s of allSlots; track s) {
+        <button type="button" class="tile" [class.on]="draft().slots.includes(s)" [attr.aria-pressed]="draft().slots.includes(s)"
+                (click)="toggleSlot(s)">
+          <app-icon [name]="slotIcon[s]" />
+          <span class="tile__name">{{ slotLabel[s] }}</span>
+          <span class="tile__time num">{{ times()[s] }}</span>
+          @if (draft().slots.includes(s)) { <app-icon name="check" class="tile__tick" /> }
+        </button>
+      }
+    </div>
+    <ng-container *ngTemplateOutlet="errTpl; context: { f: 'slots' }" />
+    <ng-container *ngTemplateOutlet="flagTpl; context: { f: 'slots' }" />
+  </fieldset>
+ </div>
+</div>
+
+<!-- ก่อน/หลังอาหาร -->
+<div class="yt-field" [class.flagged]="flags().meal" [id]="id('meal')" tabindex="-1" [attr.aria-describedby]="describedBy('meal')">
+  <span class="yt-label">กินเมื่อไหร่เทียบกับอาหาร</span>
+  <app-segmented [options]="mealOptions" [value]="draft().meal" (valueChange)="setMeal($event)" label="ก่อนหรือหลังอาหาร" />
+  <ng-container *ngTemplateOutlet="errTpl; context: { f: 'meal' }" />
+  <ng-container *ngTemplateOutlet="flagTpl; context: { f: 'meal' }" />
+</div>
+
+<!-- จำนวนต่อครั้ง + หน่วย -->
+<div class="row">
+  <div class="yt-field" [class.flagged]="flags().dose" [id]="id('dose')" tabindex="-1" [attr.aria-describedby]="describedBy('dose')">
+    <span class="yt-label">กินครั้งละ</span>
+    <app-stepper [value]="draft().dose ?? 0" (valueChange)="setDose($event)" [min]="0.5" [max]="20" [step]="0.5"
+                 [display]="doseDisplay()" label="ปริมาณต่อครั้ง" />
+    <ng-container *ngTemplateOutlet="errTpl; context: { f: 'dose' }" />
+    <ng-container *ngTemplateOutlet="flagTpl; context: { f: 'dose' }" />
+  </div>
+  <div class="yt-field" [class.flagged]="flags().unit">
+    <span class="yt-label" [id]="id('l-unit')">หน่วย</span>
+    <div class="yt-control" [class.is-invalid]="errors().unit">
+      <mat-select [id]="id('unit')" [attr.aria-labelledby]="id('l-unit')" [ngModel]="draft().unit"
+                  (ngModelChange)="setUnit($event)" [ngModelOptions]="{ standalone: true }" panelClass="yt-select-panel">
+        @for (u of units; track u) { <mat-option [value]="u">{{ unitLabel[u] }}</mat-option> }
+      </mat-select>
+    </div>
+    <ng-container *ngTemplateOutlet="errTpl; context: { f: 'unit' }" />
+    <ng-container *ngTemplateOutlet="flagTpl; context: { f: 'unit' }" />
+  </div>
+</div>
+
+<!-- ข้อมูลเพิ่มเติม (พับเก็บ) -->
+<details class="more" [open]="moreOpen()" (toggle)="moreOpen.set($any($event.target).open)">
+  <summary>ข้อมูลเพิ่มเติม <app-icon name="chevron-down" class="more__chev" /></summary>
+
+  <div class="yt-field" [class.flagged]="flags().strength">
+    <label class="yt-label" [for]="id('strength')">ความแรง (เช่น 500 mg)</label>
+    <div class="yt-control" [class.is-invalid]="errors().strength">
+      <input [id]="id('strength')" type="text" maxlength="50" autocomplete="off"
+             [ngModel]="draft().strength" (ngModelChange)="set('strength', $event, 'strength')" [ngModelOptions]="{ standalone: true }"
+             [attr.aria-invalid]="errors().strength ? 'true' : null" [attr.aria-describedby]="describedBy('strength')" />
+    </div>
+    <ng-container *ngTemplateOutlet="errTpl; context: { f: 'strength' }" />
+    <ng-container *ngTemplateOutlet="flagTpl; context: { f: 'strength' }" />
+  </div>
+
+  <div class="yt-field">
+    <label class="yt-label" [for]="id('ind')">ข้อบ่งใช้ (ยานี้ใช้ทำอะไร)</label>
+    <div class="yt-control" [class.is-invalid]="errors().indication">
+      <input [id]="id('ind')" type="text" maxlength="200" autocomplete="off"
+             [ngModel]="draft().indication" (ngModelChange)="set('indication', $event, 'indication')" [ngModelOptions]="{ standalone: true }"
+             [attr.aria-invalid]="errors().indication ? 'true' : null" [attr.aria-describedby]="describedBy('indication')" />
+    </div>
+    <ng-container *ngTemplateOutlet="errTpl; context: { f: 'indication' }" />
+  </div>
+
+  <div class="yt-field">
+    <label class="yt-label" [for]="id('warn')">คำเตือน (หนึ่งข้อต่อหนึ่งบรรทัด)</label>
+    <div class="yt-control area" [class.is-invalid]="errors().warnings">
+      <textarea [id]="id('warn')" rows="3"
+                [ngModel]="draft().warnings" (ngModelChange)="set('warnings', $event, 'warnings')" [ngModelOptions]="{ standalone: true }"
+                [attr.aria-invalid]="errors().warnings ? 'true' : null" [attr.aria-describedby]="describedBy('warnings')"></textarea>
+    </div>
+    <ng-container *ngTemplateOutlet="errTpl; context: { f: 'warnings' }" />
+  </div>
+
+  <div class="yt-field">
+    <label class="yt-label" [for]="id('total')">จำนวนยาทั้งหมด (ไว้เตือนเมื่อยาใกล้หมด)</label>
+    <div class="yt-control" [class.is-invalid]="errors().total">
+      <input [id]="id('total')" type="number" inputmode="decimal" min="0" step="1"
+             [ngModel]="draft().total" (ngModelChange)="onTotal($event)" [ngModelOptions]="{ standalone: true }"
+             [attr.aria-invalid]="errors().total ? 'true' : null" [attr.aria-describedby]="describedBy('total')" />
+    </div>
+    <ng-container *ngTemplateOutlet="errTpl; context: { f: 'total' }" />
+  </div>
+</details>

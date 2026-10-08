@@ -93,8 +93,8 @@ function deleteUploadFile(rel) {
   try { fs.unlinkSync(abs); return true; } catch (e) { return false; }
 }
 
-// TODO วันที่ 5: เรียกจาก POST /api/prescriptions/:id/confirm และ /discard ทันทีที่เปลี่ยนสถานะ
-// (เก็บรูปเท่าที่จำเป็น — ดูหัวข้อ "ความเป็นส่วนตัวของข้อมูล" ใน README)
+// เรียกจาก POST /api/prescriptions/:id/confirm และ /discard ทันทีหลังเปลี่ยนสถานะ (lib/prescription-service.js)
+// เก็บรูปเท่าที่จำเป็น: ลบไฟล์ + image_path = NULL ; ไม่มีรูป/ไม่ใช่ของ userId = false
 async function deleteUploadForPrescription(db, userId, prescriptionId) {
   const rows = await db.query('SELECT image_path FROM prescriptions WHERE id = ? AND user_id = ?', [prescriptionId, userId]);
   if (!rows.length || !rows[0].image_path) return false;
@@ -225,17 +225,8 @@ async function savePrescription(db, userId, p) {
   return r.insertId;
 }
 
-// GET /api/prescriptions/:id — เจ้าของเท่านั้น (ไม่ใช่เจ้าของ = 404)
-async function getPrescription(db, userId, id, reviewFlags) {
-  if (!/^\d+$/.test(String(id))) return err(404, 'NOT_FOUND', 'ไม่พบข้อมูลที่ต้องการ');
-  const rows = await db.query('SELECT id, ocr_text, llm_json FROM prescriptions WHERE id = ? AND user_id = ?', [Number(id), userId]);
-  if (!rows.length || !rows[0].llm_json) return err(404, 'NOT_FOUND', 'ไม่พบข้อมูลที่ต้องการ');
-  const result = typeof rows[0].llm_json === 'string' ? JSON.parse(rows[0].llm_json) : rows[0].llm_json;
-  return { status: 200, body: { prescription_id: rows[0].id, ocr_text: rows[0].ocr_text || result.ocr_text || '', result, review_flags: reviewFlags(result) } };
-}
-
 module.exports = {
   checkInput, rateLimit, saveUpload, deleteUploadFile, deleteUploadForPrescription, cleanupOldUploads,
-  toGeminiSchema, buildGeminiBody, bodyForModel, thinkingLevelFor, geminiUrl, nextStep, TOTAL_BUDGET_MS, FIRST_TIMEOUT_MS, extractText, savePrescription, getPrescription,
+  toGeminiSchema, buildGeminiBody, bodyForModel, thinkingLevelFor, geminiUrl, nextStep, TOTAL_BUDGET_MS, FIRST_TIMEOUT_MS, extractText, savePrescription, resolveUpload,
   UPLOAD_DIR, RATE_PER_MINUTE, RATE_PER_DAY
 };

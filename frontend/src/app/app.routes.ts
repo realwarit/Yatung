@@ -32,8 +32,13 @@ export const routes: Routes = [
         canDeactivate: [unsavedChangesGuard],
         loadComponent: () => import('./features/scan/scan.page').then(m => m.ScanPage),
       },
-      // TODO วันที่ 5: หน้า Review จริง (หน้านี้ชั่วคราวไว้ทดสอบผลสแกนวันที่ 4)
-      { path: 'review/:id', loadComponent: () => import('./features/review/review.page').then(m => m.ReviewPage) },
+      {
+        // หน้าตรวจผลสแกนก่อนบันทึก: งานโฟกัส (ซ่อนแถบเมนูล่างบนมือถือ) · แก้แล้วยังไม่บันทึก = ถามก่อนออก
+        path: 'review/:id',
+        data: { hideBottomNav: true },
+        canDeactivate: [unsavedChangesGuard],
+        loadComponent: () => import('./features/review/review.page').then(m => m.ReviewPage),
+      },
       { path: 'overview', loadComponent: () => import('./features/overview/overview.page').then(m => m.OverviewPage) },
       { path: 'settings', loadComponent: () => import('./features/settings/settings.page').then(m => m.SettingsPage) },
     ],

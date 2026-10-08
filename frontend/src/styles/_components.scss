@@ -235,3 +235,5 @@
 }
 .yt-collapse__in { overflow: hidden; min-height: 0; padding: 4px; margin: -4px; }
 
+// dialog เต็มจอ (ดูรูปซองยาขยาย): ไม่มีมุมมน
+.yt-fullscreen-dialog .mat-mdc-dialog-container { --mat-dialog-container-shape: 0; }

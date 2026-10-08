@@ -1,0 +1,48 @@
+{
+  "status": 200,
+  "ms": 3070,
+  "body": {
+    "prescription_id": 245,
+    "ocr_text": "ร้านยาตัวอย่าง ยาตรงเภสัช\nฉลากยา (สติกเกอร์)\n\nPT: [ชื่อผู้ป่วย]\tHN:[HN]\nAMLODIPINE 5 MG TAB\n#30 Sig: 1 tab po OD pc (AM)\nครั้งละ ½ เม็ด วันละ 1 ครั้ง หลังอาหารเช้า\nยาลลดความดันโลหิต • อาจทำให้ข้อเท้าบวม\nExp: 10/2028\tLot: T-0001\n\nฉลากจำลองเพื่อทดสอบระบบ ไม่ใช่ใบสั่งยาจริง\n#6",
+    "result": {
+      "ocr_text": "ร้านยาตัวอย่าง ยาตรงเภสัช\nฉลากยา (สติกเกอร์)\n\nPT: [ชื่อผู้ป่วย]\tHN:[HN]\nAMLODIPINE 5 MG TAB\n#30 Sig: 1 tab po OD pc (AM)\nครั้งละ ½ เม็ด วันละ 1 ครั้ง หลังอาหารเช้า\nยาลลดความดันโลหิต • อาจทำให้ข้อเท้าบวม\nExp: 10/2028\tLot: T-0001\n\nฉลากจำลองเพื่อทดสอบระบบ ไม่ใช่ใบสั่งยาจริง\n#6",
+      "is_medicine_label": true,
+      "medications": [
+        {
+          "name": "AMLODIPINE",
+          "strength": "5 mg",
+          "dose_per_time": 0.5,
+          "unit": "tablet",
+          "slots": [
+            "morning"
+          ],
+          "meal_relation": "after",
+          "as_needed": false,
+          "total_qty": 30,
+          "indication": "ยาลลดความดันโลหิต",
+          "warnings": [
+            "อาจทำให้ข้อเท้าบวม"
+          ],
+          "source_text": "AMLODIPINE 5 MG TAB\n#30 Sig: 1 tab po OD pc (AM)\nครั้งละ ½ เม็ด วันละ 1 ครั้ง หลังอาหารเช้า\nยาลลดความดันโลหิต • อาจทำให้ข้อเท้าบวม",
+          "confidence": {
+            "name": 0.95,
+            "dose": 0.5,
+            "slots": 0.8,
+            "meal_relation": 0.8
+          }
+        }
+      ],
+      "unreadable_parts": [
+        "ขนาดยาไม่ตรงกัน: '1 tab' กับ '½ เม็ด' ใช้ ½ เม็ด กรุณาตรวจ"
+      ],
+      "overall_note": null
+    },
+    "review_flags": [
+      {
+        "index": 0,
+        "field": "dose_per_time",
+        "reason": "ซองเขียนขนาดยาไว้ 2 แบบ (1 และ ½) กรุณาตรวจ"
+      }
+    ]
+  }
+}

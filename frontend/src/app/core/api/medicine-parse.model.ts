@@ -43,9 +43,28 @@ export interface ReviewFlag {
   reason: string;
 }
 
+export type PrescriptionStatus = 'draft' | 'confirmed' | 'discarded';
+
+/** ยาที่ผู้ใช้ใช้อยู่ (is_active=1) ชื่อตรงกับยาในผลสแกน — index = ลำดับใน result.medications */
+export interface ExistingMatch {
+  index: number;
+  medication_id: number;
+  name: string;
+  strength: string | null;
+  remaining_qty: number | null;
+}
+
+/** response ของ POST /api/scan (มีแค่ 4 ช่องแรก) และ GET /api/prescriptions/:id (ครบทุกช่อง) */
 export interface ScanResponse {
   prescription_id: number;
   ocr_text: string;
   result: MedicineParseResult;
   review_flags: ReviewFlag[];
+  status?: PrescriptionStatus;
+  input_type?: 'image' | 'text';
+  has_image?: boolean;
+  existing_matches?: ExistingMatch[];
 }
+
+/** GET /api/prescriptions/:id — ทุกช่องมีค่าเสมอ */
+export type PrescriptionResponse = Required<ScanResponse>;
