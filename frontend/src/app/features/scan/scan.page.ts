@@ -259,9 +259,8 @@ export class ScanPage implements OnDestroy {
     this.stopSteps();
     this.phase.set('idle');
     this.submitted = true;   // ส่งสำเร็จแล้ว ออกจากหน้านี้โดยไม่ต้องถามยืนยัน
-    // ส่ง draft ไปหน้า Review ผ่าน navigation state (ไม่ต้องยิง API ซ้ำ)
-    // หน้า Review ควร fallback ไปโหลด GET /api/prescriptions/:id ถ้า state หาย (เช่น refresh)
-    this.router.navigate(['/review', res.prescription_id], { state: { scan: res } })
+    // หน้า Review โหลด GET /api/prescriptions/:id เองเสมอ (ได้ status/existing_matches ครบ และ refresh ได้) จึงส่งแค่ id
+    this.router.navigate(['/review', res.prescription_id])
       .then((ok) => { if (!ok) this.submitted = false; });
   }
 

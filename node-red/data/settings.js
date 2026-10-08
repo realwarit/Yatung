@@ -9,6 +9,7 @@ const db = require('./lib/db');
 const medicationService = require('./lib/medication-service');
 const doseService = require('./lib/dose-service');
 const scanService = require('./lib/scan-service');
+const prescriptionService = require('./lib/prescription-service');
 const llmOutput = require('./lib/validate-llm-output');
 
 const PROMPT_DIR = path.join(__dirname, 'prompts');
@@ -50,6 +51,7 @@ module.exports = {
     medicationService,
     doseService,
     scanService,
+    prescriptionService,
     llmOutput,                                // process / reviewFlags / redactPii (lib/validate-llm-output.js)
     prompts: {
       medicineSystem: readPrompt('medicine-parse.system.txt'),

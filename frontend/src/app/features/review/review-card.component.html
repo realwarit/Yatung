@@ -1,0 +1,65 @@
+<article class="card yt-card" [attr.aria-labelledby]="prefix() + '-title'">
+  <header class="head">
+    <div class="head__txt">
+      <p class="cap">ยาตัวที่ <span class="num">{{ position() }}</span> จาก <span class="num">{{ total() }}</span></p>
+      <h2 class="title" [id]="prefix() + '-title'">{{ title() }}
+        @if (card().draft.strength) { <small>{{ card().draft.strength }}</small> }
+      </h2>
+    </div>
+    @if (todo().length) {
+      <span class="badge badge--warn"><app-icon name="alert" /> ตรวจอีก <span class="num">{{ todo().length }}</span> จุด</span>
+    } @else {
+      <span class="badge badge--ok"><app-icon name="check" /> ตรวจครบแล้ว</span>
+    }
+  </header>
+
+  @if (card().match; as m) {
+    <section class="match" [attr.aria-label]="'ยาที่มีอยู่แล้ว ' + m.name">
+      <p class="match__txt"><app-icon name="info" />
+        <span>คุณมี <strong>{{ m.name }}{{ m.strength ? ' ' + m.strength : '' }}</strong> ในตารางแล้ว
+          @if (m.remaining_qty !== null) { (เหลือ <span class="num">{{ m.remaining_qty }}</span> {{ unitName() }}) }</span>
+      </p>
+      <div class="yt-choices" role="radiogroup" [attr.aria-label]="'จัดการ ' + m.name">
+        <button type="button" role="radio" class="yt-choice" [class.on]="card().mode === 'refill'" [attr.aria-checked]="card().mode === 'refill'" (click)="setMode('refill')">
+          <span class="yt-choice__txt"><strong>เติมจำนวนให้ยาเดิม</strong><small>ไม่สร้างยาซ้ำ</small></span>
+          @if (card().mode === 'refill') { <app-icon name="check" class="yt-choice__tick" /> }
+        </button>
+        <button type="button" role="radio" class="yt-choice" [class.on]="card().mode === 'create'" [attr.aria-checked]="card().mode === 'create'" (click)="setMode('create')">
+          <span class="yt-choice__txt"><strong>เพิ่มเป็นยาใหม่</strong><small>เช่น ยาคนละแรง/คนละวิธีกิน</small></span>
+          @if (card().mode === 'create') { <app-icon name="check" class="yt-choice__tick" /> }
+        </button>
+      </div>
+    </section>
+  }
+
+  @if (card().mode === 'refill') {
+    <div class="yt-field qty" [class.flagged]="qtyBad()">
+      <label class="yt-label" [for]="prefix() + '-qty'">เติมกี่{{ unitName() }}</label>
+      <div class="yt-control" [class.is-invalid]="qtyBad()">
+        <input [id]="prefix() + '-qty'" type="number" inputmode="decimal" min="0" step="1"
+               [ngModel]="card().refillQty" (ngModelChange)="onQty($event)" [ngModelOptions]="{ standalone: true }"
+               [attr.aria-invalid]="qtyBad() ? 'true' : null" [attr.aria-describedby]="qtyBad() ? prefix() + '-qty-e' : null" />
+      </div>
+      @if (qtyBad()) { <p class="yt-error-text" [id]="prefix() + '-qty-e'" role="alert"><app-icon name="alert" /> ใส่จำนวนที่จะเติม (มากกว่า 0)</p> }
+    </div>
+  } @else {
+    <app-med-fields [draft]="card().draft" (draftChange)="setDraft($event)"
+                    [moreOpen]="card().moreOpen" (moreOpenChange)="setMore($event)"
+                    [times]="times()" [flags]="flags()" [idPrefix]="prefix()" (ack)="ack($event)" />
+  }
+
+  <p class="sum" [attr.aria-label]="'สรุปยาตัวที่ ' + position()"><app-icon name="info" /> <span>{{ summary() }}</span></p>
+
+  <footer class="foot">
+    @if (card().sourceText) {
+      <button type="button" class="link" [attr.aria-expanded]="showSource()" [attr.aria-controls]="prefix() + '-src'"
+              (click)="showSource.set(!showSource())">
+        <app-icon name="search" /> {{ showSource() ? 'ซ่อนข้อความต้นทาง' : 'น้องอ่านจากตรงนี้' }}
+      </button>
+    }
+    <button type="button" class="link link--danger" (click)="remove.emit()"><app-icon name="trash" /> ลบรายการนี้</button>
+  </footer>
+  @if (showSource() && card().sourceText) {
+    <pre class="src" [id]="prefix() + '-src'">{{ card().sourceText }}</pre>
+  }
+</article>

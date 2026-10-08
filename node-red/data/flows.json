@@ -2610,8 +2610,8 @@
         "id": "scan_get_fn",
         "type": "function",
         "z": "tab_scan",
-        "name": "อ่านผลสแกน (เจ้าของเท่านั้น)",
-        "func": "// ไม่ใช่เจ้าของ = 404 เสมอ ; review_flags คำนวณใหม่จาก llm_json ที่เก็บไว้\nconst r = await global.get('scanService').getPrescription(global.get('db'), msg.user.id, msg.req.params.id, global.get('llmOutput').reviewFlags);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\nreturn r.status === 200 ? [msg, null] : [null, msg];",
+        "name": "อ่านผลสแกน + ยาที่มีอยู่แล้ว (เจ้าของเท่านั้น)",
+        "func": "// ไม่ใช่เจ้าของ = 404 เสมอ ; review_flags คำนวณใหม่จาก llm_json ; existing_matches = ยาที่ใช้อยู่ชื่อตรงกัน (เฉพาะ draft)\nconst r = await global.get('prescriptionService').get(global.get('db'), msg.user.id, msg.req.params.id, global.get('llmOutput').reviewFlags);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\nreturn r.status === 200 ? [msg, null] : [null, msg];",
         "outputs": 2,
         "timeout": 0,
         "noerr": 0,
@@ -2685,11 +2685,26 @@
             "scan_get_jwt",
             "scan_get_fn",
             "scan_get_ok",
-            "scan_get_404"
+            "scan_get_404",
+            "pres_img_in",
+            "pres_img_jwt",
+            "pres_img_fn",
+            "pres_img_ok",
+            "pres_img_404",
+            "pres_conf_in",
+            "pres_conf_jwt",
+            "pres_conf_fn",
+            "pres_conf_ok",
+            "pres_conf_fail",
+            "pres_dis_in",
+            "pres_dis_jwt",
+            "pres_dis_fn",
+            "pres_dis_ok",
+            "pres_dis_fail"
         ],
         "uncaught": false,
         "x": 150,
-        "y": 700,
+        "y": 1460,
         "wires": [
             [
                 "scan_err"
@@ -2710,7 +2725,7 @@
         "finalize": "",
         "libs": [],
         "x": 450,
-        "y": 700,
+        "y": 1460,
         "wires": [
             [
                 "scan_res500"
@@ -2726,7 +2741,7 @@
         "statusCode": "",
         "headers": {},
         "x": 750,
-        "y": 700,
+        "y": 1460,
         "wires": [],
         "g": "scan_err_grp"
     },
@@ -2956,7 +2971,7 @@
             "scan_res500"
         ],
         "x": 20,
-        "y": 658,
+        "y": 1418,
         "w": 865,
         "h": 84
     },
@@ -3172,5 +3187,392 @@
         "y": 178,
         "w": 1290,
         "h": 344
+    },
+    {
+        "id": "pres_img_in",
+        "type": "http in",
+        "z": "tab_scan",
+        "name": "GET /api/prescriptions/:id/image",
+        "url": "/api/prescriptions/:id/image",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 800,
+        "wires": [
+            [
+                "pres_img_jwt"
+            ]
+        ],
+        "g": "pres_img_grp"
+    },
+    {
+        "id": "pres_img_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_scan",
+        "name": "ตรวจ JWT",
+        "x": 400,
+        "y": 800,
+        "wires": [
+            [
+                "pres_img_fn"
+            ]
+        ],
+        "g": "pres_img_grp"
+    },
+    {
+        "id": "pres_img_fn",
+        "type": "function",
+        "z": "tab_scan",
+        "name": "อ่านไฟล์รูปซอง (เจ้าของเท่านั้น)",
+        "func": "// ไม่ใช่เจ้าของ / ไม่มีรูป / รูปถูกลบแล้ว = 404 ; ส่งไฟล์ตามจริงพร้อม Content-Type และห้ามแคช\nconst r = await global.get('prescriptionService').image(global.get('db'), msg.user.id, msg.req.params.id);\nif (r.status !== 200) {\n  delete msg.headers;\n  msg.statusCode = r.status;\n  msg.payload = r.body;\n  return [null, msg];\n}\nmsg.statusCode = 200;\nmsg.headers = { 'Content-Type': r.mime, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' };\nmsg.payload = r.buffer;\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 700,
+        "y": 800,
+        "wires": [
+            [
+                "pres_img_ok"
+            ],
+            [
+                "pres_img_404"
+            ]
+        ],
+        "outputLabels": [
+            "พบรูป",
+            "ไม่พบ"
+        ],
+        "g": "pres_img_grp"
+    },
+    {
+        "id": "pres_img_ok",
+        "type": "http response",
+        "z": "tab_scan",
+        "name": "ตอบ 200 ไฟล์รูป",
+        "statusCode": "",
+        "headers": {},
+        "x": 1000,
+        "y": 800,
+        "wires": [],
+        "g": "pres_img_grp"
+    },
+    {
+        "id": "pres_img_404",
+        "type": "http response",
+        "z": "tab_scan",
+        "name": "ตอบ 404 ไม่พบรูป",
+        "statusCode": "",
+        "headers": {},
+        "x": 1000,
+        "y": 860,
+        "wires": [],
+        "g": "pres_img_grp"
+    },
+    {
+        "id": "pres_img_grp",
+        "type": "group",
+        "z": "tab_scan",
+        "name": "GET /api/prescriptions/:id/image",
+        "style": {
+            "stroke": "#0070c0",
+            "fill": "#e8f1fa",
+            "color": "#0070c0",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "pres_img_in",
+            "pres_img_jwt",
+            "pres_img_fn",
+            "pres_img_ok",
+            "pres_img_404"
+        ],
+        "x": 20,
+        "y": 756,
+        "w": 1110,
+        "h": 148
+    },
+    {
+        "id": "pres_conf_in",
+        "type": "http in",
+        "z": "tab_scan",
+        "name": "POST /api/prescriptions/:id/confirm",
+        "url": "/api/prescriptions/:id/confirm",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 960,
+        "wires": [
+            [
+                "pres_conf_jwt"
+            ]
+        ],
+        "g": "pres_conf_s1"
+    },
+    {
+        "id": "pres_conf_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_scan",
+        "name": "ตรวจ JWT",
+        "x": 400,
+        "y": 960,
+        "wires": [
+            [
+                "pres_conf_fn"
+            ]
+        ],
+        "g": "pres_conf_s1"
+    },
+    {
+        "id": "pres_conf_s1",
+        "type": "group",
+        "z": "tab_scan",
+        "name": "1 ตรวจสิทธิ์ผู้ใช้",
+        "style": {
+            "stroke": "#6b7280",
+            "fill": "#f3f4f6",
+            "color": "#6b7280",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "pres_conf_in",
+            "pres_conf_jwt"
+        ],
+        "x": 20,
+        "y": 916,
+        "w": 510,
+        "h": 88,
+        "g": "pres_conf_grp"
+    },
+    {
+        "id": "pres_conf_fn",
+        "type": "function",
+        "z": "tab_scan",
+        "name": "ตรวจรายการ + บันทึกยาใน transaction เดียว",
+        "func": "// ตรวจ owner (404) → status ต้อง draft (409 ALREADY_DONE) → ตรวจทุก item ด้วย validate-medication (400 + item_index)\n// → transaction: create/refill ทุกรายการ + status = confirmed ; พลาดตรงไหน = ROLLBACK ทั้งหมด → หลัง COMMIT ลบรูป\nconst r = await global.get('prescriptionService').confirm(global.get('db'), msg.user.id, msg.req.params.id, msg.payload);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\nreturn r.status === 200 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 760,
+        "y": 960,
+        "wires": [
+            [
+                "pres_conf_ok"
+            ],
+            [
+                "pres_conf_fail"
+            ]
+        ],
+        "outputLabels": [
+            "บันทึกแล้ว",
+            "ไม่สำเร็จ"
+        ],
+        "g": "pres_conf_s2"
+    },
+    {
+        "id": "pres_conf_s2",
+        "type": "group",
+        "z": "tab_scan",
+        "name": "2 ตรวจรายการ + บันทึกใน transaction เดียว (พลาดตรงไหน = ย้อนกลับทั้งหมด)",
+        "style": {
+            "stroke": "#6b7280",
+            "fill": "#f3f4f6",
+            "color": "#6b7280",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "pres_conf_fn"
+        ],
+        "x": 630,
+        "y": 916,
+        "w": 260,
+        "h": 88,
+        "g": "pres_conf_grp"
+    },
+    {
+        "id": "pres_conf_ok",
+        "type": "http response",
+        "z": "tab_scan",
+        "name": "ตอบ 200 บันทึกแล้ว",
+        "statusCode": "",
+        "headers": {},
+        "x": 1080,
+        "y": 960,
+        "wires": [],
+        "g": "pres_conf_s3"
+    },
+    {
+        "id": "pres_conf_fail",
+        "type": "http response",
+        "z": "tab_scan",
+        "name": "ตอบ 400/404/409 ไม่สำเร็จ",
+        "statusCode": "",
+        "headers": {},
+        "x": 1080,
+        "y": 1020,
+        "wires": [],
+        "g": "pres_conf_s3"
+    },
+    {
+        "id": "pres_conf_s3",
+        "type": "group",
+        "z": "tab_scan",
+        "name": "3 ตอบกลับ",
+        "style": {
+            "stroke": "#6b7280",
+            "fill": "#f3f4f6",
+            "color": "#6b7280",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "pres_conf_ok",
+            "pres_conf_fail"
+        ],
+        "x": 950,
+        "y": 916,
+        "w": 260,
+        "h": 148,
+        "g": "pres_conf_grp"
+    },
+    {
+        "id": "pres_conf_grp",
+        "type": "group",
+        "z": "tab_scan",
+        "name": "POST /api/prescriptions/:id/confirm",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "color": "#0f766e",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "pres_conf_s1",
+            "pres_conf_s2",
+            "pres_conf_s3"
+        ],
+        "x": 0,
+        "y": 896,
+        "w": 1230,
+        "h": 188
+    },
+    {
+        "id": "pres_dis_in",
+        "type": "http in",
+        "z": "tab_scan",
+        "name": "POST /api/prescriptions/:id/discard",
+        "url": "/api/prescriptions/:id/discard",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 1180,
+        "wires": [
+            [
+                "pres_dis_jwt"
+            ]
+        ],
+        "g": "pres_dis_grp"
+    },
+    {
+        "id": "pres_dis_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_scan",
+        "name": "ตรวจ JWT",
+        "x": 400,
+        "y": 1180,
+        "wires": [
+            [
+                "pres_dis_fn"
+            ]
+        ],
+        "g": "pres_dis_grp"
+    },
+    {
+        "id": "pres_dis_fn",
+        "type": "function",
+        "z": "tab_scan",
+        "name": "ทิ้งผลสแกน + ลบรูป (เฉพาะ draft)",
+        "func": "// ไม่ใช่เจ้าของ = 404 ; ไม่ใช่ draft = 409 ALREADY_DONE ; สำเร็จ = status discarded + ลบไฟล์รูป\nconst r = await global.get('prescriptionService').discard(global.get('db'), msg.user.id, msg.req.params.id);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\nreturn r.status === 200 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 700,
+        "y": 1180,
+        "wires": [
+            [
+                "pres_dis_ok"
+            ],
+            [
+                "pres_dis_fail"
+            ]
+        ],
+        "outputLabels": [
+            "ทิ้งแล้ว",
+            "ไม่สำเร็จ"
+        ],
+        "g": "pres_dis_grp"
+    },
+    {
+        "id": "pres_dis_ok",
+        "type": "http response",
+        "z": "tab_scan",
+        "name": "ตอบ 200 ทิ้งแล้ว",
+        "statusCode": "",
+        "headers": {},
+        "x": 1000,
+        "y": 1180,
+        "wires": [],
+        "g": "pres_dis_grp"
+    },
+    {
+        "id": "pres_dis_fail",
+        "type": "http response",
+        "z": "tab_scan",
+        "name": "ตอบ 404/409 ไม่สำเร็จ",
+        "statusCode": "",
+        "headers": {},
+        "x": 1000,
+        "y": 1240,
+        "wires": [],
+        "g": "pres_dis_grp"
+    },
+    {
+        "id": "pres_dis_grp",
+        "type": "group",
+        "z": "tab_scan",
+        "name": "POST /api/prescriptions/:id/discard",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "color": "#0f766e",
+            "label": true,
+            "label-position": "nw"
+        },
+        "nodes": [
+            "pres_dis_in",
+            "pres_dis_jwt",
+            "pres_dis_fn",
+            "pres_dis_ok",
+            "pres_dis_fail"
+        ],
+        "x": 20,
+        "y": 1136,
+        "w": 1110,
+        "h": 148
     }
 ]

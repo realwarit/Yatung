@@ -93,25 +93,28 @@ async function replaceSlots(conn, medId, slots) {
   if (slots.length) await conn.query('INSERT INTO medication_slots (medication_id, slot) VALUES ?', [slots.map((s) => [medId, s])]);
 }
 
+// สร้างยา 1 ตัวใน transaction ที่เปิดไว้แล้ว (m = ค่าที่ผ่าน validateMedication) — ใช้ซ้ำใน POST /api/medications และ confirm ผลสแกน
+// prescriptionId = ผลสแกนที่ยานี้มาจาก (NULL = กรอกเอง)
+async function createInTx(conn, userId, m, prescriptionId) {
+  const q = connQ(conn);
+  const remaining = m.remaining_qty != null ? m.remaining_qty : m.total_qty;
+  const [res] = await conn.query(
+    'INSERT INTO medications (user_id, prescription_id, name, strength, dose_per_time, unit, meal_relation, as_needed, indication, ' +
+    'warnings, total_qty, remaining_qty, start_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, CURDATE()))',
+    [userId, prescriptionId || null, m.name, m.strength, m.dose_per_time, m.unit, m.meal_relation, m.as_needed ? 1 : 0, m.indication,
+      JSON.stringify(m.warnings), m.total_qty, remaining, m.start_date]);
+  const id = res.insertId;
+  await replaceSlots(conn, id, m.slots);
+  await conn.query(GENERATE_TODAY_SQL(true, true), [id]);
+  const med = await fetchOne(q, userId, id);
+  med.skipped_slots_today = await skippedSlotsToday(q, id);
+  return med;
+}
+
 async function create(db, userId, body) {
   const v = validateMedication(body);
   if (!v.ok) return err(400, 'VALIDATION', v.details);
-  const m = v.value;
-  const remaining = m.remaining_qty != null ? m.remaining_qty : m.total_qty;
-  return db.withTransaction(async (conn) => {
-    const q = connQ(conn);
-    const [res] = await conn.query(
-      'INSERT INTO medications (user_id, name, strength, dose_per_time, unit, meal_relation, as_needed, indication, ' +
-      'warnings, total_qty, remaining_qty, start_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, CURDATE()))',
-      [userId, m.name, m.strength, m.dose_per_time, m.unit, m.meal_relation, m.as_needed ? 1 : 0, m.indication,
-        JSON.stringify(m.warnings), m.total_qty, remaining, m.start_date]);
-    const id = res.insertId;
-    await replaceSlots(conn, id, m.slots);
-    await conn.query(GENERATE_TODAY_SQL(true, true), [id]);
-    const med = await fetchOne(q, userId, id);
-    med.skipped_slots_today = await skippedSlotsToday(q, id);
-    return { status: 201, body: med };
-  });
+  return db.withTransaction(async (conn) => ({ status: 201, body: await createInTx(conn, userId, v.value, null) }));
 }
 
 async function update(db, userId, rawId, body) {
@@ -175,22 +178,31 @@ async function resume(db, userId, rawId) {
   });
 }
 
+// ข้อความ error ของจำนวนที่เติม (null = ใช้ได้)
+const refillQtyError = (qty) =>
+  (typeof qty !== 'number' || !Number.isFinite(qty) || qty <= 0 || qty > MAX_QTY)
+    ? 'จำนวนยาที่เติม (qty) ต้องเป็นตัวเลขมากกว่า 0 และไม่เกิน ' + MAX_QTY : null;
+
+// เติมจำนวนยาใน transaction ที่เปิดไว้แล้ว → { ok:true, med } | { ok:false, status, body } (ผู้เรียกต้อง rollback เองเมื่อ ok:false)
+async function refillInTx(conn, userId, id, qty) {
+  const q = connQ(conn);
+  const [cur] = await conn.query('SELECT total_qty, remaining_qty FROM medications WHERE id = ? AND user_id = ? FOR UPDATE', [id, userId]);
+  if (!cur.length) return { ok: false, ...notFound() };
+  const r = Math.round(((cur[0].remaining_qty || 0) + qty) * 100) / 100;
+  const t = Math.round(((cur[0].total_qty || 0) + qty) * 100) / 100;
+  if (r > MAX_QTY || t > MAX_QTY) return { ok: false, ...err(400, 'VALIDATION', 'จำนวนยารวมเกินที่ระบบรองรับ (' + MAX_QTY + ')') };
+  await conn.query('UPDATE medications SET remaining_qty = ?, total_qty = ?, refill_alerted_at = NULL WHERE id = ?', [r, t, id]);
+  return { ok: true, med: await fetchOne(q, userId, id) };
+}
+
 async function refill(db, userId, rawId, body) {
   const id = toId(rawId);
   if (!id) return notFound();
-  const qty = body && body.qty;
-  if (typeof qty !== 'number' || !Number.isFinite(qty) || qty <= 0 || qty > MAX_QTY) {
-    return err(400, 'VALIDATION', 'จำนวนยาที่เติม (qty) ต้องเป็นตัวเลขมากกว่า 0 และไม่เกิน ' + MAX_QTY);
-  }
+  const bad = refillQtyError(body && body.qty);
+  if (bad) return err(400, 'VALIDATION', bad);
   return db.withTransaction(async (conn) => {
-    const q = connQ(conn);
-    const [cur] = await conn.query('SELECT total_qty, remaining_qty FROM medications WHERE id = ? AND user_id = ? FOR UPDATE', [id, userId]);
-    if (!cur.length) return notFound();
-    const r = Math.round(((cur[0].remaining_qty || 0) + qty) * 100) / 100;
-    const t = Math.round(((cur[0].total_qty || 0) + qty) * 100) / 100;
-    if (r > MAX_QTY || t > MAX_QTY) return err(400, 'VALIDATION', 'จำนวนยารวมเกินที่ระบบรองรับ (' + MAX_QTY + ')');
-    await conn.query('UPDATE medications SET remaining_qty = ?, total_qty = ?, refill_alerted_at = NULL WHERE id = ?', [r, t, id]);
-    return { status: 200, body: await fetchOne(q, userId, id) };
+    const r = await refillInTx(conn, userId, id, body.qty);
+    return r.ok ? { status: 200, body: r.med } : { status: r.status, body: r.body };
   });
 }
 
@@ -246,5 +258,5 @@ async function putSlotTimes(db, userId, body) {
 
 module.exports = {
   listQuery, shapeList, getQuery, shapeOne, slotTimesQuery, shapeSlotTimes,
-  create, update, stop, resume, refill, putSlotTimes, GENERATE_TODAY_SQL
+  create, createInTx, update, stop, resume, refill, refillInTx, refillQtyError, putSlotTimes, GENERATE_TODAY_SQL
 };

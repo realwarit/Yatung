@@ -6,6 +6,8 @@
 //   reviewFlags(data)      : กฎ business เดี่ยวๆ (ใช้ซ้ำตอนโหลดจาก GET /api/prescriptions/:id)
 //   redactPii(text)        : แทน HN / เลขบัตร 13 หลัก / เบอร์โทร ที่ LLM ปิดไม่หมด
 // =====================================================================
+const { doseConflictReason } = require('./dose-check');
+
 const LOW = 0.7;
 const SLOT_ORDER = ['morning', 'noon', 'evening', 'bedtime'];
 
@@ -41,6 +43,10 @@ function reviewFlags(data) {
     if (m.dose_per_time === null) {
       flags.push({ index: i, field: 'dose_per_time', reason: 'ไม่พบจำนวนต่อครั้ง' });
     }
+    // ซองเขียนขนาดยาไว้หลายแบบที่ขัดกัน (เช่น "Sig: 1 tab" กับ "ครั้งละ ½ เม็ด") — ตรวจซ้ำจาก source_text ฝั่ง server
+    // เพราะ AI อาจเลือกค่าหนึ่งแล้วให้ความมั่นใจสูงโดยไม่เตือน ; วางก่อนกฎความมั่นใจเพื่อให้เหตุผลนี้ชนะตอนกันซ้ำ
+    const conflict = doseConflictReason(m.source_text);
+    if (conflict) flags.push({ index: i, field: 'dose_per_time', reason: conflict });
     // ความมั่นใจต่ำ (LLM ประเมินตัวเอง จึงใช้เป็นสัญญาณช่วยเท่านั้น ไม่ใช่ความจริง)
     for (const [field, score] of Object.entries(m.confidence)) {
       if (score < LOW) flags.push({ index: i, field, reason: `AI มั่นใจต่ำ (${Math.round(score * 100)}%)` });
@@ -54,9 +60,10 @@ function reviewFlags(data) {
     flags.push({ index: -1, field: 'is_medicine_label', reason: 'ภาพนี้อาจไม่ใช่ซองยา' });
   }
   // ช่องเดียวกันถูก flag หลายเหตุผลได้ → เก็บเหตุผลแรกไว้อันเดียว
+  // 'dose' (ความมั่นใจของ AI) กับ 'dose_per_time' (กฎ server) คือช่องเดียวกัน จึงนับเป็นคีย์เดียว
   const seen = new Set();
   return flags.filter((f) => {
-    const key = f.index + ':' + f.field;
+    const key = f.index + ':' + (f.field === 'dose' ? 'dose_per_time' : f.field);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;

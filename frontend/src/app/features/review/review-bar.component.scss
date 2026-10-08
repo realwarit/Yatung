@@ -1,0 +1,38 @@
+// ---------- แถบล่าง (มือถือ: ติดล่างจอ) ----------
+:host { display: block; margin-top: var(--yt-space-4); }
+.bar { display: grid; gap: var(--yt-space-2); }
+.bar__why {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--yt-space-2); margin: 0; padding: var(--yt-space-2) var(--yt-space-3);
+  border-radius: var(--yt-radius-sm); background: var(--yt-warning-soft); color: var(--yt-on-warning-soft); font-weight: 600; font-size: var(--yt-text-sm);
+  app-icon { margin-top: 0.1em; }
+  span { flex: 1 1 8rem; }
+}
+.why__s { display: none; }
+.why__l { display: block; }
+
+.bar__next {
+  --icon-optical-offset: 0;
+  display: inline-flex; align-items: center; gap: 0.4em; min-height: 44px; padding: 0 var(--yt-space-4); border: 2px solid currentColor;
+  border-radius: var(--yt-radius-pill); background: var(--yt-surface); color: inherit; font: 600 var(--yt-text-sm) / 1.6 var(--yt-font-body); cursor: pointer;
+}
+.bar__btns { display: flex; flex-wrap: wrap; gap: var(--yt-space-3); }
+.bar__drop { flex: 0 0 auto; }
+.more::before { content: ' '; }
+.bar__btns > button { min-height: var(--yt-tap); }
+.bar__save { flex: 1 1 14rem; }
+@container (max-width: 55.99rem) {
+  // มือถือ: แถบเตี้ยลง — ข้อความสั้น (ข้อความเต็มยังอยู่ให้ screen reader) + ปุ่มทิ้ง/บันทึกอยู่แถวเดียว
+  .why__s { display: inline; }
+  .why__l { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .bar__btns { flex-wrap: nowrap; }
+  .more { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .bar__save { flex: 1 1 0; min-width: 0; }
+  :host {
+    position: sticky; bottom: 0; z-index: 5; margin: var(--yt-space-4) calc(var(--yt-space-4) * -1) 0;
+    padding: var(--yt-space-3) var(--yt-space-4); background: var(--yt-surface); box-shadow: 0 -4px 16px rgb(var(--yt-shadow-color) / 0.12);
+  }
+}
+@container (min-width: 56rem) {
+  :host { position: sticky; bottom: var(--yt-space-3); z-index: 5; padding: var(--yt-space-3); border-radius: var(--yt-radius-md); background: var(--yt-surface); box-shadow: var(--yt-shadow-lg); }
+}
+
