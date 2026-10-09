@@ -9,14 +9,16 @@ import { SLOT_LABEL, SLOT_ORDER } from '../../core/i18n/labels';
 import { TimeRowComponent } from '../../shared/components/time-row/time-row.component';
 import { FontSizeToggleComponent } from '../../shared/font-size-toggle.component';
 import { IconComponent, IconName } from '../../shared/icon.component';
+import { DemoApi } from '../../core/api/line.api';
 import { CaregiversSectionComponent } from './caregivers-section.component';
+import { DemoSectionComponent } from './demo-section.component';
 import { LineSectionComponent } from './line-section.component';
 
 const SLOT_ICON: Record<Slot, IconName> = { morning: 'sunrise', noon: 'sun', evening: 'sunset', bedtime: 'moon' };
 
 @Component({
   selector: 'app-settings-page',
-  imports: [MatButton, IconComponent, TimeRowComponent, FontSizeToggleComponent, LineSectionComponent, CaregiversSectionComponent],
+  imports: [MatButton, IconComponent, TimeRowComponent, FontSizeToggleComponent, LineSectionComponent, CaregiversSectionComponent, DemoSectionComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './settings.page.html',
   styleUrl: './settings.page.scss',
@@ -25,6 +27,7 @@ export class SettingsPage {
   private api = inject(SettingsApi);
   private snack = inject(MatSnackBar);
   private auth = inject(AuthService);
+  private demo = inject(DemoApi);
 
   protected readonly slots = SLOT_ORDER;
   protected readonly label = SLOT_LABEL;
@@ -34,9 +37,14 @@ export class SettingsPage {
   protected readonly loadError = signal<string | null>(null);
   protected readonly saving = signal(false);
   protected readonly saveError = signal<string | null>(null);
+  /** GET /api/config (สาธารณะ) → true = แสดงปุ่มทดลองส่งเตือน; เรียกไม่ได้ = ซ่อน */
+  protected readonly demoMode = signal(false);
   private original = '';
 
-  constructor() { this.load(); }
+  constructor() {
+    this.load();
+    this.demo.config().subscribe({ next: (c) => this.demoMode.set(c.demoMode === true), error: () => this.demoMode.set(false) });
+  }
 
   protected load(): void {
     this.loadError.set(null);

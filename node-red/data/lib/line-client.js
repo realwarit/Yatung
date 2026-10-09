@@ -83,6 +83,7 @@ function createClient(opts = {}) {
     }
     const ok = r.status === 200 || r.status === 409;
     log(`line_push to=…${tail6(to)} status=${r.status} attempts=${attempts} kind=${meta.kind || 'other'}`);
+    if (ok && r.status === 200 && cache.value && cache.value.used != null) cache.value.used += 1;   // cache ยอดใช้ไป 5 นาที → นับส่วนที่เพิ่งส่งเอง
     await logNotification(meta.db, meta, 'line_push', ok, errText(r));
     return { ok, status: r.status, attempts };
   }

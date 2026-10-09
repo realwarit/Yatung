@@ -37,6 +37,13 @@
     <app-caregivers-section />
   </section>
 
+  @if (demoMode()) {
+    <section class="card yt-card" aria-labelledby="h-demo">
+      <h2 id="h-demo"><app-icon name="bell" /> โหมดเดโม</h2>
+      <app-demo-section />
+    </section>
+  }
+
   <section class="card yt-card" aria-labelledby="h-font">
     <h2 id="h-font">การแสดงผล</h2>
     <p class="hint">ขนาดตัวอักษร</p>

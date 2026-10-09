@@ -38,3 +38,16 @@ export class LineApi {
   deleteCaregiver(id: number): Observable<{ deleted: true }> { return this.http.delete<{ deleted: true }>(`/api/caregivers/${id}`); }
   caregiverLinkCode(id: number): Observable<LinkCode> { return this.http.post<LinkCode>(`/api/caregivers/${id}/link-code`, {}); }
 }
+
+export interface AppConfig { demoMode: boolean }
+export interface RemindNowResult { sent: number; doses: number; slot: 'morning' | 'noon' | 'evening' | 'bedtime'; time: string; resent: boolean }
+
+@Injectable({ providedIn: 'root' })
+export class DemoApi {
+  private http = inject(HttpClient);
+
+  /** เปิดสาธารณะ (ไม่ต้อง JWT) ส่งกลับแค่ { demoMode } */
+  config(): Observable<AppConfig> { return this.http.get<AppConfig>('/api/config'); }
+  /** เฉพาะ DEMO_MODE=true ; 409 = ไม่มีรอบที่รอกิน / ยังไม่เชื่อม LINE */
+  remindNow(): Observable<RemindNowResult> { return this.http.post<RemindNowResult>('/api/demo/remind-now', {}); }
+}

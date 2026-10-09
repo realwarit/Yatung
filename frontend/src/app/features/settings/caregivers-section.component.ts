@@ -4,6 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { errorText } from '../../core/api/api-error';
 import { Caregiver, LineApi } from '../../core/api/line.api';
+import { plainName } from '../../core/text';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { MascotComponent } from '../../shared/components/mascot/mascot.component';
 import { IconComponent } from '../../shared/icon.component';
@@ -33,11 +34,15 @@ import { CaregiverFormDialogComponent } from './caregiver-form-dialog.component'
             </div>
             <p class="cg__line" [class.on]="c.line_linked">
               <app-icon [name]="c.line_linked ? 'check' : 'clock'" />
-              {{ c.line_linked ? 'เชื่อม LINE แล้ว' + (c.line_display_name ? ': ' + c.line_display_name : '') : 'ยังไม่เชื่อม LINE' }}
+              <span>{{ c.line_linked ? 'เชื่อม LINE แล้ว' : 'ยังไม่เชื่อม LINE' }}@if (c.line_linked && c.line_display_name) {: <span class="line-name">{{ plain(c.line_display_name) }}</span>}</span>
             </p>
-            <p class="cg__min">แจ้งเมื่อไม่กดกินยานานเกิน <span class="num">{{ c.escalate_after_min }}</span> นาที</p>
+            <p class="cg__min">แจ้งเมื่อไม่กดกินยานานเกิน <span class="nb"><span class="num">{{ c.escalate_after_min }}</span> นาที</span></p>
             <div class="cg__acts">
-              <button mat-flat-button type="button" (click)="sendCode(c)">{{ c.line_linked ? 'เชื่อม LINE ใหม่' : 'ส่งรหัสให้ญาติ' }}</button>
+              @if (c.line_linked) {
+                <button mat-stroked-button type="button" (click)="sendCode(c)">เชื่อม LINE ใหม่</button>
+              } @else {
+                <button mat-flat-button type="button" (click)="sendCode(c)">ส่งรหัสให้ญาติ</button>
+              }
               <button mat-stroked-button type="button" (click)="edit(c)"><app-icon name="edit" /> แก้ไข</button>
               <button mat-stroked-button type="button" (click)="remove(c)"><app-icon name="trash" /> ลบ</button>
             </div>
@@ -61,6 +66,9 @@ import { CaregiverFormDialogComponent } from './caregiver-form-dialog.component'
     .cg p { margin: var(--yt-space-1) 0 0; }
     .cg__line { display: flex; align-items: center; gap: var(--yt-space-2); color: var(--yt-text-muted); font-weight: 600; }
     .cg__line.on { color: var(--yt-success); }
+    .cg__line > span { min-width: 0; overflow-wrap: anywhere; }
+    .line-name { font-family: var(--yt-font-body); }
+    .nb { white-space: nowrap; }
     .cg__acts { display: flex; flex-wrap: wrap; gap: var(--yt-space-2); margin-top: var(--yt-space-3); }
     .add { width: 100%; }
     .sk { height: 8rem; }
@@ -71,6 +79,7 @@ export class CaregiversSectionComponent {
   private dialog = inject(MatDialog);
   private snack = inject(MatSnackBar);
 
+  protected readonly plain = plainName;
   protected readonly list = signal<Caregiver[] | null>(null);
   protected readonly loadError = signal<string | null>(null);
 

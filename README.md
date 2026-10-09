@@ -58,6 +58,15 @@ LINE Messaging API ส่ง webhook เข้ามาที่ `https://<NGROK
 2. ใส่ `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_OA_BASIC_ID` (เช่น `@014rktvr`) ใน `.env`
 3. `docker compose --profile tunnel up -d` (inspector ดู request ที่ http://127.0.0.1:4040)
 4. ตั้ง Webhook URL เป็น `https://<NGROK_DOMAIN>/line/webhook` ใน LINE Developers Console → กด Verify → เปิด Use webhook
+   (ขั้นตอนเต็มพร้อมทดลองส่งเตือน/กดปุ่ม: [`docs/line-console-checklist.md`](docs/line-console-checklist.md))
+
+> **ngrok แพ็กเกจฟรีแสดงหน้าเตือน "You are about to visit …" เมื่อเปิดลิงก์ด้วยเบราว์เซอร์** — ครั้งแรกที่เปิด `https://<NGROK_DOMAIN>` (รวมปุ่ม "เปิดแอป" ในข้อความ LINE) ต้องกด **Visit Site** หนึ่งครั้ง (เบราว์เซอร์จำไว้ชั่วคราว) ·
+> คำขอที่ไม่ใช่เบราว์เซอร์ (LINE ส่ง webhook, LINE โหลดรูปน้องยาตรง) ไม่เจอหน้านี้ — `demo-check.sh` เช็กรูปด้วย User-Agent ที่ไม่ใช่เบราว์เซอร์ ถ้าได้ HTML แทน PNG ให้ย้ายรูปไปโฮสต์อื่นแล้วตั้ง `LINE_MASCOT_URL`
+> image ของ tunnel คือ `ngrok/ngrok:3.39.11-alpine` (tag `3.39.11` เปล่าไม่มีอยู่จริง)
+
+> **แก้ frontend แล้วหน้าเว็บใน container ไม่เปลี่ยน** จนกว่าจะ build ใหม่: `docker compose up -d --build frontend` (`demo-check.sh` เตือนถ้า image เก่ากว่าไฟล์ที่แก้ล่าสุดใน `frontend/`)
+
+> **ลำดับตัวแปรใน `.env` สำคัญ:** Compose แทนค่า `${NGROK_DOMAIN}` จากตัวแปรที่ประกาศ "ก่อนหน้า" เท่านั้น — `PUBLIC_BASE_URL=https://${NGROK_DOMAIN}` ต้องอยู่หลัง `NGROK_DOMAIN=` (ไม่งั้นได้ `https://` เปล่าๆ; `demo-check.sh` ตรวจให้)
 
 ความปลอดภัย: nginx ส่งต่อ **เฉพาะ `/api/*` และ `/line/webhook`** — editor/admin API ของ Node-RED (`/flows`, `/red`, `/settings`, …) เข้าผ่าน tunnel ไม่ได้ (มีเทสใน `scripts/test-day6.sh`) ·
 พอร์ต 1880/3306/8081/4040 ผูกที่ `127.0.0.1` ส่วน 8080 เปิดให้ LAN · **ห้ามเปิด tunnel ถ้ายังไม่ได้เปลี่ยน `NODE_RED_ADMIN_HASH`** (ค่าตัวอย่างคือรหัส `demo1234`)
@@ -65,9 +74,15 @@ LINE Messaging API ส่ง webhook เข้ามาที่ `https://<NGROK
 เชื่อมบัญชี: หน้า "ตั้งค่า" → "เชื่อม LINE" → กด "รับรหัสเชื่อม LINE" (เลข 6 หลัก หมดอายุ 10 นาที ใช้ได้ครั้งเดียว) → กด "เปิด LINE แล้วกดส่ง" (หรือสแกน QR) · ญาติเชื่อมด้วยรหัสของตัวเองจากปุ่ม "ส่งรหัสให้ญาติ"
 · ใน LINE พิมพ์ "วันนี้" เพื่อดูยาของวันนี้ (ใช้ reply จึงไม่เสียโควตา push)
 
+**แจ้งเตือนกินยา (6B):** cron ทุก 1 นาที (tab 7-LINE) ส่ง Flex "ถึงเวลากินยามื้อ…" 1 ข้อความต่อมื้อ (ยาทุกตัวของมื้อนั้นรวมกัน) พร้อมปุ่ม **✓ กินแล้ว** (บันทึกเหมือนปุ่มในแอป, source = line, หักสต็อก, กดซ้ำไม่หักซ้ำ) และปุ่ม "เปิดแอป" ·
+รูปน้องยาตรงในข้อความ = `LINE_MASCOT_URL` (ว่าง = `${PUBLIC_BASE_URL}/line/mascot.png` สร้างด้วย `cd frontend && node tools/make-line-mascot.mjs`) ·
+โหมดเดโม (`DEMO_MODE=true`): หน้า "ตั้งค่า" มีปุ่ม "ทดลองส่งเตือนตอนนี้" (`POST /api/demo/remind-now` ส่งรอบถัดไปของวันนี้ ไม่สร้างรอบปลอม) และ inject "ส่งเตือนทดสอบ (demo user)" ใน Node-RED
+
+**editor ของ Node-RED fail closed:** ถ้า `NODE_RED_ADMIN_HASH` ว่างหรือไม่ใช่ bcrypt hash ที่ถูกรูปแบบ editor + admin API จะถูกปิดทั้งหมด (log เตือน ไม่แสดงค่า) แต่ `/api/*` กับ `/line/webhook` ยังทำงาน · สร้าง hash: `docker compose run --rm nodered npx node-red admin hash-pw`
+
 โควตา push: เพดานที่ใช้ = `min(LINE_PUSH_MONTHLY_CAP, โควตาจริงจาก LINE)` · ข้อความเตือนปกติหยุดเมื่อใช้ถึง `เพดาน − LINE_PUSH_RESERVE` ส่วนที่กันไว้ใช้แจ้งญาติ (วันที่ 7)
 
-ทดสอบ 6A (LINE ปลอม ไม่ส่งข้อความจริง): `bash scripts/test-day6.sh` · migration ฐานข้อมูลที่มีข้อมูลอยู่แล้ว: `bash scripts/migrate.sh` (รันซ้ำได้ ไม่ต้อง `down -v`)
+ทดสอบ 6A/6B (LINE ปลอม ไม่ส่งข้อความจริง): `bash scripts/test-day6.sh` และ `bash scripts/test-day6b.sh` (6B recreate nodered หลายครั้งและเปิด cron จริง 1 รอบ — ถ้ามี dose ของผู้ใช้จริงเข้าเงื่อนไขเตือนอยู่จะข้ามส่วนนั้นเอง) · migration ฐานข้อมูลที่มีข้อมูลอยู่แล้ว: `bash scripts/migrate.sh` (รันซ้ำได้ ไม่ต้อง `down -v`)
 
 ### 3. Dev แบบ hot reload
 
@@ -167,3 +182,5 @@ Webhook URL + Use webhook ใน LINE Console · **โควตา push: จร�
 docker compose up -d           # เริ่มระบบ (หลังเปิดเครื่อง)
 docker compose down            # หยุดระบบ (ข้อมูลยังอยู่)
 docker compose logs -f nodered # ดู log ของ Node-RED
+
+docker compose --profile tunnel up -d

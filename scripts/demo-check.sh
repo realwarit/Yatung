@@ -26,6 +26,23 @@ done
 health="$(docker compose ps --format '{{.Health}}' db 2>/dev/null | head -1)"
 [ -z "$health" ] || [ "$health" = "healthy" ] && ok "db: ${health:-ไม่มี healthcheck}" || bad "db: $health"
 
+# image frontend ต้องไม่เก่ากว่าไฟล์ที่ถูกแก้ล่าสุดใน frontend/ (หน้าเว็บใน container ไม่อัปเดตจนกว่าจะ build ใหม่)
+# เทียบเวลาแก้ไฟล์จริง (ไม่ใช่เวลา commit — commit ทีหลัง build ไม่ได้แปลว่าโค้ดเปลี่ยน)
+fe_name="$(docker compose config --images 2>/dev/null | grep -i frontend | head -1)"
+fe_built="$(docker image inspect "$fe_name" --format '{{.Created}}' 2>/dev/null)"
+fe_new="$(find frontend/src frontend/public frontend/nginx.conf frontend/package.json frontend/angular.json frontend/ngsw-config.json frontend/Dockerfile -type f -printf '%T@ %p
+' 2>/dev/null | sort -nr | head -1)"
+if [ -n "$fe_built" ] && [ -n "$fe_new" ]; then
+  fe_t="${fe_new%% *}"; fe_f="${fe_new#* }"
+  if [ "$(node -e 'console.log(Date.parse(process.argv[1]) / 1000 < Number(process.argv[2]) ? 1 : 0)' "$fe_built" "$fe_t")" = "1" ]; then
+    warn "image frontend (build $fe_built) เก่ากว่าไฟล์ที่แก้ล่าสุด ($fe_f) — รัน: docker compose up -d --build frontend"
+  else ok "image frontend ใหม่กว่าไฟล์ล่าสุดใน frontend/ ($fe_f)"; fi
+else warn "เช็กอายุ image frontend ไม่ได้ (ไม่พบ image/ไฟล์)"; fi
+fe_run="$(docker inspect "$(docker compose ps -q frontend 2>/dev/null | head -1)" --format '{{.Image}}' 2>/dev/null)"
+fe_tag="$(docker image inspect "$fe_name" --format '{{.Id}}' 2>/dev/null)"
+[ -n "$fe_run" ] && [ -n "$fe_tag" ] && [ "$fe_run" != "$fe_tag" ] && warn "container frontend ที่รันอยู่ใช้ image คนละตัวกับ image ล่าสุด — รัน: docker compose up -d --force-recreate frontend"
+[ -n "$(git status --porcelain -- frontend 2>/dev/null | grep -v '^??' | head -1)" ] && warn "มีไฟล์ใน frontend/ ที่แก้แล้วแต่ยังไม่ commit"
+
 echo "== 2) เว็บและ API"
 [ "$(code "$WEB/")" = "200" ] && ok "เว็บ $WEB ตอบ 200" || bad "เว็บ $WEB ไม่ตอบ 200"
 [ "$(code "$WEB/api/me")" = "401" ] && ok "nginx proxy /api → Node-RED (ไม่มี token = 401)" || bad "$WEB/api/me ควรได้ 401"
@@ -82,17 +99,23 @@ case "$ev" in
 esac
 
 echo "== 7) LINE: webhook · tunnel · โควตา · DEMO_MODE"
-envf() { grep -E "^$1=" .env 2>/dev/null | head -1 | cut -d= -f2- | tr -d '' | sed -e "s/^['\"]//" -e "s/['\"]$//"; }
+envf() { grep -E "^$1=" .env 2>/dev/null | head -1 | cut -d= -f2- | tr -d '
+' | sed -e "s/^['\"]//" -e "s/['\"]$//"; }
 LINE_TOKEN="$(envf LINE_CHANNEL_ACCESS_TOKEN)"
 LINE_BASE="$(envf LINE_API_BASE)"; LINE_BASE="${LINE_BASE:-https://api.line.me}"
 NG_DOMAIN="$(envf NGROK_DOMAIN)"
-[ -n "$(docker compose exec -T nodered printenv LINE_CHANNEL_SECRET 2>/dev/null | tr -d '')" ] && ok "LINE_CHANNEL_SECRET ตั้งแล้ว" || bad "LINE_CHANNEL_SECRET ว่าง (ใส่ใน .env แล้ว docker compose up -d --force-recreate nodered)"
+[ -n "$(docker compose exec -T nodered printenv LINE_CHANNEL_SECRET 2>/dev/null | tr -d '
+')" ] && ok "LINE_CHANNEL_SECRET ตั้งแล้ว" || bad "LINE_CHANNEL_SECRET ว่าง (ใส่ใน .env แล้ว docker compose up -d --force-recreate nodered)"
 [ -n "$LINE_TOKEN" ] && ok "LINE_CHANNEL_ACCESS_TOKEN ตั้งแล้ว" || bad "LINE_CHANNEL_ACCESS_TOKEN ว่าง"
-oa="$(docker compose exec -T nodered printenv LINE_OA_BASIC_ID 2>/dev/null | tr -d '')"
+oa="$(docker compose exec -T nodered printenv LINE_OA_BASIC_ID 2>/dev/null | tr -d '
+')"
 [ -n "$oa" ] && ok "LINE_OA_BASIC_ID = $oa" || bad "LINE_OA_BASIC_ID ว่าง (ลิงก์ \"เปิด LINE แล้วกดส่ง\" จะไม่มี)"
 # webhook ใน nginx: signature ผิดต้องได้ 401 (พิสูจน์ว่า route ถึง Node-RED และตรวจ signature)
 [ "$(curl -s -o /dev/null -m 10 -w '%{http_code}' -X POST "$WEB/line/webhook" -H 'x-line-signature: x' -H 'Content-Type: application/json' -d '{"events":[]}')" = "401" ] && ok "POST $WEB/line/webhook (signature ผิด) = 401" || bad "POST /line/webhook ควรได้ 401"
-tstate="$(docker compose ps --format '{{.State}}' tunnel 2>/dev/null | head -1)"
+pbu="$(docker compose exec -T nodered printenv PUBLIC_BASE_URL 2>/dev/null | tr -d '\r')"
+if printf '%s' "$pbu" | grep -qE '^https://[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+(/.*)?$' && ! printf '%s' "$pbu" | grep -q 'example'; then ok "PUBLIC_BASE_URL ใน container = $pbu"
+else bad "PUBLIC_BASE_URL ใน container ไม่มีโดเมน ('${pbu:-ว่าง}') — ใน .env ต้องประกาศ NGROK_DOMAIN ก่อนบรรทัด PUBLIC_BASE_URL=https://\${NGROK_DOMAIN} แล้ว docker compose up -d --force-recreate nodered"; fi
+tstate="$(docker compose ps --all --format '{{.State}}' tunnel 2>/dev/null | head -1)"
 if [ "$tstate" = "running" ]; then
   pub="$(curl -s -m 5 http://127.0.0.1:4040/api/tunnels 2>/dev/null | jget 'o.tunnels[0].public_url')"
   if [ -n "$pub" ]; then
@@ -103,8 +126,15 @@ if [ "$tstate" = "running" ]; then
     if curl -s -m 10 "$pub/flows" -H 'ngrok-skip-browser-warning: 1' | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{JSON.parse(s);process.exit(0)}catch(e){process.exit(1)}})'; then bad "ผ่าน tunnel: /flows ได้ JSON — editor/admin API หลุดออกไป!"; else ok "ผ่าน tunnel: /flows ไม่ใช่ Node-RED"; fi
   else warn "tunnel รันอยู่แต่อ่าน inspector (127.0.0.1:4040) ไม่ได้ — ดู docker compose logs tunnel (NGROK_AUTHTOKEN/NGROK_DOMAIN ถูกไหม)"; fi
 else
-  warn "tunnel ไม่ได้รัน (docker compose --profile tunnel up -d) — LINE ส่ง webhook เข้ามาไม่ได้"
+  bad "tunnel (ngrok) ไม่ได้รัน (สถานะ: ${tstate:-ไม่มี container}) — LINE ส่ง webhook เข้ามาไม่ได้ ; รัน: docker compose --profile tunnel up -d (ดู docker compose logs tunnel)"
 fi
+# รูปน้องยาตรงใน Flex: ต้องโหลดด้วย User-Agent ที่ไม่ใช่เบราว์เซอร์ได้ 200 image/png (ngrok ฟรีแสดงหน้าเตือนให้เฉพาะเบราว์เซอร์)
+mascot="$(docker compose exec -T nodered printenv LINE_MASCOT_URL 2>/dev/null | tr -d '\r')"; mascot="${mascot:-${pbu%/}/line/mascot.png}"
+if printf '%s' "$mascot" | grep -q '^https://'; then
+  mh="$(curl -s -m 15 -o /dev/null -D - -A 'LineBotWebhook/2.0' "$mascot" 2>/dev/null | tr -d '\r')"
+  mcode="$(printf '%s' "$mh" | head -1 | awk '{print $2}')"; mtype="$(printf '%s' "$mh" | grep -i '^content-type:' | head -1 | awk '{print tolower($2)}')"
+  [ "$mcode" = "200" ] && [ "${mtype%%;*}" = "image/png" ] && ok "รูปน้องยาตรง $mascot = 200 image/png (UA ไม่ใช่เบราว์เซอร์)" || bad "รูปน้องยาตรง $mascot ได้ HTTP ${mcode:-?} ${mtype:-?} (ต้อง 200 image/png) — ถ้าเป็นหน้า HTML ของ ngrok ให้ย้ายรูปไปโฮสต์อื่นแล้วตั้ง LINE_MASCOT_URL"
+else warn "ข้ามเช็กรูปน้องยาตรง (URL '$mascot' ไม่ใช่ https)"; fi
 if [ -n "$LINE_TOKEN" ] && [ "$LINE_BASE" = "https://api.line.me" ]; then
   wep="$(curl -s -m 10 https://api.line.me/v2/bot/channel/webhook/endpoint -H "Authorization: Bearer $LINE_TOKEN")"
   wurl="$(printf '%s' "$wep" | jget 'o.endpoint')"; wact="$(printf '%s' "$wep" | jget 'o.active')"
@@ -118,7 +148,8 @@ if [ -n "$LINE_TOKEN" ] && [ "$LINE_BASE" = "https://api.line.me" ]; then
   qtype="$(printf '%s' "$qj" | jget 'o.type')"; qreal="$(printf '%s' "$qj" | jget 'o.value')"; used="$(printf '%s' "$cj" | jget 'o.totalUsage')"
   if [ -z "$qtype" ]; then warn "อ่านโควตาจาก LINE ไม่ได้ (token ถูกไหม?)"; else
     src="LINE"
-    if [ -z "$used" ]; then used="$(docker compose exec -T db sh -c 'mysql -N -B -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SELECT COUNT(*) FROM notification_logs WHERE channel=\"line_push\" AND success=1 AND sent_at >= DATE_FORMAT(NOW(), \"%Y-%m-01\")"' 2>/dev/null | tr -d '')"; src="notification_logs"; fi
+    if [ -z "$used" ]; then used="$(docker compose exec -T db sh -c 'mysql -N -B -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SELECT COUNT(*) FROM notification_logs WHERE channel=\"line_push\" AND success=1 AND sent_at >= DATE_FORMAT(NOW(), \"%Y-%m-01\")"' 2>/dev/null | tr -d '
+')"; src="notification_logs"; fi
     node -e '
       const [cap, rsv, type, real, used, src] = process.argv.slice(1);
       const eff = type === "limited" ? Math.min(+cap, +real) : +cap, u = +used || 0;
@@ -129,7 +160,11 @@ if [ -n "$LINE_TOKEN" ] && [ "$LINE_BASE" = "https://api.line.me" ]; then
 else
   warn "ข้ามการเช็ก webhook/โควตากับ LINE จริง (ไม่มี token หรือ LINE_API_BASE ไม่ใช่ api.line.me)"
 fi
-dm="$(docker compose exec -T nodered printenv DEMO_MODE 2>/dev/null | tr -d '')"
+ed="$(code "$API/flows")"
+case "$ed" in 401) ok "editor/admin API ของ Node-RED ล็อกด้วยรหัสผ่าน (ตรง :1880 ได้ 401)" ;; 404) ok "editor/admin API ปิดอยู่ (fail closed: ไม่มี NODE_RED_ADMIN_HASH ที่ถูกต้อง) — http-in ยังใช้งานได้" ;; 200) bad "editor/admin API เปิดโดยไม่ต้อง login (ตรง :1880 ได้ 200)!" ;; *) warn "เช็ก editor ไม่ได้ (HTTP $ed)" ;; esac
+docker compose logs nodered 2>&1 | grep -q 'ค่าตัวอย่าง (รหัส demo1234)' && warn "NODE_RED_ADMIN_HASH ยังเป็นค่าตัวอย่าง demo1234 — ห้ามเปิด tunnel"
+dm="$(docker compose exec -T nodered printenv DEMO_MODE 2>/dev/null | tr -d '
+')"
 [ "$dm" = "true" ] && warn "DEMO_MODE=true — ปุ่ม \"ทดลองส่งเตือนตอนนี้\" เปิดอยู่ (ปิดเมื่อใช้งานจริง)" || ok "DEMO_MODE=${dm:-false}"
 
 echo

@@ -16,6 +16,7 @@ interface NavItem { path: string; label: string; icon: IconName; }
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
+  host: { '[class.focus]': 'focusMode()' },
 })
 export class ShellComponent {
   protected readonly auth = inject(AuthService);
