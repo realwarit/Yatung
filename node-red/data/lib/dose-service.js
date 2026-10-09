@@ -48,20 +48,42 @@ async function snapshot(conn, id) {
     remaining_qty: r[0].remaining_qty == null ? null : Number(r[0].remaining_qty) };
 }
 
+// บันทึกกินยา 1 รอบใน transaction ที่เปิดอยู่แล้ว (ปุ่มในแอป source='app', ปุ่ม LINE source='line') ; คืน { status, body } เหมือน take()
+// ต้องเรียกภายใน db.withTransaction เท่านั้น (ใช้ SELECT … FOR UPDATE)
+async function takeInTx(conn, userId, id, source) {
+  const [rows] = await conn.query(LOCK_SQL, [id, userId]);
+  if (!rows.length) return notFound();
+  const d = rows[0];
+  if (d.status === 'taken') return err(409, 'ALREADY_TAKEN', 'บันทึกว่ากินยารอบนี้แล้ว');
+  // status = missed ก็กดได้ (กินช้า) ไม่แจ้งใครเพิ่ม
+  await conn.query("UPDATE dose_logs SET status = 'taken', taken_at = NOW(), source = ? WHERE id = ?", [source, id]);
+  if (d.remaining_qty != null) {
+    await conn.query('UPDATE medications SET remaining_qty = GREATEST(remaining_qty - ?, 0) WHERE id = ?', [d.dose_per_time, d.med_id]);
+  }
+  return { status: 200, body: await snapshot(conn, id) };
+}
+
 async function take(db, userId, rawId) {
   const id = toId(rawId);
   if (!id) return notFound();
+  return db.withTransaction((conn) => takeInTx(conn, userId, id, 'app'));
+}
+
+// ปุ่ม "กินแล้ว" ใน LINE: หลาย dose ใน transaction เดียว ; id ที่ไม่ใช่ของ userId ถูกข้ามโดยไม่แจ้ง (นับ skipped)
+// คืน { taken: [id…], already: [id…], skipped: n, at: 'HH:MM' }
+async function takeMany(db, userId, rawIds, source = 'line') {
+  const ids = [...new Set((rawIds || []).map(toId).filter((x) => x))].slice(0, 50);
   return db.withTransaction(async (conn) => {
-    const [rows] = await conn.query(LOCK_SQL, [id, userId]);
-    if (!rows.length) return notFound();
-    const d = rows[0];
-    if (d.status === 'taken') return err(409, 'ALREADY_TAKEN', 'บันทึกว่ากินยารอบนี้แล้ว');
-    // status = missed ก็กดได้ (กินช้า) ไม่แจ้งใครเพิ่ม
-    await conn.query("UPDATE dose_logs SET status = 'taken', taken_at = NOW(), source = 'app' WHERE id = ?", [id]);
-    if (d.remaining_qty != null) {
-      await conn.query('UPDATE medications SET remaining_qty = GREATEST(remaining_qty - ?, 0) WHERE id = ?', [d.dose_per_time, d.med_id]);
+    const out = { taken: [], already: [], skipped: 0, at: null };
+    for (const id of ids) {
+      const r = await takeInTx(conn, userId, id, source);
+      if (r.status === 200) out.taken.push(id);
+      else if (r.status === 409) out.already.push(id);
+      else out.skipped++;
     }
-    return { status: 200, body: await snapshot(conn, id) };
+    const [[t]] = await conn.query("SELECT DATE_FORMAT(NOW(), '%H:%i') AS t");
+    out.at = t.t;
+    return out;
   });
 }
 
@@ -93,4 +115,4 @@ async function generateToday(db) {
   return { inserted: res.affectedRows };
 }
 
-module.exports = { todayQuery, shapeToday, take, undo, generateToday };
+module.exports = { todayQuery, shapeToday, take, takeInTx, takeMany, undo, generateToday };

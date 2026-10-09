@@ -137,7 +137,9 @@ const MSG = {
     '• เวลาถึงมื้อยา น้องยาตรงจะส่งข้อความเตือนมาให้ค่ะ\n\n' +
     'ข้อมูลนี้ไม่ใช่คำแนะนำทางการแพทย์ หากสงสัยเรื่องยาให้ปรึกษาแพทย์หรือเภสัชกรนะคะ'),
   notLinked: () => text('ยังไม่ได้เชื่อมบัญชีค่ะ เปิดแอปยาตรง > ตั้งค่า > เชื่อม LINE เพื่อรับรหัส 6 หลัก แล้วพิมพ์ส่งมาได้เลยนะคะ'),
-  noDosesToday: () => text('วันนี้ยังไม่มีรายการยาค่ะ 🌿')
+  noDosesToday: () => text('วันนี้ยังไม่มีรายการยาค่ะ 🌿'),
+  taken: (n, at, already) => text(`บันทึกแล้วค่ะ ✓ กินยา ${n} รายการ เมื่อ ${at} น. เก่งมากเลยค่ะ 💚${already ? '\n(อีก ' + already + ' รายการบันทึกไว้ก่อนแล้ว)' : ''}`),
+  alreadyTaken: () => text('บันทึกไว้แล้วค่ะ ✓')
 };
 
 // สรุปยาวันนี้เป็นข้อความ (shaped = ผลของ doseService.shapeToday) ; ไม่มียา → null
@@ -185,8 +187,28 @@ async function claimCode(db, code, lineId, getName) {
   return { kind: 'invalid' };
 }
 
+// ---------- postback ปุ่ม "กินแล้ว" (data = a=take&d=<dose id คั่นด้วย comma>) ----------
+// นับเฉพาะ dose ของผู้ป่วยที่ line_user_id ตรงกับผู้กด ; id ของคนอื่นถูกข้ามโดยไม่แจ้ง ; ใช้ doseService.takeInTx ตัวเดียวกับปุ่มในแอป
+async function handlePostback(event, deps) {
+  const { db, client } = deps;
+  const lineId = event.source && event.source.userId;
+  const data = event.postback && event.postback.data;
+  if (!lineId || typeof data !== 'string' || data.length > 300) return;
+  const p = new URLSearchParams(data);
+  if (p.get('a') !== 'take') return;
+  const ids = String(p.get('d') || '').split(',').filter((x) => /^\d{1,15}$/.test(x)).slice(0, 50);
+  if (!ids.length) return;
+  const u = await db.query('SELECT id FROM users WHERE line_user_id = ?', [lineId]);
+  if (!u.length) return;   // ไม่ใช่ผู้ป่วย (เช่น ผู้ดูแล) → ไม่ทำอะไร
+  const r = await doseService.takeMany(db, u[0].id, ids, 'line');
+  const meta = { db, userId: u[0].id, kind: 'other' };
+  if (!event.replyToken) return;
+  if (r.taken.length) await client.reply(event.replyToken, [MSG.taken(r.taken.length, r.at, r.already.length)], meta);
+  else if (r.already.length) await client.reply(event.replyToken, [MSG.alreadyTaken()], meta);
+}
+
 // ---------- event ----------
-// deps = { db, client, limiter?, isDuplicate?, handlers?: { postback(event, deps) } }  (postback ไว้ให้ปุ่ม "กินแล้ว" ของ 6B)
+// deps = { db, client, limiter?, isDuplicate?, handlers?: { postback(event, deps) } }  (ไม่ใส่ handlers.postback = ใช้ handlePostback ปุ่ม "กินแล้ว")
 async function handleEvent(event, deps) {
   const { db, client } = deps;
   const lineId = event && event.source && event.source.userId;
@@ -203,7 +225,7 @@ async function handleEvent(event, deps) {
     await db.query('UPDATE caregivers SET line_user_id = NULL, line_display_name = NULL WHERE line_user_id = ?', [lineId]);
     return;
   }
-  if (event.type === 'postback' && deps.handlers && deps.handlers.postback) return deps.handlers.postback(event, deps);
+  if (event.type === 'postback') return ((deps.handlers && deps.handlers.postback) || handlePostback)(event, deps);
   if (event.type !== 'message' || !event.message || event.message.type !== 'text') return;
 
   const raw = event.message.text;
@@ -256,5 +278,5 @@ async function handleEvents(events, deps) {
 
 module.exports = {
   verifySignature, randomCode, parseCode, formatCode, oaMessageUrl, createDedup, createGuessLimiter, parseBody, dropDuplicates,
-  issueCode, codeBody, patientLinkCode, status, unlink, claimCode, handleEvent, handleEvents, todaySummaryText, MSG, CODE_TTL_MIN
+  issueCode, codeBody, patientLinkCode, status, unlink, claimCode, handlePostback, handleEvent, handleEvents, todaySummaryText, MSG, CODE_TTL_MIN
 };

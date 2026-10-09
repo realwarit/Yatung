@@ -1,8 +1,8 @@
 // body ถูก Ionic structure.css ตั้งเป็น overflow:hidden → shell เป็น container เองและให้ .main เลื่อน
 :host {
-  --yt-nav-h: 4.4rem;
   position: fixed;
   inset: 0;
+  height: 100dvh;           // มือถือ: ตามพื้นที่ที่มองเห็นจริง (แถบ URL ของเบราว์เซอร์ไม่บังแถบเมนูล่าง)
   display: flex;
   flex-direction: column;   // มือถือ: เนื้อหา + แถบเมนูล่างเรียงในแนวตั้ง (แถบไม่ลอย จึงไม่บังการ์ดสุดท้าย)
   background: var(--yt-bg);

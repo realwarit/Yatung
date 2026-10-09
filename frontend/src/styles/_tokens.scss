@@ -4,6 +4,11 @@
 //   on-accent/accent 7.9:1 · success/surface 5.0:1 · warning/surface 5.0:1 · danger/surface 6.5:1
 //   on-*-soft/*-soft ≥ 7:1
 :root {
+  // แถบเมนูล่างบนมือถือ + ปุ่มสแกนที่ยื่นขึ้นเหนือแถบ — ค่าเดียวใช้กับทุกหน้าที่มีแถบ (ShellComponent / .yt-page / .yt-snack)
+  --yt-nav-h: 4.4rem;
+  --yt-scan-lift: 2.8rem;       // ส่วนที่ปุ่มกล้องยื่นขึ้นเหนือแถบ (วัดจริง ≈ 2.1rem + ขอบ)
+  --yt-bottom-clearance: calc(var(--yt-nav-h) + var(--yt-scan-lift) + env(safe-area-inset-bottom, 0px));
+
   // ---------- สี ----------
   --yt-primary: #0f766e;
   --yt-primary-dark: #115e59;

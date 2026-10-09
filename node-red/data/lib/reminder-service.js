@@ -1,0 +1,110 @@
+// ส่งเตือนกินยาทาง LINE (วันที่ 6B) : cron ทุก 1 นาที (tab 7) และปุ่ม/inject เดโมใช้ sendGroup ตัวเดียวกัน
+// กฎ: จัดกลุ่มตาม (user, scheduled_at) = 1 ข้อความต่อกลุ่ม ; จอง reminded_at ก่อนส่ง (transaction + FOR UPDATE กันส่งซ้ำเมื่อรันพร้อมกัน) ;
+//     push ล้มเหลว (หลัง retry) = บันทึกว่าล้มเหลวแต่ไม่คืน reminded_at ; โควตา: kind=reminder หยุดที่ (cap − reserve) ดู lib/line-client.js
+const lineFlex = require('./line-flex');
+
+const WINDOW_MIN = 30;
+const err = (status, error, details) => ({ status, body: { error, details } });
+
+const COLS = 'd.id, d.user_id, d.slot, DATE_FORMAT(d.scheduled_at, \'%Y-%m-%d %H:%i:%s\') AS scheduled_at, d.reminded_at IS NOT NULL AS was_reminded, ' +
+  'm.name, m.strength, m.dose_per_time, m.unit, m.meal_relation, u.line_user_id';
+
+// dose ที่ถึงเวลาเตือน: pending, ยังไม่เคยเตือน, เลยเวลามาไม่เกิน 30 นาที, ยา active และไม่ใช่ as_needed, user เชื่อม LINE แล้ว
+const DUE_SQL = `SELECT ${COLS} FROM dose_logs d JOIN medications m ON m.id = d.medication_id JOIN users u ON u.id = d.user_id ` +
+  "WHERE d.status = 'pending' AND d.reminded_at IS NULL AND d.scheduled_at <= NOW() AND d.scheduled_at >= NOW() - INTERVAL " + WINDOW_MIN + ' MINUTE ' +
+  'AND m.is_active = 1 AND m.as_needed = 0 AND u.line_user_id IS NOT NULL ORDER BY d.user_id, d.scheduled_at, m.name, d.id';
+
+// แถวเป็นกลุ่ม (user_id, scheduled_at) ตามลำดับเดิม
+function groupRows(rows) {
+  const map = new Map();
+  for (const r of rows) {
+    const key = r.user_id + '|' + r.scheduled_at;
+    if (!map.has(key)) map.set(key, { user_id: r.user_id, line_user_id: r.line_user_id, slot: r.slot, scheduled_at: r.scheduled_at, doses: [] });
+    map.get(key).doses.push({ id: r.id, name: r.name, strength: r.strength, dose_per_time: r.dose_per_time, unit: r.unit, meal_relation: r.meal_relation, was_reminded: !!Number(r.was_reminded) });
+  }
+  return [...map.values()];
+}
+
+// จอง reminded_at ให้ dose ที่ยัง pending และยังไม่เคยเตือน → คืน id ที่จองได้จริง (คนที่มาทีหลังจะเห็นว่าถูกจองแล้ว ได้ [])
+async function claim(db, ids) {
+  if (!ids.length) return [];
+  return db.withTransaction(async (conn) => {
+    const [rows] = await conn.query("SELECT id FROM dose_logs WHERE id IN (?) AND status = 'pending' AND reminded_at IS NULL FOR UPDATE", [ids]);
+    const mine = rows.map((r) => r.id);
+    if (mine.length) await conn.query('UPDATE dose_logs SET reminded_at = NOW() WHERE id IN (?) AND reminded_at IS NULL', [mine]);
+    return mine;
+  });
+}
+
+// ส่งเตือน 1 กลุ่ม ; opts = { claim: true (ค่าเริ่มต้น), env } ; คืน { sent, failed, doses, skipped?: 'quota'|'claimed' }
+async function sendGroup(db, client, group, opts = {}) {
+  const env = opts.env || process.env;
+  let doses = group.doses;
+  const chunks = lineFlex.chunkDoses(doses);
+
+  const q = await client.canPush(db, 'reminder', chunks.length);
+  if (!q.allowed) return { sent: 0, failed: 0, doses: doses.length, skipped: 'quota', quota: q.status };   // ไม่จอง reminded_at → ลองใหม่ได้ภายในหน้าต่าง 30 นาที
+
+  if (opts.claim !== false) {
+    const mine = new Set(await claim(db, doses.map((d) => d.id)));
+    doses = doses.filter((d) => mine.has(d.id));
+    if (!doses.length) return { sent: 0, failed: 0, doses: 0, skipped: 'claimed' };
+  }
+
+  let sent = 0, failed = 0;
+  for (const part of lineFlex.chunkDoses(doses)) {
+    const msg = lineFlex.buildReminder({ slot: group.slot, scheduled_at: group.scheduled_at, doses: part }, env);
+    const r = await client.push(group.line_user_id, [msg], { db, userId: group.user_id, doseLogId: part[0].id, kind: 'reminder', recipient: 'patient' });
+    if (r.ok) sent++; else failed++;
+  }
+  return { sent, failed, doses: doses.length };
+}
+
+// cron ทุก 1 นาที ; คืนสรุป (ไม่มีข้อมูลส่วนตัว)
+async function run(db, client, env = process.env) {
+  const groups = groupRows(await db.query(DUE_SQL));
+  const out = { groups: groups.length, sent: 0, failed: 0, quota_skipped: 0, claimed_by_other: 0 };
+  for (const g of groups) {
+    try {
+      const r = await sendGroup(db, client, g, { env });
+      out.sent += r.sent; out.failed += r.failed;
+      if (r.skipped === 'quota') out.quota_skipped++;
+      if (r.skipped === 'claimed') out.claimed_by_other++;
+    } catch (e) {
+      out.failed++;
+      console.log('reminder_group_error ' + String(e.message).slice(0, 200));
+    }
+  }
+  if (out.groups) console.log(`reminder_run groups=${out.groups} sent=${out.sent} failed=${out.failed} quota_skipped=${out.quota_skipped} claimed_by_other=${out.claimed_by_other}`);
+  return out;
+}
+
+// โหมดเดโม: กลุ่ม pending ถัดไปของวันนี้ของ userId (ยังไม่เคยเตือนก่อน ถ้าไม่มี = กลุ่ม pending แรกที่เคยเตือนแล้ว ส่งซ้ำโดยไม่จอง) ; ห้ามสร้าง dose ปลอม
+async function remindNow(db, client, userId, env = process.env) {
+  const u = await db.query('SELECT line_user_id FROM users WHERE id = ?', [userId]);
+  if (!u.length) return err(404, 'NOT_FOUND', 'ไม่พบข้อมูลที่ต้องการ');
+  if (!u[0].line_user_id) return err(409, 'LINE_NOT_LINKED', 'ยังไม่ได้เชื่อม LINE กรุณาเชื่อม LINE ในหน้าตั้งค่าก่อนค่ะ');
+  const rows = await db.query(
+    `SELECT ${COLS} FROM dose_logs d JOIN medications m ON m.id = d.medication_id JOIN users u ON u.id = d.user_id ` +
+    "WHERE d.user_id = ? AND DATE(d.scheduled_at) = CURDATE() AND d.status = 'pending' AND m.is_active = 1 AND m.as_needed = 0 " +
+    'ORDER BY (d.reminded_at IS NOT NULL), d.scheduled_at, m.name, d.id', [userId]);
+  if (!rows.length) return err(409, 'NO_PENDING_DOSE', 'วันนี้ไม่มีรอบยาที่รอกินแล้วค่ะ ลองเพิ่มยา หรือกด "ยกเลิก" รอบที่กินไปแล้วในหน้าวันนี้ก่อน');
+  const first = rows[0];
+  const group = groupRows(rows.filter((r) => r.scheduled_at === first.scheduled_at))[0];
+  const resend = group.doses.every((d) => d.was_reminded);
+  const r = await sendGroup(db, client, group, { claim: !resend, env });
+  if (r.skipped === 'quota') return err(429, 'LINE_QUOTA', 'โควตาข้อความ LINE ของเดือนนี้ใกล้หมดแล้ว จึงไม่ส่งเตือนเพิ่มค่ะ');
+  if (r.skipped === 'claimed') return err(409, 'ALREADY_REMINDED', 'รอบนี้เพิ่งถูกส่งเตือนไปแล้วค่ะ');
+  if (r.failed && !r.sent) return err(502, 'LINE_PUSH_FAILED', 'ส่งข้อความไป LINE ไม่สำเร็จ กรุณาลองใหม่ภายหลังค่ะ');
+  return { status: 200, body: { sent: r.sent, doses: r.doses, slot: group.slot, time: lineFlex.timeText(group.scheduled_at), resent: resend } };
+}
+
+// inject ในหน้า editor: ส่งเตือนทดสอบให้บัญชีเดโม (ต้อง DEMO_MODE=true)
+async function remindDemoUser(db, client, env = process.env, email = 'demo@yatung.app') {
+  if (env.DEMO_MODE !== 'true') return err(404, 'NOT_FOUND', 'โหมดเดโมปิดอยู่ (DEMO_MODE ไม่ใช่ true)');
+  const u = await db.query('SELECT id FROM users WHERE email = ?', [email]);
+  if (!u.length) return err(404, 'NOT_FOUND', 'ไม่พบบัญชีเดโม ' + email);
+  return remindNow(db, client, u[0].id, env);
+}
+
+module.exports = { run, sendGroup, remindNow, remindDemoUser, groupRows, claim, DUE_SQL, WINDOW_MIN };

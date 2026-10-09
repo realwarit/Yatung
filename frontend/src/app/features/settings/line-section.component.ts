@@ -4,6 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { Subscription, switchMap, takeWhile, timer } from 'rxjs';
 import { errorText } from '../../core/api/api-error';
 import { LineApi, LineStatus, LinkCode } from '../../core/api/line.api';
+import { plainName } from '../../core/text';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { MascotComponent } from '../../shared/components/mascot/mascot.component';
 import { IconComponent } from '../../shared/icon.component';
@@ -22,9 +23,9 @@ import { LinkCodePanelComponent } from './link-code-panel.component';
       @if (s.linked) {
         <div class="ok" role="status">
           <app-mascot mood="celebrate" [size]="96" />
-          <div>
-            <p class="ok__t"><app-icon name="check" /> เชื่อม LINE สำเร็จแล้ว</p>
-            @if (s.display_name) { <p class="ok__n">ชื่อ LINE: <strong>{{ s.display_name }}</strong></p> }
+          <div class="ok__txt">
+            <p class="ok__t"><app-icon name="check" /><span>เชื่อม LINE <span class="nb">สำเร็จแล้ว</span></span></p>
+            @if (s.display_name) { <p class="ok__n">ชื่อ LINE: <strong class="line-name">{{ plain(s.display_name) }}</strong></p> }
             <p class="hint">น้องยาตรงจะเตือนเวลากินยาทาง LINE นี้</p>
           </div>
         </div>
@@ -47,10 +48,20 @@ import { LinkCodePanelComponent } from './link-code-panel.component';
     :host { display: block; }
     .hint { margin: 0 0 var(--yt-space-3); color: var(--yt-text-muted); }
     .full { width: 100%; }
-    .ok { display: flex; align-items: center; gap: var(--yt-space-3); margin-bottom: var(--yt-space-3); }
+    /* จอแคบ (<30rem ≈ 480px ที่ 100%): มาสคอตอยู่บนตรงกลาง แล้วหัวข้อ ✓ ชื่อ LINE ต่อด้านล่างกึ่งกลาง; จอกว้างขึ้น: มาสคอตซ้าย ข้อความขวา */
+    .ok { display: flex; flex-direction: column; align-items: center; gap: var(--yt-space-2); margin-bottom: var(--yt-space-3); text-align: center; }
+    .ok__txt { min-width: 0; }
     .ok p { margin: 0; }
-    .ok__t { display: flex; align-items: center; gap: var(--yt-space-2); font-weight: 700; color: var(--yt-success); font-size: 1.2rem; }
-    .ok__n { margin: var(--yt-space-1) 0; }
+    /* ✓ อยู่บรรทัดเดียวกับต้นหัวข้อเสมอ; "สำเร็จแล้ว" ไม่ถูกตัดกลางคำ (.nb) ; text-wrap: balance กัน "แล้ว" ตกบรรทัดเดียวโดดๆ */
+    .ok__t { display: flex; align-items: flex-start; justify-content: center; gap: var(--yt-space-2); font-weight: 700; color: var(--yt-success); font-size: 1.15rem; text-wrap: balance; }
+    .ok__t app-icon { flex: none; margin-top: 0.3em; }
+    .nb { white-space: nowrap; }
+    .ok__n { margin: var(--yt-space-1) 0; overflow-wrap: anywhere; }
+    .line-name { font-family: var(--yt-font-body); font-weight: 600; }
+    @media (min-width: 30rem) {
+      .ok { flex-direction: row; text-align: left; gap: var(--yt-space-3); }
+      .ok__t { justify-content: flex-start; }
+    }
     .sk { height: 7rem; }
   `,
 })
@@ -66,6 +77,7 @@ export class LineSectionComponent {
   protected readonly busy = signal(false);
   protected readonly expiredFlag = signal(false);
   private poll?: Subscription;
+  protected readonly plain = plainName;
 
   constructor() {
     this.load();

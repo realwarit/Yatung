@@ -31,7 +31,7 @@
 ## 6A: โครงสร้างพื้นฐาน + webhook + เชื่อมบัญชี
 
 ### A1. ใช้ ngrok แทน cloudflared
-- service `tunnel` ใช้ image `ngrok/ngrok:3.39.11` (profile tunnel) พร้อมคำสั่ง `http frontend:80 --url=https://${NGROK_DOMAIN}` และส่ง NGROK_AUTHTOKEN ผ่าน env
+- service `tunnel` ใช้ image `ngrok/ngrok:3.39.11-alpine` (profile tunnel; tag `3.39.11` เปล่าไม่มีอยู่จริง) พร้อมคำสั่ง `http frontend:80 --url=https://${NGROK_DOMAIN}` และส่ง NGROK_AUTHTOKEN ผ่าน env
 - เปิด inspector ไว้ที่ `127.0.0.1:4040`
 - ตั้ง `PUBLIC_BASE_URL=https://${NGROK_DOMAIN}`
 - แก้ .env.example ดังนี้
@@ -198,7 +198,7 @@
 ## ไฟล์ — 6A
 | ไฟล์ | งาน |
 |---|---|
-| docker-compose.yml | ใช้ ngrok/ngrok:3.39.11 แทน cloudflared, inspector ที่ 127.0.0.1:4040, ผูก 1880/3306/8081 กับ 127.0.0.1, เพิ่ม env ใหม่ (DEMO_MODE ค่าเริ่มต้น false) |
+| docker-compose.yml | ใช้ ngrok/ngrok:3.39.11-alpine แทน cloudflared, inspector ที่ 127.0.0.1:4040, ผูก 1880/3306/8081 กับ 127.0.0.1, เพิ่ม env ใหม่ (DEMO_MODE ค่าเริ่มต้น false) |
 | .env.example | ลบ CF_TUNNEL_TOKEN และ OCR_API_KEY, เพิ่มตัวแปรใหม่พร้อมคอมเมนต์ไทย |
 | db/migrations/001_line_linking.sql + scripts/migrate.sh | migration ที่รันซ้ำได้ |
 | db/init/01_schema.sql | เพิ่มคอลัมน์ใหม่ให้ตรงกับ migration |

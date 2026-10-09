@@ -127,11 +127,13 @@
   margin: 0 auto;
   padding: var(--yt-space-2) var(--yt-space-4) var(--yt-space-5);
 
-  // มือถือ: เว้นล่างให้พ้นปุ่มสแกนที่ยื่นขึ้นเหนือแถบเมนู (แถบเมนูเป็นพี่น้องของ .main จึงไม่ซ้อนทับเนื้อหา; safe-area อยู่ใน padding ของแถบเมนู)
-  padding-bottom: calc(var(--yt-space-5) + 2rem);
+  // มือถือ: เว้นล่าง = ความสูงแถบเมนู + ส่วนที่ปุ่มกล้องยื่นขึ้น + safe-area (--yt-bottom-clearance) เหมือนกันทุกหน้า ปุ่มสุดท้ายจึงไม่ถูกแถบ/ปุ่มสแกนบัง
+  // หน้าโฟกัส (ซ่อนแถบเมนู: /scan, /review) ShellComponent ใส่ class .focus ที่ host → ใช้ระยะปกติ
+  padding-bottom: calc(var(--yt-bottom-clearance) + var(--yt-space-3));
 
   @media (min-width: 1024px) { padding: var(--yt-space-6) var(--yt-space-6) var(--yt-space-7); }
 }
+@media (max-width: 1023.98px) { .focus .yt-page { padding-bottom: calc(var(--yt-space-5) + env(safe-area-inset-bottom, 0px)); } }
 
 .yt-page-title {
   margin: 0 0 var(--yt-space-1);
@@ -150,7 +152,7 @@
 
 // snackbar: บนมือถือต้องลอยเหนือแถบเมนูล่าง
 .yt-snack {
-  @media (max-width: 1023.98px) { margin-bottom: calc(7rem + env(safe-area-inset-bottom)) !important; }
+  @media (max-width: 1023.98px) { margin-bottom: calc(var(--yt-bottom-clearance) + var(--yt-space-2)) !important; }
 }
 
 // ปุ่ม Material ที่มีไอคอน + ข้อความ: จัดกึ่งกลางแนวตั้งให้ตรงกัน (ไอคอนไม่ลอยเหนือตัวอักษรไทย)

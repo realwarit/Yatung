@@ -66,6 +66,7 @@ services:
       LINE_PUSH_RESERVE: ${LINE_PUSH_RESERVE:-30}          # โควตาที่กันไว้ให้ข้อความแจ้งญาติ (kind=escalation)
       LINE_MASCOT_URL: ${LINE_MASCOT_URL:-}                # ว่าง = ${PUBLIC_BASE_URL}/line/mascot.png
       DEMO_MODE: ${DEMO_MODE:-false}
+      REMINDER_CRON: ${REMINDER_CRON:-on}                  # off = ปิด cron ส่งเตือนอัตโนมัติ (เฉพาะทดสอบ scripts/test-day6b.sh)
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
       VAPID_SUBJECT: ${VAPID_SUBJECT}
@@ -84,7 +85,7 @@ services:
       - "8080:80"                      # http://localhost:8080
 
   tunnel:
-    image: ngrok/ngrok:3.39.11
+    image: ngrok/ngrok:3.39.11-alpine
     profiles: ["tunnel"]
     restart: unless-stopped
     depends_on:
