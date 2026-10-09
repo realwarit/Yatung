@@ -9,9 +9,11 @@ const UNDO_WINDOW_MIN = 10;
 
 // ---- GET /api/doses/today: flow ใช้ node mysql → function สร้าง query กับจัดรูป response เรียกคู่นี้ ----
 const DT = (col) => "DATE_FORMAT(" + col + ", '%Y-%m-%d %H:%i:%s')";
-function todayQuery(userId) {
+// opts.withDue (ใช้ใน LINE): เพิ่มคอลัมน์ is_due = ถึงเวลาแล้ว (scheduled_at <= NOW()) ; API ของเว็บไม่ใช้
+function todayQuery(userId, opts = {}) {
   return {
     sql: 'SELECT d.id, d.medication_id, d.slot, ' + DT('d.scheduled_at') + ' AS scheduled_at, d.status, ' + DT('d.taken_at') + ' AS taken_at, ' +
+      (opts.withDue ? '(d.scheduled_at <= NOW()) AS is_due, ' : '') +
       "(d.status = 'pending' AND NOW() > d.scheduled_at + INTERVAL 30 MINUTE) AS is_overdue, " +
       'm.name, m.strength, m.dose_per_time, m.unit, m.meal_relation ' +
       'FROM dose_logs d JOIN medications m ON m.id = d.medication_id ' +
@@ -28,7 +30,8 @@ function shapeToday(rows) {
     groups.get(r.slot).doses.push({
       id: r.id, medication_id: r.medication_id, name: r.name, strength: r.strength,
       dose_per_time: Number(r.dose_per_time), unit: r.unit, meal_relation: r.meal_relation,
-      scheduled_at: r.scheduled_at, status: r.status, taken_at: r.taken_at, is_overdue: !!Number(r.is_overdue)
+      scheduled_at: r.scheduled_at, status: r.status, taken_at: r.taken_at, is_overdue: !!Number(r.is_overdue),
+      ...(r.is_due !== undefined ? { is_due: !!Number(r.is_due) } : {})
     });
     summary.total++; summary[r.status]++;
   }

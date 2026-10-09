@@ -75,12 +75,18 @@ LINE Messaging API ส่ง webhook เข้ามาที่ `https://<NGROK
 · ใน LINE พิมพ์ "วันนี้" เพื่อดูยาของวันนี้ (ใช้ reply จึงไม่เสียโควตา push)
 
 **แจ้งเตือนกินยา (6B):** cron ทุก 1 นาที (tab 7-LINE) ส่ง Flex "ถึงเวลากินยามื้อ…" 1 ข้อความต่อมื้อ (ยาทุกตัวของมื้อนั้นรวมกัน) พร้อมปุ่ม **✓ กินแล้ว** (บันทึกเหมือนปุ่มในแอป, source = line, หักสต็อก, กดซ้ำไม่หักซ้ำ) และปุ่ม "เปิดแอป" ·
-รูปน้องยาตรงในข้อความ = `LINE_MASCOT_URL` (ว่าง = `${PUBLIC_BASE_URL}/line/mascot.png` สร้างด้วย `cd frontend && node tools/make-line-mascot.mjs`) ·
-โหมดเดโม (`DEMO_MODE=true`): หน้า "ตั้งค่า" มีปุ่ม "ทดลองส่งเตือนตอนนี้" (`POST /api/demo/remind-now` ส่งรอบถัดไปของวันนี้ ไม่สร้างรอบปลอม) และ inject "ส่งเตือนทดสอบ (demo user)" ใน Node-RED
+รูปน้องยาตรงในข้อความ = `LINE_ASSET_BASE` (ว่าง = `${PUBLIC_BASE_URL}/line` ไฟล์ `mascot-bell|cheer|hello.png` สร้างด้วย `cd frontend && node tools/make-line-mascot.mjs`; `LINE_MASCOT_URL` เดิมยังใช้เป็นท่ากระดิ่งได้) ·
+โหมดเดโม (`DEMO_MODE=true`): หน้า "ตั้งค่า" มีปุ่ม "ทดลองส่งเตือนตอนนี้" (`POST /api/demo/remind-now` ส่งกลุ่มรอบยาของวันนี้ที่ใกล้เวลาปัจจุบันที่สุด หัวข้อข้อความเปลี่ยนตามช่วงเวลา ไม่สร้างรอบปลอม) และ inject "ส่งเตือนทดสอบ (demo user)" ใน Node-RED
 
 **editor ของ Node-RED fail closed:** ถ้า `NODE_RED_ADMIN_HASH` ว่างหรือไม่ใช่ bcrypt hash ที่ถูกรูปแบบ editor + admin API จะถูกปิดทั้งหมด (log เตือน ไม่แสดงค่า) แต่ `/api/*` กับ `/line/webhook` ยังทำงาน · สร้าง hash: `docker compose run --rm nodered npx node-red admin hash-pw`
 
 โควตา push: เพดานที่ใช้ = `min(LINE_PUSH_MONTHLY_CAP, โควตาจริงจาก LINE)` · ข้อความเตือนปกติหยุดเมื่อใช้ถึง `เพดาน − LINE_PUSH_RESERVE` ส่วนที่กันไว้ใช้แจ้งญาติ (วันที่ 7)
+
+**ข้อความ LINE ชุดใหม่ (6C):** ข้อความตอบกลับทุกแบบเป็น Flex/ข้อความสั้นน้ำเสียง "ค่ะ/นะคะ" ตัวอักษรใหญ่ ขยายตามขนาดฟอนต์ในแอป LINE (`scaling`) แนบปุ่มลัด (quick reply) ใต้ทุกคำตอบ ·
+พิมพ์ **"วันนี้"** = สรุปยาวันนี้ (ความคืบหน้า + สถานะแต่ละมื้อ) · **"วิธีใช้"** / **"ช่วยเหลือ"** · ปุ่ม **✓ กินแล้ว** ตอบกลับเป็นการ์ดชมเชย + มื้อถัดไป ·
+**Rich menu** (เมนูค้างด้านล่างแชท: ยาวันนี้ / เปิดแอป / วิธีใช้): `cd frontend && node tools/make-line-richmenu.mjs` สร้างรูป (`docs/line-richmenu/richmenu.png`) แล้ว `node scripts/line-richmenu.mjs` (ตั้งค่าใน LINE ผ่าน API รันซ้ำได้ไม่ซ้อน; `--dry-run` = ตรวจอย่างเดียว) ·
+**`#ตัวอย่าง 1` … `#ตัวอย่าง 11`** (เฉพาะ `DEMO_MODE=true`): ให้น้องยาตรงตอบข้อความทุกแบบเพื่อดูหน้าตา (ข้อมูลสมมติ ไม่บันทึกอะไร) · ดู JSON วางใน [Flex Message Simulator](https://developers.line.biz/flex-simulator/) ได้ที่ `docs/line-messages/` (`node scripts/line-export-messages.mjs`) ·
+ตรวจข้อความทุกแบบกับ LINE โดยไม่ส่งจริง/ไม่เสียโควตา: `node scripts/line-validate.mjs` · ทดสอบ: `bash scripts/test-day6c.sh`
 
 ทดสอบ 6A/6B (LINE ปลอม ไม่ส่งข้อความจริง): `bash scripts/test-day6.sh` และ `bash scripts/test-day6b.sh` (6B recreate nodered หลายครั้งและเปิด cron จริง 1 รอบ — ถ้ามี dose ของผู้ใช้จริงเข้าเงื่อนไขเตือนอยู่จะข้ามส่วนนั้นเอง) · migration ฐานข้อมูลที่มีข้อมูลอยู่แล้ว: `bash scripts/migrate.sh` (รันซ้ำได้ ไม่ต้อง `down -v`)
 

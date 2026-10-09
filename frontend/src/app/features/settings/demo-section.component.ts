@@ -2,16 +2,15 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { MatButton } from '@angular/material/button';
 import { errorText } from '../../core/api/api-error';
 import { DemoApi } from '../../core/api/line.api';
-import { SLOT_LABEL } from '../../core/i18n/labels';
 import { IconComponent } from '../../shared/icon.component';
 
-/** ปุ่ม "ทดลองส่งเตือนตอนนี้" — ส่งเตือนรอบถัดไปของวันนี้เข้า LINE ของตัวเอง (แสดงเฉพาะเมื่อ GET /api/config ตอบ demoMode = true) */
+/** ปุ่ม "ทดลองส่งเตือนตอนนี้" — ส่งเตือนรอบที่ใกล้เวลาปัจจุบันที่สุดของวันนี้เข้า LINE ของตัวเอง (แสดงเฉพาะเมื่อ GET /api/config ตอบ demoMode = true) */
 @Component({
   selector: 'app-demo-section',
   imports: [MatButton, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p class="hint">สำหรับนำเสนอ: ส่งข้อความเตือนของรอบกินยาถัดไปของวันนี้เข้า LINE ทันที (ไม่สร้างรอบยาปลอม)</p>
+    <p class="hint">สำหรับนำเสนอ: ส่งข้อความเตือนของรอบกินยาที่ใกล้เวลาปัจจุบันที่สุดของวันนี้ (ก่อนหรือหลังเวลาก็ได้) เข้า LINE ทันที — หัวข้อข้อความเปลี่ยนตามช่วงเวลา (ไม่สร้างรอบยาปลอม)</p>
     <button mat-flat-button type="button" class="full" [disabled]="busy()" (click)="send()">
       <app-icon name="bell" /> {{ busy() ? 'กำลังส่ง…' : 'ทดลองส่งเตือนตอนนี้' }}
     </button>
@@ -38,7 +37,7 @@ export class DemoSectionComponent {
     this.api.remindNow().subscribe({
       next: (r) => {
         this.busy.set(false);
-        this.result.set(`ส่งเตือนมื้อ${SLOT_LABEL[r.slot]} ${r.time} น. (${r.doses} รายการ) เข้า LINE แล้วค่ะ${r.resent ? ' — ส่งซ้ำรอบที่เตือนไปแล้ว' : ''}`);
+        this.result.set(r.message);   // เช่น "ส่งเตือนมื้อเย็น 18:00 น. (2 รายการ) เข้า LINE แล้วค่ะ · เลยเวลามา 2 ชม."
       },
       error: (e) => { this.busy.set(false); this.error.set(errorText(e)); },
     });

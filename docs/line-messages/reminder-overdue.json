@@ -1,0 +1,136 @@
+{
+  "type": "bubble",
+  "size": "mega",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "image",
+        "url": "https://example.ngrok-free.dev/line/mascot-bell.png",
+        "size": "88px",
+        "aspectMode": "fit",
+        "aspectRatio": "1:1",
+        "align": "center"
+      },
+      {
+        "type": "text",
+        "text": "ยังไม่ได้กินยามื้อกลางวันนะคะ",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#78350f",
+        "weight": "bold",
+        "align": "center"
+      },
+      {
+        "type": "text",
+        "text": "⏰ เลยเวลามา 2 ชม. 15 นาที",
+        "wrap": true,
+        "scaling": true,
+        "size": "md",
+        "color": "#78350f",
+        "weight": "bold",
+        "align": "center"
+      }
+    ],
+    "spacing": "sm",
+    "paddingAll": "16px",
+    "backgroundColor": "#fef3c7",
+    "alignItems": "center"
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "พาราเซตามอล 500 mg",
+            "wrap": true,
+            "scaling": true,
+            "size": "xl",
+            "color": "#12302d",
+            "weight": "bold"
+          },
+          {
+            "type": "text",
+            "text": "ครั้งละ 1 เม็ด · หลังอาหาร",
+            "wrap": true,
+            "scaling": true,
+            "size": "md",
+            "color": "#4b5f5c"
+          }
+        ],
+        "spacing": "xs"
+      },
+      {
+        "type": "separator",
+        "margin": "md",
+        "color": "#d3e2df"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "ซิมวาสแตติน 20 mg",
+            "wrap": true,
+            "scaling": true,
+            "size": "xl",
+            "color": "#12302d",
+            "weight": "bold"
+          },
+          {
+            "type": "text",
+            "text": "ครั้งละ 1 เม็ด · ก่อนอาหาร",
+            "wrap": true,
+            "scaling": true,
+            "size": "md",
+            "color": "#4b5f5c"
+          }
+        ],
+        "spacing": "xs",
+        "margin": "md"
+      }
+    ],
+    "spacing": "md",
+    "paddingAll": "16px"
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "button",
+        "style": "primary",
+        "color": "#0f766e",
+        "height": "md",
+        "scaling": true,
+        "action": {
+          "label": "✓ กินแล้ว",
+          "type": "postback",
+          "data": "a=preview",
+          "displayText": "กินยามื้อกลางวันแล้ว"
+        }
+      },
+      {
+        "type": "button",
+        "style": "secondary",
+        "height": "md",
+        "scaling": true,
+        "action": {
+          "label": "เปิดแอป",
+          "type": "uri",
+          "uri": "https://example.ngrok-free.dev/today"
+        }
+      }
+    ],
+    "spacing": "sm",
+    "paddingAll": "16px"
+  }
+}

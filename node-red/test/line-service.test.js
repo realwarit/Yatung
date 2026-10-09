@@ -78,17 +78,19 @@ test('guess limiter: ผิดครบ 5 ครั้งใน 10 นาที�
   assert.equal(l.blocked('U1', 2002), false);
 });
 
-test('todaySummaryText: จัดตามมื้อ มีสถานะ และใช้ป้ายไทย', () => {
+test('สรุปยาวันนี้ (Flex): จัดตามมื้อ มีสถานะ ชื่อยาที่ยังไม่กิน และใช้ป้ายไทย', () => {
+  const M = require('../data/lib/line-messages');
   const shaped = { body: { summary: { total: 2, taken: 1, pending: 1, missed: 0 }, slots: [
     { slot: 'morning', time: '08:00', doses: [
       { name: 'Metformin', strength: '500 mg', dose_per_time: 0.5, unit: 'tablet', meal_relation: 'after', status: 'taken' },
-      { name: 'Amlodipine', strength: null, dose_per_time: 1, unit: 'tablet', meal_relation: 'any', status: 'pending' }] }] } };
-  const t = svc.todaySummaryText(shaped);
-  assert.match(t, /ยาของวันนี้ 2 รายการ/);
-  assert.match(t, /มื้อเช้า 08:00 น\./);
-  assert.match(t, /✓ Metformin 500 mg ครั้งละ ½ เม็ด · หลังอาหาร/);
-  assert.match(t, /• Amlodipine ครั้งละ 1 เม็ด/);
-  assert.equal(svc.todaySummaryText({ body: { summary: { total: 0 }, slots: [] } }), null);
+      { name: 'Amlodipine', strength: null, dose_per_time: 1, unit: 'tablet', meal_relation: 'any', status: 'pending', is_due: true }] }] } };
+  const m = M.buildToday(shaped, '2026-10-09', { PUBLIC_BASE_URL: 'https://x.example' });
+  const t = JSON.stringify(m.contents);
+  assert.match(m.altText, /ยาของวันนี้: กินแล้ว 1 จาก 2 รายการ/);
+  assert.match(t, /มื้อเช้า/);
+  assert.match(t, /• Amlodipine/);
+  assert.doesNotMatch(t, /• Metformin/);   // กินแล้วไม่แสดงใต้แถว
+  assert.equal(M.buildToday({ body: { summary: { total: 0 }, slots: [] } }, '2026-10-09', {}).altText, '📋 ยาของวันนี้: ไม่มียาที่ต้องกิน');
 });
 
 test('caregiver validate: ค่าเริ่มต้นและขอบเขต 10–720', () => {

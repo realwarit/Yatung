@@ -17,6 +17,7 @@ const lineClient = require('./lib/line-client').createClient();
 const { createRawBodyMiddleware } = require('./lib/raw-body');
 const { resolveAdmin } = require('./lib/admin-auth');
 const reminderService = require('./lib/reminder-service');
+const lineEnv = require('./lib/line-env');
 
 const PROMPT_DIR = path.join(__dirname, 'prompts');
 const readPrompt = (file) => fs.readFileSync(path.join(PROMPT_DIR, file), 'utf8');
@@ -70,6 +71,7 @@ module.exports = {
     lineService,                              // signature, รหัสเชื่อม, event ของ webhook
     caregiverService,
     reminderService,                          // cron ส่งเตือน / demo (lib/reminder-service.js)
+    lineEnv,                                  // pick(env.get) → env ที่ lib ฝั่ง LINE ใช้ (lib/line-env.js)
     llmOutput,                                // process / reviewFlags / redactPii (lib/validate-llm-output.js)
     prompts: {
       medicineSystem: readPrompt('medicine-parse.system.txt'),

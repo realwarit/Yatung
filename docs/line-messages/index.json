@@ -1,0 +1,345 @@
+[
+  {
+    "id": "reminder-soon",
+    "title": "เตือน: ใกล้ถึงเวลา",
+    "ctx": "patient",
+    "types": [
+      "flex"
+    ],
+    "altText": "⏰ อีก 5 นาที ถึงเวลากินยามื้อเย็น",
+    "text": [],
+    "quickReply": [
+      "📋 ยาวันนี้",
+      "📱 เปิดแอป",
+      "❓ ช่วยเหลือ"
+    ],
+    "file": "reminder-soon.json"
+  },
+  {
+    "id": "reminder-due",
+    "title": "เตือน: ถึงเวลา",
+    "ctx": "patient",
+    "types": [
+      "flex"
+    ],
+    "altText": "⏰ ถึงเวลากินยามื้อเช้าแล้ว (3 รายการ)",
+    "text": [],
+    "quickReply": [
+      "📋 ยาวันนี้",
+      "📱 เปิดแอป",
+      "❓ ช่วยเหลือ"
+    ],
+    "file": "reminder-due.json"
+  },
+  {
+    "id": "reminder-overdue",
+    "title": "เตือน: เลยเวลา",
+    "ctx": "patient",
+    "types": [
+      "flex"
+    ],
+    "altText": "⏰ ยังไม่ได้กินยามื้อกลางวัน · เลยเวลามา 2 ชม. 15 นาที",
+    "text": [],
+    "quickReply": [
+      "📋 ยาวันนี้",
+      "📱 เปิดแอป",
+      "❓ ช่วยเหลือ"
+    ],
+    "file": "reminder-overdue.json"
+  },
+  {
+    "id": "reminder-many",
+    "title": "เตือน: ยาเกิน 6 รายการ",
+    "ctx": "patient",
+    "types": [
+      "flex"
+    ],
+    "altText": "⏰ ถึงเวลากินยามื้อก่อนนอนแล้ว (8 รายการ)",
+    "text": [],
+    "quickReply": [
+      "📋 ยาวันนี้",
+      "📱 เปิดแอป",
+      "❓ ช่วยเหลือ"
+    ],
+    "file": "reminder-many.json"
+  },
+  {
+    "id": "follow-welcome",
+    "title": "ต้อนรับ (เพิ่มเพื่อน)",
+    "ctx": "unlinked",
+    "types": [
+      "flex"
+    ],
+    "altText": "👋 สวัสดีค่ะ น้องยาตรงจะช่วยเตือนเวลากินยา",
+    "text": [],
+    "quickReply": [
+      "🔗 วิธีเชื่อมบัญชี",
+      "📱 เปิดแอป"
+    ],
+    "file": "follow-welcome.json"
+  },
+  {
+    "id": "how-to-linked",
+    "title": "วิธีใช้ (เชื่อมแล้ว)",
+    "ctx": "patient",
+    "types": [
+      "flex"
+    ],
+    "altText": "วิธีใช้น้องยาตรง: รอข้อความเตือน แล้วกดปุ่ม \"กินแล้ว\"",
+    "text": [],
+    "quickReply": [
+      "📋 ยาวันนี้",
+      "📱 เปิดแอป",
+      "❓ ช่วยเหลือ"
+    ],
+    "file": "how-to-linked.json"
+  },
+  {
+    "id": "linked-patient",
+    "title": "เชื่อมผู้ป่วยสำเร็จ",
+    "ctx": "patient",
+    "types": [
+      "flex"
+    ],
+    "altText": "🎉 เชื่อมสำเร็จแล้วค่ะ น้องยาตรงจะเตือนเวลากินยาที่แชทนี้",
+    "text": [],
+    "quickReply": [
+      "📋 ยาวันนี้",
+      "📱 เปิดแอป",
+      "❓ ช่วยเหลือ"
+    ],
+    "file": "linked-patient.json"
+  },
+  {
+    "id": "linked-caregiver",
+    "title": "เชื่อมผู้ดูแลสำเร็จ",
+    "ctx": "caregiver",
+    "types": [
+      "flex"
+    ],
+    "altText": "เชื่อมเป็นผู้ดูแลของคุณ สมชาย ใจดี แล้วค่ะ 💚",
+    "text": [],
+    "quickReply": [
+      "❓ ช่วยเหลือ"
+    ],
+    "file": "linked-caregiver.json"
+  },
+  {
+    "id": "today-partial",
+    "title": "วันนี้: กินบางส่วน",
+    "ctx": "patient",
+    "types": [
+      "flex"
+    ],
+    "altText": "📋 ยาของวันนี้: กินแล้ว 2 จาก 6 รายการ",
+    "text": [],
+    "quickReply": [
+      "📋 ยาวันนี้",
+      "📱 เปิดแอป",
+      "❓ ช่วยเหลือ"
+    ],
+    "file": "today-partial.json"
+  },
+  {
+    "id": "today-done",
+    "title": "วันนี้: กินครบ",
+    "ctx": "patient",
+    "types": [
+      "flex"
+    ],
+    "altText": "📋 ยาของวันนี้: กินครบทุกรายการแล้ว (2 รายการ)",
+    "text": [],
+    "quickReply": [
+      "📋 ยาวันนี้",
+      "📱 เปิดแอป",
+      "❓ ช่วยเหลือ"
+    ],
+    "file": "today-done.json"
+  },
+  {
+    "id": "today-empty",
+    "title": "วันนี้: ไม่มียา",
+    "ctx": "patient",
+    "types": [
+      "flex"
+    ],
+    "altText": "📋 ยาของวันนี้: ไม่มียาที่ต้องกิน",
+    "text": [],
+    "quickReply": [
+      "📋 ยาวันนี้",
+      "📱 เปิดแอป",
+      "❓ ช่วยเหลือ"
+    ],
+    "file": "today-empty.json"
+  },
+  {
+    "id": "taken-next",
+    "title": "กินแล้ว: ยังมีมื้อถัดไป",
+    "ctx": "patient",
+    "types": [
+      "flex"
+    ],
+    "altText": "✅ บันทึกแล้วค่ะ กินยา 2 รายการ เมื่อ 08:03 น.",
+    "text": [],
+    "quickReply": [
+      "📋 ยาวันนี้",
+      "📱 เปิดแอป",
+      "❓ ช่วยเหลือ"
+    ],
+    "file": "taken-next.json"
+  },
+  {
+    "id": "taken-last",
+    "title": "กินแล้ว: ครบทุกรายการ",
+    "ctx": "patient",
+    "types": [
+      "flex"
+    ],
+    "altText": "✅ บันทึกแล้วค่ะ กินยา 1 รายการ เมื่อ 21:02 น.",
+    "text": [],
+    "quickReply": [
+      "📋 ยาวันนี้",
+      "📱 เปิดแอป",
+      "❓ ช่วยเหลือ"
+    ],
+    "file": "taken-last.json"
+  },
+  {
+    "id": "text-invalid",
+    "title": "รหัสใช้ไม่ได้/หมดอายุ",
+    "ctx": "unlinked",
+    "types": [
+      "text"
+    ],
+    "altText": null,
+    "text": [
+      "🤔 รหัสนี้ใช้ไม่ได้ค่ะ\nรหัสใช้ได้ภายใน 10 นาทีเท่านั้น\nขอรหัสใหม่ในแอป หน้า \"ตั้งค่า\" ได้เลยนะคะ"
+    ],
+    "quickReply": [
+      "🔗 วิธีเชื่อมบัญชี",
+      "📱 เปิดแอป"
+    ],
+    "file": null
+  },
+  {
+    "id": "text-toomany",
+    "title": "เดารหัสผิดเกินกำหนด",
+    "ctx": "unlinked",
+    "types": [
+      "text"
+    ],
+    "altText": null,
+    "text": [
+      "⏳ ลองหลายครั้งเกินไปค่ะ\nรอประมาณ 10 นาทีแล้วลองใหม่นะคะ"
+    ],
+    "quickReply": [
+      "🔗 วิธีเชื่อมบัญชี",
+      "📱 เปิดแอป"
+    ],
+    "file": null
+  },
+  {
+    "id": "text-conflict",
+    "title": "LINE เชื่อมกับคนอื่นแล้ว",
+    "ctx": "unlinked",
+    "types": [
+      "text"
+    ],
+    "altText": null,
+    "text": [
+      "🔒 LINE นี้เชื่อมกับผู้ป่วยคนอื่นแล้วค่ะ\nต้องยกเลิกการเชื่อมในแอปของบัญชีเดิมก่อน\nแล้วขอรหัสใหม่อีกครั้งนะคะ"
+    ],
+    "quickReply": [
+      "🔗 วิธีเชื่อมบัญชี",
+      "📱 เปิดแอป"
+    ],
+    "file": null
+  },
+  {
+    "id": "text-already",
+    "title": "กดซ้ำ",
+    "ctx": "patient",
+    "types": [
+      "text"
+    ],
+    "altText": null,
+    "text": [
+      "✅ บันทึกไว้แล้วค่ะ\nน้องยาตรงจำไว้ให้แล้ว ไม่ต้องกดซ้ำนะคะ"
+    ],
+    "quickReply": [
+      "📋 ยาวันนี้",
+      "📱 เปิดแอป",
+      "❓ ช่วยเหลือ"
+    ],
+    "file": null
+  },
+  {
+    "id": "text-notfound",
+    "title": "ไม่พบรายการยา",
+    "ctx": "patient",
+    "types": [
+      "text"
+    ],
+    "altText": null,
+    "text": [
+      "🔍 ไม่พบรายการยานี้แล้วค่ะ\nอาจถูกแก้ไขในแอป\nแตะ \"ยาวันนี้\" เพื่อดูรายการล่าสุดนะคะ"
+    ],
+    "quickReply": [
+      "📋 ยาวันนี้",
+      "📱 เปิดแอป",
+      "❓ ช่วยเหลือ"
+    ],
+    "file": null
+  },
+  {
+    "id": "text-help",
+    "title": "ช่วยเหลือ",
+    "ctx": "patient",
+    "types": [
+      "text"
+    ],
+    "altText": null,
+    "text": [
+      "😊 น้องยาตรงช่วยได้แบบนี้ค่ะ\n📋 พิมพ์ \"วันนี้\" ดูยาของวันนี้\n🔗 ส่งรหัส 6 หลัก เพื่อเชื่อมบัญชี\nหรือแตะปุ่มด้านล่างได้เลยนะคะ\nข้อมูลนี้ไม่ใช่คำแนะนำทางการแพทย์ค่ะ"
+    ],
+    "quickReply": [
+      "📋 ยาวันนี้",
+      "📱 เปิดแอป",
+      "❓ ช่วยเหลือ"
+    ],
+    "file": null
+  },
+  {
+    "id": "text-caregiver-only",
+    "title": "ผู้ดูแลอย่างเดียว พิมพ์ \"วันนี้\"",
+    "ctx": "caregiver",
+    "types": [
+      "text"
+    ],
+    "altText": null,
+    "text": [
+      "💚 คุณเป็นผู้ดูแลของ สมชาย ใจดี และ มาลี ใจงาม\nน้องยาตรงจะแจ้งที่แชทนี้\nเมื่อผู้ป่วยลืมกินยานะคะ"
+    ],
+    "quickReply": [
+      "❓ ช่วยเหลือ"
+    ],
+    "file": null
+  },
+  {
+    "id": "text-not-linked",
+    "title": "ยังไม่ได้เชื่อม พิมพ์ \"วันนี้\"",
+    "ctx": "unlinked",
+    "types": [
+      "text"
+    ],
+    "altText": null,
+    "text": [
+      "🔗 ยังไม่ได้เชื่อมบัญชีค่ะ\nเปิดแอปยาตรง หน้า \"ตั้งค่า\" แล้วกด \"รับรหัสเชื่อม LINE\"\nจากนั้นส่งเลข 6 หลักมาที่แชทนี้ได้เลยนะคะ"
+    ],
+    "quickReply": [
+      "🔗 วิธีเชื่อมบัญชี",
+      "📱 เปิดแอป"
+    ],
+    "file": null
+  }
+]

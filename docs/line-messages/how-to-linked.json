@@ -1,0 +1,143 @@
+{
+  "type": "bubble",
+  "size": "mega",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "image",
+        "url": "https://example.ngrok-free.dev/line/mascot-hello.png",
+        "size": "88px",
+        "aspectMode": "fit",
+        "aspectRatio": "1:1",
+        "align": "center"
+      },
+      {
+        "type": "text",
+        "text": "วิธีใช้น้องยาตรงนะคะ",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#134e4a",
+        "weight": "bold",
+        "align": "center"
+      }
+    ],
+    "spacing": "sm",
+    "paddingAll": "16px",
+    "backgroundColor": "#e8f7f3",
+    "alignItems": "center"
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "1️⃣ ถึงเวลากินยา",
+            "wrap": true,
+            "scaling": true,
+            "size": "lg",
+            "color": "#12302d",
+            "weight": "bold"
+          },
+          {
+            "type": "text",
+            "text": "น้องยาตรงจะส่งข้อความเตือน",
+            "wrap": true,
+            "scaling": true,
+            "size": "md",
+            "color": "#4b5f5c"
+          }
+        ],
+        "spacing": "xs"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "2️⃣ กินยาแล้วกดปุ่มเขียว",
+            "wrap": true,
+            "scaling": true,
+            "size": "lg",
+            "color": "#12302d",
+            "weight": "bold"
+          },
+          {
+            "type": "text",
+            "text": "ปุ่มสีเขียว \"กินแล้ว\" ในข้อความนั้น",
+            "wrap": true,
+            "scaling": true,
+            "size": "md",
+            "color": "#4b5f5c"
+          }
+        ],
+        "spacing": "xs"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "3️⃣ อยากดูยาของวันนี้",
+            "wrap": true,
+            "scaling": true,
+            "size": "lg",
+            "color": "#12302d",
+            "weight": "bold"
+          },
+          {
+            "type": "text",
+            "text": "กดเมนู \"ยาวันนี้\" ด้านล่าง",
+            "wrap": true,
+            "scaling": true,
+            "size": "md",
+            "color": "#4b5f5c"
+          }
+        ],
+        "spacing": "xs"
+      }
+    ],
+    "spacing": "md",
+    "paddingAll": "16px"
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "button",
+        "style": "primary",
+        "color": "#0f766e",
+        "height": "md",
+        "scaling": true,
+        "action": {
+          "label": "📋 ดูยาวันนี้",
+          "type": "message",
+          "text": "วันนี้"
+        }
+      },
+      {
+        "type": "button",
+        "style": "secondary",
+        "height": "md",
+        "scaling": true,
+        "action": {
+          "label": "เปิดแอป",
+          "type": "uri",
+          "uri": "https://example.ngrok-free.dev/today"
+        }
+      }
+    ],
+    "spacing": "sm",
+    "paddingAll": "16px"
+  }
+}

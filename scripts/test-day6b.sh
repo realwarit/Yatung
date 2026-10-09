@@ -58,7 +58,7 @@ evid() { node -e "console.log(require('crypto').randomUUID())"; }
 ev_postback() { local id; id="$(evid)"; printf '{"destination":"U0","events":[{"type":"postback","timestamp":1700000000000,"source":{"type":"user","userId":"%s"},"webhookEventId":"EV%s","replyToken":"rt%s","postback":{"data":"%s"}}]}' "$1" "$id" "$id" "$2"; }
 ev_text() { local id; id="$(evid)"; printf '{"destination":"U0","events":[{"type":"message","source":{"type":"user","userId":"%s"},"webhookEventId":"EV%s","replyToken":"rt%s","message":{"id":"m1","type":"text","text":"%s"}}]}' "$1" "$id" "$id" "$2"; }
 # press LINE_ID DATA → ส่ง postback; ผลอยู่ใน REPLY (ล้างรายการก่อน; รอ reply สูงสุด 5 วินาทีเมื่อ $3 = wait)
-press() { fl_clear; wh "$(ev_postback "$1" "$2")"; REPLY=""; if [ "${3:-}" = "wait" ]; then wait_n reply 1 && REPLY="$(fl_last reply 'r.body.messages.map(m=>m.text).join(" ").replace(/\s+/g," ")')"; else sleep 2; fi; }
+press() { fl_clear; wh "$(ev_postback "$1" "$2")"; REPLY=""; if [ "${3:-}" = "wait" ]; then wait_n reply 1 && REPLY="$(fl_last reply 'r.body.messages.map(m=>m.text||m.altText).join(" ").replace(/\s+/g," ")')"; else sleep 2; fi; }
 
 # ---------- reminderService ใน container (process แยก = เหมือน cron ที่รันซ้อนกัน) ----------
 RUNJS="const db=require('/data/lib/db'),{createClient}=require('/data/lib/line-client'),rs=require('/data/lib/reminder-service');rs.run(db,createClient(),process.env).then(r=>{console.log(JSON.stringify(r));process.exit(0)}).catch(e=>{console.log('ERR '+e.message);process.exit(1)})"
@@ -96,7 +96,11 @@ cleanup() {
   [ -n "$FAKE_PID" ] && kill "$FAKE_PID" 2>/dev/null
   rm -rf "$TMP"
   docker compose up -d --force-recreate nodered >/dev/null 2>&1
+  echo; echo "== ข้อมูลผู้ใช้จริง (ต้องไม่ถูกแตะ)"
+  real_snapshot_check || { echo "สรุป: ข้อมูลผู้ใช้จริงเปลี่ยน → ไม่ผ่าน"; exit 1; }
 }
+source scripts/lib/real-snapshot.sh   # snapshot ผู้ใช้จริงก่อน-หลัง (ดู scripts/lib/real-snapshot.sh)
+real_snapshot_take
 trap cleanup EXIT
 
 section "เตรียม: LINE ปลอม + recreate nodered (cap 200 / reserve 30, DEMO_MODE=true)"
@@ -104,7 +108,7 @@ node scripts/fake-line.js $FAKE_PORT >"$TMP/fake.log" 2>&1 &
 FAKE_PID=$!
 sleep 1
 fl_config "{\"profiles\":{\"$LA\":\"ผู้ป่วย ทดสอบ\"},\"quota\":200,\"usage\":0}"
-NR_ENV=(LINE_CHANNEL_SECRET="$SECRET" LINE_CHANNEL_ACCESS_TOKEN="$TOKEN_LINE" LINE_API_BASE="http://host.docker.internal:$FAKE_PORT" LINE_OA_BASIC_ID="@014rktvr" LINE_PUSH_MONTHLY_CAP=200 LINE_PUSH_RESERVE=30 PUBLIC_BASE_URL="$PUBLIC" LINE_MASCOT_URL="")
+NR_ENV=(LINE_CHANNEL_SECRET="$SECRET" LINE_CHANNEL_ACCESS_TOKEN="$TOKEN_LINE" LINE_API_BASE="http://host.docker.internal:$FAKE_PORT" LINE_OA_BASIC_ID="@014rktvr" LINE_PUSH_MONTHLY_CAP=200 LINE_PUSH_RESERVE=30 PUBLIC_BASE_URL="$PUBLIC" LINE_MASCOT_URL="" REMINDER_ONLY_EMAIL_SUFFIX="@example.test")
 restart_nodered "${NR_ENV[@]}" DEMO_MODE=true REMINDER_CRON=off || exit 1   # ปิด cron จริงของ Node-RED ชั่วคราว ไม่ให้แย่ง dose กับการเรียก run() ในเทส
 ok "nodered พร้อม (cron จริงปิด)"
 new_user A; TA="$TOKEN_NEW"; UA="$UID_NEW"
@@ -130,7 +134,7 @@ expect "ปุ่ม postback 'กินแล้ว' มี dose id ครบ 3
 expect "  สีปุ่ม #0f766e" "$(fl_last push 'r.body.messages[0].contents.footer.contents[0].color')" "#0f766e"
 expect "  postback data ≤ 300 ตัวอักษร" "$(fl_last push 'r.body.messages[0].contents.footer.contents[0].action.data.length<=300')" "true"
 expect "ปุ่มเปิดแอปไป PUBLIC_BASE_URL/today" "$(fl_last push 'r.body.messages[0].contents.footer.contents[1].action.uri')" "$PUBLIC/today"
-expect "รูปน้องยาตรง = PUBLIC_BASE_URL/line/mascot.png" "$(fl_last push 'JSON.stringify(r.body.messages[0].contents.header).match(/https:[^\"]+mascot.png/)[0]')" "$PUBLIC/line/mascot.png"
+expect "รูปน้องยาตรง = PUBLIC_BASE_URL/line/mascot-bell.png" "$(fl_last push 'JSON.stringify(r.body.messages[0].contents.header).match(/https:[^\"]+mascot-bell.png/)[0]')" "$PUBLIC/line/mascot-bell.png"
 expect "ชื่อยา+ความแรงตัวใหญ่ (xl) ในเนื้อหา" "$(fl_last push 'r.body.messages[0].contents.body.contents.filter(b=>b.type==="box")[0].contents[0].size')" "xl"
 expect_match "ส่ง X-Line-Retry-Key (UUID)" "$(fl_last push 'r.headers["x-line-retry-key"]')" '^[0-9a-f-]{36}$'
 expect "จอง reminded_at ครบ 3 รอบ" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE user_id=$UA AND reminded_at IS NOT NULL;")" "3"
@@ -214,19 +218,19 @@ press "$LX" "a=take&d=$IDS"
 expect "LINE ที่ไม่ใช่ผู้ป่วย กดปุ่ม → ไม่มีผล" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE user_id=$UA AND status='taken';")" "0"
 expect "  และไม่ตอบอะไร" "$REPLY$(fl_count reply)" "0"
 press "$LB" "a=take&d=$IDS"
-expect "ผู้ป่วย B กดปุ่มของ A → ข้ามโดยไม่แจ้ง (dose ของ A ไม่เปลี่ยน)" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE user_id=$UA AND status='taken';")" "0"
-expect "  ไม่มี reply" "$(fl_count reply)" "0"
+expect "ผู้ป่วย B กดปุ่มของ A → dose ของ A ไม่เปลี่ยน" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE user_id=$UA AND status='taken';")" "0"
+expect "  ตอบ 'ไม่พบรายการยานี้แล้ว' (ไม่เผยข้อมูลของคนอื่น)" "$(fl_count reply)" "1"
 press "$LA" "a=take&d=$FIRST,$IDB" wait
 expect "ผู้ป่วย A กดปุ่มที่ปนของ B → บันทึกเฉพาะของ A (1 รายการ)" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE user_id=$UA AND status='taken';")" "1"
 expect "  ของ B ไม่ถูกแตะ" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE user_id=$UB AND status='taken';")" "0"
-expect_match "  reply คำชม + จำนวน + เวลา" "$REPLY" 'บันทึกแล้วค่ะ ✓ กินยา 1 รายการ เมื่อ [0-2][0-9]:[0-5][0-9] น\.'
+expect_match "  reply คำชม + จำนวน + เวลา" "$REPLY" 'บันทึกแล้วค่ะ กินยา 1 รายการ เมื่อ [0-2][0-9]:[0-5][0-9] น\.'
 expect "  source = line และมี taken_at" "$(sql "SELECT source='line' AND taken_at IS NOT NULL FROM dose_logs WHERE id=$FIRST;")" "1"
 expect "  หัก remaining_qty ของยานั้น 1 เม็ด" "$(sql "SELECT remaining_qty FROM medications WHERE id=(SELECT medication_id FROM dose_logs WHERE id=$FIRST);")" "29.00"
 press "$LA" "a=take&d=$IDS" wait
-expect_match "กดซ้ำทั้งชุด (อีก 2 รายการยังไม่กิน) → บันทึกอีก 2 และแจ้งว่า 1 รายการบันทึกไว้ก่อนแล้ว" "$REPLY" 'กินยา 2 รายการ.*อีก 1 รายการบันทึกไว้ก่อนแล้ว'
+expect_match "กดซ้ำทั้งชุด (อีก 2 รายการยังไม่กิน) → บันทึกอีก 2 รายการ" "$REPLY" "กินยา 2 รายการ"
 expect "  หักสต็อกรวม: ยา 3 ตัวเหลือ 29 ตัวละ" "$(sql "SELECT GROUP_CONCAT(remaining_qty ORDER BY id) FROM medications WHERE user_id=$UA AND as_needed=0;")" "29.00,29.00,29.00"
 press "$LA" "a=take&d=$IDS" wait
-expect "กดซ้ำหลังกินครบ → reply 'บันทึกไว้แล้วค่ะ ✓'" "$REPLY" "บันทึกไว้แล้วค่ะ ✓"
+expect "กดซ้ำหลังกินครบ → reply 'บันทึกไว้แล้วค่ะ' (text)" "$REPLY" "✅ บันทึกไว้แล้วค่ะ น้องยาตรงจำไว้ให้แล้ว ไม่ต้องกดซ้ำนะคะ"
 expect "  ไม่หักสต็อกซ้ำ" "$(sql "SELECT GROUP_CONCAT(remaining_qty ORDER BY id) FROM medications WHERE user_id=$UA AND as_needed=0;")" "29.00,29.00,29.00"
 req POST "/api/doses/$FIRST/take" "$TA"; expect "ปุ่มในแอปหลังกินทาง LINE → 409 ALREADY_TAKEN (พฤติกรรม API เดิม)" "$STATUS" "409"
 req POST "/api/doses/$FIRST/undo" "$TA"; expect "undo ของ dose ที่กินทาง LINE → 200" "$STATUS" "200"
@@ -265,17 +269,13 @@ fl_config '{"quota":200,"usage":0}'
 
 section "cron จริงใน Node-RED (รอ 1 รอบ ≤ 80 วินาที)"
 restart_nodered "${NR_ENV[@]}" DEMO_MODE=true || exit 1   # เปิด cron จริง (ไม่ตั้ง REMINDER_CRON)
-OTHERS="$(sql "SELECT COUNT(*) FROM dose_logs d JOIN users u ON u.id=d.user_id JOIN medications m ON m.id=d.medication_id WHERE d.status='pending' AND d.reminded_at IS NULL AND d.scheduled_at <= NOW() + INTERVAL 2 MINUTE AND d.scheduled_at >= NOW() - INTERVAL 30 MINUTE AND m.is_active=1 AND m.as_needed=0 AND u.line_user_id IS NOT NULL AND u.email NOT LIKE 'test-day6b-%';")"
-if [ "${OTHERS:-0}" != "0" ]; then
-  echo "  ! ข้าม: มี dose จริงของผู้ใช้อื่น $OTHERS รายการที่เข้าเงื่อนไขเตือนในช่วงนี้ — cron จริงจะจองไป (reminded_at) ทำให้ผู้ใช้นั้นพลาดเตือน ; รันซ้ำช่วงที่ไม่มีรอบยา"
-else
-  due "$UA" 5; sql "UPDATE medications SET remaining_qty=30 WHERE user_id=$UA;" >/dev/null; fl_clear
-  for i in $(seq 40); do [ "$(fl_count push)" -ge 1 ] && break; sleep 2; done
-  expect "cron ส่งเตือนเอง 1 push" "$(fl_count push)" "1"
-  expect "  ถึง LINE ของ A" "$(fl_last push 'r.body.to')" "$LA"
-  expect "  จอง reminded_at แล้ว" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE user_id=$UA AND reminded_at IS NULL;")" "0"
-  expect_match "  log ของ Node-RED มีสรุปรอบ (ไม่มีข้อมูลส่วนตัว)" "$(docker compose logs nodered 2>&1 | grep -c 'reminder_run groups=')" '^[1-9]'
-fi
+# REMINDER_ONLY_EMAIL_SUFFIX ทำให้ cron จริงแตะเฉพาะผู้ใช้ทดสอบ → ไม่ต้องข้ามส่วนนี้เมื่อมี dose จริงที่เข้าเงื่อนไขเตือน
+due "$UA" 5; sql "UPDATE medications SET remaining_qty=30 WHERE user_id=$UA;" >/dev/null; fl_clear
+for i in $(seq 40); do [ "$(fl_count push)" -ge 1 ] && break; sleep 2; done
+expect "cron ส่งเตือนเอง 1 push" "$(fl_count push)" "1"
+expect "  ถึง LINE ของ A" "$(fl_last push 'r.body.to')" "$LA"
+expect "  จอง reminded_at แล้ว" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE user_id=$UA AND reminded_at IS NULL;")" "0"
+expect_match "  log ของ Node-RED มีสรุปรอบ (ไม่มีข้อมูลส่วนตัว)" "$(docker compose logs nodered 2>&1 | grep -c 'reminder_run groups=')" '^[1-9]'
 
 section "รูปน้องยาตรง (ผ่าน nginx ด้วย User-Agent ที่ไม่ใช่เบราว์เซอร์)"
 MH="$(curl -s -m 15 -D - -o "$TMP/mascot.png" -A 'LineBotWebhook/2.0' "$WEB/line/mascot.png" | tr -d '\r')"
