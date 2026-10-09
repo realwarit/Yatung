@@ -43,12 +43,31 @@ docker compose up -d --build
 | URL | |
 |---|---|
 | http://localhost:8080 | เว็บแอป |
-| http://localhost:1880 | Node-RED editor (user `admin` / `demo1234` — เปลี่ยนก่อนเปิด tunnel) |
-| http://localhost:8081 | Adminer (`docker compose --profile dev up -d`) |
+| http://127.0.0.1:1880 | Node-RED editor (ผูกเฉพาะเครื่องนี้; user `admin` — **เปลี่ยนรหัสผ่านก่อนเปิด tunnel**) |
+| http://127.0.0.1:8081 | Adminer (`docker compose --profile dev up -d`) |
 
 บัญชีเดโม: `demo@yatung.app` / `demo1234` (มีข้อมูลกินยาย้อนหลัง 7 วัน และ Metformin ที่ใกล้หมด)
 
 > Linux: ถ้า Node-RED เขียนไฟล์ใน `node-red/data` ไม่ได้ ให้รัน `sudo chown -R 1000:1000 node-red/data`
+
+### LINE + ngrok (วันที่ 6)
+
+LINE Messaging API ส่ง webhook เข้ามาที่ `https://<NGROK_DOMAIN>/line/webhook` — ใช้ ngrok (โดเมนคงที่ฟรี 1 โดเมน) เป็น tunnel แทน cloudflared
+
+1. สมัคร ngrok → copy authtoken และจองโดเมนคงที่ (Domains) แล้วใส่ใน `.env`: `NGROK_AUTHTOKEN`, `NGROK_DOMAIN` (เช่น `xxx.ngrok-free.dev`); `PUBLIC_BASE_URL=https://${NGROK_DOMAIN}`
+2. ใส่ `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_OA_BASIC_ID` (เช่น `@014rktvr`) ใน `.env`
+3. `docker compose --profile tunnel up -d` (inspector ดู request ที่ http://127.0.0.1:4040)
+4. ตั้ง Webhook URL เป็น `https://<NGROK_DOMAIN>/line/webhook` ใน LINE Developers Console → กด Verify → เปิด Use webhook
+
+ความปลอดภัย: nginx ส่งต่อ **เฉพาะ `/api/*` และ `/line/webhook`** — editor/admin API ของ Node-RED (`/flows`, `/red`, `/settings`, …) เข้าผ่าน tunnel ไม่ได้ (มีเทสใน `scripts/test-day6.sh`) ·
+พอร์ต 1880/3306/8081/4040 ผูกที่ `127.0.0.1` ส่วน 8080 เปิดให้ LAN · **ห้ามเปิด tunnel ถ้ายังไม่ได้เปลี่ยน `NODE_RED_ADMIN_HASH`** (ค่าตัวอย่างคือรหัส `demo1234`)
+
+เชื่อมบัญชี: หน้า "ตั้งค่า" → "เชื่อม LINE" → กด "รับรหัสเชื่อม LINE" (เลข 6 หลัก หมดอายุ 10 นาที ใช้ได้ครั้งเดียว) → กด "เปิด LINE แล้วกดส่ง" (หรือสแกน QR) · ญาติเชื่อมด้วยรหัสของตัวเองจากปุ่ม "ส่งรหัสให้ญาติ"
+· ใน LINE พิมพ์ "วันนี้" เพื่อดูยาของวันนี้ (ใช้ reply จึงไม่เสียโควตา push)
+
+โควตา push: เพดานที่ใช้ = `min(LINE_PUSH_MONTHLY_CAP, โควตาจริงจาก LINE)` · ข้อความเตือนปกติหยุดเมื่อใช้ถึง `เพดาน − LINE_PUSH_RESERVE` ส่วนที่กันไว้ใช้แจ้งญาติ (วันที่ 7)
+
+ทดสอบ 6A (LINE ปลอม ไม่ส่งข้อความจริง): `bash scripts/test-day6.sh` · migration ฐานข้อมูลที่มีข้อมูลอยู่แล้ว: `bash scripts/migrate.sh` (รันซ้ำได้ ไม่ต้อง `down -v`)
 
 ### 3. Dev แบบ hot reload
 
@@ -85,6 +104,8 @@ bash scripts/demo-check.sh
 
 สรุป ✓/✗ ทีละข้อ (ไม่ผ่านข้อใดจะ exit 1): container db/nodered/frontend · เว็บ :8080 และ proxy `/api` · MySQL credentials · warm-up Gemini ใน log ·
 login บัญชีเดโม · **สแกนข้อความสั้น 1 ครั้งจริง** (เรียก Gemini 1 request ของโควตาบัญชีเดโม แล้วลบ draft ทิ้ง) ·
+**LINE** (ข้อ 7): secret/token/OA ID ตั้งแล้ว · webhook ผ่าน nginx ตอบ 401 เมื่อ signature ผิด · tunnel ngrok (public URL, `/flows` ต้องไม่หลุดออกไป) ·
+Webhook URL + Use webhook ใน LINE Console · **โควตา push: จริงจาก LINE / ใช้ไป / เหลือสำหรับเตือน / เหลือสำหรับแจ้งญาติ** · `DEMO_MODE` ·
 รหัสผ่านเดโมอ่านจาก `DEMO_PASSWORD` (env หรือ `.env`; ไม่มี = `demo1234`)
 
 - สแกนช้า > 15 วินาที = รุ่นหลักไม่ตอบแล้วสลับรุ่นสำรองอัตโนมัติ (ยังใช้ได้) — ดู `docker compose logs nodered | grep gemini_http`; Gemini ฝั่ง Google ช้าเป็นช่วงๆ ไม่เกี่ยวกับการเปิด container ใหม่

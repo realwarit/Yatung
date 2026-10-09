@@ -3607,5 +3607,1157 @@
         "y": 340,
         "wires": [],
         "g": "scan_breaker_group"
+    },
+    {
+        "id": "tab_line",
+        "type": "tab",
+        "label": "7-LINE",
+        "disabled": false,
+        "info": "LINE Official Account (วันที่ 6A): webhook, เชื่อมบัญชีผู้ป่วย/ผู้ดูแลด้วยรหัส 6 หลัก, จัดการผู้ดูแล\nสีเหลืองน้ำตาล = เรียกจากภายนอก (LINE) · สีเขียว = เขียนข้อมูล · สีฟ้า = อ่านอย่างเดียว\nlogic อยู่ lib/line-service.js · lib/caregiver-service.js · lib/line-client.js (global: lineService, caregiverService, lineClient)"
+    },
+    {
+        "id": "line_note",
+        "type": "comment",
+        "z": "tab_line",
+        "name": "webhook: ต้องใช้ raw bytes ตรวจ signature",
+        "x": 300,
+        "y": 50,
+        "wires": [],
+        "info": "settings.js httpNodeMiddleware เก็บ body ของ POST /line/webhook เป็น Buffer (req.body) ก่อน body-parser.json\nตรวจ HMAC-SHA256 จาก bytes จริง ห้าม JSON.stringify ซ้ำ\nsignature ผิด/ไม่มี = 401 ไม่ประมวลผล ; ถูก = ตอบ 200 ทันทีแล้วค่อยประมวลผล\nห้าม log signature, raw body, token, channel secret ; LINE userId log ได้แค่ 6 ตัวท้าย"
+    },
+    {
+        "id": "ln_wh_in",
+        "type": "http in",
+        "z": "tab_line",
+        "name": "POST /line/webhook",
+        "url": "/line/webhook",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 130,
+        "wires": [
+            [
+                "ln_wh_sig"
+            ]
+        ],
+        "g": "ln_wh_g1"
+    },
+    {
+        "id": "ln_wh_sig",
+        "type": "function",
+        "z": "tab_line",
+        "name": "ตรวจ signature จาก raw body",
+        "func": "const raw = Buffer.isBuffer(msg.req.body) ? msg.req.body : Buffer.alloc(0);\nconst ok = global.get('lineService').verifySignature(raw, msg.req.headers['x-line-signature'], env.get('LINE_CHANNEL_SECRET'));\nif (!ok) {\n  node.warn('line_webhook invalid_signature');   // ไม่ log signature / body\n  msg.statusCode = 401;\n  msg.payload = { error: 'INVALID_SIGNATURE', details: 'ลายเซ็นไม่ถูกต้อง' };\n  return [null, msg];\n}\nmsg.rawBody = raw;\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 130,
+        "wires": [
+            [
+                "ln_wh_200",
+                "ln_wh_parse"
+            ],
+            [
+                "ln_wh_401"
+            ]
+        ],
+        "g": "ln_wh_g1",
+        "outputLabels": [
+            "ถูกต้อง",
+            "ผิด/ไม่มี"
+        ]
+    },
+    {
+        "id": "ln_wh_401",
+        "type": "http response",
+        "z": "tab_line",
+        "name": "ตอบ 401 signature ไม่ถูกต้อง",
+        "statusCode": "",
+        "headers": {},
+        "x": 900,
+        "y": 190,
+        "wires": [],
+        "g": "ln_wh_g1"
+    },
+    {
+        "id": "ln_wh_200",
+        "type": "function",
+        "z": "tab_line",
+        "name": "ตั้งสถานะ 200",
+        "func": "msg.statusCode = 200;\nmsg.payload = {};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 300,
+        "wires": [
+            [
+                "ln_wh_200r"
+            ]
+        ],
+        "g": "ln_wh_g2"
+    },
+    {
+        "id": "ln_wh_200r",
+        "type": "http response",
+        "z": "tab_line",
+        "name": "ตอบ 200 ทันที (LINE ไม่ต้องรอ)",
+        "statusCode": "",
+        "headers": {},
+        "x": 900,
+        "y": 300,
+        "wires": [],
+        "g": "ln_wh_g2"
+    },
+    {
+        "id": "ln_wh_parse",
+        "type": "function",
+        "z": "tab_line",
+        "name": "แปลง JSON + ตัด event ซ้ำ (webhookEventId)",
+        "func": "const svc = global.get('lineService');\nconst events = svc.dropDuplicates(svc.parseBody(msg.rawBody));\nif (!events.length) return null;   // ปุ่ม Verify ใน LINE Console ส่ง events ว่าง / redelivery ที่เคยเห็นแล้ว\nmsg.events = events;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 410,
+        "wires": [
+            [
+                "ln_wh_handle"
+            ]
+        ],
+        "g": "ln_wh_g3"
+    },
+    {
+        "id": "ln_wh_handle",
+        "type": "function",
+        "z": "tab_line",
+        "name": "แยกประเภท event แล้วตอบกลับ (follow / รหัส / unfollow / ข้อความ)",
+        "func": "try {\n  const r = await global.get('lineService').handleEvents(msg.events, { db: global.get('db'), client: global.get('lineClient'), dedup: false });\n  node.log('line_webhook handled=' + r.handled + ' failed=' + r.failed);\n} catch (e) {\n  node.error('line_webhook ' + String(e.message).slice(0, 200));   // ตอบ 200 ไปแล้ว จึงไม่ส่งต่อให้ catch\n}\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 520,
+        "wires": [],
+        "g": "ln_wh_g4"
+    },
+    {
+        "id": "ln_code_in",
+        "type": "http in",
+        "z": "tab_line",
+        "name": "POST /api/line/link-code",
+        "url": "/api/line/link-code",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 690,
+        "wires": [
+            [
+                "ln_code_jwt"
+            ]
+        ],
+        "g": "ln_code_grp"
+    },
+    {
+        "id": "ln_code_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_line",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 690,
+        "wires": [
+            [
+                "ln_code_fn"
+            ]
+        ],
+        "g": "ln_code_grp"
+    },
+    {
+        "id": "ln_code_fn",
+        "type": "function",
+        "z": "tab_line",
+        "name": "ออกรหัสเชื่อม LINE (10 นาที ใช้ได้ครั้งเดียว)",
+        "func": "const db = global.get('db');\nconst r = await global.get('lineService').patientLinkCode(db, msg.user.id, { LINE_OA_BASIC_ID: env.get('LINE_OA_BASIC_ID') });\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ (4xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 690,
+        "wires": [
+            [
+                "ln_code_ok"
+            ],
+            [
+                "ln_code_err"
+            ]
+        ],
+        "g": "ln_code_grp",
+        "outputLabels": [
+            "สำเร็จ",
+            "error 4xx"
+        ]
+    },
+    {
+        "id": "ln_code_ok",
+        "type": "http response",
+        "z": "tab_line",
+        "name": "ตอบ 200 รหัส + ลิงก์ oaMessage",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 690,
+        "wires": [],
+        "g": "ln_code_grp"
+    },
+    {
+        "id": "ln_code_err",
+        "type": "http response",
+        "z": "tab_line",
+        "name": "ตอบ 4xx ผิดพลาด",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 750,
+        "wires": [],
+        "g": "ln_code_grp"
+    },
+    {
+        "id": "ln_status_in",
+        "type": "http in",
+        "z": "tab_line",
+        "name": "GET /api/line/status",
+        "url": "/api/line/status",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 880,
+        "wires": [
+            [
+                "ln_status_jwt"
+            ]
+        ],
+        "g": "ln_status_grp"
+    },
+    {
+        "id": "ln_status_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_line",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 880,
+        "wires": [
+            [
+                "ln_status_fn"
+            ]
+        ],
+        "g": "ln_status_grp"
+    },
+    {
+        "id": "ln_status_fn",
+        "type": "function",
+        "z": "tab_line",
+        "name": "ดูสถานะการเชื่อม LINE",
+        "func": "const db = global.get('db');\nconst r = await global.get('lineService').status(db, msg.user.id);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ (4xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 880,
+        "wires": [
+            [
+                "ln_status_ok"
+            ],
+            [
+                "ln_status_err"
+            ]
+        ],
+        "g": "ln_status_grp",
+        "outputLabels": [
+            "สำเร็จ",
+            "error 4xx"
+        ]
+    },
+    {
+        "id": "ln_status_ok",
+        "type": "http response",
+        "z": "tab_line",
+        "name": "ตอบ 200 สถานะเชื่อม LINE",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 880,
+        "wires": [],
+        "g": "ln_status_grp"
+    },
+    {
+        "id": "ln_status_err",
+        "type": "http response",
+        "z": "tab_line",
+        "name": "ตอบ 404",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 940,
+        "wires": [],
+        "g": "ln_status_grp"
+    },
+    {
+        "id": "ln_unlink_in",
+        "type": "http in",
+        "z": "tab_line",
+        "name": "DELETE /api/line/link",
+        "url": "/api/line/link",
+        "method": "delete",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 1070,
+        "wires": [
+            [
+                "ln_unlink_jwt"
+            ]
+        ],
+        "g": "ln_unlink_grp"
+    },
+    {
+        "id": "ln_unlink_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_line",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 1070,
+        "wires": [
+            [
+                "ln_unlink_fn"
+            ]
+        ],
+        "g": "ln_unlink_grp"
+    },
+    {
+        "id": "ln_unlink_fn",
+        "type": "function",
+        "z": "tab_line",
+        "name": "ยกเลิกการเชื่อม LINE",
+        "func": "const db = global.get('db');\nconst r = await global.get('lineService').unlink(db, msg.user.id);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 1070,
+        "wires": [
+            [
+                "ln_unlink_ok"
+            ]
+        ],
+        "g": "ln_unlink_grp"
+    },
+    {
+        "id": "ln_unlink_ok",
+        "type": "http response",
+        "z": "tab_line",
+        "name": "ตอบ 200 ยกเลิกแล้ว",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1070,
+        "wires": [],
+        "g": "ln_unlink_grp"
+    },
+    {
+        "id": "ln_cglist_in",
+        "type": "http in",
+        "z": "tab_line",
+        "name": "GET /api/caregivers",
+        "url": "/api/caregivers",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 1200,
+        "wires": [
+            [
+                "ln_cglist_jwt"
+            ]
+        ],
+        "g": "ln_cglist_grp"
+    },
+    {
+        "id": "ln_cglist_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_line",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 1200,
+        "wires": [
+            [
+                "ln_cglist_fn"
+            ]
+        ],
+        "g": "ln_cglist_grp"
+    },
+    {
+        "id": "ln_cglist_fn",
+        "type": "function",
+        "z": "tab_line",
+        "name": "อ่านรายการผู้ดูแล",
+        "func": "const db = global.get('db');\nconst r = await global.get('caregiverService').list(db, msg.user.id);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 1200,
+        "wires": [
+            [
+                "ln_cglist_ok"
+            ]
+        ],
+        "g": "ln_cglist_grp"
+    },
+    {
+        "id": "ln_cglist_ok",
+        "type": "http response",
+        "z": "tab_line",
+        "name": "ตอบ 200 รายการผู้ดูแล",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1200,
+        "wires": [],
+        "g": "ln_cglist_grp"
+    },
+    {
+        "id": "ln_cgadd_in",
+        "type": "http in",
+        "z": "tab_line",
+        "name": "POST /api/caregivers",
+        "url": "/api/caregivers",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 1330,
+        "wires": [
+            [
+                "ln_cgadd_jwt"
+            ]
+        ],
+        "g": "ln_cgadd_grp"
+    },
+    {
+        "id": "ln_cgadd_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_line",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 1330,
+        "wires": [
+            [
+                "ln_cgadd_fn"
+            ]
+        ],
+        "g": "ln_cgadd_grp"
+    },
+    {
+        "id": "ln_cgadd_fn",
+        "type": "function",
+        "z": "tab_line",
+        "name": "เพิ่มผู้ดูแล",
+        "func": "const db = global.get('db');\nconst r = await global.get('caregiverService').create(db, msg.user.id, msg.payload);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ (4xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 1330,
+        "wires": [
+            [
+                "ln_cgadd_ok"
+            ],
+            [
+                "ln_cgadd_err"
+            ]
+        ],
+        "g": "ln_cgadd_grp",
+        "outputLabels": [
+            "สำเร็จ",
+            "error 4xx"
+        ]
+    },
+    {
+        "id": "ln_cgadd_ok",
+        "type": "http response",
+        "z": "tab_line",
+        "name": "ตอบ 201 เพิ่มแล้ว",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1330,
+        "wires": [],
+        "g": "ln_cgadd_grp"
+    },
+    {
+        "id": "ln_cgadd_err",
+        "type": "http response",
+        "z": "tab_line",
+        "name": "ตอบ 400 ข้อมูลไม่ถูกต้อง",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1390,
+        "wires": [],
+        "g": "ln_cgadd_grp"
+    },
+    {
+        "id": "ln_cgedit_in",
+        "type": "http in",
+        "z": "tab_line",
+        "name": "PATCH /api/caregivers/:id",
+        "url": "/api/caregivers/:id",
+        "method": "patch",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 1520,
+        "wires": [
+            [
+                "ln_cgedit_jwt"
+            ]
+        ],
+        "g": "ln_cgedit_grp"
+    },
+    {
+        "id": "ln_cgedit_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_line",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 1520,
+        "wires": [
+            [
+                "ln_cgedit_fn"
+            ]
+        ],
+        "g": "ln_cgedit_grp"
+    },
+    {
+        "id": "ln_cgedit_fn",
+        "type": "function",
+        "z": "tab_line",
+        "name": "แก้ไขข้อมูลผู้ดูแล (เจ้าของเท่านั้น)",
+        "func": "const db = global.get('db');\nconst r = await global.get('caregiverService').update(db, msg.user.id, msg.req.params.id, msg.payload);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ (4xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 1520,
+        "wires": [
+            [
+                "ln_cgedit_ok"
+            ],
+            [
+                "ln_cgedit_err"
+            ]
+        ],
+        "g": "ln_cgedit_grp",
+        "outputLabels": [
+            "สำเร็จ",
+            "error 4xx"
+        ]
+    },
+    {
+        "id": "ln_cgedit_ok",
+        "type": "http response",
+        "z": "tab_line",
+        "name": "ตอบ 200 แก้ไขแล้ว",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1520,
+        "wires": [],
+        "g": "ln_cgedit_grp"
+    },
+    {
+        "id": "ln_cgedit_err",
+        "type": "http response",
+        "z": "tab_line",
+        "name": "ตอบ 400/404 ผิดพลาด",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1580,
+        "wires": [],
+        "g": "ln_cgedit_grp"
+    },
+    {
+        "id": "ln_cgdel_in",
+        "type": "http in",
+        "z": "tab_line",
+        "name": "DELETE /api/caregivers/:id",
+        "url": "/api/caregivers/:id",
+        "method": "delete",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 1710,
+        "wires": [
+            [
+                "ln_cgdel_jwt"
+            ]
+        ],
+        "g": "ln_cgdel_grp"
+    },
+    {
+        "id": "ln_cgdel_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_line",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 1710,
+        "wires": [
+            [
+                "ln_cgdel_fn"
+            ]
+        ],
+        "g": "ln_cgdel_grp"
+    },
+    {
+        "id": "ln_cgdel_fn",
+        "type": "function",
+        "z": "tab_line",
+        "name": "ลบผู้ดูแล (เจ้าของเท่านั้น)",
+        "func": "const db = global.get('db');\nconst r = await global.get('caregiverService').remove(db, msg.user.id, msg.req.params.id);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ (4xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 1710,
+        "wires": [
+            [
+                "ln_cgdel_ok"
+            ],
+            [
+                "ln_cgdel_err"
+            ]
+        ],
+        "g": "ln_cgdel_grp",
+        "outputLabels": [
+            "สำเร็จ",
+            "error 4xx"
+        ]
+    },
+    {
+        "id": "ln_cgdel_ok",
+        "type": "http response",
+        "z": "tab_line",
+        "name": "ตอบ 200 ลบแล้ว",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1710,
+        "wires": [],
+        "g": "ln_cgdel_grp"
+    },
+    {
+        "id": "ln_cgdel_err",
+        "type": "http response",
+        "z": "tab_line",
+        "name": "ตอบ 404",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1770,
+        "wires": [],
+        "g": "ln_cgdel_grp"
+    },
+    {
+        "id": "ln_cgcode_in",
+        "type": "http in",
+        "z": "tab_line",
+        "name": "POST /api/caregivers/:id/link-code",
+        "url": "/api/caregivers/:id/link-code",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 1900,
+        "wires": [
+            [
+                "ln_cgcode_jwt"
+            ]
+        ],
+        "g": "ln_cgcode_grp"
+    },
+    {
+        "id": "ln_cgcode_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_line",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 1900,
+        "wires": [
+            [
+                "ln_cgcode_fn"
+            ]
+        ],
+        "g": "ln_cgcode_grp"
+    },
+    {
+        "id": "ln_cgcode_fn",
+        "type": "function",
+        "z": "tab_line",
+        "name": "ออกรหัสเชื่อม LINE ให้ผู้ดูแล",
+        "func": "const db = global.get('db');\nconst r = await global.get('caregiverService').linkCode(db, msg.user.id, msg.req.params.id, { LINE_OA_BASIC_ID: env.get('LINE_OA_BASIC_ID') });\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ (4xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 1900,
+        "wires": [
+            [
+                "ln_cgcode_ok"
+            ],
+            [
+                "ln_cgcode_err"
+            ]
+        ],
+        "g": "ln_cgcode_grp",
+        "outputLabels": [
+            "สำเร็จ",
+            "error 4xx"
+        ]
+    },
+    {
+        "id": "ln_cgcode_ok",
+        "type": "http response",
+        "z": "tab_line",
+        "name": "ตอบ 200 รหัส + ลิงก์ oaMessage",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1900,
+        "wires": [],
+        "g": "ln_cgcode_grp"
+    },
+    {
+        "id": "ln_cgcode_err",
+        "type": "http response",
+        "z": "tab_line",
+        "name": "ตอบ 404",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1960,
+        "wires": [],
+        "g": "ln_cgcode_grp"
+    },
+    {
+        "id": "ln_catch",
+        "type": "catch",
+        "z": "tab_line",
+        "name": "ดักข้อผิดพลาดของ tab นี้",
+        "scope": null,
+        "uncaught": false,
+        "x": 190,
+        "y": 2090,
+        "wires": [
+            [
+                "ln_err"
+            ]
+        ],
+        "g": "ln_grp"
+    },
+    {
+        "id": "ln_err",
+        "type": "function",
+        "z": "tab_line",
+        "name": "แปลง error เป็น JSON 500",
+        "func": "node.error(msg.error && msg.error.message ? msg.error.message : 'unknown error');\nmsg.statusCode = 500;\nmsg.payload = { error: 'INTERNAL_ERROR', details: 'ระบบขัดข้อง กรุณาลองใหม่ภายหลัง' };\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 2090,
+        "wires": [
+            [
+                "ln_res"
+            ]
+        ],
+        "g": "ln_grp"
+    },
+    {
+        "id": "ln_res",
+        "type": "http response",
+        "z": "tab_line",
+        "name": "ตอบ 500 ระบบขัดข้อง",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 2090,
+        "wires": [],
+        "g": "ln_grp"
+    },
+    {
+        "id": "ln_wh_g1",
+        "type": "group",
+        "z": "tab_line",
+        "name": "1) ตรวจ signature",
+        "style": {
+            "stroke": "#b45309",
+            "fill": "#fdf3e3",
+            "label": true,
+            "label-position": "nw",
+            "color": "#b45309"
+        },
+        "nodes": [
+            "ln_wh_in",
+            "ln_wh_sig",
+            "ln_wh_401"
+        ],
+        "x": 70,
+        "y": 85,
+        "w": 950,
+        "h": 150,
+        "g": "ln_wh_grp"
+    },
+    {
+        "id": "ln_wh_g2",
+        "type": "group",
+        "z": "tab_line",
+        "name": "2) ตอบ 200 ทันที",
+        "style": {
+            "stroke": "#b45309",
+            "fill": "#fdf3e3",
+            "label": true,
+            "label-position": "nw",
+            "color": "#b45309"
+        },
+        "nodes": [
+            "ln_wh_200",
+            "ln_wh_200r"
+        ],
+        "x": 380,
+        "y": 255,
+        "w": 640,
+        "h": 90,
+        "g": "ln_wh_grp"
+    },
+    {
+        "id": "ln_wh_g3",
+        "type": "group",
+        "z": "tab_line",
+        "name": "3) กัน event ซ้ำ (อายุ 10 นาที)",
+        "style": {
+            "stroke": "#b45309",
+            "fill": "#fdf3e3",
+            "label": true,
+            "label-position": "nw",
+            "color": "#b45309"
+        },
+        "nodes": [
+            "ln_wh_parse"
+        ],
+        "x": 380,
+        "y": 365,
+        "w": 240,
+        "h": 90,
+        "g": "ln_wh_grp"
+    },
+    {
+        "id": "ln_wh_g4",
+        "type": "group",
+        "z": "tab_line",
+        "name": "4) แยกประเภท event",
+        "style": {
+            "stroke": "#b45309",
+            "fill": "#fdf3e3",
+            "label": true,
+            "label-position": "nw",
+            "color": "#b45309"
+        },
+        "nodes": [
+            "ln_wh_handle"
+        ],
+        "x": 380,
+        "y": 475,
+        "w": 240,
+        "h": 90,
+        "g": "ln_wh_grp"
+    },
+    {
+        "id": "ln_wh_grp",
+        "type": "group",
+        "z": "tab_line",
+        "name": "POST /line/webhook",
+        "style": {
+            "stroke": "#b45309",
+            "fill": "#fdf3e3",
+            "label": true,
+            "label-position": "nw",
+            "color": "#b45309"
+        },
+        "nodes": [
+            "ln_wh_g1",
+            "ln_wh_g2",
+            "ln_wh_g3",
+            "ln_wh_g4"
+        ],
+        "x": 50,
+        "y": 45,
+        "w": 990,
+        "h": 540
+    },
+    {
+        "id": "ln_code_grp",
+        "type": "group",
+        "z": "tab_line",
+        "name": "POST /api/line/link-code",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "ln_code_in",
+            "ln_code_jwt",
+            "ln_code_fn",
+            "ln_code_ok",
+            "ln_code_err"
+        ],
+        "x": 70,
+        "y": 645,
+        "w": 1520,
+        "h": 150
+    },
+    {
+        "id": "ln_status_grp",
+        "type": "group",
+        "z": "tab_line",
+        "name": "GET /api/line/status",
+        "style": {
+            "stroke": "#0070c0",
+            "fill": "#e8f1fa",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0070c0"
+        },
+        "nodes": [
+            "ln_status_in",
+            "ln_status_jwt",
+            "ln_status_fn",
+            "ln_status_ok",
+            "ln_status_err"
+        ],
+        "x": 70,
+        "y": 835,
+        "w": 1520,
+        "h": 150
+    },
+    {
+        "id": "ln_unlink_grp",
+        "type": "group",
+        "z": "tab_line",
+        "name": "DELETE /api/line/link",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "ln_unlink_in",
+            "ln_unlink_jwt",
+            "ln_unlink_fn",
+            "ln_unlink_ok"
+        ],
+        "x": 70,
+        "y": 1025,
+        "w": 1520,
+        "h": 90
+    },
+    {
+        "id": "ln_cglist_grp",
+        "type": "group",
+        "z": "tab_line",
+        "name": "GET /api/caregivers",
+        "style": {
+            "stroke": "#0070c0",
+            "fill": "#e8f1fa",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0070c0"
+        },
+        "nodes": [
+            "ln_cglist_in",
+            "ln_cglist_jwt",
+            "ln_cglist_fn",
+            "ln_cglist_ok"
+        ],
+        "x": 70,
+        "y": 1155,
+        "w": 1520,
+        "h": 90
+    },
+    {
+        "id": "ln_cgadd_grp",
+        "type": "group",
+        "z": "tab_line",
+        "name": "POST /api/caregivers",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "ln_cgadd_in",
+            "ln_cgadd_jwt",
+            "ln_cgadd_fn",
+            "ln_cgadd_ok",
+            "ln_cgadd_err"
+        ],
+        "x": 70,
+        "y": 1285,
+        "w": 1520,
+        "h": 150
+    },
+    {
+        "id": "ln_cgedit_grp",
+        "type": "group",
+        "z": "tab_line",
+        "name": "PATCH /api/caregivers/:id",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "ln_cgedit_in",
+            "ln_cgedit_jwt",
+            "ln_cgedit_fn",
+            "ln_cgedit_ok",
+            "ln_cgedit_err"
+        ],
+        "x": 70,
+        "y": 1475,
+        "w": 1520,
+        "h": 150
+    },
+    {
+        "id": "ln_cgdel_grp",
+        "type": "group",
+        "z": "tab_line",
+        "name": "DELETE /api/caregivers/:id",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "ln_cgdel_in",
+            "ln_cgdel_jwt",
+            "ln_cgdel_fn",
+            "ln_cgdel_ok",
+            "ln_cgdel_err"
+        ],
+        "x": 70,
+        "y": 1665,
+        "w": 1520,
+        "h": 150
+    },
+    {
+        "id": "ln_cgcode_grp",
+        "type": "group",
+        "z": "tab_line",
+        "name": "POST /api/caregivers/:id/link-code",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "ln_cgcode_in",
+            "ln_cgcode_jwt",
+            "ln_cgcode_fn",
+            "ln_cgcode_ok",
+            "ln_cgcode_err"
+        ],
+        "x": 70,
+        "y": 1855,
+        "w": 1520,
+        "h": 150
+    },
+    {
+        "id": "ln_grp",
+        "type": "group",
+        "z": "tab_line",
+        "name": "ข้อผิดพลาดที่ไม่คาดคิด → 500",
+        "style": {
+            "stroke": "#b91c1c",
+            "fill": "#fdeaea",
+            "label": true,
+            "label-position": "nw",
+            "color": "#b91c1c"
+        },
+        "nodes": [
+            "ln_catch",
+            "ln_err",
+            "ln_res"
+        ],
+        "x": 70,
+        "y": 2045,
+        "w": 1520,
+        "h": 90
     }
 ]

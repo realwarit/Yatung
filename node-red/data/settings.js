@@ -11,6 +11,10 @@ const doseService = require('./lib/dose-service');
 const scanService = require('./lib/scan-service');
 const prescriptionService = require('./lib/prescription-service');
 const llmOutput = require('./lib/validate-llm-output');
+const lineService = require('./lib/line-service');
+const caregiverService = require('./lib/caregiver-service');
+const lineClient = require('./lib/line-client').createClient();
+const express = require('express');
 
 const PROMPT_DIR = path.join(__dirname, 'prompts');
 const readPrompt = (file) => fs.readFileSync(path.join(PROMPT_DIR, file), 'utf8');
@@ -43,6 +47,14 @@ module.exports = {
     }]
   } : undefined,
 
+  // เก็บ raw bytes ของ POST /line/webhook ไว้ใน req.body (Buffer) — ต้องคำนวณ HMAC จาก bytes จริง ห้าม JSON.stringify ซ้ำ
+  // ต้องเป็น httpAdminMiddleware (ไม่ใช่ httpNodeMiddleware): admin app ผูกที่ "/" และมี bodyParser.json ของตัวเองรันก่อน route ของ http-in ทุกตัว
+  // express.raw ตั้ง req._body = true ทำให้ json parser ของ admin และของ http-in ข้ามไป
+  httpAdminMiddleware: (() => {
+    const raw = express.raw({ type: () => true, limit: '1mb' });
+    return (req, res, next) => (req.method === 'POST' && req.path === '/line/webhook' ? raw(req, res, next) : next());
+  })(),
+
   // ให้ function node ใช้ผ่าน global.get('jwt') เป็นต้น
   functionGlobalContext: {
     jwt: require('jsonwebtoken'),
@@ -55,6 +67,9 @@ module.exports = {
     doseService,
     scanService,
     prescriptionService,
+    lineClient,                               // reply/push/getProfile/quota (lib/line-client.js)
+    lineService,                              // signature, รหัสเชื่อม, event ของ webhook
+    caregiverService,
     llmOutput,                                // process / reviewFlags / redactPii (lib/validate-llm-output.js)
     prompts: {
       medicineSystem: readPrompt('medicine-parse.system.txt'),

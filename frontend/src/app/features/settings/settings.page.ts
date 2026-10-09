@@ -9,12 +9,14 @@ import { SLOT_LABEL, SLOT_ORDER } from '../../core/i18n/labels';
 import { TimeRowComponent } from '../../shared/components/time-row/time-row.component';
 import { FontSizeToggleComponent } from '../../shared/font-size-toggle.component';
 import { IconComponent, IconName } from '../../shared/icon.component';
+import { CaregiversSectionComponent } from './caregivers-section.component';
+import { LineSectionComponent } from './line-section.component';
 
 const SLOT_ICON: Record<Slot, IconName> = { morning: 'sunrise', noon: 'sun', evening: 'sunset', bedtime: 'moon' };
 
 @Component({
   selector: 'app-settings-page',
-  imports: [MatButton, IconComponent, TimeRowComponent, FontSizeToggleComponent],
+  imports: [MatButton, IconComponent, TimeRowComponent, FontSizeToggleComponent, LineSectionComponent, CaregiversSectionComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './settings.page.html',
   styleUrl: './settings.page.scss',

@@ -29,6 +29,7 @@
                 "input": "public"
               }
             ],
+            "allowedCommonJsDependencies": ["qrcode", "dijkstrajs"],
             "styles": [
               "@fontsource/mitr/500.css",
               "@fontsource/mitr/600.css",

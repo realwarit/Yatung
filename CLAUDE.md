@@ -12,7 +12,7 @@
 - Windows + PowerShell, Docker Desktop, Node 22, Angular 21, Ionic 9, Capacitor 8
 - **Ionic 9:** import standalone components จาก `'@ionic/angular'` โดยตรง ห้ามใช้ `'@ionic/angular/standalone'`
 - Ionic ใช้เฉพาะหน้า Scan (lazy route) หน้าอื่นใช้ Angular Material
-- รันทั้งระบบ: `docker compose up -d --build` (เว็บ :8080, Node-RED :1880, Adminer :8081 ด้วย `--profile dev`, tunnel ด้วย `--profile tunnel`)
+- รันทั้งระบบ: `docker compose up -d --build` (เว็บ :8080, Node-RED 127.0.0.1:1880, Adminer 127.0.0.1:8081 ด้วย `--profile dev`, tunnel **ngrok** ด้วย `--profile tunnel` [inspector 127.0.0.1:4040]; 1880/3306/8081/4040 ผูก 127.0.0.1 เท่านั้น)
 - dev frontend: `docker compose up -d db nodered` แล้ว `cd frontend && npx ng serve` (proxy `/api` → :1880 ผ่าน `proxy.conf.json`)
 - Timezone ทุก service = Asia/Bangkok (MySQL `+07:00`)
 - ตัวแปร env ดู `.env.example` (copy เป็น `.env`)
@@ -29,7 +29,7 @@
   login ผิดเกิน 5 ครั้ง/5 นาที/email → 429 (flow context `loginFails`, หายเมื่อ restart Node-RED)
 - node id ทุกตัวต้องไม่ซ้ำ, ทุก `http in` ต้องมี `http response` ปลายทาง
 - `lib/dose-check.js` / `lib/validate-llm-output.js` เป็นฟังก์ชันล้วน ทดสอบด้วย `node --test` ที่ `node-red/test/`
-- library ใช้ผ่าน `global.get()`: `jwt`, `bcrypt`, `webpush`, `crypto`, `medicineValidator`, `prompts`, `scanService`, `prescriptionService`, `llmOutput`
+- library ใช้ผ่าน `global.get()`: `jwt`, `bcrypt`, `webpush`, `crypto`, `medicineValidator`, `prompts`, `scanService`, `prescriptionService`, `llmOutput`, `lineClient`, `lineService`, `caregiverService`
   (กำหนดใน `node-red/data/settings.js` → `functionGlobalContext`; `prompts` = `medicineSystem`, `medicineUserImage`, `medicineUserText`, `medicineSchema`, `medicineGeminiSchema`, `mockResponse`)
 - env ใช้ `env.get('JWT_SECRET')` เป็นต้น
 - **transaction:** node `mysql` ทำ transaction ไม่ได้ (1 query = 1 connection) → ใช้ `global.get('db')` (`lib/db.js`, pool `mysql2` อ่าน `DB_*` จาก env ไม่ผ่าน credentials; timezone +07:00, `dateStrings`, `decimalNumbers`)
@@ -45,11 +45,24 @@
 - logic ฝั่ง backend แยกเป็น `node-red/data/lib/*-service.js` (global: `medicationService`, `doseService`; รับ `(db, userId, …)` คืน `{status, body}`) function node ใน flow แค่เรียกแล้วใส่ `msg.statusCode/payload`;
   แก้ `lib/` หรือ `settings.js` ต้อง `docker compose restart nodered`. ข้อมูลที่ไม่ใช่ของ `msg.user.id` = 404 เสมอ (ไม่ใช่ 403)
 - ทดสอบ Day 3A (รวมเคส stop/resume): `DEMO_PASSWORD=… bash scripts/test-day3a.sh` (login ใหม่ในสคริปต์, user ที่ 2 สุ่ม, ลบข้อมูลทดสอบตอนจบ)
-- แบ่ง tab: 0-Middleware, 1-Auth, 2-AI-Scan, 3-Medications, 4-Doses, 5-Dashboard, 6-Scheduler, 7-LINE, 8-Push
+- แบ่ง tab: 0-Middleware, 1-Auth, 2-AI-Scan, 3-Medications, 4-Doses, 5-Dashboard (ยังไม่มี จองไว้), 6-Scheduler, 7-LINE (มีแล้ว), 8-Push (ยังไม่มี)
 - **กฎการจัด flow (ใช้กับทุก tab):** ทุก endpoint มี `group` ครอบ (ชื่อ = `METHOD /path`; สี: เขียว = เขียนข้อมูล, ฟ้า = อ่านอย่างเดียว, แดง = error/catch, เหลืองน้ำตาล = cron/เรียกภายนอก)
   endpoint ที่มีหลายขั้นตอน (เช่น `POST /api/scan`) ให้มี group ย่อยแยกตามขั้นตอนซ้อนใน group นั้น; ทุก node ตั้งชื่อเป็นภาษาไทยที่อ่านแล้วรู้ว่าทำอะไร
   (ชื่อ `http in` ใช้ `METHOD /path`); ใส่ `g` ให้ node สมาชิกทุกตัว; ทุก tab มี `catch` + group "ข้อผิดพลาดที่ไม่คาดคิด → 500"
   (ถ้ามี `http request` ที่ต้องดัก timeout เอง ให้กำหนด `scope` ของ catch ทั่วไปไม่รวม node นั้น)
+- **LINE (วันที่ 6A, tab 7-LINE; ค้นหาแผนเต็มที่ `docs/day6-plan.md`):**
+  - `lib/line-client.js` (`createClient()` → global `lineClient`): `reply/push/getProfile/quotaStatus/canPush`; ใช้ `LINE_API_BASE` (ทดสอบชี้ `scripts/fake-line.js`), timeout 10 วินาที, push ใส่ `X-Line-Retry-Key` และลองใหม่ 1 ครั้งเมื่อ 5xx/429/เครือข่ายล่ม, บันทึก `notification_logs` ทุกครั้งที่รู้ user_id (reply ที่ไม่รู้ user ไม่บันทึกเพราะ user_id บังคับ), log ได้แค่ status/จำนวน (ห้าม token/secret/ข้อความ/userId เต็ม)
+  - **โควตา:** `effective_cap = min(LINE_PUSH_MONTHLY_CAP [200], quota จริง)`; ยอดใช้ไปจาก LINE consumption (cache 5 นาที) ถ้าไม่ได้ให้นับ `notification_logs` (line_push สำเร็จเดือนนี้); `canPush(db, kind)`: kind=`escalation` ส่งได้ถึง cap, ชนิดอื่นหยุดที่ `cap − LINE_PUSH_RESERVE [30]` (กันไว้ให้แจ้งญาติวันที่ 7); reply ไม่นับโควตา
+  - `POST /line/webhook`: `settings.js` **`httpAdminMiddleware`** (ไม่ใช่ httpNodeMiddleware — admin app ผูกที่ `/` และ parse JSON ก่อน route ของ http-in) ใช้ `express.raw` เก็บ **raw bytes** เป็น `req.body` (Buffer) เฉพาะ path นี้ก่อน body-parser.json → `lineService.verifySignature(raw, x-line-signature, LINE_CHANNEL_SECRET)` (HMAC-SHA256 base64, `timingSafeEqual`, ต้อง re-encode แล้วตรง header เป๊ะ) →
+    ผิด/ไม่มี = 401 · ถูก = ตอบ 200 ทันทีแล้วค่อยประมวลผล (`parseBody` → `dropDuplicates` ด้วย `webhookEventId` อายุ 10 นาที ใน memory → `handleEvents`); Verify ของ LINE ส่ง events ว่าง = 200 ไม่ทำอะไร; ห้าม JSON.stringify body ซ้ำก่อนตรวจ
+  - **รหัสเชื่อม 6 หลัก** (`lineService.issueCode`): `crypto.randomInt`, หมดอายุ 10 นาที (`users.line_link_code_expires_at` / `caregivers.link_code_expires_at`), ใช้ได้ครั้งเดียว (ส่งสำเร็จแล้วล้าง), ไม่ซ้ำกับรหัสที่ยังไม่หมดอายุทั้ง users+caregivers (ตรวจในโค้ด, ล้างรหัสหมดอายุก่อนออกใหม่), กันเดา: LINE userId เดียวกันผิด 5 ครั้ง/10 นาที (memory) → ตอบ "ผิดหลายครั้ง"
+  - event: `follow` = ต้อนรับ 3 ขั้น · ข้อความเลข 6 หลัก (ตัด space/ขีด/เลขไทย) = เชื่อมผู้ป่วย (LINE ที่เชื่อมกับผู้ป่วยอื่นแล้ว → `conflict` ไม่เขียนทับ ไม่ใช้รหัสทิ้ง) หรือผู้ดูแล (LINE เดียวดูแลหลายผู้ป่วยได้ และเป็นทั้งผู้ป่วยและผู้ดูแลได้) · `unfollow` = ล้าง line_user_id/ชื่อ ทั้ง users และ caregivers · "วันนี้" = สรุปยาวันนี้ (reply) · อื่นๆ = เมนูช่วยเหลือ · `postback` เตรียม hook `deps.handlers.postback` ไว้ให้ 6B
+  - API (JWT, เจ้าของเท่านั้น ไม่ใช่ = 404): `POST /api/line/link-code` → `{code, expires_at, expires_in, oa_message_url}` (`https://line.me/R/oaMessage/%40<basic id>/?<code>` ตรวจกับเอกสาร LINE แล้ว) · `GET /api/line/status` · `DELETE /api/line/link` · `GET|POST /api/caregivers` · `PATCH|DELETE /api/caregivers/:id` · `POST /api/caregivers/:id/link-code` (`caregiver-service.js`; name ≤100, relation ≤50, escalate_after_min 10–720 ค่าเริ่มต้น 60, ผู้ดูแลได้ไม่เกิน 10 คน)
+  - `lib/labels-th.js` = ป้ายไทยฝั่ง backend (มื้อ/ก่อน-หลังอาหาร/หน่วย/`doseText`) ต้องตรงกับ `frontend/src/app/core/i18n/labels.ts`
+  - **nginx ส่งต่อแค่ `/api/` กับ `= /line/webhook`** ส่วนที่เหลือเป็น SPA fallback → `GET /flows` ผ่าน nginx ได้ index.html **สถานะ 200** (ไม่ใช่ JSON) เทสจึงเช็กว่าเนื้อหา "ไม่ใช่ JSON ของ Node-RED"; ห้ามเปิด tunnel จนกว่าจะเปลี่ยน `NODE_RED_ADMIN_HASH`
+  - migration: `db/migrations/NNN_*.sql` + `bash scripts/migrate.sh` (รันซ้ำได้ ไม่ต้อง `down -v`; MySQL 8.4 ไม่มี `ADD COLUMN IF NOT EXISTS` ใช้ stored procedure เช็ก information_schema) และต้องแก้ `db/init/01_schema.sql` ให้คอลัมน์ตรงกัน (เทสเทียบ SHOW COLUMNS)
+  - ทดสอบ 6A: `node --test "node-red/test/*.test.js"` (line-service/line-client) + `bash scripts/test-day6.sh` (LINE ปลอม `scripts/fake-line.js`; recreate nodered 2 ครั้ง; สร้าง user สุ่มแล้วลบ) · `fake-line.js` ควบคุมผ่าน `POST /_config {mode:"500"|"429", failCount, quota, usage, profiles}` และดูคำขอที่ `GET /_requests`
+  - frontend: `core/api/line.api.ts`, `features/settings/` → `line-section` (รับรหัส, poll `/api/line/status` ทุก 3 วินาที หยุดเมื่อเชื่อมแล้ว/หมดอายุ/ออกจากหน้า) · `link-code-panel` (รหัสตัวใหญ่ `.num`, นับถอยหลัง, ปุ่มเปิด LINE, QR จาก npm `qrcode` โหลดแบบ dynamic import, ใช้ซ้ำกับญาติ) · `caregivers-section` + `caregiver-form-dialog` + `caregiver-code-dialog`
 - API prefix `/api/*`, LINE webhook `/line/webhook` (nginx proxy ไว้แล้ว; body สูงสุด 10mb)
 - error response รูปแบบเดียว: `{ error: "CODE", details: "ข้อความไทย" }`
 - **AI pipeline (tab 2-AI-Scan)** — ไม่ใช้ OCR/Cloud Vision (ไม่มี billing) ส่งรูปให้ **Gemini ครั้งเดียว** ทั้งอ่านตัวหนังสือและตีความ (key เดียว = `LLM_API_KEY`)
@@ -106,8 +119,8 @@
   - body สูงสุด 12mb (`apiMaxLength` + nginx `client_max_body_size 12m`) เพราะรูป 8 MB เป็น base64 ≈ 10.7 MB
 
 ## Database (MySQL 8.4, `db/init/01_schema.sql` + `02_seed.sql`)
-- `users` (line_user_id, line_link_code, tts_rate), `user_slot_times` (เวลามื้อต่อคน; trigger สร้าง default 08/12/18/21)
-- `caregivers` (ญาติ, line_user_id, link_code, escalate_after_min 10–720)
+- `users` (line_user_id, line_display_name, line_link_code, line_link_code_expires_at, tts_rate), `user_slot_times` (เวลามื้อต่อคน; trigger สร้าง default 08/12/18/21)
+- `caregivers` (ญาติ, line_user_id, line_display_name, link_code, link_code_expires_at, escalate_after_min 10–720)
 - `prescriptions` (1 scan = 1 แถว; image_path (ลบเมื่อ confirm/discard หรือ > 7 วัน), ocr_text (ปิดชื่อ/HN แล้ว), llm_json, llm_model, status draft/confirmed/discarded)
 - `medications` (dose_per_time, unit, meal_relation, as_needed, warnings JSON, remaining_qty, refill_alert_days, refill_alerted_at)
 - `medication_slots` (ยากินมื้อไหน: morning/noon/evening/bedtime)
