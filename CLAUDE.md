@@ -74,7 +74,7 @@
   - ทดสอบ 6B: `node --test` (line-flex, reminder-service, admin-config) + `bash scripts/test-day6b.sh` (recreate nodered 5 ครั้ง; รวม fail closed, ขอบเขต middleware, รูปมาสคอตผ่าน nginx, ลำดับตัวแปร `.env.example`) · checklist LINE Console: `docs/line-console-checklist.md`
   - **`.env` / `.env.example`: ตัวแปรที่ถูกอ้างด้วย `${X}` ต้องประกาศก่อนตัวที่อ้าง** (`NGROK_DOMAIN` ก่อน `PUBLIC_BASE_URL` ก่อน `LINE_MASCOT_URL`) — Compose แทนค่าจากตัวแปรที่ประกาศก่อนหน้าเท่านั้น (ไม่งั้นได้ค่าว่าง)
   - **ngrok ฟรี:** image `ngrok/ngrok:3.39.11-alpine` (tag `3.39.11` เปล่าไม่มี) · เปิดลิงก์ด้วยเบราว์เซอร์ครั้งแรกเจอหน้าเตือน ต้องกด Visit Site; LINE ดึงรูป/ส่ง webhook ไม่เจอ (เช็กด้วย `demo-check.sh` ที่ UA ไม่ใช่เบราว์เซอร์; ถ้าได้ HTML ให้ตั้ง `LINE_MASCOT_URL` ไปโฮสต์อื่น)
-- **แก้ frontend แล้ว container ไม่เปลี่ยน:** ต้อง `docker compose up -d --build frontend` (`demo-check.sh` เตือนถ้า image เก่ากว่า commit ล่าสุดของ `frontend/` และเช็ก tunnel running + `PUBLIC_BASE_URL` มีโดเมน)
+- **แก้ frontend แล้ว container ไม่เปลี่ยน:** ต้อง `docker compose up -d --build frontend` (`demo-check.sh` เตือนถ้า image เก่ากว่าไฟล์ที่แก้ล่าสุดใน `frontend/` และเช็ก tunnel running + `PUBLIC_BASE_URL` มีโดเมน)
 - API prefix `/api/*`, LINE webhook `/line/webhook` (nginx proxy ไว้แล้ว; body สูงสุด 10mb)
 - error response รูปแบบเดียว: `{ error: "CODE", details: "ข้อความไทย" }`
 - **AI pipeline (tab 2-AI-Scan)** — ไม่ใช้ OCR/Cloud Vision (ไม่มี billing) ส่งรูปให้ **Gemini ครั้งเดียว** ทั้งอ่านตัวหนังสือและตีความ (key เดียว = `LLM_API_KEY`)

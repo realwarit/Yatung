@@ -26,16 +26,22 @@ done
 health="$(docker compose ps --format '{{.Health}}' db 2>/dev/null | head -1)"
 [ -z "$health" ] || [ "$health" = "healthy" ] && ok "db: ${health:-ไม่มี healthcheck}" || bad "db: $health"
 
-# image frontend ต้องไม่เก่ากว่า commit ล่าสุดที่แตะ frontend/ (หน้าเว็บใน container ไม่อัปเดตจนกว่าจะ build ใหม่)
-fe_img="$(docker inspect "$(docker compose ps -q frontend 2>/dev/null | head -1)" --format '{{.Image}}' 2>/dev/null)"
-fe_built="$(docker image inspect "$fe_img" --format '{{.Created}}' 2>/dev/null)"
-fe_commit="$(git log -1 --format=%cI -- frontend 2>/dev/null)"
-if [ -n "$fe_built" ] && [ -n "$fe_commit" ]; then
-  if [ "$(node -e 'console.log(Date.parse(process.argv[1]) < Date.parse(process.argv[2]) ? 1 : 0)' "$fe_built" "$fe_commit")" = "1" ]; then
-    warn "image frontend (build $fe_built) เก่ากว่า commit ล่าสุดของ frontend/ ($fe_commit) — รัน: docker compose up -d --build frontend"
-  else ok "image frontend ใหม่กว่า commit ล่าสุดของ frontend/"; fi
-else warn "เช็กอายุ image frontend ไม่ได้ (ไม่มี git หรือ container)"; fi
-[ -n "$(git status --porcelain -- frontend 2>/dev/null | grep -v '^??' | head -1)" ] && warn "มีไฟล์ใน frontend/ ที่แก้แล้วแต่ยังไม่ commit — image อาจไม่ตรงกับโค้ดล่าสุด (docker compose up -d --build frontend)"
+# image frontend ต้องไม่เก่ากว่าไฟล์ที่ถูกแก้ล่าสุดใน frontend/ (หน้าเว็บใน container ไม่อัปเดตจนกว่าจะ build ใหม่)
+# เทียบเวลาแก้ไฟล์จริง (ไม่ใช่เวลา commit — commit ทีหลัง build ไม่ได้แปลว่าโค้ดเปลี่ยน)
+fe_name="$(docker compose config --images 2>/dev/null | grep -i frontend | head -1)"
+fe_built="$(docker image inspect "$fe_name" --format '{{.Created}}' 2>/dev/null)"
+fe_new="$(find frontend/src frontend/public frontend/nginx.conf frontend/package.json frontend/angular.json frontend/ngsw-config.json frontend/Dockerfile -type f -printf '%T@ %p
+' 2>/dev/null | sort -nr | head -1)"
+if [ -n "$fe_built" ] && [ -n "$fe_new" ]; then
+  fe_t="${fe_new%% *}"; fe_f="${fe_new#* }"
+  if [ "$(node -e 'console.log(Date.parse(process.argv[1]) / 1000 < Number(process.argv[2]) ? 1 : 0)' "$fe_built" "$fe_t")" = "1" ]; then
+    warn "image frontend (build $fe_built) เก่ากว่าไฟล์ที่แก้ล่าสุด ($fe_f) — รัน: docker compose up -d --build frontend"
+  else ok "image frontend ใหม่กว่าไฟล์ล่าสุดใน frontend/ ($fe_f)"; fi
+else warn "เช็กอายุ image frontend ไม่ได้ (ไม่พบ image/ไฟล์)"; fi
+fe_run="$(docker inspect "$(docker compose ps -q frontend 2>/dev/null | head -1)" --format '{{.Image}}' 2>/dev/null)"
+fe_tag="$(docker image inspect "$fe_name" --format '{{.Id}}' 2>/dev/null)"
+[ -n "$fe_run" ] && [ -n "$fe_tag" ] && [ "$fe_run" != "$fe_tag" ] && warn "container frontend ที่รันอยู่ใช้ image คนละตัวกับ image ล่าสุด — รัน: docker compose up -d --force-recreate frontend"
+[ -n "$(git status --porcelain -- frontend 2>/dev/null | grep -v '^??' | head -1)" ] && warn "มีไฟล์ใน frontend/ ที่แก้แล้วแต่ยังไม่ commit"
 
 echo "== 2) เว็บและ API"
 [ "$(code "$WEB/")" = "200" ] && ok "เว็บ $WEB ตอบ 200" || bad "เว็บ $WEB ไม่ตอบ 200"

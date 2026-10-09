@@ -64,7 +64,7 @@ LINE Messaging API ส่ง webhook เข้ามาที่ `https://<NGROK
 > คำขอที่ไม่ใช่เบราว์เซอร์ (LINE ส่ง webhook, LINE โหลดรูปน้องยาตรง) ไม่เจอหน้านี้ — `demo-check.sh` เช็กรูปด้วย User-Agent ที่ไม่ใช่เบราว์เซอร์ ถ้าได้ HTML แทน PNG ให้ย้ายรูปไปโฮสต์อื่นแล้วตั้ง `LINE_MASCOT_URL`
 > image ของ tunnel คือ `ngrok/ngrok:3.39.11-alpine` (tag `3.39.11` เปล่าไม่มีอยู่จริง)
 
-> **แก้ frontend แล้วหน้าเว็บใน container ไม่เปลี่ยน** จนกว่าจะ build ใหม่: `docker compose up -d --build frontend` (`demo-check.sh` เตือนถ้า image เก่ากว่า commit ล่าสุดของ `frontend/`)
+> **แก้ frontend แล้วหน้าเว็บใน container ไม่เปลี่ยน** จนกว่าจะ build ใหม่: `docker compose up -d --build frontend` (`demo-check.sh` เตือนถ้า image เก่ากว่าไฟล์ที่แก้ล่าสุดใน `frontend/`)
 
 > **ลำดับตัวแปรใน `.env` สำคัญ:** Compose แทนค่า `${NGROK_DOMAIN}` จากตัวแปรที่ประกาศ "ก่อนหน้า" เท่านั้น — `PUBLIC_BASE_URL=https://${NGROK_DOMAIN}` ต้องอยู่หลัง `NGROK_DOMAIN=` (ไม่งั้นได้ `https://` เปล่าๆ; `demo-check.sh` ตรวจให้)
 
