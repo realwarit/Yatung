@@ -129,12 +129,17 @@ else
   bad "tunnel (ngrok) ไม่ได้รัน (สถานะ: ${tstate:-ไม่มี container}) — LINE ส่ง webhook เข้ามาไม่ได้ ; รัน: docker compose --profile tunnel up -d (ดู docker compose logs tunnel)"
 fi
 # รูปน้องยาตรงใน Flex: ต้องโหลดด้วย User-Agent ที่ไม่ใช่เบราว์เซอร์ได้ 200 image/png (ngrok ฟรีแสดงหน้าเตือนให้เฉพาะเบราว์เซอร์)
-mascot="$(docker compose exec -T nodered printenv LINE_MASCOT_URL 2>/dev/null | tr -d '\r')"; mascot="${mascot:-${pbu%/}/line/mascot.png}"
-if printf '%s' "$mascot" | grep -q '^https://'; then
-  mh="$(curl -s -m 15 -o /dev/null -D - -A 'LineBotWebhook/2.0' "$mascot" 2>/dev/null | tr -d '\r')"
-  mcode="$(printf '%s' "$mh" | head -1 | awk '{print $2}')"; mtype="$(printf '%s' "$mh" | grep -i '^content-type:' | head -1 | awk '{print tolower($2)}')"
-  [ "$mcode" = "200" ] && [ "${mtype%%;*}" = "image/png" ] && ok "รูปน้องยาตรง $mascot = 200 image/png (UA ไม่ใช่เบราว์เซอร์)" || bad "รูปน้องยาตรง $mascot ได้ HTTP ${mcode:-?} ${mtype:-?} (ต้อง 200 image/png) — ถ้าเป็นหน้า HTML ของ ngrok ให้ย้ายรูปไปโฮสต์อื่นแล้วตั้ง LINE_MASCOT_URL"
-else warn "ข้ามเช็กรูปน้องยาตรง (URL '$mascot' ไม่ใช่ https)"; fi
+asset="$(docker compose exec -T nodered printenv LINE_ASSET_BASE 2>/dev/null | tr -d '')"; asset="${asset:-${pbu%/}/line}"; asset="${asset%/}"
+legacy="$(docker compose exec -T nodered printenv LINE_MASCOT_URL 2>/dev/null | tr -d '')"
+if printf '%s' "$asset" | grep -q '^https://'; then
+  for f in mascot-bell.png mascot-cheer.png mascot-hello.png; do
+    u="$asset/$f"
+    mh="$(curl -s -m 15 -o /dev/null -D - -A 'LineBotWebhook/2.0' "$u" 2>/dev/null | tr -d '')"
+    mcode="$(printf '%s' "$mh" | head -1 | awk '{print $2}')"; mtype="$(printf '%s' "$mh" | grep -i '^content-type:' | head -1 | awk '{print tolower($2)}')"
+    [ "$mcode" = "200" ] && [ "${mtype%%;*}" = "image/png" ] && ok "รูปน้องยาตรง $u = 200 image/png (UA ไม่ใช่เบราว์เซอร์)" || bad "รูปน้องยาตรง $u ได้ HTTP ${mcode:-?} ${mtype:-?} (ต้อง 200 image/png) — ถ้าเป็นหน้า HTML ของ ngrok ให้ย้ายรูปไปโฮสต์อื่นแล้วตั้ง LINE_ASSET_BASE ; ถ้า 404 รัน docker compose up -d --build frontend"
+  done
+else warn "ข้ามเช็กรูปน้องยาตรง (LINE_ASSET_BASE '$asset' ไม่ใช่ https)"; fi
+[ -n "$legacy" ] && warn "LINE_MASCOT_URL ($legacy) ยังตั้งอยู่ — ใช้เป็นรูปท่ากระดิ่งแทน mascot-bell.png (ลบออกจาก .env ถ้าไม่ต้องการ)"
 if [ -n "$LINE_TOKEN" ] && [ "$LINE_BASE" = "https://api.line.me" ]; then
   wep="$(curl -s -m 10 https://api.line.me/v2/bot/channel/webhook/endpoint -H "Authorization: Bearer $LINE_TOKEN")"
   wurl="$(printf '%s' "$wep" | jget 'o.endpoint')"; wact="$(printf '%s' "$wep" | jget 'o.active')"

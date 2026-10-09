@@ -14,7 +14,12 @@ case "$MODEL" in
 esac
 BASE=http://localhost:1880
 
-restore() { docker compose up -d --force-recreate nodered >/dev/null 2>&1; }
+source scripts/lib/real-snapshot.sh   # snapshot ผู้ใช้จริงก่อน-หลัง (ดู scripts/lib/real-snapshot.sh)
+real_snapshot_take
+restore() {
+  docker compose up -d --force-recreate nodered >/dev/null 2>&1
+  echo "== ข้อมูลผู้ใช้จริง"; real_snapshot_check || echo "  ! ถ้าต่างเฉพาะ reminded_at = cron เตือนจริงทำงานตามปกติระหว่างรัน"
+}
 trap restore EXIT
 
 echo "== เตรียม nodered: LLM_MODEL=$MODEL AI_MOCK=false GEMINI_NO_RETRY=true"

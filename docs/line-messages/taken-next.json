@@ -1,0 +1,114 @@
+{
+  "type": "bubble",
+  "size": "mega",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "image",
+        "url": "https://example.ngrok-free.dev/line/mascot-cheer.png",
+        "size": "88px",
+        "aspectMode": "fit",
+        "aspectRatio": "1:1",
+        "align": "center"
+      },
+      {
+        "type": "text",
+        "text": "เก่งมากเลยค่ะ! 🎉",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#134e4a",
+        "weight": "bold",
+        "align": "center"
+      }
+    ],
+    "spacing": "sm",
+    "paddingAll": "16px",
+    "backgroundColor": "#e8f7f3",
+    "alignItems": "center"
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "✅ พาราเซตามอล 500 mg",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#12302d",
+        "weight": "bold"
+      },
+      {
+        "type": "text",
+        "text": "✅ เมตฟอร์มิน 500 mg",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#12302d",
+        "weight": "bold"
+      },
+      {
+        "type": "text",
+        "text": "🕖 บันทึกเมื่อ 08:03 น.",
+        "wrap": true,
+        "scaling": true,
+        "size": "md",
+        "color": "#4b5f5c"
+      },
+      {
+        "type": "separator",
+        "margin": "md",
+        "color": "#d3e2df"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "กินแล้ว 2 จาก 5 รายการ",
+            "wrap": true,
+            "scaling": true,
+            "size": "md",
+            "color": "#12302d",
+            "weight": "bold"
+          },
+          {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+              {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [],
+                "width": "40%",
+                "height": "10px",
+                "backgroundColor": "#0f766e",
+                "cornerRadius": "5px"
+              }
+            ],
+            "height": "10px",
+            "backgroundColor": "#d3e2df",
+            "cornerRadius": "5px"
+          }
+        ],
+        "spacing": "sm"
+      },
+      {
+        "type": "text",
+        "text": "☀️ มื้อถัดไป: กลางวัน 12:00 น.",
+        "wrap": true,
+        "scaling": true,
+        "size": "md",
+        "color": "#0f766e",
+        "weight": "bold"
+      }
+    ],
+    "spacing": "md",
+    "paddingAll": "16px"
+  }
+}

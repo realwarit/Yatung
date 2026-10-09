@@ -1,5 +1,7 @@
 // ป้ายภาษาไทยฝั่ง backend — ต้องตรงกับ frontend/src/app/core/i18n/labels.ts (ใช้ใน LINE reply / Flex)
 const SLOT_LABEL = { morning: 'เช้า', noon: 'กลางวัน', evening: 'เย็น', bedtime: 'ก่อนนอน' };
+// อิโมจิประจำมื้อ (ใช้ร่วมกันทุกข้อความ LINE)
+const SLOT_EMOJI = { morning: '🌅', noon: '☀️', evening: '🌆', bedtime: '🌙' };
 const MEAL_LABEL = { before: 'ก่อนอาหาร', after: 'หลังอาหาร', with: 'พร้อมอาหาร', any: 'ไม่เกี่ยวกับอาหาร', unknown: '' };
 const UNIT_LABEL = {
   tablet: 'เม็ด', capsule: 'แคปซูล', ml: 'มล.', teaspoon: 'ช้อนชา', tablespoon: 'ช้อนโต๊ะ',
@@ -16,4 +18,4 @@ function doseText(n) {
 }
 const unitInDose = (u) => (u === 'other' ? 'หน่วย' : UNIT_LABEL[u] || 'หน่วย');
 
-module.exports = { SLOT_LABEL, MEAL_LABEL, UNIT_LABEL, doseText, unitInDose };
+module.exports = { SLOT_LABEL, SLOT_EMOJI, MEAL_LABEL, UNIT_LABEL, doseText, unitInDose };

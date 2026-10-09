@@ -1,0 +1,80 @@
+{
+  "type": "bubble",
+  "size": "mega",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "image",
+        "url": "https://example.ngrok-free.dev/line/mascot-hello.png",
+        "size": "88px",
+        "aspectMode": "fit",
+        "aspectRatio": "1:1",
+        "align": "center"
+      },
+      {
+        "type": "text",
+        "text": "📋 ยาของวันนี้",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#134e4a",
+        "weight": "bold",
+        "align": "center"
+      },
+      {
+        "type": "text",
+        "text": "ศ. 9 ต.ค.",
+        "wrap": true,
+        "scaling": true,
+        "size": "md",
+        "color": "#0f766e",
+        "weight": "bold",
+        "align": "center"
+      }
+    ],
+    "spacing": "sm",
+    "paddingAll": "16px",
+    "backgroundColor": "#e8f7f3",
+    "alignItems": "center"
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "วันนี้ไม่มียาที่ต้องกินค่ะ 🌿",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#12302d",
+        "weight": "bold",
+        "align": "center"
+      }
+    ],
+    "spacing": "md",
+    "paddingAll": "16px"
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "button",
+        "style": "primary",
+        "color": "#0f766e",
+        "height": "md",
+        "scaling": true,
+        "action": {
+          "label": "เปิดแอป",
+          "type": "uri",
+          "uri": "https://example.ngrok-free.dev/today"
+        }
+      }
+    ],
+    "spacing": "sm",
+    "paddingAll": "16px"
+  }
+}

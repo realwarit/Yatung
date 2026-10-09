@@ -1,8 +1,9 @@
 // logic เชื่อมบัญชี LINE (วันที่ 6A): ตรวจ signature, รหัส 6 หลัก, event ของ webhook
 // ไฟล์นี้ไม่เรียก LINE เอง — รับ client (lib/line-client.js) เข้ามา ; แก้แล้วต้อง docker compose restart nodered
 const crypto = require('crypto');
-const { SLOT_LABEL, MEAL_LABEL, doseText, unitInDose } = require('./labels-th');
 const doseService = require('./dose-service');
+const lineFlex = require('./line-flex');
+const M = require('./line-messages');
 
 const CODE_TTL_MIN = 10;
 const GUESS_MAX = 5;
@@ -116,47 +117,22 @@ async function unlink(db, userId) {
   return { status: 200, body: { linked: false } };
 }
 
-// ---------- ข้อความตอบกลับ (น้ำเสียง "ค่ะ/นะคะ") ----------
-const text = (t) => ({ type: 'text', text: t });
-const MSG = {
-  welcome: () => text(
-    'สวัสดีค่ะ น้องยาตรงยินดีที่ได้ดูแลเรื่องกินยาของคุณนะคะ 💊\n\n' +
-    'เชื่อมบัญชีง่ายๆ 3 ขั้นตอน\n' +
-    '1) เปิดแอปยาตรง ไปที่หน้า "ตั้งค่า" > "เชื่อม LINE"\n' +
-    '2) กด "รับรหัสเชื่อม LINE" จะได้เลข 6 หลัก\n' +
-    '3) พิมพ์เลข 6 หลักนั้นส่งมาในแชทนี้ได้เลยค่ะ'),
-  patientLinked: (name) => text(`เชื่อมบัญชีสำเร็จแล้วค่ะ 🎉${name ? ' ยินดีต้อนรับคุณ ' + name : ''}\nต่อไปนี้น้องยาตรงจะเตือนเวลากินยาที่นี่นะคะ พิมพ์ "วันนี้" เพื่อดูยาของวันนี้ได้เลยค่ะ`),
-  caregiverLinked: (patient) => text(`เชื่อมเป็นผู้ดูแลของคุณ ${patient} แล้วค่ะ 💚\nหากคุณ ${patient} ลืมกินยาเกินเวลาที่ตั้งไว้ น้องยาตรงจะแจ้งให้ทราบนะคะ`),
-  conflict: () => text('LINE นี้เชื่อมกับบัญชีผู้ป่วยอีกบัญชีหนึ่งอยู่แล้วค่ะ จึงเชื่อมซ้ำไม่ได้\nถ้าต้องการเปลี่ยน ให้กด "ยกเลิกการเชื่อม" ในแอปของบัญชีเดิมก่อน แล้วขอรหัสใหม่นะคะ'),
-  invalid: () => text('รหัสนี้ไม่ถูกต้องหรือหมดอายุแล้วค่ะ\nกรุณาเปิดแอปยาตรงแล้วกด "รับรหัสเชื่อม LINE" เพื่อขอรหัสใหม่ (ใช้ได้ ' + CODE_TTL_MIN + ' นาที) แล้วพิมพ์ส่งมาอีกครั้งนะคะ'),
-  tooMany: () => text('ใส่รหัสผิดหลายครั้งแล้วค่ะ เพื่อความปลอดภัยกรุณารอสักครู่ (ประมาณ 10 นาที) แล้วลองใหม่นะคะ'),
-  help: () => text(
-    'น้องยาตรงช่วยอะไรได้บ้างคะ\n' +
-    '• พิมพ์ "วันนี้" เพื่อดูยาของวันนี้\n' +
-    '• พิมพ์เลข 6 หลักจากแอป เพื่อเชื่อมบัญชี\n' +
-    '• เวลาถึงมื้อยา น้องยาตรงจะส่งข้อความเตือนมาให้ค่ะ\n\n' +
-    'ข้อมูลนี้ไม่ใช่คำแนะนำทางการแพทย์ หากสงสัยเรื่องยาให้ปรึกษาแพทย์หรือเภสัชกรนะคะ'),
-  notLinked: () => text('ยังไม่ได้เชื่อมบัญชีค่ะ เปิดแอปยาตรง > ตั้งค่า > เชื่อม LINE เพื่อรับรหัส 6 หลัก แล้วพิมพ์ส่งมาได้เลยนะคะ'),
-  noDosesToday: () => text('วันนี้ยังไม่มีรายการยาค่ะ 🌿'),
-  taken: (n, at, already) => text(`บันทึกแล้วค่ะ ✓ กินยา ${n} รายการ เมื่อ ${at} น. เก่งมากเลยค่ะ 💚${already ? '\n(อีก ' + already + ' รายการบันทึกไว้ก่อนแล้ว)' : ''}`),
-  alreadyTaken: () => text('บันทึกไว้แล้วค่ะ ✓')
-};
+// ---------- ข้อความตอบกลับ: สร้างที่ lib/line-messages.js (Flex/text) และ lib/line-flex.js (quick reply) ----------
+// สรุปยาวันนี้ของผู้ป่วย (Flex)
+async function todayFlex(db, userId, env) {
+  const q = doseService.todayQuery(userId, { withDue: true });
+  const shaped = doseService.shapeToday(await db.query(q.sql, q.params));
+  const [d] = await db.query("SELECT DATE_FORMAT(CURDATE(), '%Y-%m-%d') AS d");
+  return M.buildToday(shaped, d.d, env);
+}
 
-// สรุปยาวันนี้เป็นข้อความ (shaped = ผลของ doseService.shapeToday) ; ไม่มียา → null
-function todaySummaryText(shaped) {
-  const { slots, summary } = shaped.body;
-  if (!summary.total) return null;
-  const lines = [`ยาของวันนี้ ${summary.total} รายการ`, `กินแล้ว ${summary.taken} · รอกิน ${summary.pending}${summary.missed ? ' · พลาด ' + summary.missed : ''}`, ''];
-  for (const s of slots) {
-    lines.push(`มื้อ${SLOT_LABEL[s.slot]} ${s.time} น.`);
-    for (const d of s.doses) {
-      const mark = d.status === 'taken' ? '✓' : d.status === 'missed' ? '✗' : '•';
-      const meal = MEAL_LABEL[d.meal_relation];
-      lines.push(`${mark} ${d.name}${d.strength ? ' ' + d.strength : ''} ครั้งละ ${doseText(d.dose_per_time)} ${unitInDose(d.unit)}${meal ? ' · ' + meal : ''}`);
-    }
-    lines.push('');
-  }
-  return lines.join('\n').trim();
+// ผู้ใช้ LINE คนนี้คือใคร: ผู้ป่วย (users.line_user_id) / ผู้ดูแลอย่างเดียว / ยังไม่เชื่อม ; ใช้เลือก quick reply และข้อความ
+async function whoIs(db, lineId) {
+  const p = await db.query('SELECT id, display_name FROM users WHERE line_user_id = ?', [lineId]);
+  if (p.length) return { ctx: 'patient', userId: p[0].id, name: p[0].display_name, patients: [] };
+  const c = await db.query('SELECT DISTINCT u.id, u.display_name FROM caregivers c JOIN users u ON u.id = c.user_id WHERE c.line_user_id = ? AND c.is_active = 1', [lineId]);
+  if (c.length) return { ctx: 'caregiver', userId: null, name: null, patients: c.map((r) => r.display_name) };
+  return { ctx: 'unlinked', userId: null, name: null, patients: [] };
 }
 
 // ---------- เชื่อมด้วยรหัส ----------
@@ -178,46 +154,65 @@ async function claimCode(db, code, lineId, getName) {
     const name = await getName();
     return db.withTransaction(async (conn) => {
       const [rows] = await conn.query(
-        'SELECT c.id, c.user_id, u.display_name AS patient FROM caregivers c JOIN users u ON u.id = c.user_id WHERE c.id = ? AND c.link_code = ? AND c.link_code_expires_at > NOW() AND c.is_active = 1 FOR UPDATE', [c[0].id, code]);
+        'SELECT c.id, c.user_id, c.escalate_after_min, u.display_name AS patient FROM caregivers c JOIN users u ON u.id = c.user_id WHERE c.id = ? AND c.link_code = ? AND c.link_code_expires_at > NOW() AND c.is_active = 1 FOR UPDATE', [c[0].id, code]);
       if (!rows.length) return { kind: 'invalid' };
       await conn.query('UPDATE caregivers SET line_user_id = ?, line_display_name = ?, link_code = NULL, link_code_expires_at = NULL WHERE id = ?', [lineId, name, rows[0].id]);
-      return { kind: 'caregiver', userId: rows[0].user_id, patient: rows[0].patient };
+      return { kind: 'caregiver', userId: rows[0].user_id, patient: rows[0].patient, escalateAfterMin: rows[0].escalate_after_min };
     });
   }
   return { kind: 'invalid' };
 }
 
 // ---------- postback ปุ่ม "กินแล้ว" (data = a=take&d=<dose id คั่นด้วย comma>) ----------
-// นับเฉพาะ dose ของผู้ป่วยที่ line_user_id ตรงกับผู้กด ; id ของคนอื่นถูกข้ามโดยไม่แจ้ง ; ใช้ doseService.takeInTx ตัวเดียวกับปุ่มในแอป
+// นับเฉพาะ dose ของผู้ป่วยที่ line_user_id ตรงกับผู้กด ; ใช้ doseService.takeInTx ตัวเดียวกับปุ่มในแอป
+// a=preview = ปุ่มในข้อความตัวอย่าง (#ตัวอย่าง) ไม่บันทึกอะไร ; LINE ที่ไม่ใช่ผู้ป่วย (เช่น ผู้ดูแล) กด take → ไม่ทำอะไร
 async function handlePostback(event, deps) {
   const { db, client } = deps;
+  const env = deps.env || process.env;
   const lineId = event.source && event.source.userId;
   const data = event.postback && event.postback.data;
   if (!lineId || typeof data !== 'string' || data.length > 300) return;
   const p = new URLSearchParams(data);
-  if (p.get('a') !== 'take') return;
+  const action = p.get('a');
+  const send = (messages, ctx, meta) => (event.replyToken ? client.reply(event.replyToken, lineFlex.withQuickReply(messages, ctx, env), { db, ...meta }) : null);
+  if (action === 'preview') { await send([M.TEXT.previewNote()], 'patient', {}); return; }
+  if (action !== 'take') return;
   const ids = String(p.get('d') || '').split(',').filter((x) => /^\d{1,15}$/.test(x)).slice(0, 50);
   if (!ids.length) return;
   const u = await db.query('SELECT id FROM users WHERE line_user_id = ?', [lineId]);
-  if (!u.length) return;   // ไม่ใช่ผู้ป่วย (เช่น ผู้ดูแล) → ไม่ทำอะไร
-  const r = await doseService.takeMany(db, u[0].id, ids, 'line');
-  const meta = { db, userId: u[0].id, kind: 'other' };
-  if (!event.replyToken) return;
-  if (r.taken.length) await client.reply(event.replyToken, [MSG.taken(r.taken.length, r.at, r.already.length)], meta);
-  else if (r.already.length) await client.reply(event.replyToken, [MSG.alreadyTaken()], meta);
+  if (!u.length) return;
+  const userId = u[0].id;
+  const r = await doseService.takeMany(db, userId, ids, 'line');
+  const meta = { userId, kind: 'other' };
+  if (r.taken.length) {
+    const rows = await db.query(
+      'SELECT m.name, m.strength FROM dose_logs d JOIN medications m ON m.id = d.medication_id WHERE d.id IN (?) AND d.user_id = ? ORDER BY d.scheduled_at, m.name, d.id', [r.taken, userId]);
+    const q = doseService.todayQuery(userId, { withDue: true });
+    const { slots, summary } = doseService.shapeToday(await db.query(q.sql, q.params)).body;
+    // มื้อถัดไป = มื้อแรกที่ยังมียาไม่ได้กิน และไม่มีรายการที่ถึงเวลาแล้ว (ยังมาไม่ถึง)
+    const next = slots.find((s) => s.doses.some((d) => d.status !== 'taken') && s.doses.every((d) => d.status === 'taken' || !d.is_due));
+    await send([M.buildTaken({
+      names: rows.map(lineFlex.medTitle), at: r.at, taken: summary.taken, total: summary.total, next: next ? { slot: next.slot, time: next.time } : null
+    }, env)], 'patient', meta);
+  } else if (r.already.length) await send([M.TEXT.alreadyTaken()], 'patient', meta);
+  else await send([M.TEXT.doseNotFound()], 'patient', meta);   // หาไม่เจอ / ยาถูกหยุดไปแล้ว / ไม่ใช่ของผู้ป่วยคนนี้
 }
 
 // ---------- event ----------
-// deps = { db, client, limiter?, isDuplicate?, handlers?: { postback(event, deps) } }  (ไม่ใส่ handlers.postback = ใช้ handlePostback ปุ่ม "กินแล้ว")
+// deps = { db, client, env?, limiter?, isDuplicate?, handlers?: { postback(event, deps) } }  (ไม่ใส่ handlers.postback = ใช้ handlePostback ปุ่ม "กินแล้ว")
+// env = ตัวแปรที่ใช้สร้างลิงก์/รูป/โหมดเดโม (PUBLIC_BASE_URL, LINE_ASSET_BASE, LINE_MASCOT_URL, DEMO_MODE) ; ไม่ใส่ = process.env
+const PREVIEW_RE = /^[#＃]\s*ตัวอย่าง\s*([0-9๐-๙]*)$/;
 async function handleEvent(event, deps) {
   const { db, client } = deps;
+  const env = deps.env || process.env;
   const lineId = event && event.source && event.source.userId;
   if (!lineId) return;
-  const send = (messages, meta) => (event.replyToken ? client.reply(event.replyToken, messages, { db, ...meta }) : null);
+  // ทุก reply ผ่าน send เพื่อแนบ quick reply ที่ข้อความสุดท้าย (ctx = ประเภทผู้ใช้)
+  const send = (messages, ctx, meta) => (event.replyToken ? client.reply(event.replyToken, lineFlex.withQuickReply(messages, ctx, env), { db, ...meta }) : null);
 
   if (event.type === 'follow') {
-    const u = await db.query('SELECT id FROM users WHERE line_user_id = ?', [lineId]);
-    await send([MSG.welcome()], { userId: u.length ? u[0].id : null, kind: 'link' });
+    const who = await whoIs(db, lineId);
+    await send([M.buildWelcome(who.ctx === 'patient', env)], who.ctx, { userId: who.userId, kind: 'link' });
     return;
   }
   if (event.type === 'unfollow') {
@@ -232,25 +227,39 @@ async function handleEvent(event, deps) {
   const code = parseCode(raw);
   if (code) {
     const limiter = deps.limiter || defaultLimiter;
-    if (limiter.blocked(lineId)) { await send([MSG.tooMany()], {}); return; }
+    if (limiter.blocked(lineId)) { await send([M.TEXT.tooMany()], 'unlinked', {}); return; }
     const res = await claimCode(db, code, lineId, async () => { const p = await client.getProfile(lineId); return p && p.displayName ? String(p.displayName).slice(0, 100) : null; });
-    if (res.kind === 'invalid') { limiter.fail(lineId); await send([MSG.invalid()], {}); return; }
+    if (res.kind === 'invalid') { limiter.fail(lineId); await send([M.TEXT.invalid(CODE_TTL_MIN)], 'unlinked', {}); return; }
     limiter.reset(lineId);
-    if (res.kind === 'conflict') { await send([MSG.conflict()], { userId: res.userId, kind: 'link' }); return; }
-    if (res.kind === 'patient') { await send([MSG.patientLinked(res.name)], { userId: res.userId, kind: 'link' }); return; }
-    await send([MSG.caregiverLinked(res.patient)], { userId: res.userId, kind: 'link', recipient: 'caregiver' });
+    if (res.kind === 'conflict') { await send([M.TEXT.conflict()], 'unlinked', { userId: res.userId, kind: 'link' }); return; }
+    if (res.kind === 'patient') { await send([M.buildLinkedPatient(res.name, env)], 'patient', { userId: res.userId, kind: 'link' }); return; }
+    await send([M.buildLinkedCaregiver(res.patient, res.escalateAfterMin, env)], 'caregiver', { userId: res.userId, kind: 'link', recipient: 'caregiver' });
     return;
   }
 
-  if (String(raw).trim() === 'วันนี้') {
-    const u = await db.query('SELECT id FROM users WHERE line_user_id = ?', [lineId]);
-    if (!u.length) { await send([MSG.notLinked()], {}); return; }
-    const q = doseService.todayQuery(u[0].id);
-    const summary = todaySummaryText(doseService.shapeToday(await db.query(q.sql, q.params)));
-    await send([summary ? text(summary) : MSG.noDosesToday()], { userId: u[0].id, kind: 'other' });
+  const cmd = String(raw).trim();
+  const who = await whoIs(db, lineId);
+  const meta = { userId: who.userId, kind: 'other' };
+
+  if (cmd === 'วันนี้' || cmd === 'ยาวันนี้') {
+    if (who.ctx === 'patient') await send([await todayFlex(db, who.userId, env)], 'patient', meta);
+    else if (who.ctx === 'caregiver') await send([M.TEXT.caregiverOnly(who.patients)], 'caregiver', meta);
+    else await send([M.TEXT.notLinked()], 'unlinked', meta);
     return;
   }
-  await send([MSG.help()], {});
+  if (cmd === 'วิธีใช้') { await send([M.buildWelcome(who.ctx === 'patient', env)], who.ctx, meta); return; }
+  // #ตัวอย่าง n — เฉพาะ DEMO_MODE=true และผู้ป่วยที่เชื่อมแล้ว ; ข้อมูลตัวอย่างอยู่ในหน่วยความจำ ไม่เขียน DB (DEMO_MODE=false = ข้อความทั่วไป)
+  const pm = PREVIEW_RE.exec(cmd);
+  if (pm && env.DEMO_MODE === 'true' && who.ctx === 'patient') {
+    const n = pm[1] ? Number(pm[1].replace(/[๐-๙]/g, (d) => String(THAI_DIGITS.indexOf(d)))) : 1;
+    const page = M.buildPreviewPage(n, env);
+    if (!page) { await send([M.plain(`มีตัวอย่าง 1 ถึง ${M.previewPageCount(env)} หน้าค่ะ พิมพ์ #ตัวอย่าง 1 เพื่อเริ่มดูนะคะ`)], 'patient', meta); return; }
+    const out = lineFlex.withQuickReply(page.messages, 'patient', env);
+    if (page.page < page.pages) out[out.length - 1].quickReply.items.push(lineFlex.qrMessage(`➡️ #ตัวอย่าง ${page.page + 1}`, `#ตัวอย่าง ${page.page + 1}`));
+    if (event.replyToken) await client.reply(event.replyToken, out, { db, ...meta });
+    return;
+  }
+  await send([M.TEXT.help()], who.ctx, meta);   // "ช่วยเหลือ" และข้อความอื่นๆ ทั้งหมด
 }
 
 // raw body (Buffer ที่ผ่านการตรวจ signature แล้ว) → events ; JSON เสีย/ไม่มี events = []
@@ -278,5 +287,5 @@ async function handleEvents(events, deps) {
 
 module.exports = {
   verifySignature, randomCode, parseCode, formatCode, oaMessageUrl, createDedup, createGuessLimiter, parseBody, dropDuplicates,
-  issueCode, codeBody, patientLinkCode, status, unlink, claimCode, handlePostback, handleEvent, handleEvents, todaySummaryText, MSG, CODE_TTL_MIN
+  issueCode, codeBody, patientLinkCode, status, unlink, claimCode, handlePostback, handleEvent, handleEvents, whoIs, todayFlex, CODE_TTL_MIN
 };

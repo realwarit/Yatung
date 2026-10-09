@@ -105,3 +105,59 @@ test('SQL เลือก dose: เงื่อนไขครบตามแผ
   const s = svc.DUE_SQL;
   for (const frag of ["d.status = 'pending'", 'd.reminded_at IS NULL', 'd.scheduled_at <= NOW()', 'INTERVAL 30 MINUTE', 'm.is_active = 1', 'm.as_needed = 0', 'u.line_user_id IS NOT NULL']) assert.ok(s.includes(frag), frag);
 });
+
+test('REMINDER_ONLY_EMAIL_SUFFIX: run() เติมตัวกรองอีเมล (เฉพาะเมื่อตั้ง) — ผู้ใช้จริงไม่ถูกแตะระหว่างรันเทส', async () => {
+  assert.deepEqual(svc.userFilter({}), { sql: '', params: [] });
+  const f = svc.userFilter({ REMINDER_ONLY_EMAIL_SUFFIX: '@example.test' });
+  assert.match(f.sql, /u\.email LIKE \?/);
+  assert.deepEqual(f.params, ['%@example.test']);
+  assert.deepEqual(svc.userFilter({ REMINDER_ONLY_EMAIL_SUFFIX: '50%_off' }).params, ['%50!%!_off']);   // escape wildcard
+  assert.ok(svc.dueSql(f.sql).includes('u.email LIKE'));
+  assert.equal(svc.dueSql(''), svc.DUE_SQL);
+  let seen;
+  const db = { query: async (sql, params) => { seen = { sql, params }; return []; } };
+  await svc.run(db, fakeClient(), { ...ENV, REMINDER_ONLY_EMAIL_SUFFIX: '@example.test' });
+  assert.deepEqual(seen.params, ['%@example.test']);
+  assert.ok(seen.sql.includes('u.email LIKE'));
+});
+
+test('remindNow: เลือกกลุ่ม pending ที่ใกล้เวลาปัจจุบันที่สุด + ตอบ message/state ; เลยเวลา → หัวพื้นเหลือง', async () => {
+  const calls = [];
+  const rows = [
+    { id: 1, user_id: 7, slot: 'morning', scheduled_at: '2026-10-09 08:00:00', was_reminded: 0, late_sec: 42060, name: 'A', strength: null, dose_per_time: 1, unit: 'tablet', meal_relation: 'after', line_user_id: 'U7' }
+  ];
+  const db = {
+    query: async (sql) => {
+      if (/SELECT line_user_id, email FROM users/.test(sql)) return [{ line_user_id: 'U7', email: 'a@example.test' }];
+      calls.push(sql);
+      return rows;
+    },
+    withTransaction: async (fn) => fn({ query: async (sql) => (/FOR UPDATE/.test(sql) ? [[{ id: 1 }]] : [{}]) })
+  };
+  const c = fakeClient();
+  const r = await svc.remindNow(db, c, 7, ENV);
+  assert.match(calls[0], /ORDER BY ABS\(TIMESTAMPDIFF\(SECOND, d\.scheduled_at, NOW\(\)\)\)/);
+  assert.equal(r.status, 200);
+  assert.equal(r.body.state, 'overdue');
+  assert.equal(r.body.late_min, 701);
+  assert.equal(r.body.message, 'ส่งเตือนมื้อเช้า 08:00 น. (1 รายการ) เข้า LINE แล้วค่ะ · เลยเวลามา 11 ชม. 41 นาที');
+  const m = c.pushes[0].messages[0];
+  assert.equal(m.contents.header.backgroundColor, '#fef3c7');
+  assert.equal(m.altText, '⏰ ยังไม่ได้กินยามื้อเช้า · เลยเวลามา 11 ชม. 41 นาที');
+});
+
+test('remindNow: โหมดทดสอบ (REMINDER_ONLY_EMAIL_SUFFIX) ปฏิเสธบัญชีที่ไม่ใช่บัญชีทดสอบ', async () => {
+  const db = { query: async () => [{ line_user_id: 'U1', email: 'real@yatung.app' }] };
+  const r = await svc.remindNow(db, fakeClient(), 1, { ...ENV, REMINDER_ONLY_EMAIL_SUFFIX: '@example.test' });
+  assert.equal(r.status, 409);
+  assert.equal(r.body.error, 'TEST_MODE_ONLY');
+});
+
+test('cron: ข้อความเตือนใช้ช่วงเวลาจริง (late_sec) — 2 นาที = "ถึงเวลากินยาแล้วนะคะ"', async () => {
+  const db = makeDb([row(1, 7, '08:00', 'A')]);
+  const q = db.query;
+  db.query = async (sql, params) => (await q.call(db, svc.DUE_SQL, params)).map((r) => ({ ...r, late_sec: 120 }));
+  const c = fakeClient();
+  await svc.run(db, c, ENV);
+  assert.ok(JSON.stringify(c.pushes[0].messages[0].contents.header).includes('ถึงเวลากินยาแล้วนะคะ'));
+});

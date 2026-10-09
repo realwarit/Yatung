@@ -53,7 +53,11 @@ cleanup() {
     sql "DELETE FROM users WHERE email='$e';"
   done
   docker compose up -d --force-recreate nodered >/dev/null 2>&1
+  echo; echo "== ข้อมูลผู้ใช้จริง"
+  real_snapshot_check || echo "  ! ชุดนี้ใช้ LINE จริงและ cron จริงยังทำงาน — ถ้าต่างเฉพาะ reminded_at ของ dose ที่ถึงเวลา = cron เตือนจริงตามปกติ ไม่ใช่ความผิดของเทส"
 }
+source scripts/lib/real-snapshot.sh   # snapshot ผู้ใช้จริงก่อน-หลัง (ดู scripts/lib/real-snapshot.sh)
+real_snapshot_take
 trap cleanup EXIT
 
 # mkdraft USER_ID [image] → ตั้ง DRAFT_ID : แทรกแถว prescriptions (draft) จากผลตัวอย่าง mock ; image = คัดลอกรูปทดสอบไปไว้ใน uploads ด้วย

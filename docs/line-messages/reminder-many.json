@@ -1,0 +1,265 @@
+{
+  "type": "bubble",
+  "size": "mega",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "image",
+        "url": "https://example.ngrok-free.dev/line/mascot-bell.png",
+        "size": "88px",
+        "aspectMode": "fit",
+        "aspectRatio": "1:1",
+        "align": "center"
+      },
+      {
+        "type": "text",
+        "text": "ถึงเวลากินยาแล้วนะคะ",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#134e4a",
+        "weight": "bold",
+        "align": "center"
+      },
+      {
+        "type": "text",
+        "text": "🌙 มื้อก่อนนอน · 21:00 น.",
+        "wrap": true,
+        "scaling": true,
+        "size": "md",
+        "color": "#0f766e",
+        "weight": "bold",
+        "align": "center"
+      }
+    ],
+    "spacing": "sm",
+    "paddingAll": "16px",
+    "backgroundColor": "#e8f7f3",
+    "alignItems": "center"
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "พาราเซตามอล 500 mg",
+            "wrap": true,
+            "scaling": true,
+            "size": "xl",
+            "color": "#12302d",
+            "weight": "bold"
+          },
+          {
+            "type": "text",
+            "text": "ครั้งละ 1 เม็ด · หลังอาหาร",
+            "wrap": true,
+            "scaling": true,
+            "size": "md",
+            "color": "#4b5f5c"
+          }
+        ],
+        "spacing": "xs"
+      },
+      {
+        "type": "separator",
+        "margin": "md",
+        "color": "#d3e2df"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "เมตฟอร์มิน 500 mg",
+            "wrap": true,
+            "scaling": true,
+            "size": "xl",
+            "color": "#12302d",
+            "weight": "bold"
+          },
+          {
+            "type": "text",
+            "text": "ครั้งละ ½ เม็ด · หลังอาหาร",
+            "wrap": true,
+            "scaling": true,
+            "size": "md",
+            "color": "#4b5f5c"
+          }
+        ],
+        "spacing": "xs",
+        "margin": "md"
+      },
+      {
+        "type": "separator",
+        "margin": "md",
+        "color": "#d3e2df"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "แอมโลดิปีน 5 mg",
+            "wrap": true,
+            "scaling": true,
+            "size": "xl",
+            "color": "#12302d",
+            "weight": "bold"
+          },
+          {
+            "type": "text",
+            "text": "ครั้งละ 1 เม็ด · ไม่เกี่ยวกับอาหาร",
+            "wrap": true,
+            "scaling": true,
+            "size": "md",
+            "color": "#4b5f5c"
+          }
+        ],
+        "spacing": "xs",
+        "margin": "md"
+      },
+      {
+        "type": "separator",
+        "margin": "md",
+        "color": "#d3e2df"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "ซิมวาสแตติน 20 mg",
+            "wrap": true,
+            "scaling": true,
+            "size": "xl",
+            "color": "#12302d",
+            "weight": "bold"
+          },
+          {
+            "type": "text",
+            "text": "ครั้งละ 1 เม็ด · ก่อนอาหาร",
+            "wrap": true,
+            "scaling": true,
+            "size": "md",
+            "color": "#4b5f5c"
+          }
+        ],
+        "spacing": "xs",
+        "margin": "md"
+      },
+      {
+        "type": "separator",
+        "margin": "md",
+        "color": "#d3e2df"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "ยาแก้ไอน้ำเชื่อม",
+            "wrap": true,
+            "scaling": true,
+            "size": "xl",
+            "color": "#12302d",
+            "weight": "bold"
+          },
+          {
+            "type": "text",
+            "text": "ครั้งละ 2 ช้อนชา · ไม่เกี่ยวกับอาหาร",
+            "wrap": true,
+            "scaling": true,
+            "size": "md",
+            "color": "#4b5f5c"
+          }
+        ],
+        "spacing": "xs",
+        "margin": "md"
+      },
+      {
+        "type": "separator",
+        "margin": "md",
+        "color": "#d3e2df"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "แคลเซียม 600 mg",
+            "wrap": true,
+            "scaling": true,
+            "size": "xl",
+            "color": "#12302d",
+            "weight": "bold"
+          },
+          {
+            "type": "text",
+            "text": "ครั้งละ 1 เม็ด · พร้อมอาหาร",
+            "wrap": true,
+            "scaling": true,
+            "size": "md",
+            "color": "#4b5f5c"
+          }
+        ],
+        "spacing": "xs",
+        "margin": "md"
+      },
+      {
+        "type": "text",
+        "text": "+ อีก 2 รายการ",
+        "wrap": true,
+        "scaling": true,
+        "size": "md",
+        "color": "#4b5f5c",
+        "margin": "md"
+      }
+    ],
+    "spacing": "md",
+    "paddingAll": "16px"
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "button",
+        "style": "primary",
+        "color": "#0f766e",
+        "height": "md",
+        "scaling": true,
+        "action": {
+          "label": "✓ กินแล้ว",
+          "type": "postback",
+          "data": "a=preview",
+          "displayText": "กินยามื้อก่อนนอนแล้ว"
+        }
+      },
+      {
+        "type": "button",
+        "style": "secondary",
+        "height": "md",
+        "scaling": true,
+        "action": {
+          "label": "เปิดแอป",
+          "type": "uri",
+          "uri": "https://example.ngrok-free.dev/today"
+        }
+      }
+    ],
+    "spacing": "sm",
+    "paddingAll": "16px"
+  }
+}

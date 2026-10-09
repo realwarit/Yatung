@@ -1,0 +1,171 @@
+{
+  "type": "bubble",
+  "size": "mega",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "image",
+        "url": "https://example.ngrok-free.dev/line/mascot-hello.png",
+        "size": "88px",
+        "aspectMode": "fit",
+        "aspectRatio": "1:1",
+        "align": "center"
+      },
+      {
+        "type": "text",
+        "text": "สวัสดีค่ะ 👋",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#134e4a",
+        "weight": "bold",
+        "align": "center"
+      }
+    ],
+    "spacing": "sm",
+    "paddingAll": "16px",
+    "backgroundColor": "#e8f7f3",
+    "alignItems": "center"
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "น้องยาตรงเองค่ะ",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#12302d",
+        "weight": "bold"
+      },
+      {
+        "type": "text",
+        "text": "จะช่วยเตือนเวลากินยา",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#12302d"
+      },
+      {
+        "type": "text",
+        "text": "ให้ทุกวันนะคะ",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#12302d"
+      },
+      {
+        "type": "separator",
+        "margin": "md",
+        "color": "#d3e2df"
+      },
+      {
+        "type": "text",
+        "text": "เริ่มใช้ 3 ขั้นตอน",
+        "wrap": true,
+        "scaling": true,
+        "size": "xl",
+        "color": "#0f766e",
+        "weight": "bold"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "1️⃣ เปิดแอปยาตรง",
+            "wrap": true,
+            "scaling": true,
+            "size": "lg",
+            "color": "#12302d",
+            "weight": "bold"
+          },
+          {
+            "type": "text",
+            "text": "ไปที่หน้า \"ตั้งค่า\"",
+            "wrap": true,
+            "scaling": true,
+            "size": "md",
+            "color": "#4b5f5c"
+          }
+        ],
+        "spacing": "xs"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "2️⃣ กด \"รับรหัสเชื่อม LINE\"",
+            "wrap": true,
+            "scaling": true,
+            "size": "lg",
+            "color": "#12302d",
+            "weight": "bold"
+          },
+          {
+            "type": "text",
+            "text": "จะได้เลข 6 หลัก",
+            "wrap": true,
+            "scaling": true,
+            "size": "md",
+            "color": "#4b5f5c"
+          }
+        ],
+        "spacing": "xs"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "3️⃣ ส่งเลขมาที่แชทนี้",
+            "wrap": true,
+            "scaling": true,
+            "size": "lg",
+            "color": "#12302d",
+            "weight": "bold"
+          },
+          {
+            "type": "text",
+            "text": "พิมพ์เลข 6 หลักส่งมาได้เลยค่ะ",
+            "wrap": true,
+            "scaling": true,
+            "size": "md",
+            "color": "#4b5f5c"
+          }
+        ],
+        "spacing": "xs"
+      }
+    ],
+    "spacing": "md",
+    "paddingAll": "16px"
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "button",
+        "style": "primary",
+        "color": "#0f766e",
+        "height": "md",
+        "scaling": true,
+        "action": {
+          "label": "เปิดแอป",
+          "type": "uri",
+          "uri": "https://example.ngrok-free.dev/settings"
+        }
+      }
+    ],
+    "spacing": "sm",
+    "paddingAll": "16px"
+  }
+}

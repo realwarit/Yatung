@@ -40,7 +40,7 @@ export class LineApi {
 }
 
 export interface AppConfig { demoMode: boolean }
-export interface RemindNowResult { sent: number; doses: number; slot: 'morning' | 'noon' | 'evening' | 'bedtime'; time: string; resent: boolean }
+export interface RemindNowResult { sent: number; doses: number; slot: 'morning' | 'noon' | 'evening' | 'bedtime'; time: string; resent: boolean; state: 'soon' | 'due' | 'overdue'; late_min: number; message: string }
 
 @Injectable({ providedIn: 'root' })
 export class DemoApi {

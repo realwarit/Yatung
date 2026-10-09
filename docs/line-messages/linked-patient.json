@@ -1,0 +1,96 @@
+{
+  "type": "bubble",
+  "size": "mega",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "image",
+        "url": "https://example.ngrok-free.dev/line/mascot-cheer.png",
+        "size": "88px",
+        "aspectMode": "fit",
+        "aspectRatio": "1:1",
+        "align": "center"
+      },
+      {
+        "type": "text",
+        "text": "เชื่อมสำเร็จแล้วค่ะ 🎉",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#134e4a",
+        "weight": "bold",
+        "align": "center"
+      }
+    ],
+    "spacing": "sm",
+    "paddingAll": "16px",
+    "backgroundColor": "#e8f7f3",
+    "alignItems": "center"
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "สวัสดีคุณ สมชาย ใจดี",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#12302d",
+        "weight": "bold"
+      },
+      {
+        "type": "text",
+        "text": "ต่อไปน้องยาตรงจะเตือน",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#12302d"
+      },
+      {
+        "type": "text",
+        "text": "เวลากินยาที่แชทนี้นะคะ",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#12302d"
+      }
+    ],
+    "spacing": "md",
+    "paddingAll": "16px"
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "button",
+        "style": "primary",
+        "color": "#0f766e",
+        "height": "md",
+        "scaling": true,
+        "action": {
+          "label": "📋 ดูยาวันนี้",
+          "type": "message",
+          "text": "วันนี้"
+        }
+      },
+      {
+        "type": "button",
+        "style": "secondary",
+        "height": "md",
+        "scaling": true,
+        "action": {
+          "label": "เปิดแอป",
+          "type": "uri",
+          "uri": "https://example.ngrok-free.dev/today"
+        }
+      }
+    ],
+    "spacing": "sm",
+    "paddingAll": "16px"
+  }
+}

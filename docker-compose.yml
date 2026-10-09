@@ -64,7 +64,9 @@ services:
       LINE_API_BASE: ${LINE_API_BASE:-https://api.line.me}   # เฉพาะทดสอบ: ชี้ไป scripts/fake-line.js
       LINE_PUSH_MONTHLY_CAP: ${LINE_PUSH_MONTHLY_CAP:-200}
       LINE_PUSH_RESERVE: ${LINE_PUSH_RESERVE:-30}          # โควตาที่กันไว้ให้ข้อความแจ้งญาติ (kind=escalation)
-      LINE_MASCOT_URL: ${LINE_MASCOT_URL:-}                # ว่าง = ${PUBLIC_BASE_URL}/line/mascot.png
+      LINE_ASSET_BASE: ${LINE_ASSET_BASE:-}                # โฟลเดอร์รูปน้องยาตรง ว่าง = ${PUBLIC_BASE_URL}/line
+      LINE_MASCOT_URL: ${LINE_MASCOT_URL:-}                # (เดิม) ถ้าตั้ง = ใช้เป็นรูปท่ากระดิ่ง
+      REMINDER_ONLY_EMAIL_SUFFIX: ${REMINDER_ONLY_EMAIL_SUFFIX:-}   # เฉพาะรันเทส: ส่งเตือนเฉพาะ user ที่อีเมลลงท้ายด้วยค่านี้
       DEMO_MODE: ${DEMO_MODE:-false}
       REMINDER_CRON: ${REMINDER_CRON:-on}                  # off = ปิด cron ส่งเตือนอัตโนมัติ (เฉพาะทดสอบ scripts/test-day6b.sh)
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}

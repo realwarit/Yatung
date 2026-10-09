@@ -44,7 +44,7 @@ fl_config() { printf '%s' "$1" > "$TMP/cfg.json"; fl -X POST "$FAKE/_config" -H 
 # fl_count reply|push → จำนวนคำขอ
 fl_count() { fl "$FAKE/_requests" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).filter(r=>r.path==="/v2/bot/message/"+process.argv[1]).length))' "$1"; }
 # fl_reply_text N → ข้อความแรกของ reply ลำดับที่ N (เริ่ม 1) ; fl_reply_to N → replyToken
-fl_reply_text() { fl "$FAKE/_requests" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const r=JSON.parse(s).filter(r=>r.path==="/v2/bot/message/reply")[Number(process.argv[1])-1];console.log(r?r.body.messages.map(m=>m.text).join("\n"):"")})' "$1"; }
+fl_reply_text() { fl "$FAKE/_requests" | node scripts/lib/fl-text.js "$1"; }   # text = ข้อความ, Flex = altText + ข้อความใน Flex
 # wait_reply N → รอจน reply ถึง N ครั้ง (สูงสุด 10 วินาที)
 wait_reply() { local i; for i in $(seq 20); do [ "$(fl_count reply)" -ge "$1" ] && return 0; sleep 0.5; done; return 1; }
 
@@ -99,7 +99,11 @@ cleanup() {
   [ -n "$FAKE_PID" ] && kill "$FAKE_PID" 2>/dev/null
   rm -rf "$TMP"
   docker compose up -d --force-recreate nodered >/dev/null 2>&1
+  echo; echo "== ข้อมูลผู้ใช้จริง (ต้องไม่ถูกแตะ)"
+  real_snapshot_check || { echo "สรุป: ข้อมูลผู้ใช้จริงเปลี่ยน → ไม่ผ่าน"; exit 1; }
 }
+source scripts/lib/real-snapshot.sh   # snapshot ผู้ใช้จริงก่อน-หลัง (ดู scripts/lib/real-snapshot.sh)
+real_snapshot_take
 trap cleanup EXIT
 
 section "เตรียม: migration ซ้ำได้ + LINE ปลอม + recreate nodered"
@@ -109,7 +113,7 @@ node scripts/fake-line.js $FAKE_PORT >"$TMP/fake.log" 2>&1 &
 FAKE_PID=$!
 sleep 1
 fl_config "{\"profiles\":{\"$LA\":\"สมชาย ทดสอบ\",\"$LB\":\"สมหญิง ทดสอบ\",\"$LC\":\"ลูกสาว ทดสอบ\"}}"
-restart_nodered LINE_CHANNEL_SECRET="$SECRET" LINE_CHANNEL_ACCESS_TOKEN="$TOKEN_LINE" LINE_API_BASE="http://host.docker.internal:$FAKE_PORT" LINE_OA_BASIC_ID="@014rktvr" || exit 1
+restart_nodered LINE_CHANNEL_SECRET="$SECRET" LINE_CHANNEL_ACCESS_TOKEN="$TOKEN_LINE" LINE_API_BASE="http://host.docker.internal:$FAKE_PORT" LINE_OA_BASIC_ID="@014rktvr" REMINDER_ONLY_EMAIL_SUFFIX="@example.test" || exit 1
 ok "nodered พร้อม (ชี้ LINE ปลอมที่ :$FAKE_PORT)"
 
 section "schema: ไฟล์ init ตรงกับ DB ที่ migrate แล้ว"
@@ -172,11 +176,10 @@ expect "  oa_message_url (@ → %40)" "$(jget 'o.oa_message_url')" "https://line
 expect "  DB เก็บรหัส + เวลาหมดอายุ" "$(sql "SELECT line_link_code='$CODE_A' AND line_link_code_expires_at > NOW() FROM users WHERE id=$UA;")" "1"
 
 fl_clear; wh "$(ev_type "$LA" follow)" ok; wait_reply 1
-expect_match "follow → reply ต้อนรับ มีวิธีเชื่อม 3 ขั้น" "$(fl_reply_text 1 | tr '
-' ' ')" '1\).*2\).*3\)'
+expect_match "follow → reply ต้อนรับ (Flex) มีวิธีเชื่อม 3 ขั้น" "$(fl_reply_text 1 | paste -sd" " -)" '1️⃣.*2️⃣.*3️⃣'
 
 say "$LA" "$(printf '%s %s' "${CODE_A:0:3}" "${CODE_A:3}")"
-expect_match "ส่งรหัส (มีช่องว่างตรงกลาง) → ยินดีด้วยชื่อ LINE" "$REPLY" 'เชื่อมบัญชีสำเร็จ.*สมชาย ทดสอบ'
+expect_match "ส่งรหัส (มีช่องว่างตรงกลาง) → ยินดีด้วยชื่อ LINE" "$REPLY" 'เชื่อมสำเร็จแล้วค่ะ.*สวัสดีคุณ สมชาย ทดสอบ'
 expect "  users.line_user_id = LA" "$(sql "SELECT line_user_id='$LA' FROM users WHERE id=$UA;")" "1"
 expect "  เก็บชื่อจาก getProfile" "$(sql "SELECT line_display_name FROM users WHERE id=$UA;")" "สมชาย ทดสอบ"
 expect "  รหัสถูกล้าง (ใช้ได้ครั้งเดียว)" "$(sql "SELECT line_link_code IS NULL AND line_link_code_expires_at IS NULL FROM users WHERE id=$UA;")" "1"
@@ -185,12 +188,12 @@ expect "  display_name" "$(jget 'o.display_name')" "สมชาย ทดสอ
 expect "  notification_logs บันทึก reply (kind=link)" "$(sql "SELECT COUNT(*) FROM notification_logs WHERE user_id=$UA AND channel='line_reply' AND kind='link' AND success=1;")" "1"
 
 say "$LB" "$CODE_A"
-expect_match "ใช้รหัสเดิมซ้ำ (จาก LINE อื่น) → ไม่ถูกต้อง/หมดอายุ" "$REPLY" 'ไม่ถูกต้องหรือหมดอายุ'
+expect_match "ใช้รหัสเดิมซ้ำ (จาก LINE อื่น) → ไม่ถูกต้อง/หมดอายุ" "$REPLY" 'รหัสนี้ใช้ไม่ได้ค่ะ'
 
 req POST /api/line/link-code "$TA"; CODE_X="$(jget 'o.code')"
 sql "UPDATE users SET line_link_code_expires_at = NOW() - INTERVAL 1 MINUTE WHERE id=$UA;" >/dev/null
 say "$LB" "$CODE_X"
-expect_match "รหัสหมดอายุ → ไม่ถูกต้อง/หมดอายุ" "$REPLY" 'ไม่ถูกต้องหรือหมดอายุ'
+expect_match "รหัสหมดอายุ → ไม่ถูกต้อง/หมดอายุ" "$REPLY" 'รหัสนี้ใช้ไม่ได้ค่ะ'
 expect "  ผู้ป่วย A ยังเชื่อมกับ LA เดิม (ไม่ถูกเขียนทับ)" "$(sql "SELECT line_user_id='$LA' FROM users WHERE id=$UA;")" "1"
 
 section "ข้อความอื่น: เมนูช่วยเหลือ / วันนี้"
@@ -199,30 +202,30 @@ expect_match "ข้อความทั่วไป → เมนูช่ว�
 say "$LG" "วันนี้"
 expect_match "'วันนี้' จาก LINE ที่ยังไม่เชื่อม → บอกให้เชื่อมก่อน" "$REPLY" 'ยังไม่ได้เชื่อมบัญชี'
 say "$LA" "วันนี้"
-expect_match "'วันนี้' ของผู้ป่วยที่เชื่อมแล้วแต่ยังไม่มียา" "$REPLY" 'ยังไม่มีรายการยา'
+expect_match "'วันนี้' ของผู้ป่วยที่เชื่อมแล้วแต่ยังไม่มียา" "$REPLY" 'วันนี้ไม่มียาที่ต้องกินค่ะ'
 req POST /api/medications "$TA" '{"name":"TEST-day6-พารา","strength":"500 mg","dose_per_time":0.5,"unit":"tablet","meal_relation":"after","as_needed":false,"slots":["bedtime"],"total_qty":30}'
 expect "สร้างยาทดสอบ → 201" "$STATUS" "201"
 sql "UPDATE user_slot_times SET slot_time='23:59:00' WHERE user_id=$UA AND slot='bedtime';" >/dev/null
 say "$LA" "วันนี้"
-expect_match "'วันนี้' สรุปยา (ชื่อ ขนาดครึ่งเม็ด หลังอาหาร)" "$REPLY" 'TEST-day6-พารา 500 mg ครั้งละ ½ เม็ด · หลังอาหาร'
+expect_match "'วันนี้' สรุปยา (Flex: ยังไม่ได้กิน/รอเวลา + ชื่อยาใต้มื้อ + ความคืบหน้า)" "$(echo "$REPLY" | paste -sd' ' -)" '📋 ยาของวันนี้.*กินแล้ว 0 จาก 1 รายการ.*• TEST-day6-พารา 500 mg'
 expect "  reply ไม่ทำให้นับ push" "$(fl_count push)" "0"
 
 section "กันเดารหัส (ผิด 5 ครั้ง / 10 นาที / LINE userId)"
 for i in 1 2 3 4 5; do say "$LG" "00000$i"; done
-expect_match "ผิดครั้งที่ 5 ยังตอบว่ารหัสไม่ถูกต้อง" "$REPLY" 'ไม่ถูกต้องหรือหมดอายุ'
+expect_match "ผิดครั้งที่ 5 ยังตอบว่ารหัสไม่ถูกต้อง" "$REPLY" 'รหัสนี้ใช้ไม่ได้ค่ะ'
 req POST /api/line/link-code "$TB"; CODE_B="$(jget 'o.code')"
 say "$LG" "$CODE_B"
-expect_match "ครั้งที่ 6 ต่อให้รหัสถูก → ถูกบล็อก" "$REPLY" 'ผิดหลายครั้ง'
+expect_match "ครั้งที่ 6 ต่อให้รหัสถูก → ถูกบล็อก" "$REPLY" 'ลองหลายครั้งเกินไปค่ะ'
 expect "  ผู้ป่วย B ยังไม่ถูกเชื่อม" "$(sql "SELECT line_user_id IS NULL FROM users WHERE id=$UB;")" "1"
 
 section "LINE เดียวชนผู้ป่วยคนอื่น"
 say "$LA" "$CODE_B"
-expect_match "LA (เชื่อมกับ A แล้ว) ส่งรหัสของ B → อธิบายว่าเชื่อมซ้ำไม่ได้" "$REPLY" 'เชื่อมกับบัญชีผู้ป่วยอีกบัญชีหนึ่ง'
+expect_match "LA (เชื่อมกับ A แล้ว) ส่งรหัสของ B → อธิบายว่าเชื่อมซ้ำไม่ได้" "$REPLY" 'LINE นี้เชื่อมกับผู้ป่วยคนอื่นแล้วค่ะ'
 expect "  B ยังไม่ถูกเชื่อม" "$(sql "SELECT line_user_id IS NULL FROM users WHERE id=$UB;")" "1"
 expect "  A ยังเชื่อมกับ LA" "$(sql "SELECT line_user_id='$LA' FROM users WHERE id=$UA;")" "1"
 expect "  รหัสของ B ยังไม่ถูกใช้ทิ้ง" "$(sql "SELECT line_link_code='$CODE_B' FROM users WHERE id=$UB;")" "1"
 say "$LB" "$CODE_B"
-expect_match "LB ส่งรหัสของ B → เชื่อมสำเร็จ" "$REPLY" 'เชื่อมบัญชีสำเร็จ.*สมหญิง ทดสอบ'
+expect_match "LB ส่งรหัสของ B → เชื่อมสำเร็จ" "$REPLY" 'เชื่อมสำเร็จแล้วค่ะ.*สวัสดีคุณ สมหญิง ทดสอบ'
 
 section "ผู้ดูแล: CRUD + เจ้าของเท่านั้น"
 req GET /api/caregivers "";                expect "ไม่มี JWT → 401" "$STATUS" "401"
@@ -257,7 +260,7 @@ expect_match "  oa_message_url ตามรหัส" "$(jget 'o.oa_message_url'
 req POST /api/line/link-code "$TA"; CODE_A2="$(jget 'o.code')"
 expect "รหัสผู้ป่วยกับรหัสผู้ดูแลไม่ซ้ำกัน" "$([ "$CODE_A2" != "$CCODE1" ] && echo diff)" "diff"
 say "$LC" "$CCODE1"
-expect_match "ผู้ดูแลส่งรหัส → เชื่อมเป็นผู้ดูแลของ {ชื่อผู้ป่วย}" "$REPLY" "เชื่อมเป็นผู้ดูแลของคุณ ผู้ทดสอบ day6 A แล้ว"
+expect_match "ผู้ดูแลส่งรหัส → เชื่อมเป็นผู้ดูแลของ {ชื่อผู้ป่วย}" "$REPLY" "เชื่อมเป็นผู้ดูแลแล้วค่ะ.*ผู้ดูแลของคุณ ผู้ทดสอบ day6 A"
 expect "  caregivers.line_user_id = LC" "$(sql "SELECT line_user_id='$LC' AND line_display_name='ลูกสาว ทดสอบ' FROM caregivers WHERE id=$CG1;")" "1"
 expect "  รหัสผู้ดูแลถูกล้าง" "$(sql "SELECT link_code IS NULL FROM caregivers WHERE id=$CG1;")" "1"
 expect "  ไม่ไปแตะ users.line_user_id ของ A" "$(sql "SELECT line_user_id='$LA' FROM users WHERE id=$UA;")" "1"
@@ -268,7 +271,7 @@ expect_match "LC ดูแลผู้ป่วยคนที่ 2 (B) ได�
 expect "  LC ผูกกับผู้ดูแล 2 แถว (คนละผู้ป่วย)" "$(sql "SELECT COUNT(*) FROM caregivers WHERE line_user_id='$LC';")" "2"
 req POST "/api/caregivers/$CG2/link-code" "$TA"; CCODE_LA="$(jget 'o.code')"
 say "$LA" "$CCODE_LA"
-expect_match "LA (ผู้ป่วย A) เป็นผู้ดูแลของ A เองอีกบทบาทได้" "$REPLY" 'เชื่อมเป็นผู้ดูแลของคุณ'
+expect_match "LA (ผู้ป่วย A) เป็นผู้ดูแลของ A เองอีกบทบาทได้" "$REPLY" 'เชื่อมเป็นผู้ดูแลแล้วค่ะ'
 expect "  ยังเป็นผู้ป่วยอยู่ด้วย" "$(sql "SELECT line_user_id='$LA' FROM users WHERE id=$UA;")" "1"
 
 section "unfollow / ยกเลิกการเชื่อม"
