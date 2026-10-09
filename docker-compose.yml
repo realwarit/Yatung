@@ -23,7 +23,7 @@ services:
       - db_data:/var/lib/mysql
       - ./db/init:/docker-entrypoint-initdb.d:ro   # รันครั้งเดียวตอน volume ยังว่าง
     ports:
-      - "3306:3306"                                # dev เท่านั้น ลบออกตอนส่งงานได้
+      - "127.0.0.1:3306:3306"                      # dev เท่านั้น (ผูกเฉพาะเครื่องนี้) ลบออกตอนส่งงานได้
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 5s
@@ -60,6 +60,12 @@ services:
       GEMINI_BASE_URL: ${GEMINI_BASE_URL:-}   # เฉพาะทดสอบกับ Gemini ปลอม (scripts/fake-gemini.js) ปล่อยว่างตามปกติ
       LINE_CHANNEL_ACCESS_TOKEN: ${LINE_CHANNEL_ACCESS_TOKEN}
       LINE_CHANNEL_SECRET: ${LINE_CHANNEL_SECRET}
+      LINE_OA_BASIC_ID: ${LINE_OA_BASIC_ID:-}             # เช่น @014rktvr ใช้สร้างลิงก์ oaMessage
+      LINE_API_BASE: ${LINE_API_BASE:-https://api.line.me}   # เฉพาะทดสอบ: ชี้ไป scripts/fake-line.js
+      LINE_PUSH_MONTHLY_CAP: ${LINE_PUSH_MONTHLY_CAP:-200}
+      LINE_PUSH_RESERVE: ${LINE_PUSH_RESERVE:-30}          # โควตาที่กันไว้ให้ข้อความแจ้งญาติ (kind=escalation)
+      LINE_MASCOT_URL: ${LINE_MASCOT_URL:-}                # ว่าง = ${PUBLIC_BASE_URL}/line/mascot.png
+      DEMO_MODE: ${DEMO_MODE:-false}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
       VAPID_SUBJECT: ${VAPID_SUBJECT}
@@ -67,7 +73,7 @@ services:
     volumes:
       - ./node-red/data:/data          # flows.json อยู่ใน git, ส่วน flows_cred.json ถูก ignore
     ports:
-      - "1880:1880"                    # Node-RED editor (dev) — production ให้เข้าผ่าน frontend /api เท่านั้น
+      - "127.0.0.1:1880:1880"          # Node-RED editor (dev) — ผูกเฉพาะเครื่องนี้ ไม่ผ่าน nginx/tunnel
 
   frontend:
     build: ./frontend
@@ -78,15 +84,18 @@ services:
       - "8080:80"                      # http://localhost:8080
 
   tunnel:
-    image: cloudflare/cloudflared:latest
+    image: ngrok/ngrok:3.39.11
     profiles: ["tunnel"]
     restart: unless-stopped
     depends_on:
       - frontend
-    # มี token → URL คงที่ (ตั้งค่าใน Cloudflare Zero Trust ให้ชี้ไป http://frontend:80)
-    command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}
-    # ไม่มี token → ใช้ quick tunnel แทน (URL สุ่มใหม่ทุกครั้ง ต้องอัปเดต webhook URL ใน LINE Console):
-    # command: tunnel --no-autoupdate --url http://frontend:80
+    # โดเมนคงที่ของ ngrok (ฟรี 1 โดเมน) → https://${NGROK_DOMAIN} ชี้เข้า nginx ของ frontend
+    # nginx ส่งต่อเฉพาะ /api และ /line/webhook; editor/admin API ของ Node-RED เข้าผ่าน tunnel ไม่ได้
+    command: http frontend:80 --url=https://${NGROK_DOMAIN}
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    ports:
+      - "127.0.0.1:4040:4040"          # ngrok inspector (ดู request ที่ LINE ส่งมา)
 
   adminer:
     image: adminer:latest
@@ -94,7 +103,7 @@ services:
     depends_on:
       - db
     ports:
-      - "8081:8080"
+      - "127.0.0.1:8081:8080"
 
 volumes:
   db_data:

@@ -16,7 +16,9 @@ CREATE TABLE users (
   password_hash   VARCHAR(100)  NOT NULL,
   display_name    VARCHAR(100)  NOT NULL,
   line_user_id    VARCHAR(64)   NULL,          -- ได้มาหลังผู้ใช้ส่งรหัสเชื่อมบัญชีใน LINE
+  line_display_name VARCHAR(100) NULL,         -- ชื่อ LINE (จาก getProfile) แสดงในหน้า Settings
   line_link_code  CHAR(6)       NULL,          -- รหัส 6 หลักที่แสดงในหน้า Settings
+  line_link_code_expires_at DATETIME NULL,     -- รหัสหมดอายุ 10 นาที ใช้ได้ครั้งเดียว
   tts_rate        DECIMAL(3,2)  NOT NULL DEFAULT 0.90,  -- ความเร็วเสียงอ่าน (ผู้สูงอายุชอบช้าลง)
   created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -46,7 +48,9 @@ CREATE TABLE caregivers (
   name                VARCHAR(100) NOT NULL,
   relation            VARCHAR(50)  NULL,              -- ลูก, หลาน, คู่สมรส ...
   line_user_id        VARCHAR(64)  NULL,
+  line_display_name   VARCHAR(100) NULL,
   link_code           CHAR(6)      NULL,
+  link_code_expires_at DATETIME    NULL,
   escalate_after_min  SMALLINT UNSIGNED NOT NULL DEFAULT 60,
   is_active           TINYINT(1)   NOT NULL DEFAULT 1,
   created_at          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
