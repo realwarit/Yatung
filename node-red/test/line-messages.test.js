@@ -273,7 +273,7 @@ test('reply ทุกแบบแนบ quickReply ตามประเภท�
   }
 });
 
-test('"วันนี้": ผู้ป่วย = Flex, ผู้ดูแลอย่างเดียว = text บอกชื่อผู้ป่วย, ยังไม่เชื่อม = text วิธีเชื่อม', async () => {
+test('"วันนี้": ผู้ป่วย = Flex, ผู้ดูแลอย่างเดียว = Flex สรุปผู้ป่วยที่ดูแล (7A), ยังไม่เชื่อม = text วิธีเชื่อม', async () => {
   const rows = [{ id: 1, medication_id: 1, slot: 'morning', scheduled_at: '2026-10-09 08:00:00', status: 'pending', taken_at: null, is_overdue: 0, is_due: 1, name: 'ยา A', strength: null, dose_per_time: 1, unit: 'tablet', meal_relation: 'after' }];
   let h = harness({ patient: 'สมชาย', rows });
   await svc.handleEvent(ev('วันนี้'), { db: h.db, client: h.client, env: ENV });
@@ -281,7 +281,8 @@ test('"วันนี้": ผู้ป่วย = Flex, ผู้ดูแล�
   assert.ok(h.sent[0].messages[0].altText.startsWith('📋 ยาของวันนี้'));
   h = harness({ caregiverOf: ['สมชาย'] });
   await svc.handleEvent(ev('วันนี้'), { db: h.db, client: h.client, env: ENV });
-  assert.match(h.sent[0].messages[0].text, /ผู้ดูแลของ สมชาย/);
+  assert.equal(h.sent[0].messages[0].type, 'flex');
+  assert.equal(h.sent[0].messages[0].altText, '📋 ยาวันนี้ของผู้ที่คุณดูแล 1 คน');
   h = harness();
   await svc.handleEvent(ev('วันนี้'), { db: h.db, client: h.client, env: ENV });
   assert.match(h.sent[0].messages[0].text, /ยังไม่ได้เชื่อมบัญชี/);

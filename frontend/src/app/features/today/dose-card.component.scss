@@ -41,6 +41,8 @@ h3 { font-size: 1.3rem; line-height: var(--yt-line-height-tight); }
 :host(.state-taken) .badge { padding-left: 0; background: transparent; color: var(--yt-on-success-soft); }
 :host(.state-taken) .how { color: var(--yt-on-success-soft); }
 
+.src { font-weight: 500; }
+
 .tick {
   display: inline-grid;
   place-items: center;

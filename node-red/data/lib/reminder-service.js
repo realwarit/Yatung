@@ -92,6 +92,53 @@ async function run(db, client, env = process.env) {
   return out;
 }
 
+// ---------- เตือนซ้ำผู้ป่วย (REMINDER_FOLLOWUP_MIN นาที ; 0/ไม่ตั้ง = ปิด) ----------
+// ส่ง Flex "เลยเวลา" ให้ผู้ป่วย 1 ครั้งต่อกลุ่มเมื่อเลยเวลามาครบ N นาที : เคยเตือนปกติแล้ว (reminded_at), ยัง pending, followup_at ว่าง,
+// อยู่ในหน้าต่าง N…N+30 นาที (ระบบล่มแล้วกลับมาไม่ส่งย้อนหลังเป็นกอง) ; จอง followup_at ก่อนส่ง ; kind=reminder ใช้งบเตือนปกติ
+const followupMin = (env) => { const n = Number(env && env.REMINDER_FOLLOWUP_MIN); return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0; };
+const followupSql = (n, extra = '') => `SELECT ${COLS} FROM dose_logs d JOIN medications m ON m.id = d.medication_id JOIN users u ON u.id = d.user_id ` +
+  "WHERE d.status = 'pending' AND d.reminded_at IS NOT NULL AND d.followup_at IS NULL " +
+  `AND d.scheduled_at <= NOW() - INTERVAL ${n} MINUTE AND d.scheduled_at >= NOW() - INTERVAL ${n + WINDOW_MIN} MINUTE ` +
+  'AND m.is_active = 1 AND m.as_needed = 0 AND u.line_user_id IS NOT NULL' + extra + ' ORDER BY d.user_id, d.scheduled_at, m.name, d.id';
+
+async function claimFollowup(db, ids) {
+  if (!ids.length) return [];
+  return db.withTransaction(async (conn) => {
+    const [rows] = await conn.query("SELECT id FROM dose_logs WHERE id IN (?) AND status = 'pending' AND followup_at IS NULL FOR UPDATE", [ids]);
+    const mine = rows.map((r) => r.id);
+    if (mine.length) await conn.query('UPDATE dose_logs SET followup_at = NOW() WHERE id IN (?) AND followup_at IS NULL', [mine]);
+    return mine;
+  });
+}
+
+async function runFollowup(db, client, env = process.env) {
+  const n = followupMin(env);
+  const out = { groups: 0, sent: 0, failed: 0, quota_skipped: 0, claimed_by_other: 0 };
+  if (!n) return out;
+  const f = userFilter(env);
+  const groups = groupRows(await db.query(followupSql(n, f.sql), f.params));
+  out.groups = groups.length;
+  for (const g of groups) {
+    try {
+      const q = await client.canPush(db, 'reminder', lineFlex.chunkDoses(g.doses).length);
+      if (!q.allowed) { out.quota_skipped++; continue; }
+      const mine = new Set(await claimFollowup(db, g.doses.map((d) => d.id)));
+      const doses = g.doses.filter((d) => mine.has(d.id));
+      if (!doses.length) { out.claimed_by_other++; continue; }
+      for (const part of lineFlex.chunkDoses(doses)) {
+        const msg = lineFlex.buildReminder({ slot: g.slot, scheduled_at: g.scheduled_at, late_min: g.late_sec / 60, doses: part }, env, { followup: true });
+        const r = await client.push(g.line_user_id, [msg], { db, userId: g.user_id, doseLogId: part[0].id, kind: 'reminder', recipient: 'patient' });
+        if (r.ok) out.sent++; else out.failed++;
+      }
+    } catch (e) {
+      out.failed++;
+      console.log('followup_group_error ' + String(e.message).slice(0, 200));
+    }
+  }
+  if (out.groups) console.log(`reminder_followup groups=${out.groups} sent=${out.sent} failed=${out.failed} quota_skipped=${out.quota_skipped}`);
+  return out;
+}
+
 // โหมดเดโม: กลุ่ม pending ของวันนี้ที่ scheduled_at ใกล้เวลาปัจจุบันที่สุด (ทั้งก่อนและหลัง ; เท่ากัน = มื้อที่เร็วกว่า) ของ userId ;
 // ถ้าทุกรายการในกลุ่มเคยเตือนแล้ว = ส่งซ้ำโดยไม่จอง reminded_at ; ห้ามสร้าง dose ปลอม ; หัวข้อ Flex ตามช่วงเวลา (ใกล้ถึง/ถึงเวลา/เลยเวลา)
 async function remindNow(db, client, userId, env = process.env) {
@@ -128,4 +175,4 @@ async function remindDemoUser(db, client, env = process.env, email = 'demo@yatun
   return remindNow(db, client, u[0].id, env);
 }
 
-module.exports = { run, sendGroup, remindNow, remindDemoUser, groupRows, claim, DUE_SQL, dueSql, userFilter, WINDOW_MIN };
+module.exports = { run, runFollowup, followupSql, followupMin, sendGroup, remindNow, remindDemoUser, groupRows, claim, DUE_SQL, dueSql, userFilter, WINDOW_MIN };

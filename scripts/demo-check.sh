@@ -170,7 +170,13 @@ case "$ed" in 401) ok "editor/admin API ของ Node-RED ล็อกด้ว
 docker compose logs nodered 2>&1 | grep -q 'ค่าตัวอย่าง (รหัส demo1234)' && warn "NODE_RED_ADMIN_HASH ยังเป็นค่าตัวอย่าง demo1234 — ห้ามเปิด tunnel"
 dm="$(docker compose exec -T nodered printenv DEMO_MODE 2>/dev/null | tr -d '
 ')"
-[ "$dm" = "true" ] && warn "DEMO_MODE=true — ปุ่ม \"ทดลองส่งเตือนตอนนี้\" เปิดอยู่ (ปิดเมื่อใช้งานจริง)" || ok "DEMO_MODE=${dm:-false}"
+[ "$dm" = "true" ] && warn "DEMO_MODE=true — ปุ่ม \"ทดลองส่งเตือนตอนนี้\" / \"ทดลองแจ้งญาติตอนนี้\" เปิดอยู่ (ปิดเมื่อใช้งานจริง)" || ok "DEMO_MODE=${dm:-false}"
+# แจ้งญาติ (7A): ญาติที่เชื่อม LINE แล้ว · จำนวนการแจ้งเดือนนี้ · เตือนซ้ำผู้ป่วย
+cgn="$(docker compose exec -T db sh -c 'mysql -N -B -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SELECT COUNT(*) FROM caregivers WHERE is_active=1 AND line_user_id IS NOT NULL; SELECT COUNT(*) FROM dose_escalations WHERE sent_at >= DATE_FORMAT(NOW(), \"%Y-%m-01\")" 2>/dev/null' | tr '
+' ' ')"
+if [ -n "$cgn" ]; then ok "แจ้งญาติ: ผู้ดูแลที่เชื่อม LINE แล้ว ${cgn%% *} คน · แจ้งไปแล้วเดือนนี้ $(printf '%s' "$cgn" | awk '{print $2}') รายการ"; else warn "อ่านข้อมูลแจ้งญาติจากฐานข้อมูลไม่ได้ (รัน bash scripts/migrate.sh แล้วหรือยัง?)"; fi
+fu="$(docker compose exec -T nodered printenv REMINDER_FOLLOWUP_MIN 2>/dev/null | tr -d '')"
+[ -n "$fu" ] && [ "$fu" != "0" ] && ok "เตือนซ้ำผู้ป่วย: เปิด (เลยเวลามา $fu นาที)" || ok "เตือนซ้ำผู้ป่วย: ปิด (REMINDER_FOLLOWUP_MIN=0)"
 
 echo
 if [ "$FAIL" = 0 ]; then echo "สรุป: ✓ พร้อมนำเสนอ"; else echo "สรุป: ✗ ไม่ผ่าน $FAIL ข้อ — แก้ก่อนนำเสนอ"; exit 1; fi

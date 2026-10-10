@@ -44,6 +44,7 @@ export interface MedicationInput {
 }
 
 export type DoseStatus = 'pending' | 'taken' | 'missed';
+export type DoseSource = 'app' | 'line' | 'push' | 'caregiver';
 
 export interface Dose {
   id: number;
@@ -56,6 +57,7 @@ export interface Dose {
   scheduled_at: string;         // 'YYYY-MM-DD HH:mm:ss' เวลาไทย
   status: DoseStatus;
   taken_at: string | null;
+  source?: DoseSource | null;   // ช่องทางที่ยืนยัน (มีเมื่อ status = taken)
   is_overdue: boolean;          // คำนวณ ณ เวลาที่ดึงข้อมูล — หน้าจอคำนวณใหม่เองจากเวลาปัจจุบัน
 }
 
@@ -75,7 +77,7 @@ export interface DoseActionResult {
   id: number;
   status: DoseStatus;
   taken_at: string | null;
-  source: 'app' | 'line' | 'push' | null;
+  source: DoseSource | null;
   remaining_qty: number | null;
 }
 

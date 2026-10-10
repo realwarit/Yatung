@@ -17,6 +17,7 @@ const lineClient = require('./lib/line-client').createClient();
 const { createRawBodyMiddleware } = require('./lib/raw-body');
 const { resolveAdmin } = require('./lib/admin-auth');
 const reminderService = require('./lib/reminder-service');
+const escalationService = require('./lib/escalation-service');
 const lineEnv = require('./lib/line-env');
 
 const PROMPT_DIR = path.join(__dirname, 'prompts');
@@ -33,6 +34,9 @@ const admin = resolveAdmin();
 if (!admin.enabled) console.warn('[yatung] editor/admin API ถูกปิด: ' + admin.reason + ' — ตั้ง NODE_RED_ADMIN_HASH ใน .env แล้ว docker compose up -d --force-recreate nodered');
 else if (admin.sample) console.warn('[yatung] NODE_RED_ADMIN_HASH เป็นค่าตัวอย่าง (รหัส demo1234) — เปลี่ยนก่อนเปิด tunnel');
 const rawBody = createRawBodyMiddleware();
+
+// ผู้ป่วยกินยา (ทุกช่องทาง) หลังแจ้งญาติไปแล้ว → บอกญาติ "ปิดเรื่อง" 1 ครั้ง (ล้มเหลวไม่กระทบการบันทึกกินยา)
+doseService.setAfterTaken((ids) => escalationService.notifyResolved(db, lineClient, ids, lineEnv.pick((k) => process.env[k])));
 
 // อุ่น Gemini 1 ครั้งตอนเริ่ม (ไม่บล็อก ไม่ล้มเหลวทั้งระบบ)
 require('./lib/gemini-warmup').warmup().catch(() => {});
@@ -71,6 +75,7 @@ module.exports = {
     lineService,                              // signature, รหัสเชื่อม, event ของ webhook
     caregiverService,
     reminderService,                          // cron ส่งเตือน / demo (lib/reminder-service.js)
+    escalationService,                        // แจ้งญาติเมื่อลืมกินยา / ปิดเรื่อง / demo (lib/escalation-service.js)
     lineEnv,                                  // pick(env.get) → env ที่ lib ฝั่ง LINE ใช้ (lib/line-env.js)
     llmOutput,                                // process / reviewFlags / redactPii (lib/validate-llm-output.js)
     prompts: {

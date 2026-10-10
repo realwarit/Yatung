@@ -221,7 +221,7 @@ export class TodayPage {
   protected isBusy(id: number): boolean { return this.busy().has(id); }
 
   private applyResult(r: DoseActionResult): void {
-    this.patch(r.id, { status: r.status, taken_at: r.taken_at });
+    this.patch(r.id, { status: r.status, taken_at: r.taken_at, source: r.source });
   }
 
   private patch(id: number, changes: Partial<Dose>): void {

@@ -4587,8 +4587,8 @@
         "id": "ln_cron_fn",
         "type": "function",
         "z": "tab_line",
-        "name": "ส่งเตือนกลุ่มที่ถึงเวลา (จอง reminded_at ก่อนส่ง)",
-        "func": "// REMINDER_CRON=off ปิดเฉพาะ cron อัตโนมัติ (เฉพาะทดสอบ — ไม่ให้แย่ง dose กับสคริปต์เทส) ; ปุ่ม ▶ รันตอนนี้ ยังใช้ได้\nif (env.get('REMINDER_CRON') === 'off' && msg.topic === 'line-reminder') { msg.payload = { skipped: true }; return msg; }\ntry {\n  msg.payload = await global.get('reminderService').run(global.get('db'), global.get('lineClient'), global.get('lineEnv').pick((k) => env.get(k)));\n} catch (e) {\n  node.error('reminder_cron ' + String(e.message).slice(0, 200));   // cron ไม่มี http response จึงไม่ส่งต่อให้ catch ของ tab\n  msg.payload = { error: true };\n}\nreturn msg;",
+        "name": "ส่งเตือน + เตือนซ้ำ + แจ้งญาติ (จองก่อนส่งทุกขั้น)",
+        "func": "// REMINDER_CRON=off ปิดเฉพาะ cron อัตโนมัติ (เฉพาะทดสอบ — ไม่ให้แย่ง dose กับสคริปต์เทส) ; ปุ่ม ▶ รันตอนนี้ ยังใช้ได้\nif (env.get('REMINDER_CRON') === 'off' && msg.topic === 'line-reminder') { msg.payload = { skipped: true }; return msg; }\nconst db = global.get('db');\nconst client = global.get('lineClient');\nconst e = global.get('lineEnv').pick((k) => env.get(k));\n// แต่ละขั้นแยก try (ขั้นหนึ่งล้มต้องไม่ทำให้ขั้นอื่นไม่ทำงาน) ; cron ไม่มี http response จึงไม่ส่งต่อให้ catch ของ tab\nconst step = async (name, fn) => { try { return await fn(); } catch (err) { node.error(name + ' ' + String(err.message).slice(0, 200)); return { error: true }; } };\nconst reminder = await step('reminder_cron', () => global.get('reminderService').run(db, client, e));\nconst followup = await step('followup_cron', () => global.get('reminderService').runFollowup(db, client, e));\nconst escalation = await step('escalation_cron', () => global.get('escalationService').run(db, client, e));\nmsg.payload = { ...reminder, followup, escalation };\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -4608,7 +4608,7 @@
         "id": "ln_cron_dbg",
         "type": "debug",
         "z": "tab_line",
-        "name": "จำนวนที่ส่ง",
+        "name": "จำนวนที่ส่ง (เตือน)",
         "active": true,
         "tosidebar": true,
         "console": false,
@@ -5086,7 +5086,7 @@
         "id": "ln_cron_grp",
         "type": "group",
         "z": "tab_line",
-        "name": "cron ส่งเตือน ทุก 1 นาที (หรือกด ▶ เอง)",
+        "name": "cron ส่งเตือน/แจ้งญาติ ทุก 1 นาที (หรือกด ▶ เอง)",
         "style": {
             "stroke": "#b45309",
             "fill": "#fdf3e3",
@@ -5148,5 +5148,321 @@
         "y": 2695,
         "w": 1520,
         "h": 90
+    },
+    {
+        "id": "esc_demo_grp",
+        "type": "group",
+        "z": "tab_line",
+        "name": "POST /api/demo/escalate-now",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "esc_demo_in",
+            "esc_demo_jwt",
+            "esc_demo_fn",
+            "esc_demo_ok",
+            "esc_demo_err"
+        ],
+        "x": 70,
+        "y": 2760,
+        "w": 1520,
+        "h": 150
+    },
+    {
+        "id": "esc_demo_in",
+        "type": "http in",
+        "z": "tab_line",
+        "name": "POST /api/demo/escalate-now",
+        "url": "/api/demo/escalate-now",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 2805,
+        "wires": [
+            [
+                "esc_demo_jwt"
+            ]
+        ],
+        "g": "esc_demo_grp"
+    },
+    {
+        "id": "esc_demo_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_line",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 2805,
+        "wires": [
+            [
+                "esc_demo_fn"
+            ]
+        ],
+        "g": "esc_demo_grp"
+    },
+    {
+        "id": "esc_demo_fn",
+        "type": "function",
+        "z": "tab_line",
+        "name": "แจ้งญาติกลุ่มที่ใกล้เวลาปัจจุบันที่สุดของวันนี้ (เฉพาะ DEMO_MODE ; ส่งซ้ำต้องส่ง force:true)",
+        "func": "const r = env.get('DEMO_MODE') !== 'true'\n  ? { status: 404, body: { error: 'NOT_FOUND', details: 'ไม่พบข้อมูลที่ต้องการ' } }   // ปิดโหมดเดโม = ทำเหมือนไม่มี endpoint นี้\n  : await global.get('escalationService').escalateNow(global.get('db'), global.get('lineClient'), msg.user.id, msg.payload, global.get('lineEnv').pick((k) => env.get(k)));\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ/แจ้งไปแล้ว (4xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "outputLabels": [
+            "สำเร็จ",
+            "error 4xx"
+        ],
+        "x": 900,
+        "y": 2805,
+        "wires": [
+            [
+                "esc_demo_ok"
+            ],
+            [
+                "esc_demo_err"
+            ]
+        ],
+        "g": "esc_demo_grp"
+    },
+    {
+        "id": "esc_demo_ok",
+        "type": "http response",
+        "z": "tab_line",
+        "name": "ตอบ 200 แจ้งญาติแล้ว",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 2805,
+        "wires": [],
+        "g": "esc_demo_grp"
+    },
+    {
+        "id": "esc_demo_err",
+        "type": "http response",
+        "z": "tab_line",
+        "name": "ตอบ 404/409/429/502 ผิดพลาด",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 2865,
+        "wires": [],
+        "g": "esc_demo_grp"
+    },
+    {
+        "id": "esc_dmi_grp",
+        "type": "group",
+        "z": "tab_line",
+        "name": "inject แจ้งญาติทดสอบ (demo user)",
+        "style": {
+            "stroke": "#b45309",
+            "fill": "#fdf3e3",
+            "label": true,
+            "label-position": "nw",
+            "color": "#b45309"
+        },
+        "nodes": [
+            "esc_dmi_inject",
+            "esc_dmi_fn",
+            "esc_dmi_dbg"
+        ],
+        "x": 70,
+        "y": 2940,
+        "w": 1350,
+        "h": 90
+    },
+    {
+        "id": "esc_dmi_inject",
+        "type": "inject",
+        "z": "tab_line",
+        "name": "แจ้งญาติทดสอบ (demo user)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 2985,
+        "wires": [
+            [
+                "esc_dmi_fn"
+            ]
+        ],
+        "g": "esc_dmi_grp"
+    },
+    {
+        "id": "esc_dmi_fn",
+        "type": "function",
+        "z": "tab_line",
+        "name": "แจ้งญาติกลุ่มที่ใกล้เวลาปัจจุบันที่สุดให้บัญชีเดโม (ต้อง DEMO_MODE=true)",
+        "func": "try {\n  const r = await global.get('escalationService').escalateDemoUser(global.get('db'), global.get('lineClient'), global.get('lineEnv').pick((k) => env.get(k)));\n  msg.payload = r.body;\n  msg.statusCode = r.status;\n} catch (e) {\n  node.error('escalation_demo ' + String(e.message).slice(0, 200));\n  msg.payload = { error: true };\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 2985,
+        "wires": [
+            [
+                "esc_dmi_dbg"
+            ]
+        ],
+        "g": "esc_dmi_grp"
+    },
+    {
+        "id": "esc_dmi_dbg",
+        "type": "debug",
+        "z": "tab_line",
+        "name": "ผลการแจ้ง",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 1300,
+        "y": 2985,
+        "wires": [],
+        "g": "esc_dmi_grp"
+    },
+    {
+        "id": "sch_miss_grp",
+        "type": "group",
+        "z": "tab_sched",
+        "name": "ปิดรอบที่ค้าง pending ของวันก่อนๆ → missed (cron 03:00 หรือกดเอง)",
+        "style": {
+            "stroke": "#b45309",
+            "fill": "#fdf3e3",
+            "label": true,
+            "label-position": "nw",
+            "color": "#b45309"
+        },
+        "nodes": [
+            "sch_miss_cron",
+            "sch_miss_inject",
+            "sch_miss_fn",
+            "sch_miss_dbg"
+        ],
+        "x": 41,
+        "y": 650,
+        "w": 1079,
+        "h": 154
+    },
+    {
+        "id": "sch_miss_cron",
+        "type": "cronplus",
+        "z": "tab_sched",
+        "name": "ทุกวัน 03:00 (เวลาไทย)",
+        "outputField": "payload",
+        "timeZone": "Asia/Bangkok",
+        "persistDynamic": false,
+        "commandResponseMsgOutput": "output1",
+        "outputs": 1,
+        "options": [
+            {
+                "name": "daily-0300-missed",
+                "topic": "close-stale-doses",
+                "payloadType": "default",
+                "payload": "",
+                "expressionType": "cron",
+                "expression": "0 0 3 * * * *",
+                "location": "",
+                "offset": "0",
+                "solarType": "all",
+                "solarEvents": "sunrise,sunset"
+            }
+        ],
+        "x": 190,
+        "y": 692,
+        "wires": [
+            [
+                "sch_miss_fn"
+            ]
+        ],
+        "g": "sch_miss_grp"
+    },
+    {
+        "id": "sch_miss_inject",
+        "type": "inject",
+        "z": "tab_sched",
+        "name": "▶ รันตอนนี้",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 762,
+        "wires": [
+            [
+                "sch_miss_fn"
+            ]
+        ],
+        "g": "sch_miss_grp"
+    },
+    {
+        "id": "sch_miss_fn",
+        "type": "function",
+        "z": "tab_sched",
+        "name": "pending ก่อนวันนี้ → missed (รันซ้ำได้ ไม่แตะวันนี้/taken)",
+        "func": "// รอบของวันก่อนๆ ที่ยัง pending = ไม่ได้กิน → missed (Dashboard นับ taken ÷ (taken + missed)) ; กดกินย้อนหลังยังได้ (missed → taken)\n// REMINDER_ONLY_EMAIL_SUFFIX (เฉพาะรันเทส) ทำให้แตะเฉพาะ user ทดสอบ\nconst r = await global.get('doseService').closeStaleDoses(global.get('db'), global.get('lineEnv').pick((k) => env.get(k)));\nnode.log('close stale doses missed=' + r.missed);\nmsg.payload = r;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 650,
+        "y": 727,
+        "wires": [
+            [
+                "sch_miss_dbg"
+            ]
+        ],
+        "g": "sch_miss_grp"
+    },
+    {
+        "id": "sch_miss_dbg",
+        "type": "debug",
+        "z": "tab_sched",
+        "name": "จำนวนรอบที่ปิดเป็น missed",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.missed",
+        "statusType": "auto",
+        "x": 1000,
+        "y": 727,
+        "wires": [],
+        "g": "sch_miss_grp"
     }
 ]
