@@ -1,6 +1,7 @@
 // logic ของ tab 4-Doses (ตารางวันนี้ / กินแล้ว / ยกเลิก) และ SQL ของ cron ที่ tab 6
 const { SLOTS } = require('./validate-medication');
 const { GENERATE_TODAY_SQL } = require('./medication-service');
+const stock = require('./stock-service');
 
 const err = (status, error, details) => ({ status, body: { error, details } });
 const notFound = () => err(404, 'NOT_FOUND', 'ไม่พบข้อมูลที่ต้องการ');
@@ -125,6 +126,7 @@ async function undo(db, userId, rawId) {
       await conn.query(
         'UPDATE medications SET remaining_qty = LEAST(remaining_qty + ?, COALESCE(total_qty, remaining_qty + ?)) WHERE id = ?',
         [d.dose_per_time, d.dose_per_time, d.med_id]);
+      await stock.resetRecovered(async (sql, params) => (await conn.query(sql, params))[0], process.env, d.med_id);   // คืนยาจนพ้นเกณฑ์ = ล้างการจองแจ้งใกล้หมด
     }
     return { status: 200, body: await snapshot(conn, id) };
   });

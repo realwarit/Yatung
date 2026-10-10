@@ -27,6 +27,8 @@ export class DoseCardComponent {
   readonly source = input<string | null>(null);
   /** มื้อนี้มีหลายเวลา → แสดงเวลาของยาตัวนี้ในการ์ด */
   readonly showTime = input(false);
+  /** ยานี้ใกล้หมด → ป้ายเหลือง (ข้อความจาก lowStockText) */
+  readonly lowText = input<string | null>(null);
   readonly canUndo = input(false);
   readonly busy = input(false);
   /** เพิ่งกดกิน → เล่น animation เครื่องหมายถูกเด้ง */

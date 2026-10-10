@@ -21,6 +21,10 @@ import { IconComponent } from '../../shared/icon.component';
     <button mat-stroked-button type="button" class="full" [disabled]="busyEsc()" (click)="escalate(false)">
       <app-icon name="alert" /> {{ busyEsc() ? 'กำลังแจ้ง…' : 'ทดลองแจ้งญาติตอนนี้' }}
     </button>
+    <p class="hint hint--gap">ส่งข้อความ "ยาใกล้หมด" ของยาที่ใกล้หมดตอนนี้เข้า LINE ทันที โดยไม่ต้องรอเวลา 09:00</p>
+    <button mat-stroked-button type="button" class="full" [disabled]="busyLow()" (click)="lowStock(false)">
+      <app-icon name="pill" /> {{ busyLow() ? 'กำลังส่ง…' : 'ทดลองแจ้งยาใกล้หมดตอนนี้' }}
+    </button>
     @if (result(); as r) { <p class="yt-alert" role="status"><app-icon name="check" /> <span>{{ r }}</span></p> }
     @if (error(); as e) { <p class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span>{{ e }}</span></p> }
   `,
@@ -37,6 +41,7 @@ export class DemoSectionComponent {
   private dialog = inject(MatDialog);
   protected readonly busy = signal(false);
   protected readonly busyEsc = signal(false);
+  protected readonly busyLow = signal(false);
   protected readonly result = signal<string | null>(null);
   protected readonly error = signal<string | null>(null);
 
@@ -66,6 +71,29 @@ export class DemoSectionComponent {
         this.error.set(errorText(e));
       },
     });
+  }
+
+  /** 409 ALREADY_NOTIFIED = เคยแจ้งยาตัวนี้แล้ว → ถามก่อนส่งซ้ำ ; 409 NO_LOW_STOCK แสดงข้อความจาก backend */
+  protected lowStock(force: boolean): void {
+    this.busyLow.set(true);
+    this.result.set(null);
+    this.error.set(null);
+    this.api.lowStockNow(force).subscribe({
+      next: (r) => { this.busyLow.set(false); this.result.set(r.message); },
+      error: (e: unknown) => {
+        this.busyLow.set(false);
+        if (errorCode(e) === 'ALREADY_NOTIFIED' && !force) { this.askResendLow(e as HttpErrorResponse); return; }
+        this.error.set(errorText(e));
+      },
+    });
+  }
+
+  private askResendLow(e: HttpErrorResponse): void {
+    const left = Number((e.error as { quota_left?: number } | null)?.quota_left);
+    const quota = Number.isFinite(left) ? ` (เหลือโควตาสำรอง ${left} ข้อความ)` : '';
+    this.dialog.open(ConfirmDialogComponent, {
+      data: { title: 'แจ้งยาใกล้หมดไปแล้ว ส่งซ้ำไหม?', message: `ใช้โควตาสำรองของ LINE เพิ่ม${quota}`, confirmLabel: 'ส่งซ้ำ', cancelLabel: 'ไม่ส่ง' },
+    }).afterClosed().subscribe((yes) => { if (yes === true) this.lowStock(true); });
   }
 
   private askResend(e: HttpErrorResponse): void {

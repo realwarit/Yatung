@@ -1,6 +1,6 @@
 // ข้อความตอบกลับ (reply) ของน้องยาตรงทุกแบบ — pure function ไม่เรียกเครือข่าย/DB ; ระบบออกแบบอยู่ที่ lib/line-flex.js
 // กฎเดียวกับ line-flex.js: น้ำเสียง ค่ะ/นะคะ · อิโมจิ ≤ 1 ตัวต่อบรรทัด วางต้นบรรทัดหรือท้ายบรรทัดเท่านั้น · ตัวอักษร ≥ md · ชื่อมื้อ/วิธีกินใช้ mapping เดียวกับเว็บ (labels-th.js)
-const { SLOT_LABEL, SLOT_EMOJI, CHANNEL_LABEL } = require('./labels-th');
+const { SLOT_LABEL, SLOT_EMOJI, CHANNEL_LABEL, unitInDose } = require('./labels-th');
 const F = require('./line-flex');
 const { text, box, separator, bubble, bodyOf, flexMessage, header, footerOf, uriButton, messageButton, medTitle, progress, badge, COLOR } = F;
 
@@ -245,6 +245,29 @@ function caregiverTakeResult({ taken = [], already = [] }) {
   return plain(blocks.join('\n\n'));
 }
 
+// ---------- ยาใกล้หมด (วันที่ 7B) ----------
+// meds = [{ name, strength, unit, remaining_qty, days_left (null = ยาเมื่อมีอาการ), as_needed }] ; ชื่อยา (ความยาวไม่แน่นอน) อยู่บรรทัดของตัวเอง
+const qtyText = (n) => String(Math.round(Number(n) * 100) / 100);
+function lowStockLine(m) {
+  if (Number(m.remaining_qty) <= 0) return 'ยาหมดแล้ว';
+  const left = `เหลือ ${qtyText(m.remaining_qty)} ${unitInDose(m.unit)}`;
+  return m.as_needed || m.days_left == null ? left : `${left} · พอใช้ ${m.days_left} วัน`;
+}
+function buildLowStock(meds, env) {
+  const shown = meds.slice(0, F.MAX_SHOWN_DOSES);
+  const rows = [];
+  shown.forEach((m, i) => {
+    if (i > 0) rows.push(separator());
+    rows.push(box([text(F.medTitle(m), { weight: 'bold', size: 'xl' }), text(lowStockLine(m), { size: 'md', color: COLOR.muted })], { spacing: 'xs', margin: i > 0 ? 'md' : undefined }));
+  });
+  if (meds.length > shown.length) rows.push(text(`+ อีก ${meds.length - shown.length} รายการ`, { size: 'md', color: COLOR.muted, margin: 'md' }));
+  const body = [...rows, separator(), text('อย่าลืมไปรับยา', { size: 'lg', weight: 'bold' }), text('หรือซื้อเพิ่มนะคะ', { size: 'lg', weight: 'bold' })];
+  const open = F.appUrl(env, '/medications');
+  const names = meds.slice(0, 3).map((m) => m.name).join(', ');
+  const alt = `💊 ยาใกล้หมด ${meds.length} รายการ: ${names}${meds.length > 3 ? ' …' : ''}`;
+  return flexMessage(alt, bubble({ header: header({ pose: 'hello', title: 'ยาใกล้หมดแล้วนะคะ' }, env), body: bodyOf(body), footer: footerOf(open ? [uriButton('เติมยาในแอป', open, 'primary')] : []) }));
+}
+
 // ---------- ตัวอย่างทุกแบบ (#ตัวอย่าง n — เฉพาะ DEMO_MODE ; ข้อมูลสร้างในหน่วยความจำ ไม่เขียน DB) ----------
 const SAMPLE_DOSES = [
   { id: 1, name: 'พาราเซตามอล', strength: '500 mg', dose_per_time: 1, unit: 'tablet', meal_relation: 'after' },
@@ -304,6 +327,10 @@ function samples(env) {
     { id: 'cg-taken', title: 'ผู้ดูแลกดยืนยัน: บันทึกแล้ว', ctx: 'caregiver', messages: [caregiverTakeResult({ taken: [{ name: 'สมชาย ใจดี', slot: 'evening' }] })] },
     { id: 'cg-already', title: 'ผู้ดูแลกดยืนยัน: ผู้ป่วยกินไปแล้ว', ctx: 'caregiver', messages: [caregiverTakeResult({ already: [{ name: 'สมชาย ใจดี', slot: 'evening', at: '18:12', by: 'self' }] })] },
     { id: 'cg-already-cg', title: 'ผู้ดูแลกดยืนยัน: ญาติคนอื่นยืนยันแล้ว', ctx: 'caregiver', messages: [caregiverTakeResult({ already: [{ name: 'สมชาย ใจดี', slot: 'evening', at: '16:33', by: 'caregiver' }] })] },
+    { id: 'low-stock', title: 'ยาใกล้หมด', ctx: 'patient', messages: [buildLowStock([
+      { name: 'เมตฟอร์มิน', strength: '500 mg', unit: 'tablet', remaining_qty: 6, days_left: 3, as_needed: false },
+      { name: 'แอมโลดิปีน', strength: '5 mg', unit: 'tablet', remaining_qty: 14, days_left: 7, as_needed: false },
+      { name: 'พาราเซตามอล', strength: '500 mg', unit: 'tablet', remaining_qty: 4, days_left: null, as_needed: true }], env)] },
     { id: 'cg-ack', title: 'ผู้ดูแลกดรับทราบ', ctx: 'caregiver', messages: [TEXT.cgAck()] },
     { id: 'cg-noauth', title: 'ผู้ดูแลกดแต่ไม่มีสิทธิ์', ctx: 'caregiver', messages: [TEXT.cgNoAuth()] },
     { id: 'text-not-linked', title: 'ยังไม่ได้เชื่อม พิมพ์ "วันนี้"', ctx: 'unlinked', messages: [TEXT.notLinked()] }
@@ -327,6 +354,6 @@ function buildPreviewPage(n, env) {
 module.exports = {
   plain, niceName, thaiDate, thaiJoin, TEXT,
   buildWelcome, buildLinkedPatient, buildLinkedCaregiver, buildToday, buildTaken, slotStatus, timeRows, timeRows,
-  buildEscalation, buildEscalationResolved, buildCaregiverToday, caregiverTakeResult, firstName, cgTakeData, cgAckData,
+  buildEscalation, buildEscalationResolved, buildCaregiverToday, caregiverTakeResult, buildLowStock, firstName, cgTakeData, cgAckData,
   samples, buildPreviewPage, previewPageCount, SAMPLES_PER_PAGE
 };

@@ -98,7 +98,7 @@ CREATE TABLE medications (
   warnings         JSON         NULL,                     -- ["อาจทำให้ง่วง", ...]
   total_qty        DECIMAL(7,2) NULL,
   remaining_qty    DECIMAL(7,2) NULL,
-  refill_alert_days TINYINT UNSIGNED NOT NULL DEFAULT 3,
+  refill_alert_days TINYINT UNSIGNED NOT NULL DEFAULT 7,
   refill_alerted_at DATETIME    NULL,                     -- กันเตือนยาใกล้หมดซ้ำทุกวัน
   start_date       DATE         NOT NULL,
   end_date         DATE         NULL,

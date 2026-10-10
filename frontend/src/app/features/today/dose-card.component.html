@@ -6,6 +6,7 @@
       ครั้งละ {{ dose().dose_per_time | doseQty: dose().unit }}
       @if (dose().meal_relation | mealLabel; as meal) { · {{ meal }} }
     </p>
+    @if (lowText(); as low) { <p class="low-tag"><app-icon name="alert" /> {{ low }}</p> }
   </div>
 
   <p class="badge">

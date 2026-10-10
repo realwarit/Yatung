@@ -68,6 +68,8 @@ services:
       LINE_MASCOT_URL: ${LINE_MASCOT_URL:-}                # (เดิม) ถ้าตั้ง = ใช้เป็นรูปท่ากระดิ่ง
       REMINDER_ONLY_EMAIL_SUFFIX: ${REMINDER_ONLY_EMAIL_SUFFIX:-}   # เฉพาะรันเทส: ส่งเตือนเฉพาะ user ที่อีเมลลงท้ายด้วยค่านี้
       REMINDER_FOLLOWUP_MIN: ${REMINDER_FOLLOWUP_MIN:-0}   # เตือนซ้ำผู้ป่วยเมื่อเลยเวลามาครบกี่นาที (0 = ปิด)
+      LOW_STOCK_NOTIFY_AT: ${LOW_STOCK_NOTIFY_AT:-09:00}      # ส่งแจ้งยาใกล้หมดหลังเวลานี้ (วันละ 1 ครั้ง)
+      LOW_STOCK_QTY_PRN: ${LOW_STOCK_QTY_PRN:-5}              # ยาเมื่อมีอาการ: ใกล้หมดเมื่อเหลือ ≤ ค่านี้
       DEMO_MODE: ${DEMO_MODE:-false}
       REMINDER_CRON: ${REMINDER_CRON:-on}                  # off = ปิด cron ส่งเตือนอัตโนมัติ (เฉพาะทดสอบ scripts/test-day6b.sh)
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}

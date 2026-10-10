@@ -21,6 +21,8 @@ export interface Medication {
   /** null = ยาเมื่อมีอาการ / หยุดแล้ว / ไม่ทราบจำนวน */
   days_left: number | null;
   refill_alert_days: number;
+  /** ใกล้หมดตามเกณฑ์เดียวของระบบ (backend stock-service): ยาประจำ days_left ≤ refill_alert_days ; ยาเมื่อมีอาการ remaining_qty ≤ LOW_STOCK_QTY_PRN */
+  is_low: boolean;
   start_date: string;           // YYYY-MM-DD
   end_date: string | null;
   is_active: boolean;

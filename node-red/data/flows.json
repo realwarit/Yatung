@@ -5464,5 +5464,399 @@
         "y": 727,
         "wires": [],
         "g": "sch_miss_grp"
+    },
+    {
+        "id": "tab_stock",
+        "type": "tab",
+        "label": "9-Stock",
+        "disabled": false,
+        "info": "เตือนยาใกล้หมด (วันที่ 7B): cron ทุก 1 นาทีเช็กว่าถึงเวลา LOW_STOCK_NOTIFY_AT (ค่าเริ่มต้น 09:00 เวลาไทย) และวันนี้ยังไม่เคยรัน → ส่ง LINE 1 ข้อความต่อผู้ป่วย\nเกณฑ์ใกล้หมด: ยาประจำ พอใช้ (วัน) ≤ refill_alert_days ของยานั้น · ยาเมื่อมีอาการ เหลือ ≤ LOW_STOCK_QTY_PRN · กันแจ้งซ้ำด้วย medications.refill_alerted_at (จองก่อนส่ง)\nสีเหลืองน้ำตาล = cron/เรียกภายนอก · สีเขียว = เขียนข้อมูล · สีแดง = error\nlogic อยู่ lib/stock-service.js (global: stockService)"
+    },
+    {
+        "id": "stk_cron",
+        "type": "cronplus",
+        "z": "tab_stock",
+        "name": "ทุก 1 นาที (เวลาไทย)",
+        "outputField": "payload",
+        "timeZone": "Asia/Bangkok",
+        "persistDynamic": false,
+        "commandResponseMsgOutput": "output1",
+        "outputs": 1,
+        "options": [
+            {
+                "name": "every-minute",
+                "topic": "low-stock",
+                "payloadType": "default",
+                "payload": "",
+                "expressionType": "cron",
+                "expression": "0 * * * * * *",
+                "location": "",
+                "offset": "0",
+                "solarType": "all",
+                "solarEvents": "sunrise,sunset"
+            }
+        ],
+        "x": 190,
+        "y": 120,
+        "wires": [
+            [
+                "stk_cron_fn"
+            ]
+        ],
+        "g": "stk_cron_grp"
+    },
+    {
+        "id": "stk_cron_inject",
+        "type": "inject",
+        "z": "tab_stock",
+        "name": "▶ รันตอนนี้",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 190,
+        "wires": [
+            [
+                "stk_cron_fn"
+            ]
+        ],
+        "g": "stk_cron_grp"
+    },
+    {
+        "id": "stk_cron_fn",
+        "type": "function",
+        "z": "tab_stock",
+        "name": "แจ้งยาใกล้หมด (หลังเวลาที่ตั้ง วันละครั้ง ; กด ▶ = รันทันที ; จองก่อนส่ง)",
+        "func": "// cron (topic low-stock) : stockService.tick ตรวจว่าถึงเวลา LOW_STOCK_NOTIFY_AT และวันนี้ยังไม่เคยรัน ; กด ▶ รันตอนนี้ = run ทันที\n// REMINDER_CRON=off ปิดเฉพาะ cron อัตโนมัติ (เฉพาะทดสอบ)\nif (msg.topic === 'low-stock' && env.get('REMINDER_CRON') === 'off') return null;\nconst stock = global.get('stockService');\nconst e = global.get('lineEnv').pick((k) => env.get(k));\ntry {\n  let r;\n  if (msg.topic === 'low-stock') {\n    const state = flow.get('lowStockState') || {};\n    r = await stock.tick(global.get('db'), global.get('lineClient'), e, state);\n    flow.set('lowStockState', state);\n  } else {\n    r = await stock.run(global.get('db'), global.get('lineClient'), e);\n  }\n  if (r === null) return null;   // ยังไม่ถึงเวลา / วันนี้รันแล้ว — ไม่ส่งอะไรต่อ\n  msg.payload = r;\n  return msg;\n} catch (err) {\n  node.error('low_stock_cron ' + String(err.message).slice(0, 200));\n  return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 155,
+        "wires": [
+            [
+                "stk_cron_dbg"
+            ]
+        ],
+        "g": "stk_cron_grp"
+    },
+    {
+        "id": "stk_cron_dbg",
+        "type": "debug",
+        "z": "tab_stock",
+        "name": "จำนวนที่ส่ง (ยาใกล้หมด)",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.sent",
+        "statusType": "auto",
+        "x": 1300,
+        "y": 155,
+        "wires": [],
+        "g": "stk_cron_grp"
+    },
+    {
+        "id": "stk_cron_grp",
+        "type": "group",
+        "z": "tab_stock",
+        "name": "cron แจ้งยาใกล้หมดวันละครั้ง (หลัง LOW_STOCK_NOTIFY_AT ; หรือกด ▶ เอง)",
+        "style": {
+            "stroke": "#b45309",
+            "fill": "#fdf3e3",
+            "label": true,
+            "label-position": "nw",
+            "color": "#b45309"
+        },
+        "nodes": [
+            "stk_cron",
+            "stk_cron_inject",
+            "stk_cron_fn",
+            "stk_cron_dbg"
+        ],
+        "x": 70,
+        "y": 75,
+        "w": 1520,
+        "h": 160
+    },
+    {
+        "id": "stk_demo_in",
+        "type": "http in",
+        "z": "tab_stock",
+        "name": "POST /api/demo/low-stock-now",
+        "url": "/api/demo/low-stock-now",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 320,
+        "wires": [
+            [
+                "stk_demo_jwt"
+            ]
+        ],
+        "g": "stk_demo_grp"
+    },
+    {
+        "id": "stk_demo_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_stock",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 320,
+        "wires": [
+            [
+                "stk_demo_fn"
+            ]
+        ],
+        "g": "stk_demo_grp"
+    },
+    {
+        "id": "stk_demo_fn",
+        "type": "function",
+        "z": "tab_stock",
+        "name": "ส่งแจ้งยาที่ใกล้หมดตอนนี้ (เฉพาะ DEMO_MODE ; ส่งซ้ำต้องส่ง force:true)",
+        "func": "const r = env.get('DEMO_MODE') !== 'true'\n  ? { status: 404, body: { error: 'NOT_FOUND', details: 'ไม่พบข้อมูลที่ต้องการ' } }   // ปิดโหมดเดโม = ทำเหมือนไม่มี endpoint นี้\n  : await global.get('stockService').notifyNow(global.get('db'), global.get('lineClient'), msg.user.id, msg.payload, global.get('lineEnv').pick((k) => env.get(k)));\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ไม่มียาใกล้หมด/แจ้งไปแล้ว/โควตา (4xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "outputLabels": [
+            "สำเร็จ",
+            "error 4xx"
+        ],
+        "x": 900,
+        "y": 320,
+        "wires": [
+            [
+                "stk_demo_ok"
+            ],
+            [
+                "stk_demo_err"
+            ]
+        ],
+        "g": "stk_demo_grp"
+    },
+    {
+        "id": "stk_demo_ok",
+        "type": "http response",
+        "z": "tab_stock",
+        "name": "ตอบ 200 แจ้งยาใกล้หมดแล้ว",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 320,
+        "wires": [],
+        "g": "stk_demo_grp"
+    },
+    {
+        "id": "stk_demo_err",
+        "type": "http response",
+        "z": "tab_stock",
+        "name": "ตอบ 404/409/429/502 ผิดพลาด",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 380,
+        "wires": [],
+        "g": "stk_demo_grp"
+    },
+    {
+        "id": "stk_demo_grp",
+        "type": "group",
+        "z": "tab_stock",
+        "name": "POST /api/demo/low-stock-now",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "stk_demo_in",
+            "stk_demo_jwt",
+            "stk_demo_fn",
+            "stk_demo_ok",
+            "stk_demo_err"
+        ],
+        "x": 70,
+        "y": 275,
+        "w": 1520,
+        "h": 150
+    },
+    {
+        "id": "stk_dmi_inject",
+        "type": "inject",
+        "z": "tab_stock",
+        "name": "แจ้งยาใกล้หมดทดสอบ (demo user)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 490,
+        "wires": [
+            [
+                "stk_dmi_fn"
+            ]
+        ],
+        "g": "stk_dmi_grp"
+    },
+    {
+        "id": "stk_dmi_fn",
+        "type": "function",
+        "z": "tab_stock",
+        "name": "แจ้งยาใกล้หมดให้บัญชีเดโม (ต้อง DEMO_MODE=true)",
+        "func": "try {\n  const r = await global.get('stockService').notifyDemoUser(global.get('db'), global.get('lineClient'), global.get('lineEnv').pick((k) => env.get(k)));\n  msg.payload = r.body;\n  msg.statusCode = r.status;\n} catch (e) {\n  node.error('low_stock_demo ' + String(e.message).slice(0, 200));\n  msg.payload = { error: true };\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 490,
+        "wires": [
+            [
+                "stk_dmi_dbg"
+            ]
+        ],
+        "g": "stk_dmi_grp"
+    },
+    {
+        "id": "stk_dmi_dbg",
+        "type": "debug",
+        "z": "tab_stock",
+        "name": "ผลการแจ้ง",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 1300,
+        "y": 490,
+        "wires": [],
+        "g": "stk_dmi_grp"
+    },
+    {
+        "id": "stk_dmi_grp",
+        "type": "group",
+        "z": "tab_stock",
+        "name": "inject แจ้งยาใกล้หมดทดสอบ (demo user)",
+        "style": {
+            "stroke": "#b45309",
+            "fill": "#fdf3e3",
+            "label": true,
+            "label-position": "nw",
+            "color": "#b45309"
+        },
+        "nodes": [
+            "stk_dmi_inject",
+            "stk_dmi_fn",
+            "stk_dmi_dbg"
+        ],
+        "x": 70,
+        "y": 445,
+        "w": 1520,
+        "h": 90
+    },
+    {
+        "id": "stk_catch",
+        "type": "catch",
+        "z": "tab_stock",
+        "name": "ดักข้อผิดพลาดของ tab นี้",
+        "scope": null,
+        "uncaught": false,
+        "x": 190,
+        "y": 620,
+        "wires": [
+            [
+                "stk_err"
+            ]
+        ],
+        "g": "stk_grp"
+    },
+    {
+        "id": "stk_err",
+        "type": "function",
+        "z": "tab_stock",
+        "name": "แปลง error เป็น JSON 500",
+        "func": "node.error(msg.error && msg.error.message ? msg.error.message : 'unknown error');\nmsg.statusCode = 500;\nmsg.payload = { error: 'INTERNAL_ERROR', details: 'ระบบขัดข้อง กรุณาลองใหม่ภายหลัง' };\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 620,
+        "wires": [
+            [
+                "stk_res"
+            ]
+        ],
+        "g": "stk_grp"
+    },
+    {
+        "id": "stk_res",
+        "type": "http response",
+        "z": "tab_stock",
+        "name": "ตอบ 500 ระบบขัดข้อง",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 620,
+        "wires": [],
+        "g": "stk_grp"
+    },
+    {
+        "id": "stk_grp",
+        "type": "group",
+        "z": "tab_stock",
+        "name": "ข้อผิดพลาดที่ไม่คาดคิด → 500",
+        "style": {
+            "stroke": "#b91c1c",
+            "fill": "#fdeaea",
+            "label": true,
+            "label-position": "nw",
+            "color": "#b91c1c"
+        },
+        "nodes": [
+            "stk_catch",
+            "stk_err",
+            "stk_res"
+        ],
+        "x": 70,
+        "y": 575,
+        "w": 1520,
+        "h": 90
     }
 ]

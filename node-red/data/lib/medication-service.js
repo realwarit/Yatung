@@ -1,6 +1,7 @@
 // logic ของ tab 3-Medications (ยา + เวลามื้อ) — function node แค่เรียกฟังก์ชันที่นี่
 // ทุกฟังก์ชันรับ (db, userId, ...) และคืน { status, body } ; ข้อมูลที่ไม่ใช่ของ userId = 404 เสมอ
 const { validateMedication, SLOTS, MAX_QTY } = require('./validate-medication');
+const stock = require('./stock-service');
 
 const err = (status, error, details) => ({ status, body: { error, details } });
 const notFound = () => err(404, 'NOT_FOUND', 'ไม่พบข้อมูลที่ต้องการ');
@@ -46,6 +47,7 @@ function shape(row) {
     warnings: parseJson(row.warnings, []),
     total_qty: num(row.total_qty), remaining_qty: num(row.remaining_qty), days_left: num(row.days_left),
     refill_alert_days: row.refill_alert_days,
+    is_low: stock.isLow(row),   // เกณฑ์เดียวกับแจ้งเตือน LINE (lib/stock-service.js)
     start_date: row.start_date, end_date: row.end_date, is_active: !!row.is_active,
     created_at: row.created_at, updated_at: row.updated_at
   };
@@ -135,6 +137,7 @@ async function update(db, userId, rawId, body) {
       [m.name, m.strength, m.dose_per_time, m.unit, m.meal_relation, m.as_needed ? 1 : 0, m.indication,
         JSON.stringify(m.warnings), m.total_qty, remaining, m.start_date, id]);
     await replaceSlots(conn, id, m.slots);
+    await stock.resetRecovered(q, process.env, id);   // แก้จำนวน/มื้อจนพ้นเกณฑ์ = เริ่มรอบแจ้งใหม่
     // เวลา/มื้ออาจเปลี่ยน → ลบรอบ pending ที่ยังไม่ถึงเวลา แล้วสร้างของวันนี้ใหม่
     await conn.query("DELETE FROM dose_logs WHERE medication_id = ? AND status = 'pending' AND scheduled_at > NOW()", [id]);
     await conn.query(GENERATE_TODAY_SQL(true, true), [id]);
@@ -191,7 +194,8 @@ async function refillInTx(conn, userId, id, qty) {
   const r = Math.round(((cur[0].remaining_qty || 0) + qty) * 100) / 100;
   const t = Math.round(((cur[0].total_qty || 0) + qty) * 100) / 100;
   if (r > MAX_QTY || t > MAX_QTY) return { ok: false, ...err(400, 'VALIDATION', 'จำนวนยารวมเกินที่ระบบรองรับ (' + MAX_QTY + ')') };
-  await conn.query('UPDATE medications SET remaining_qty = ?, total_qty = ?, refill_alerted_at = NULL WHERE id = ?', [r, t, id]);
+  await conn.query('UPDATE medications SET remaining_qty = ?, total_qty = ? WHERE id = ?', [r, t, id]);
+  await stock.resetRecovered(q, process.env, id);   // ล้างการจอง "แจ้งใกล้หมดแล้ว" เฉพาะเมื่อเติมจนพ้นเกณฑ์
   return { ok: true, med: await fetchOne(q, userId, id) };
 }
 

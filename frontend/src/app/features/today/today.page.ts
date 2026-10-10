@@ -18,6 +18,7 @@ import { ProgressRingComponent } from '../../shared/components/progress-ring/pro
 import { IconComponent, IconName } from '../../shared/icon.component';
 import { DoseCardComponent, DoseState } from './dose-card.component';
 import { hasMultipleTimes, slotTimeLabel } from './slot-time';
+import { lowStockText } from './low-stock';
 
 const OVERDUE_AFTER_MIN = 30;           // ตรงกับ is_overdue ของ backend
 const UNDO_WINDOW_MS = 10 * 60 * 1000;  // undo ได้ 10 นาทีหลังกด
@@ -50,6 +51,8 @@ export class TodayPage {
   protected readonly data = signal<TodayResponse | null>(null);
   protected readonly asNeeded = signal<Medication[]>([]);
   protected readonly activeMeds = signal(0);
+  /** ยาที่ใกล้หมด (medication_id → ข้อความสั้น) ใช้แสดงป้ายเหลืองบนการ์ดยา */
+  protected readonly lowText = signal<ReadonlyMap<number, string>>(new Map());
   protected readonly loading = signal(true);
   protected readonly loadError = signal<string | null>(null);
   protected readonly now = signal(Date.now());
@@ -150,6 +153,7 @@ export class TodayPage {
         this.data.set(today);
         this.activeMeds.set(meds.length);
         this.asNeeded.set(meds.filter((m) => m.as_needed));
+        this.lowText.set(new Map(meds.filter((m) => m.is_low).map((m) => [m.id, lowStockText(m)])));
         this.loading.set(false);
         this.loadError.set(null);
         this.now.set(Date.now());

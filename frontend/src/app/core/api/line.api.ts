@@ -55,6 +55,8 @@ export interface RemindNowResult { sent: number; doses: number; slot: 'morning' 
 
 export interface EscalateNowResult { sent: number; caregivers: number; doses: number; slot: 'morning' | 'noon' | 'evening' | 'bedtime'; time: string; resent: boolean; message: string }
 
+export interface LowStockNowResult { sent: number; meds: number; resent: boolean; message: string }
+
 @Injectable({ providedIn: 'root' })
 export class DemoApi {
   private http = inject(HttpClient);
@@ -65,4 +67,6 @@ export class DemoApi {
   remindNow(): Observable<RemindNowResult> { return this.http.post<RemindNowResult>('/api/demo/remind-now', {}); }
   /** แจ้งญาติทันที ; 409 ALREADY_ESCALATED (body.quota_left) = แจ้งไปแล้ว → force:true ส่งซ้ำได้ */
   escalateNow(force = false): Observable<EscalateNowResult> { return this.http.post<EscalateNowResult>('/api/demo/escalate-now', force ? { force: true } : {}); }
+  /** ส่งแจ้งยาใกล้หมดทันที ; 409 NO_LOW_STOCK = ไม่มียาใกล้หมด · 409 ALREADY_NOTIFIED (body.quota_left) → force:true ส่งซ้ำได้ */
+  lowStockNow(force = false): Observable<LowStockNowResult> { return this.http.post<LowStockNowResult>('/api/demo/low-stock-now', force ? { force: true } : {}); }
 }
