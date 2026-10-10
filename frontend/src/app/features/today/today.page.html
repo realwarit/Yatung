@@ -74,7 +74,7 @@
               <div class="doses">
                 @for (v of s.doses; track v.dose.id) {
                   <app-dose-card [dose]="v.dose" [state]="v.state" [lateMin]="v.lateMin" [takenClock]="v.takenClock" [source]="v.dose.source ?? null"
-                                 [canUndo]="v.canUndo" [busy]="isBusy(v.dose.id)" [pop]="popId() === v.dose.id"
+                                 [canUndo]="v.canUndo" [busy]="isBusy(v.dose.id)" [pop]="popId() === v.dose.id" [showTime]="s.multiTime" [lowText]="lowText().get(v.dose.medication_id) ?? null"
                                  (take)="take(v, s.slot)" (undo)="undo(v.dose.id, s.slot)" />
                 }
               </div>
@@ -92,6 +92,7 @@
                   <h3>{{ m.name }}@if (m.strength) { <span class="strength"> {{ m.strength }}</span> }</h3>
                   <p>ครั้งละ {{ m.dose_per_time | doseQty: m.unit }}@if (m.meal_relation | mealLabel; as meal) { · {{ meal }} }</p>
                   @if (m.indication) { <p class="ind">{{ m.indication }}</p> }
+                  @if (lowText().get(m.id); as low) { <p class="low-tag"><app-icon name="alert" /> {{ low }}</p> }
                 </article>
               }
             </div>

@@ -10,6 +10,8 @@ export const SLOT_LABEL: Record<Slot, string> = {
 export const SOURCE_LABEL: Record<string, string | null> = {
   app: null, line: 'ยืนยันทาง LINE', push: 'จากการแจ้งเตือนบนเครื่อง', caregiver: 'ญาติยืนยันแล้ว',
 };
+/** ชื่อช่องทางสั้น ตรงกับ CHANNEL_LABEL ของ backend (labels-th.js) ใช้ในข้อความ LINE "ผ่านทาง …" */
+export const CHANNEL_LABEL: Record<string, string> = { app: 'แอป', line: 'LINE', push: 'แจ้งเตือนบนเครื่อง', caregiver: 'ญาติ' };
 export function sourceLabel(source: string | null | undefined): string | null {
   return source ? (SOURCE_LABEL[source] ?? null) : null;
 }

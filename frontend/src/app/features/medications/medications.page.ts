@@ -53,9 +53,9 @@ export class MedicationsPage {
     });
   }
 
-  /** เหลือพอใช้ ≤ จำนวนวันที่ตั้งเตือน (ปกติ 3 วัน) */
+  /** เกณฑ์เดียวกับ LINE: backend คำนวณ is_low ให้ (stock-service) */
   protected isLow(m: Medication): boolean {
-    return m.is_active && m.days_left !== null && m.days_left <= m.refill_alert_days;
+    return m.is_active && m.is_low;
   }
 
   protected date(ymd: string): string { return thaiShortDate(ymd); }

@@ -17,6 +17,8 @@ import { MascotComponent, MascotMood } from '../../shared/components/mascot/masc
 import { ProgressRingComponent } from '../../shared/components/progress-ring/progress-ring.component';
 import { IconComponent, IconName } from '../../shared/icon.component';
 import { DoseCardComponent, DoseState } from './dose-card.component';
+import { hasMultipleTimes, slotTimeLabel } from './slot-time';
+import { lowStockText } from './low-stock';
 
 const OVERDUE_AFTER_MIN = 30;           // ตรงกับ is_overdue ของ backend
 const UNDO_WINDOW_MS = 10 * 60 * 1000;  // undo ได้ 10 นาทีหลังกด
@@ -26,7 +28,7 @@ const SLOT_ICON: Record<Slot, IconName> = { morning: 'sunrise', noon: 'sun', eve
 
 interface DoseVM { dose: Dose; state: DoseState; lateMin: number; takenClock: string | null; canUndo: boolean; }
 interface SlotVM {
-  slot: Slot; time: string; icon: IconName; doses: DoseVM[];
+  slot: Slot; time: string; multiTime: boolean; icon: IconName; doses: DoseVM[];
   allTaken: boolean; collapsible: boolean; collapsed: boolean;
 }
 
@@ -49,6 +51,8 @@ export class TodayPage {
   protected readonly data = signal<TodayResponse | null>(null);
   protected readonly asNeeded = signal<Medication[]>([]);
   protected readonly activeMeds = signal(0);
+  /** ยาที่ใกล้หมด (medication_id → ข้อความสั้น) ใช้แสดงป้ายเหลืองบนการ์ดยา */
+  protected readonly lowText = signal<ReadonlyMap<number, string>>(new Map());
   protected readonly loading = signal(true);
   protected readonly loadError = signal<string | null>(null);
   protected readonly now = signal(Date.now());
@@ -88,10 +92,10 @@ export class TodayPage {
         };
       });
       const allTaken = doses.every((x) => x.state === 'taken');
-      const passed = parseServerTime(s.doses[0].scheduled_at) <= now;
+      const passed = s.doses.every((x) => parseServerTime(x.scheduled_at) <= now);
       const collapsible = allTaken && passed && !this.touched().has(s.slot);
       return {
-        slot: s.slot, time: s.time, icon: SLOT_ICON[s.slot], doses, allTaken, collapsible,
+        slot: s.slot, time: slotTimeLabel(s.doses.map((x) => x.scheduled_at)), multiTime: hasMultipleTimes(s.doses.map((x) => x.scheduled_at)), icon: SLOT_ICON[s.slot], doses, allTaken, collapsible,
         collapsed: collapsible && !this.expanded().has(s.slot),
       };
     });
@@ -112,9 +116,10 @@ export class TodayPage {
   protected readonly next = computed(() => {
     const now = this.now();
     for (const s of this.slots()) {
-      if (s.doses.some((x) => x.state === 'waiting')) {
-        const min = Math.max(1, Math.ceil((parseServerTime(s.doses[0].dose.scheduled_at) - now) / 60000));
-        return { label: SLOT_LABEL[s.slot], time: s.time, remain: duration(min) };
+      const w = s.doses.find((x) => x.state === 'waiting');   // dose แรกที่ยังรอเวลา (มื้อเดียวอาจมีหลายเวลา)
+      if (w) {
+        const min = Math.max(1, Math.ceil((parseServerTime(w.dose.scheduled_at) - now) / 60000));
+        return { label: SLOT_LABEL[s.slot], time: slotTimeLabel([w.dose.scheduled_at]), remain: duration(min) };
       }
     }
     return null;
@@ -148,6 +153,7 @@ export class TodayPage {
         this.data.set(today);
         this.activeMeds.set(meds.length);
         this.asNeeded.set(meds.filter((m) => m.as_needed));
+        this.lowText.set(new Map(meds.filter((m) => m.is_low).map((m) => [m.id, lowStockText(m)])));
         this.loading.set(false);
         this.loadError.set(null);
         this.now.set(Date.now());

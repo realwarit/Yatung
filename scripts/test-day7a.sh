@@ -248,17 +248,17 @@ expect_match "ผู้ดูแลของผู้ป่วยคนอื่
 expect "  dose ยัง pending" "$(sql "SELECT status FROM dose_logs WHERE id=$DE1;")" "pending"
 expect "  remaining_qty ยัง 30" "$(sql "SELECT remaining_qty FROM medications WHERE id=$ME1;")" "30.00"
 press "$LC1" "a=cg_take&d=$DE1" wait
-expect_match "ผู้ดูแลที่ถูกต้องกดยืนยัน → บันทึกแล้ว" "$REPLY" 'บันทึกแล้วค่ะ.*ยืนยันว่าคุณผู้ทดสอบ day7a Eกินยามื้อก่อนนอนแล้ว'
+expect_match "ผู้ดูแลที่ถูกต้องกดยืนยัน → บันทึกแล้ว" "$REPLY" 'บันทึกแล้วค่ะ.*คุณผู้ทดสอบ day7a E · มื้อก่อนนอน'
 expect "  dose = taken, source = caregiver" "$(sql "SELECT CONCAT(status,':',source) FROM dose_logs WHERE id=$DE1;")" "taken:caregiver"
 expect "  หักยา 1 เม็ด" "$(sql "SELECT remaining_qty FROM medications WHERE id=$ME1;")" "29.00"
 expect "  บันทึก confirmed_at ของผู้ดูแลที่กด" "$(sql "SELECT confirmed_at IS NOT NULL FROM dose_escalations WHERE dose_id=$DE1 AND caregiver_id=$CGE1;")" "1"
 wait_n push 1; sleep 1
 expect "  ปิดเรื่อง: ส่งให้ผู้ดูแลอีกคนเท่านั้น" "$(fl_last push 'r.body.to')" "$LC2"
 expect "  ไม่ส่งให้คนที่กดยืนยันเอง" "$(fl_push_n "$LC1")" "0"
-expect_match "  altText ปิดเรื่อง" "$(fl_last push 'r.body.messages[0].altText')" '^💚 คุณผู้ทดสอบกินยามื้อก่อนนอนแล้วค่ะ$'
+expect_match "  altText ปิดเรื่อง" "$(fl_last push 'r.body.messages[0].altText')" '^💚 คุณผู้ทดสอบกินยามื้อก่อนนอนแล้วค่ะ · [0-9:]+ น.$'
 fl_clear
 press "$LC2" "a=cg_take&d=$DE1" wait
-expect_match "ผู้ดูแลอีกคนกดทีหลัง → บอกว่ามีญาติยืนยันไว้แล้ว" "$REPLY" 'มีญาติยืนยันไว้แล้ว'
+expect_match "ผู้ดูแลอีกคนกดทีหลัง → บอกว่ามีญาติยืนยันไว้แล้ว" "$REPLY" 'ญาติยืนยันเมื่อ'
 expect "  ไม่หักยาซ้ำ" "$(sql "SELECT remaining_qty FROM medications WHERE id=$ME1;")" "29.00"
 req GET /api/doses/today "$TE"
 expect "GET /api/doses/today แสดง source = caregiver" "$(jget 'o.slots[0].doses[0].source')" "caregiver"
@@ -284,7 +284,7 @@ expect_match "กด รับทราบ → reply ขอบคุณ" "$REPLY
 expect "  บันทึก acknowledged_at" "$(sql "SELECT acknowledged_at IS NOT NULL FROM dose_escalations WHERE id=$EF1;")" "1"
 expect "  ไม่ได้เปลี่ยนสถานะยา" "$(sql "SELECT status FROM dose_logs WHERE id=$DF1;")" "pending"
 press "$LX" "a=cg_ack&e=$EF2" wait
-expect_match "LINE อื่นกดรับทราบของคนอื่น → ไม่พบรายการ" "$REPLY" 'ไม่พบรายการแจ้งเตือน'
+expect_match "LINE อื่นกดรับทราบของคนอื่น → ไม่พบรายการ" "$REPLY" 'ไม่พบรายการนี้แล้ว'
 expect "  ไม่บันทึกให้" "$(sql "SELECT acknowledged_at IS NULL FROM dose_escalations WHERE id=$EF2;")" "1"
 fl_clear
 req POST "/api/doses/$DF1/take" "$TF"; expect "ผู้ป่วยกินทีหลัง (ผ่านเว็บ) → 200" "$STATUS" "200"
@@ -294,7 +294,7 @@ req POST "/api/doses/$DF1/undo" "$TF"; req POST "/api/doses/$DF1/take" "$TF"; sl
 expect "  กินซ้ำหลัง undo ไม่ส่งปิดเรื่องอีก" "$(fl_count push)" "2"
 fl_clear
 press "$LC2" "a=cg_take&d=$DF1" wait
-expect_match "ญาติกดยืนยันหลังผู้ป่วยกินไปแล้ว → บอกว่าผู้ป่วยกินไปก่อนหน้านี้" "$REPLY" 'ผู้ป่วยกินไปก่อนหน้านี้แล้ว'
+expect_match "ญาติกดยืนยันหลังผู้ป่วยกินไปแล้ว → บอกว่าผู้ป่วยกินไปก่อนหน้านี้" "$REPLY" 'ผู้ป่วยกินเมื่อ [0-9:]+ น.'
 expect "  ไม่หักยาซ้ำ (เหลือ 29 หลังกินครั้งแรก)" "$(sql "SELECT remaining_qty FROM medications WHERE id=$MF1;")" "29.00"
 expect "  บันทึก acknowledged_at ของญาติคนนั้น" "$(sql "SELECT acknowledged_at IS NOT NULL FROM dose_escalations WHERE id=$EF2;")" "1"
 
@@ -308,7 +308,7 @@ press "$LG" "a=take&d=$DG1" wait
 expect "ผู้ป่วยกดกินแล้วใน LINE → taken ผ่าน source line" "$(sql "SELECT CONCAT(status,':',source) FROM dose_logs WHERE id=$DG1;")" "taken:line"
 wait_n push 1; sleep 1
 expect "  ญาติได้ข้อความปิดเรื่อง" "$(fl_push_n "$LC1")" "1"
-expect_match "  altText ปิดเรื่อง" "$(fl_alts "$LC1")" '^💚 คุณผู้ทดสอบกินยามื้อก่อนนอนแล้วค่ะ$'
+expect_match "  altText ปิดเรื่อง" "$(fl_alts "$LC1")" '^💚 คุณผู้ทดสอบกินยามื้อก่อนนอนแล้วค่ะ · [0-9:]+ น.$'
 
 section "โควตา: เตือนปกติหยุดที่ cap-reserve แต่แจ้งญาติยังส่งได้ถึง cap"
 new_user H; TH="$TOKEN_NEW"; UH="$UID_NEW"
@@ -403,7 +403,7 @@ expect "แจ้งญาติทันที (ยังไม่ถึงเ�
 expect "  caregivers=1 resent=false" "$(jget 'o.caregivers+":"+o.resent')" "1:false"
 expect_match "  message ภาษาไทย" "$(jget 'o.message')" '^แจ้งญาติ 1 คน เรื่องมื้อก่อนนอน [0-9:]+ น\. \(1 รายการ\) เข้า LINE แล้วค่ะ$'
 expect "  push ถึงญาติ 1 ข้อความ" "$(fl_count push)" "1"
-expect_match "  การ์ดแสดง \"เลยมา\" ตามเวลาที่ผู้ดูแลตั้ง (90 นาที)" "$(fl_last push 'r.body.messages[0].altText')" 'เลยมา 1 ชม. 30 นาที$'
+expect_match "  ยังไม่ถึงเวลา → การ์ดแสดง \"ใกล้ถึงเวลา\" ไม่ใช่ \"เลยมา\"" "$(fl_last push 'r.body.messages[0].altText')" 'ใกล้ถึงเวลากินยามื้อก่อนนอน · อีก (9|10) นาที$'
 expect "  จองก่อนส่ง (dose_escalations 1 แถว)" "$(sql "SELECT COUNT(*) FROM dose_escalations WHERE dose_id=$DJ1;")" "1"
 fl_clear; req POST /api/demo/escalate-now "$TJ"
 expect "กดซ้ำ → 409" "$STATUS" "409"

@@ -1,6 +1,6 @@
 // ข้อความตอบกลับ (reply) ของน้องยาตรงทุกแบบ — pure function ไม่เรียกเครือข่าย/DB ; ระบบออกแบบอยู่ที่ lib/line-flex.js
 // กฎเดียวกับ line-flex.js: น้ำเสียง ค่ะ/นะคะ · อิโมจิ ≤ 1 ตัวต่อบรรทัด วางต้นบรรทัดหรือท้ายบรรทัดเท่านั้น · ตัวอักษร ≥ md · ชื่อมื้อ/วิธีกินใช้ mapping เดียวกับเว็บ (labels-th.js)
-const { SLOT_LABEL, SLOT_EMOJI } = require('./labels-th');
+const { SLOT_LABEL, SLOT_EMOJI, CHANNEL_LABEL, unitInDose } = require('./labels-th');
 const F = require('./line-flex');
 const { text, box, separator, bubble, bodyOf, flexMessage, header, footerOf, uriButton, messageButton, medTitle, progress, badge, COLOR } = F;
 
@@ -21,18 +21,18 @@ const thaiJoin = (items) => (items.length <= 1 ? items.join('') : `${items.slice
 
 // ---------- ข้อความ text ----------
 const TEXT = {
-  invalid: (ttlMin = 10) => plain(`🤔 รหัสนี้ใช้ไม่ได้ค่ะ\nรหัสใช้ได้ภายใน ${ttlMin} นาทีเท่านั้น\nขอรหัสใหม่ในแอป หน้า "ตั้งค่า" ได้เลยนะคะ`),
-  tooMany: () => plain('⏳ ลองหลายครั้งเกินไปค่ะ\nรอประมาณ 10 นาทีแล้วลองใหม่นะคะ'),
-  conflict: () => plain('🔒 LINE นี้เชื่อมกับผู้ป่วยคนอื่นแล้วค่ะ\nต้องยกเลิกการเชื่อมในแอปของบัญชีเดิมก่อน\nแล้วขอรหัสใหม่อีกครั้งนะคะ'),
-  alreadyTaken: () => plain('✅ บันทึกไว้แล้วค่ะ\nน้องยาตรงจำไว้ให้แล้ว ไม่ต้องกดซ้ำนะคะ'),
-  doseNotFound: () => plain('🔍 ไม่พบรายการยานี้แล้วค่ะ\nอาจถูกแก้ไขในแอป\nแตะ "ยาวันนี้" เพื่อดูรายการล่าสุดนะคะ'),
-  help: () => plain('😊 น้องยาตรงช่วยได้แบบนี้ค่ะ\n📋 พิมพ์ "วันนี้" ดูยาของวันนี้\n🔗 ส่งรหัส 6 หลัก เพื่อเชื่อมบัญชี\nหรือแตะปุ่มด้านล่างได้เลยนะคะ\nข้อมูลนี้ไม่ใช่คำแนะนำทางการแพทย์ค่ะ'),
-  notLinked: () => plain('🔗 ยังไม่ได้เชื่อมบัญชีค่ะ\nเปิดแอปยาตรง หน้า "ตั้งค่า" แล้วกด "รับรหัสเชื่อม LINE"\nจากนั้นส่งเลข 6 หลักมาที่แชทนี้ได้เลยนะคะ'),
-  caregiverOnly: (patients) => plain(`💚 คุณเป็นผู้ดูแลของ ${thaiJoin(patients.map((p) => niceName(p)))}\nน้องยาตรงจะแจ้งที่แชทนี้\nเมื่อผู้ป่วยลืมกินยานะคะ`),
-  previewNote: () => plain('นี่คือข้อความตัวอย่างค่ะ ยังไม่ได้บันทึกนะคะ'),
-  cgNoAuth: () => plain('🔒 ไม่พบสิทธิ์ผู้ดูแลสำหรับรายการนี้ค่ะ\nอาจถูกยกเลิกในแอปแล้ว\nสอบถามเจ้าของบัญชีได้เลยนะคะ'),
+  invalid: (ttlMin = 10) => plain(`🤔 รหัสนี้ใช้ไม่ได้ค่ะ\nรหัสใช้ได้ ${ttlMin} นาทีเท่านั้น\nขอรหัสใหม่ในแอป\nหน้า "ตั้งค่า" ได้เลยนะคะ`),
+  tooMany: () => plain('⏳ ลองหลายครั้งเกินไปค่ะ\nรอประมาณ 10 นาที\nแล้วลองใหม่นะคะ'),
+  conflict: () => plain('🔒 LINE นี้เชื่อมไว้แล้วค่ะ\nกับผู้ป่วยอีกคนหนึ่ง\nต้องยกเลิกการเชื่อม\nในแอปของบัญชีเดิมก่อน\nแล้วขอรหัสใหม่นะคะ'),
+  alreadyTaken: () => plain('✅ บันทึกไว้แล้วค่ะ\nไม่ต้องกดซ้ำนะคะ'),
+  doseNotFound: () => plain('🔍 ไม่พบรายการยานี้แล้วค่ะ\nอาจถูกแก้ไขในแอป\nแตะ "ยาวันนี้"\nเพื่อดูรายการล่าสุดนะคะ'),
+  help: () => plain('😊 น้องยาตรงช่วยได้แบบนี้ค่ะ\n📋 พิมพ์ "วันนี้"\nเพื่อดูยาของวันนี้\n🔗 ส่งรหัส 6 หลัก\nเพื่อเชื่อมบัญชี\nหรือแตะปุ่มด้านล่าง\nได้เลยนะคะ\nไม่ใช่คำแนะนำ\nทางการแพทย์ค่ะ'),
+  notLinked: () => plain('🔗 ยังไม่ได้เชื่อมบัญชีค่ะ\nเปิดแอปยาตรง\nไปที่หน้า "ตั้งค่า"\nกด "รับรหัสเชื่อม LINE"\nแล้วส่งเลข 6 หลัก\nมาที่แชทนี้นะคะ'),
+  caregiverOnly: (patients) => plain(`💚 คุณเป็นผู้ดูแลของ\n${thaiJoin(patients.map((p) => niceName(p)))}\nน้องยาตรงจะแจ้งที่แชทนี้\nเมื่อผู้ป่วยลืมกินยานะคะ`),
+  previewNote: () => plain('นี่คือข้อความตัวอย่างค่ะ\nยังไม่ได้บันทึกนะคะ'),
+  cgNoAuth: () => plain('🔒 ไม่พบสิทธิ์ผู้ดูแล\nสำหรับรายการนี้ค่ะ\nอาจถูกยกเลิกในแอปแล้ว\nสอบถามเจ้าของบัญชีนะคะ'),
   cgAck: () => plain('💚 รับทราบแล้วค่ะ\nขอบคุณที่ช่วยดูแลนะคะ'),
-  cgAckNotFound: () => plain('🔍 ไม่พบรายการแจ้งเตือนนี้แล้วค่ะ\nอาจถูกยกเลิกในแอปแล้ว')
+  cgAckNotFound: () => plain('🔍 ไม่พบรายการนี้แล้วค่ะ\nอาจถูกยกเลิกในแอปแล้ว')
 };
 
 // ---------- Flex ต้อนรับ / วิธีใช้ ----------
@@ -98,8 +98,25 @@ function slotStatus(slot) {
   if (!rest.length) return 'done';
   return rest.some((d) => d.status === 'missed' || d.is_due) ? 'late' : 'wait';
 }
+// แยกมื้อที่มีหลายเวลา (เช่น เย็น 16:30 และ 18:00) เป็นแถวละ (มื้อ, เวลา) — แต่ละแถวมีเวลาและสถานะของตัวเอง
+// dose ที่ไม่มี scheduled_at (ตัวอย่าง) ใช้เวลาของมื้อ
+const SLOT_ORDER = ['morning', 'noon', 'evening', 'bedtime'];
+function timeRows(slots) {
+  const rows = [];
+  for (const s of slots) {
+    const by = new Map();
+    for (const d of s.doses) {
+      const t = d.scheduled_at ? String(d.scheduled_at).slice(11, 16) : s.time;
+      if (!by.has(t)) by.set(t, []);
+      by.get(t).push(d);
+    }
+    for (const [time, doses] of by) rows.push({ slot: s.slot, time, doses });
+  }
+  return rows.sort((a, b) => a.time.localeCompare(b.time) || SLOT_ORDER.indexOf(a.slot) - SLOT_ORDER.indexOf(b.slot));
+}
 function buildToday(shaped, today, env) {
-  const { slots, summary } = shaped.body;
+  const { summary } = shaped.body;
+  const slots = timeRows(shaped.body.slots);
   const openToday = F.appUrl(env, '/today');
   const openBtn = footerOf(openToday ? [uriButton('เปิดแอป', openToday, 'primary')] : []);
   const dateText = thaiDate(today);
@@ -161,25 +178,31 @@ function buildEscalation(g, env, opts = {}) {
   const name = firstName(g.patient);
   const slotLabel = SLOT_LABEL[g.slot] || '';
   const emoji = SLOT_EMOJI[g.slot] || '';
-  const late = F.durationText(Math.max(0, Math.floor(Number(g.late_min) || 0)));
+  // เวลาที่เลยมาจริง (now − scheduled_at) ; ยังไม่ถึงเวลา (เดโม) = "ใกล้ถึงเวลา" ไม่ใช้คำว่าเลยมา
+  const lateMin = Number.isFinite(Number(g.late_min)) ? Number(g.late_min) : 0;
+  const soon = lateMin < 0;
+  const when = soon ? `อีก ${F.durationText(Math.ceil(-lateMin))}` : Math.floor(lateMin) < 1 ? 'เลยมาไม่ถึง 1 นาที' : `เลยมา ${F.durationText(Math.floor(lateMin))}`;
   const ids = g.doses.map((d) => d.id);
   const take = { type: 'postback', data: opts.preview ? 'a=preview' : cgTakeData(ids), displayText: `ยืนยันว่าคุณ${name}กินยาแล้ว` };
   const ack = { type: 'postback', data: opts.preview ? 'a=preview' : cgAckData(g.escalation_ids || []), displayText: 'รับทราบ' };
-  const body = [...F.medList(g.doses), separator(), text(`ลองโทรถามคุณ${name}ได้นะคะ`, { size: 'lg', weight: 'bold' })];
-  return flexMessage(`⚠️ คุณ${name}ยังไม่ได้กินยามื้อ${slotLabel} · เลยมา ${late}`, bubble({
-    header: header({ pose: 'bell', title: `คุณ${name}ยังไม่ได้กินยานะคะ`, badge: `${emoji ? emoji + ' ' : ''}มื้อ${slotLabel} ${F.timeText(g.scheduled_at)} น. · เลยมา ${late}`, tone: 'warn' }, env),
+  const body = [...F.medList(g.doses), separator(), text(soon ? `ยังไม่ถึงเวลากินยาของคุณ${name}` : `ลองโทรถามคุณ${name}ได้นะคะ`, { size: 'lg', weight: 'bold' })];
+  return flexMessage(soon ? `⏰ คุณ${name}ใกล้ถึงเวลากินยามื้อ${slotLabel} · ${when}` : `⚠️ คุณ${name}ยังไม่ได้กินยามื้อ${slotLabel} · ${when}`, bubble({
+    header: header({ pose: 'bell', title: soon ? `คุณ${name}ใกล้ถึงเวลากินยา` : `คุณ${name}ยังไม่ได้กินยานะคะ`, badge: `${emoji ? emoji + ' ' : ''}มื้อ${slotLabel} ${F.timeText(g.scheduled_at)} น. · ${when}`, ...(soon ? {} : { tone: 'warn' }) }, env),
     body: bodyOf(body),
     footer: footerOf([F.button('✓ ยืนยันว่ากินแล้ว', take, 'primary'), F.button('รับทราบ', ack, 'secondary')])
   }));
 }
 
 // ปิดเรื่อง: ผู้ป่วยกินทีหลังที่แจ้งญาติไปแล้ว (ส่งครั้งเดียวต่อกลุ่ม)
+// g.at = 'HH:MM' เวลาที่ผู้ป่วยกดจริง ; g.source = app|line|push ; g.doses.length = จำนวนรายการ
 function buildEscalationResolved(g, env) {
   const name = firstName(g.patient);
   const slotLabel = SLOT_LABEL[g.slot] || '';
-  return flexMessage(`💚 คุณ${name}กินยามื้อ${slotLabel}แล้วค่ะ`, bubble({
+  const n = (g.doses && g.doses.length) || g.count || 1;
+  const via = CHANNEL_LABEL[g.source] || CHANNEL_LABEL.app;
+  return flexMessage(`💚 คุณ${name}กินยามื้อ${slotLabel}แล้วค่ะ · ${g.at || F.timeText(g.scheduled_at)} น.`, bubble({
     header: header({ pose: 'cheer', title: `คุณ${name}กินยาแล้วค่ะ`, badge: `💚 มื้อ${slotLabel} ${F.timeText(g.scheduled_at)} น.` }, env),
-    body: bodyOf([text(`คุณ${niceName(g.patient)}กินยามื้อ${slotLabel}เรียบร้อยแล้ว`, { size: 'lg', weight: 'bold' }), text('ขอบคุณที่ช่วยดูแลนะคะ', { size: 'md', color: COLOR.muted })])
+    body: bodyOf([text(`✅ บันทึกเมื่อ ${g.at || F.timeText(g.scheduled_at)} น.`, { size: 'lg', weight: 'bold' }), text(`${n} รายการ · ผ่านทาง ${via}`, { size: 'md' }), text('ขอบคุณที่ช่วยดูแลนะคะ', { size: 'md', color: COLOR.muted })])
   }));
 }
 
@@ -190,7 +213,8 @@ function buildCaregiverToday(list, today, env) {
   const rows = [];
   list.slice(0, MAX_CG_PATIENTS).forEach((p, i) => {
     if (i > 0) rows.push(separator());
-    const { slots, summary } = p.shaped.body;
+    const { summary } = p.shaped.body;
+    const slots = timeRows(p.shaped.body.slots);
     const items = [text(`คุณ${niceName(p.name, 30)}`, { weight: 'bold', size: 'xl' })];
     if (!summary.total) items.push(text('วันนี้ไม่มียาที่ต้องกินค่ะ', { size: 'md', color: COLOR.muted }));
     else {
@@ -211,14 +235,37 @@ function buildCaregiverToday(list, today, env) {
 // reply หลังผู้ดูแลกด "ยืนยันว่ากินแล้ว" : taken = [{ name, slot }] , already = [{ name, slot, at, by: 'self'|'caregiver' }]
 function caregiverTakeResult({ taken = [], already = [] }) {
   const blocks = [];
-  if (taken.length) {
-    blocks.push(['✅ บันทึกแล้วค่ะ', ...taken.map((t) => `ยืนยันว่าคุณ${niceName(t.name, 30)}กินยามื้อ${SLOT_LABEL[t.slot]}แล้ว`), 'ขอบคุณที่ช่วยดูแลนะคะ'].join('\n'));
-  }
+  // ชื่อคน (ความยาวไม่แน่นอน) อยู่บรรทัดของตัวเองพร้อมมื้อ ; บรรทัดคงที่ยาวไม่เกินประมาณ 22 ตัวอักษร
+  const who = (x) => `คุณ${niceName(x.name, 30)} · มื้อ${SLOT_LABEL[x.slot]}`;
+  for (const t of taken) blocks.push(['✅ บันทึกแล้วค่ะ', who(t), 'ขอบคุณที่ช่วยดูแลนะคะ'].join('\n'));
   for (const a of already) {
-    const who = a.by === 'caregiver' ? 'มีญาติยืนยันไว้แล้ว' : 'ผู้ป่วยกินไปก่อนหน้านี้แล้ว';
-    blocks.push([`✅ คุณ${niceName(a.name, 30)}กินยามื้อ${SLOT_LABEL[a.slot]}ไปแล้วค่ะ`, `${who} (บันทึกเมื่อ ${a.at} น.)`, 'ไม่ต้องกดซ้ำนะคะ'].join('\n'));
+    const by = a.by === 'caregiver' ? `ญาติยืนยันเมื่อ ${a.at} น.` : `ผู้ป่วยกินเมื่อ ${a.at} น.`;
+    blocks.push(['✅ กินไปแล้วค่ะ', who(a), by, 'ไม่ต้องกดซ้ำนะคะ'].join('\n'));
   }
   return plain(blocks.join('\n\n'));
+}
+
+// ---------- ยาใกล้หมด (วันที่ 7B) ----------
+// meds = [{ name, strength, unit, remaining_qty, days_left (null = ยาเมื่อมีอาการ), as_needed }] ; ชื่อยา (ความยาวไม่แน่นอน) อยู่บรรทัดของตัวเอง
+const qtyText = (n) => String(Math.round(Number(n) * 100) / 100);
+function lowStockLine(m) {
+  if (Number(m.remaining_qty) <= 0) return 'ยาหมดแล้ว';
+  const left = `เหลือ ${qtyText(m.remaining_qty)} ${unitInDose(m.unit)}`;
+  return m.as_needed || m.days_left == null ? left : `${left} · พอใช้ ${m.days_left} วัน`;
+}
+function buildLowStock(meds, env) {
+  const shown = meds.slice(0, F.MAX_SHOWN_DOSES);
+  const rows = [];
+  shown.forEach((m, i) => {
+    if (i > 0) rows.push(separator());
+    rows.push(box([text(F.medTitle(m), { weight: 'bold', size: 'xl' }), text(lowStockLine(m), { size: 'md', color: COLOR.muted })], { spacing: 'xs', margin: i > 0 ? 'md' : undefined }));
+  });
+  if (meds.length > shown.length) rows.push(text(`+ อีก ${meds.length - shown.length} รายการ`, { size: 'md', color: COLOR.muted, margin: 'md' }));
+  const body = [...rows, separator(), text('อย่าลืมไปรับยา', { size: 'lg', weight: 'bold' }), text('หรือซื้อเพิ่มนะคะ', { size: 'lg', weight: 'bold' })];
+  const open = F.appUrl(env, '/medications');
+  const names = meds.slice(0, 3).map((m) => m.name).join(', ');
+  const alt = `💊 ยาใกล้หมด ${meds.length} รายการ: ${names}${meds.length > 3 ? ' …' : ''}`;
+  return flexMessage(alt, bubble({ header: header({ pose: 'hello', title: 'ยาใกล้หมดแล้วนะคะ' }, env), body: bodyOf(body), footer: footerOf(open ? [uriButton('เติมยาในแอป', open, 'primary')] : []) }));
 }
 
 // ---------- ตัวอย่างทุกแบบ (#ตัวอย่าง n — เฉพาะ DEMO_MODE ; ข้อมูลสร้างในหน่วยความจำ ไม่เขียน DB) ----------
@@ -234,7 +281,7 @@ const SAMPLE_DOSES = [
 ];
 const sd = (ids) => SAMPLE_DOSES.filter((d) => ids.includes(d.id));
 const shapedOf = (slotsIn) => {
-  const slots = slotsIn.map((s) => ({ slot: s.slot, time: s.time, doses: s.doses.map((d) => ({ ...SAMPLE_DOSES.find((x) => x.id === d.id), status: d.status, is_due: !!d.due })) }));
+  const slots = slotsIn.map((s) => ({ slot: s.slot, time: s.time, doses: s.doses.map((d) => ({ ...SAMPLE_DOSES.find((x) => x.id === d.id), status: d.status, is_due: !!d.due, ...(d.at ? { scheduled_at: `2026-10-09 ${d.at}:00` } : {}) })) }));
   const all = slots.flatMap((s) => s.doses);
   return { status: 200, body: { slots, summary: { total: all.length, taken: all.filter((d) => d.status === 'taken').length, pending: all.filter((d) => d.status === 'pending').length, missed: all.filter((d) => d.status === 'missed').length } } };
 };
@@ -259,6 +306,8 @@ function samples(env) {
     { id: 'today-done', title: 'วันนี้: กินครบ', ctx: 'patient', messages: [buildToday(shapedOf([
       { slot: 'morning', time: '08:00', doses: [{ id: 1, status: 'taken' }] },
       { slot: 'evening', time: '18:00', doses: [{ id: 3, status: 'taken' }] }]), '2026-10-09', env)] },
+    { id: 'today-multitime', title: 'วันนี้: มื้อเดียวหลายเวลา', ctx: 'patient', messages: [buildToday(shapedOf([
+      { slot: 'evening', time: '16:30', doses: [{ id: 7, status: 'taken', at: '16:30' }, { id: 2, status: 'pending', due: true, at: '18:00' }] }]), '2026-10-09', env)] },
     { id: 'today-empty', title: 'วันนี้: ไม่มียา', ctx: 'patient', messages: [buildToday(shapedOf([]), '2026-10-09', env)] },
     { id: 'taken-next', title: 'กินแล้ว: ยังมีมื้อถัดไป', ctx: 'patient', messages: [buildTaken({ names: ['พาราเซตามอล 500 mg', 'เมตฟอร์มิน 500 mg'], at: '08:03', taken: 2, total: 5, next: { slot: 'noon', time: '12:00' } }, env)] },
     { id: 'taken-last', title: 'กินแล้ว: ครบทุกรายการ', ctx: 'patient', messages: [buildTaken({ names: ['แอมโลดิปีน 5 mg'], at: '21:02', taken: 5, total: 5, next: null }, env)] },
@@ -271,12 +320,17 @@ function samples(env) {
     { id: 'text-caregiver-only', title: 'ผู้ดูแลอย่างเดียว พิมพ์ "วันนี้"', ctx: 'caregiver', messages: [TEXT.caregiverOnly(['สมชาย ใจดี', 'มาลี ใจงาม'])] },
     { id: 'cg-escalation', title: 'แจ้งญาติ: ลืมกินยา', ctx: 'caregiver', messages: [buildEscalation({ patient: 'สมชาย ใจดี', slot: 'evening', scheduled_at: '2026-10-09 18:00:00', late_min: 65, doses: sd([1, 2]), escalation_ids: [] }, env, { preview: true })] },
     { id: 'cg-escalation-many', title: 'แจ้งญาติ: ยาเกิน 6 รายการ', ctx: 'caregiver', messages: [buildEscalation({ patient: 'มาลี ใจงาม', slot: 'morning', scheduled_at: '2026-10-09 08:00:00', late_min: 125, doses: sd([1, 2, 3, 4, 5, 6, 7, 8]), escalation_ids: [] }, env, { preview: true })] },
-    { id: 'cg-resolved', title: 'แจ้งญาติ: ผู้ป่วยกินแล้ว (ปิดเรื่อง)', ctx: 'caregiver', messages: [buildEscalationResolved({ patient: 'สมชาย ใจดี', slot: 'evening', scheduled_at: '2026-10-09 18:00:00' }, env)] },
+    { id: 'cg-resolved', title: 'แจ้งญาติ: ผู้ป่วยกินแล้ว (ปิดเรื่อง)', ctx: 'caregiver', messages: [buildEscalationResolved({ patient: 'สมชาย ใจดี', slot: 'evening', scheduled_at: '2026-10-09 18:00:00', at: '18:42', source: 'line', doses: sd([1, 2]) }, env)] },
     { id: 'cg-today', title: 'ผู้ดูแล: พิมพ์ "วันนี้"', ctx: 'caregiver', messages: [buildCaregiverToday([
       { name: 'สมชาย ใจดี', shaped: shapedOf([{ slot: 'morning', time: '08:00', doses: [{ id: 1, status: 'taken' }] }, { slot: 'evening', time: '18:00', doses: [{ id: 1, status: 'pending', due: true }] }, { slot: 'bedtime', time: '21:00', doses: [{ id: 6, status: 'pending' }] }]) },
       { name: 'มาลี ใจงาม', shaped: shapedOf([{ slot: 'morning', time: '08:00', doses: [{ id: 3, status: 'taken' }] }]) }], '2026-10-09', env)] },
     { id: 'cg-taken', title: 'ผู้ดูแลกดยืนยัน: บันทึกแล้ว', ctx: 'caregiver', messages: [caregiverTakeResult({ taken: [{ name: 'สมชาย ใจดี', slot: 'evening' }] })] },
     { id: 'cg-already', title: 'ผู้ดูแลกดยืนยัน: ผู้ป่วยกินไปแล้ว', ctx: 'caregiver', messages: [caregiverTakeResult({ already: [{ name: 'สมชาย ใจดี', slot: 'evening', at: '18:12', by: 'self' }] })] },
+    { id: 'cg-already-cg', title: 'ผู้ดูแลกดยืนยัน: ญาติคนอื่นยืนยันแล้ว', ctx: 'caregiver', messages: [caregiverTakeResult({ already: [{ name: 'สมชาย ใจดี', slot: 'evening', at: '16:33', by: 'caregiver' }] })] },
+    { id: 'low-stock', title: 'ยาใกล้หมด', ctx: 'patient', messages: [buildLowStock([
+      { name: 'เมตฟอร์มิน', strength: '500 mg', unit: 'tablet', remaining_qty: 6, days_left: 3, as_needed: false },
+      { name: 'แอมโลดิปีน', strength: '5 mg', unit: 'tablet', remaining_qty: 14, days_left: 7, as_needed: false },
+      { name: 'พาราเซตามอล', strength: '500 mg', unit: 'tablet', remaining_qty: 4, days_left: null, as_needed: true }], env)] },
     { id: 'cg-ack', title: 'ผู้ดูแลกดรับทราบ', ctx: 'caregiver', messages: [TEXT.cgAck()] },
     { id: 'cg-noauth', title: 'ผู้ดูแลกดแต่ไม่มีสิทธิ์', ctx: 'caregiver', messages: [TEXT.cgNoAuth()] },
     { id: 'text-not-linked', title: 'ยังไม่ได้เชื่อม พิมพ์ "วันนี้"', ctx: 'unlinked', messages: [TEXT.notLinked()] }
@@ -299,7 +353,7 @@ function buildPreviewPage(n, env) {
 
 module.exports = {
   plain, niceName, thaiDate, thaiJoin, TEXT,
-  buildWelcome, buildLinkedPatient, buildLinkedCaregiver, buildToday, buildTaken, slotStatus,
-  buildEscalation, buildEscalationResolved, buildCaregiverToday, caregiverTakeResult, firstName, cgTakeData, cgAckData,
+  buildWelcome, buildLinkedPatient, buildLinkedCaregiver, buildToday, buildTaken, slotStatus, timeRows, timeRows,
+  buildEscalation, buildEscalationResolved, buildCaregiverToday, caregiverTakeResult, buildLowStock, firstName, cgTakeData, cgAckData,
   samples, buildPreviewPage, previewPageCount, SAMPLES_PER_PAGE
 };

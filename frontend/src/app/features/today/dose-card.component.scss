@@ -89,3 +89,19 @@ h3 { font-size: 1.3rem; line-height: var(--yt-line-height-tight); }
   :host { display: flex; align-items: center; justify-content: space-between; gap: var(--yt-space-4); }
   :host > .take, :host > .undo { margin-top: 0; flex: none; }
 }
+
+// ป้ายยาใกล้หมด (สีเหลือง/ส้มเดียวกับหน้ายาของฉัน)
+.low-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  width: fit-content;
+  margin: var(--yt-space-2) 0 0;
+  padding: 0 var(--yt-space-3);
+  border-radius: var(--yt-radius-pill);
+  background: var(--yt-warning-soft);
+  color: var(--yt-on-warning-soft);
+  font-size: var(--yt-text-sm);
+  font-weight: 600;
+  line-height: 1.6;
+}

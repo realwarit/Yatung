@@ -2,9 +2,11 @@
   <div class="info">
     <h3>{{ dose().name }}@if (dose().strength) { <span class="strength"> {{ dose().strength }}</span> }</h3>
     <p class="how">
+      @if (showTime()) { <span class="num">{{ dose().scheduled_at.slice(11, 16) }} น.</span> · }
       ครั้งละ {{ dose().dose_per_time | doseQty: dose().unit }}
       @if (dose().meal_relation | mealLabel; as meal) { · {{ meal }} }
     </p>
+    @if (lowText(); as low) { <p class="low-tag"><app-icon name="alert" /> {{ low }}</p> }
   </div>
 
   <p class="badge">

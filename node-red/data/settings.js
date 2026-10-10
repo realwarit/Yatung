@@ -18,6 +18,7 @@ const { createRawBodyMiddleware } = require('./lib/raw-body');
 const { resolveAdmin } = require('./lib/admin-auth');
 const reminderService = require('./lib/reminder-service');
 const escalationService = require('./lib/escalation-service');
+const stockService = require('./lib/stock-service');
 const lineEnv = require('./lib/line-env');
 
 const PROMPT_DIR = path.join(__dirname, 'prompts');
@@ -76,6 +77,7 @@ module.exports = {
     caregiverService,
     reminderService,                          // cron ส่งเตือน / demo (lib/reminder-service.js)
     escalationService,                        // แจ้งญาติเมื่อลืมกินยา / ปิดเรื่อง / demo (lib/escalation-service.js)
+    stockService,                             // แจ้งยาใกล้หมด / is_low / demo (lib/stock-service.js)
     lineEnv,                                  // pick(env.get) → env ที่ lib ฝั่ง LINE ใช้ (lib/line-env.js)
     llmOutput,                                // process / reviewFlags / redactPii (lib/validate-llm-output.js)
     prompts: {

@@ -215,7 +215,7 @@ async function handlePostback(event, deps) {
     const q = doseService.todayQuery(userId, { withDue: true });
     const { slots, summary } = doseService.shapeToday(await db.query(q.sql, q.params)).body;
     // มื้อถัดไป = มื้อแรกที่ยังมียาไม่ได้กิน และไม่มีรายการที่ถึงเวลาแล้ว (ยังมาไม่ถึง)
-    const next = slots.find((s) => s.doses.some((d) => d.status !== 'taken') && s.doses.every((d) => d.status === 'taken' || !d.is_due));
+    const next = M.timeRows(slots).find((s) => s.doses.some((d) => d.status !== 'taken') && s.doses.every((d) => d.status === 'taken' || !d.is_due));
     await send([M.buildTaken({
       names: rows.map(lineFlex.medTitle), at: r.at, taken: summary.taken, total: summary.total, next: next ? { slot: next.slot, time: next.time } : null
     }, env)], 'patient', meta);

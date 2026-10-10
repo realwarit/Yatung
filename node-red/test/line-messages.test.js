@@ -124,12 +124,49 @@ test('4.2/4.3 เชื่อมสำเร็จ: ผู้ป่วย (ป�
 });
 
 test('4.4/4.7/4.8/4.9 ข้อความ text', () => {
-  assert.equal(M.TEXT.invalid(10).text, '🤔 รหัสนี้ใช้ไม่ได้ค่ะ\nรหัสใช้ได้ภายใน 10 นาทีเท่านั้น\nขอรหัสใหม่ในแอป หน้า "ตั้งค่า" ได้เลยนะคะ');
-  assert.equal(M.TEXT.tooMany().text, '⏳ ลองหลายครั้งเกินไปค่ะ\nรอประมาณ 10 นาทีแล้วลองใหม่นะคะ');
-  assert.match(M.TEXT.conflict().text, /^🔒 LINE นี้เชื่อมกับผู้ป่วยคนอื่นแล้วค่ะ\n.+\n.+$/);
-  assert.equal(M.TEXT.alreadyTaken().text, '✅ บันทึกไว้แล้วค่ะ\nน้องยาตรงจำไว้ให้แล้ว ไม่ต้องกดซ้ำนะคะ');
-  assert.equal(M.TEXT.doseNotFound().text, '🔍 ไม่พบรายการยานี้แล้วค่ะ\nอาจถูกแก้ไขในแอป\nแตะ "ยาวันนี้" เพื่อดูรายการล่าสุดนะคะ');
-  assert.match(M.TEXT.help().text, /^😊 น้องยาตรงช่วยได้แบบนี้ค่ะ\n📋 พิมพ์ "วันนี้" ดูยาของวันนี้\n🔗 ส่งรหัส 6 หลัก เพื่อเชื่อมบัญชี\nหรือแตะปุ่มด้านล่างได้เลยนะคะ/);
+  assert.equal(M.TEXT.invalid(10).text, '🤔 รหัสนี้ใช้ไม่ได้ค่ะ\nรหัสใช้ได้ 10 นาทีเท่านั้น\nขอรหัสใหม่ในแอป\nหน้า "ตั้งค่า" ได้เลยนะคะ');
+  assert.equal(M.TEXT.tooMany().text, '⏳ ลองหลายครั้งเกินไปค่ะ\nรอประมาณ 10 นาที\nแล้วลองใหม่นะคะ');
+  assert.match(M.TEXT.conflict().text, /^🔒 LINE นี้เชื่อมไว้แล้วค่ะ\n.+\n.+/);
+  assert.equal(M.TEXT.alreadyTaken().text, '✅ บันทึกไว้แล้วค่ะ\nไม่ต้องกดซ้ำนะคะ');
+  assert.equal(M.TEXT.doseNotFound().text, '🔍 ไม่พบรายการยานี้แล้วค่ะ\nอาจถูกแก้ไขในแอป\nแตะ "ยาวันนี้"\nเพื่อดูรายการล่าสุดนะคะ');
+  assert.match(M.TEXT.help().text, /^😊 น้องยาตรงช่วยได้แบบนี้ค่ะ\n📋 พิมพ์ "วันนี้"\nเพื่อดูยาของวันนี้\n🔗 ส่งรหัส 6 หลัก\nเพื่อเชื่อมบัญชี\nหรือแตะปุ่มด้านล่าง\nได้เลยนะคะ/);
+});
+
+test('ข้อความ text ทุกแบบ: บรรทัดที่เป็นข้อความคงที่ยาวไม่เกิน 22 ตัวอักษรไทย (จอ Android 360px)', () => {
+  const base = (s) => [...s].filter((c) => !/[ัิ-ฺ็-๎]/.test(c)).length;
+  const strip = (l) => l.replace(/\p{Extended_Pictographic}️?/gu, '').trim();
+  const VARIABLE = /^คุณ.* · มื้อ|สมชาย|มาลี/;   // บรรทัดชื่อคน (ความยาวไม่แน่นอน) อยู่บรรทัดของตัวเอง ไม่ตัด
+  const texts = [
+    ...Object.values(M.TEXT).map((f) => f(['สมชาย']).text),
+    M.caregiverTakeResult({ taken: [{ name: 'สมชาย ใจดี', slot: 'evening' }], already: [{ name: 'ก', slot: 'noon', at: '12:00', by: 'caregiver' }, { name: 'ข', slot: 'noon', at: '12:00', by: 'self' }] }).text,
+    ...SAMPLES.flatMap((s) => s.messages.filter((m) => m.type === 'text').map((m) => m.text))
+  ];
+  for (const t of texts) for (const line of t.split('\n')) {
+    if (/^ตัวอย่าง \d+\/\d+: /.test(line) || VARIABLE.test(strip(line))) continue;
+    assert.ok(base(strip(line)) <= 22, `${base(strip(line))}: ${line}`);
+  }
+});
+
+test('"วันนี้": มื้อเดียวหลายเวลา แยกแถวตาม (มื้อ, เวลา) แต่ละแถวมีเวลาและสถานะของตัวเอง', () => {
+  const d = (id, name, status, at, due) => ({ ...dose(id, name, status, 'evening', '16:30', due), scheduled_at: `2026-10-09 ${at}:00` });
+  const shaped = shapedOf([d(1, 'Vitamin D', 'taken', '16:30', true), d(2, 'Metformin', 'pending', '18:00', false)]);
+  const rows = M.timeRows(shaped.body.slots);
+  assert.deepEqual(rows.map((r) => [r.slot, r.time, r.doses.length]), [['evening', '16:30', 1], ['evening', '18:00', 1]]);
+  const t = flat(M.buildToday(shaped, '2026-10-09', ENV));
+  assert.ok(t.includes('16:30 น.') && t.includes('18:00 น.'));
+  assert.ok(t.includes('✅ กินแล้ว') && t.includes('🕒 รอเวลา'));
+  assert.ok(!t.includes('• Vitamin D') && t.includes('• Metformin'));   // 16:30 กินแล้ว ไม่แสดงชื่อยา
+  // ของญาติ: ไม่เหลือแถว "มื้อเย็น 16:30 · รอเวลา" ผิดๆ — แสดงเฉพาะแถวที่ยังไม่ครบ คือ 18:00 รอเวลา
+  const cg = flat(M.buildCaregiverToday([{ name: 'การ์ตูน', shaped }], '2026-10-09', ENV));
+  assert.ok(cg.includes('🌆 มื้อเย็น 18:00 น. · รอเวลา'));
+  assert.ok(!cg.some((x) => x.includes('16:30')));
+});
+
+test('"มื้อถัดไป" ในการ์ดกินแล้ว: ใช้แถว (มื้อ, เวลา) ที่ยังไม่ถึงเวลา ไม่ใช่เวลาแรกของมื้อ', () => {
+  const d = (id, status, at, due) => ({ ...dose(id, 'ยา' + id, status, 'evening', '16:30', due), scheduled_at: `2026-10-09 ${at}:00` });
+  const rows = M.timeRows(shapedOf([d(1, 'taken', '16:30', true), d(2, 'pending', '18:00', false)]).body.slots);
+  const next = rows.find((s) => s.doses.some((x) => x.status !== 'taken') && s.doses.every((x) => x.status === 'taken' || !x.is_due));
+  assert.equal(next.time, '18:00');
 });
 
 // ---------- "วันนี้" ----------
@@ -199,8 +236,8 @@ test('วันที่ไทยสั้น', () => {
 });
 
 test('ผู้ดูแลอย่างเดียว / ยังไม่เชื่อม: ข้อความ text', () => {
-  assert.equal(M.TEXT.caregiverOnly(['สมชาย']).text, '💚 คุณเป็นผู้ดูแลของ สมชาย\nน้องยาตรงจะแจ้งที่แชทนี้\nเมื่อผู้ป่วยลืมกินยานะคะ');
-  assert.match(M.TEXT.caregiverOnly(['A', 'B']).text, /ผู้ดูแลของ A และ B/);
+  assert.equal(M.TEXT.caregiverOnly(['สมชาย']).text, '💚 คุณเป็นผู้ดูแลของ\nสมชาย\nน้องยาตรงจะแจ้งที่แชทนี้\nเมื่อผู้ป่วยลืมกินยานะคะ');
+  assert.match(M.TEXT.caregiverOnly(['A', 'B']).text, /ผู้ดูแลของ\nA และ B/);
   assert.match(M.TEXT.notLinked().text, /ยังไม่ได้เชื่อมบัญชี/);
   assert.match(M.TEXT.notLinked().text, /รับรหัสเชื่อม LINE/);
 });
@@ -325,6 +362,6 @@ test('postback a=preview: ตอบ "ตัวอย่าง ยังไม่
   let touched = false;
   const db = { query: async (sql) => { if (/UPDATE|INSERT/.test(sql)) touched = true; return []; }, withTransaction: async () => { touched = true; } };
   await svc.handlePostback({ type: 'postback', replyToken: 'rt', source: { userId: 'Uxxxxxxxxxxxxxxxxx' }, postback: { data: 'a=preview' } }, { db, client: h.client, env: ENV });
-  assert.equal(h.sent[0].messages[0].text, 'นี่คือข้อความตัวอย่างค่ะ ยังไม่ได้บันทึกนะคะ');
+  assert.equal(h.sent[0].messages[0].text, 'นี่คือข้อความตัวอย่างค่ะ\nยังไม่ได้บันทึกนะคะ');
   assert.equal(touched, false);
 });
