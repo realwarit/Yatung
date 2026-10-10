@@ -12,6 +12,7 @@
       @case ('taken') {
         <span class="tick" [class.pop]="pop()"><app-icon name="check" /></span>
         กินแล้ว @if (takenClock()) { เวลา {{ takenClock() }} }
+        @if (sourceText(); as src) { <span class="src"> · {{ src }}</span> }
       }
       @case ('overdue') { <app-icon name="alert" /> {{ lateText() }} }
       @case ('due') { <app-icon name="bell" /> ถึงเวลาแล้ว }

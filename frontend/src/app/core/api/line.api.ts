@@ -13,6 +13,16 @@ export interface LinkCode {
 
 export interface LineStatus { linked: boolean; display_name: string | null }
 
+/** ประวัติการแจ้งญาติ 1 กลุ่ม (ผู้ดูแล, มื้อ) : confirmed = ญาติกดยืนยันว่ากินแล้ว · acknowledged = รับทราบ · none = ไม่มีการตอบ · failed = ส่งไม่สำเร็จ */
+export interface EscalationRecent {
+  sent_at: string;               // YYYY-MM-DD HH:mm:ss
+  scheduled_at: string;
+  slot: 'morning' | 'noon' | 'evening' | 'bedtime';
+  time: string;                  // HH:mm ของมื้อ
+  doses: number;
+  outcome: 'confirmed' | 'acknowledged' | 'none' | 'failed';
+}
+
 export interface Caregiver {
   id: number;
   name: string;
@@ -20,6 +30,7 @@ export interface Caregiver {
   escalate_after_min: number;
   line_linked: boolean;
   line_display_name: string | null;
+  recent_escalations?: EscalationRecent[];
 }
 
 export interface CaregiverInput { name: string; relation: string | null; escalate_after_min: number }
@@ -42,6 +53,8 @@ export class LineApi {
 export interface AppConfig { demoMode: boolean }
 export interface RemindNowResult { sent: number; doses: number; slot: 'morning' | 'noon' | 'evening' | 'bedtime'; time: string; resent: boolean; state: 'soon' | 'due' | 'overdue'; late_min: number; message: string }
 
+export interface EscalateNowResult { sent: number; caregivers: number; doses: number; slot: 'morning' | 'noon' | 'evening' | 'bedtime'; time: string; resent: boolean; message: string }
+
 @Injectable({ providedIn: 'root' })
 export class DemoApi {
   private http = inject(HttpClient);
@@ -50,4 +63,6 @@ export class DemoApi {
   config(): Observable<AppConfig> { return this.http.get<AppConfig>('/api/config'); }
   /** เฉพาะ DEMO_MODE=true ; 409 = ไม่มีรอบที่รอกิน / ยังไม่เชื่อม LINE */
   remindNow(): Observable<RemindNowResult> { return this.http.post<RemindNowResult>('/api/demo/remind-now', {}); }
+  /** แจ้งญาติทันที ; 409 ALREADY_ESCALATED (body.quota_left) = แจ้งไปแล้ว → force:true ส่งซ้ำได้ */
+  escalateNow(force = false): Observable<EscalateNowResult> { return this.http.post<EscalateNowResult>('/api/demo/escalate-now', force ? { force: true } : {}); }
 }

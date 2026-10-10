@@ -3,7 +3,8 @@ import { MatButton } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { errorText } from '../../core/api/api-error';
-import { Caregiver, LineApi } from '../../core/api/line.api';
+import { Caregiver, EscalationRecent, LineApi } from '../../core/api/line.api';
+import { SLOT_LABEL } from '../../core/i18n/labels';
 import { plainName } from '../../core/text';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { MascotComponent } from '../../shared/components/mascot/mascot.component';
@@ -37,6 +38,20 @@ import { CaregiverFormDialogComponent } from './caregiver-form-dialog.component'
               <span>{{ c.line_linked ? 'เชื่อม LINE แล้ว' : 'ยังไม่เชื่อม LINE' }}@if (c.line_linked && c.line_display_name) {: <span class="line-name">{{ plain(c.line_display_name) }}</span>}</span>
             </p>
             <p class="cg__min">แจ้งเมื่อไม่กดกินยานานเกิน <span class="nb"><span class="num">{{ c.escalate_after_min }}</span> นาที</span></p>
+            @if (c.recent_escalations?.length) {
+              <div class="hist">
+                <p class="hist__title">การแจ้งล่าสุด</p>
+                <ul class="hist__list">
+                  @for (h of c.recent_escalations; track h.sent_at + h.slot) {
+                    <li class="hist__row" [class.ok]="h.outcome === 'confirmed' || h.outcome === 'acknowledged'">
+                      <span class="hist__when">{{ when(h) }}</span>
+                      <span class="hist__what">มื้อ{{ slotName(h) }} <span class="num">{{ h.time }}</span> น.</span>
+                      <span class="hist__out"><app-icon [name]="icon(h)" /> {{ outcome(h) }}</span>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
             <div class="cg__acts">
               @if (c.line_linked) {
                 <button mat-stroked-button type="button" (click)="sendCode(c)">เชื่อม LINE ใหม่</button>
@@ -70,6 +85,13 @@ import { CaregiverFormDialogComponent } from './caregiver-form-dialog.component'
     .line-name { font-family: var(--yt-font-body); }
     .nb { white-space: nowrap; }
     .cg__acts { display: flex; flex-wrap: wrap; gap: var(--yt-space-2); margin-top: var(--yt-space-3); }
+    .hist { margin-top: var(--yt-space-3); padding-top: var(--yt-space-2); border-top: 1px solid var(--yt-border); }
+    .hist__title { margin: 0; font-size: var(--yt-text-sm); font-weight: 600; color: var(--yt-text-muted); }
+    .hist__list { list-style: none; margin: var(--yt-space-1) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--yt-space-1); }
+    .hist__row { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--yt-space-3); row-gap: 0; color: var(--yt-text-muted); }
+    .hist__row.ok { color: var(--yt-success); }
+    .hist__what { color: var(--yt-text); }
+    .hist__out { display: inline-flex; align-items: center; gap: 0.4em; font-weight: 600; }
     .add { width: 100%; }
     .sk { height: 8rem; }
   `,
@@ -84,6 +106,21 @@ export class CaregiversSectionComponent {
   protected readonly loadError = signal<string | null>(null);
 
   constructor() { this.load(); }
+
+  /** "แจ้งเมื่อ 9 ต.ค. 19:05" (ไม่ใส่ปี) */
+  protected when(h: EscalationRecent): string {
+    const m = /^\d{4}-(\d{2})-(\d{2}) (\d{2}:\d{2})/.exec(h.sent_at);
+    if (!m) return h.sent_at;
+    const MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    return `แจ้ง ${Number(m[2])} ${MONTHS[Number(m[1]) - 1]} ${m[3]} น.`;
+  }
+  protected slotName(h: EscalationRecent): string { return SLOT_LABEL[h.slot]; }
+  protected outcome(h: EscalationRecent): string {
+    return h.outcome === 'confirmed' ? 'ยืนยันว่ากินแล้ว' : h.outcome === 'acknowledged' ? 'รับทราบ' : h.outcome === 'failed' ? 'ส่งไม่สำเร็จ' : 'ไม่มีการตอบ';
+  }
+  protected icon(h: EscalationRecent): 'check' | 'clock' | 'alert' {
+    return h.outcome === 'confirmed' || h.outcome === 'acknowledged' ? 'check' : h.outcome === 'failed' ? 'alert' : 'clock';
+  }
 
   protected load(): void {
     this.loadError.set(null);

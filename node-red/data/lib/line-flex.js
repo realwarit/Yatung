@@ -166,12 +166,12 @@ function withQuickReply(messages, ctx, env = process.env) {
 
 // ---------- แบ่ง dose เป็นก้อนละไม่เกิน 15 รายการ และ postback data ไม่เกิน 300 ตัวอักษร (ปกติ 1 ก้อน) ----------
 const postbackData = (ids) => `a=take&d=${ids.join(',')}`;
-function chunkDoses(doses) {
+function chunkDoses(doses, dataOf = postbackData) {
   const chunks = [];
   let cur = [];
   for (const d of doses) {
     const next = [...cur, d];
-    if (cur.length && (next.length > MAX_DOSES_PER_MESSAGE || postbackData(next.map((x) => x.id)).length > MAX_POSTBACK)) { chunks.push(cur); cur = [d]; }
+    if (cur.length && (next.length > MAX_DOSES_PER_MESSAGE || dataOf(next.map((x) => x.id)).length > MAX_POSTBACK)) { chunks.push(cur); cur = [d]; }
     else cur = next;
   }
   if (cur.length) chunks.push(cur);
@@ -180,14 +180,14 @@ function chunkDoses(doses) {
 
 // ---------- Flex เตือนกินยา (push) ----------
 // group = { slot, scheduled_at, late_min (นาที ติดลบ = ยังไม่ถึงเวลา; ไม่ใส่ = 0), doses: [{ id, name, strength, dose_per_time, unit, meal_relation }] } (doses ≤ 15 — ใช้ chunkDoses ก่อน)
-// opts.preview = true → ปุ่มกินแล้วเป็น postback ตัวอย่าง (a=preview) ไม่บันทึกอะไร (ใช้กับ #ตัวอย่าง)
+// opts.followup = true → หัวพื้นเหลือง "ยังไม่ได้กินยา…" เสมอ (เตือนซ้ำ) ; opts.preview = true → ปุ่มกินแล้วเป็น postback ตัวอย่าง (a=preview) ไม่บันทึกอะไร (ใช้กับ #ตัวอย่าง)
 function buildReminder(group, env = process.env, opts = {}) {
   const slotLabel = SLOT_LABEL[group.slot] || '';
   const emoji = SLOT_EMOJI[group.slot] || '';
   const time = timeText(group.scheduled_at);
   const n = group.doses.length;
   const lateMin = Number.isFinite(Number(group.late_min)) ? Number(group.late_min) : 0;
-  const state = latenessState(lateMin);
+  const state = opts.followup ? 'overdue' : latenessState(lateMin);   // followup = เตือนซ้ำ (REMINDER_FOLLOWUP_MIN) ใช้หัว "เลยเวลา" เสมอ
   const slotBadge = `${emoji ? emoji + ' ' : ''}มื้อ${slotLabel} · ${time} น.`;
 
   let h, altText;

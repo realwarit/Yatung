@@ -136,8 +136,9 @@ CREATE TABLE dose_logs (
   scheduled_at   DATETIME NOT NULL,
   status         ENUM('pending','taken','missed') NOT NULL DEFAULT 'pending',
   taken_at       DATETIME NULL,
-  source         ENUM('app','line','push') NULL,         -- ยืนยันผ่านช่องทางไหน
+  source         ENUM('app','line','push','caregiver') NULL, -- ยืนยันผ่านช่องทางไหน (caregiver = ญาติกดยืนยันใน LINE)
   reminded_at    DATETIME NULL,
+  followup_at    DATETIME NULL,                         -- เตือนซ้ำผู้ป่วย (REMINDER_FOLLOWUP_MIN) จองก่อนส่ง
   escalated_at   DATETIME NULL,
   created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
@@ -149,6 +150,28 @@ CREATE TABLE dose_logs (
   CONSTRAINT chk_taken_consistency CHECK (
     (status = 'taken' AND taken_at IS NOT NULL) OR (status <> 'taken')
   )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- dose_escalations : ประวัติการแจ้งญาติ 1 แถว = (dose, ผู้ดูแล) ; UNIQUE ใช้ "จองก่อนส่ง" กันแจ้งซ้ำ
+-- ---------------------------------------------------------------------
+CREATE TABLE dose_escalations (
+  id                   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  dose_id              BIGINT UNSIGNED NOT NULL,
+  caregiver_id         INT UNSIGNED    NOT NULL,
+  user_id              INT UNSIGNED    NOT NULL,
+  sent_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  status               ENUM('sent','failed') NOT NULL DEFAULT 'sent',
+  acknowledged_at      DATETIME NULL,
+  confirmed_at         DATETIME NULL,
+  resolved_notified_at DATETIME NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_escalation_dose_caregiver (dose_id, caregiver_id),
+  KEY idx_escalation_caregiver_time (caregiver_id, sent_at),
+  KEY idx_escalation_user (user_id),
+  CONSTRAINT fk_escalation_dose FOREIGN KEY (dose_id) REFERENCES dose_logs(id) ON DELETE CASCADE,
+  CONSTRAINT fk_escalation_caregiver FOREIGN KEY (caregiver_id) REFERENCES caregivers(id) ON DELETE CASCADE,
+  CONSTRAINT fk_escalation_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
@@ -175,7 +198,7 @@ CREATE TABLE notification_logs (
   user_id       INT UNSIGNED NOT NULL,
   dose_log_id   BIGINT UNSIGNED NULL,
   channel       ENUM('line_push','line_reply','web_push','native') NOT NULL,
-  kind          ENUM('reminder','escalation','refill','link','other') NOT NULL,
+  kind          ENUM('reminder','escalation','refill','low_stock','link','other') NOT NULL,
   recipient     ENUM('patient','caregiver') NOT NULL DEFAULT 'patient',
   success       TINYINT(1) NOT NULL DEFAULT 1,
   error_message VARCHAR(500) NULL,

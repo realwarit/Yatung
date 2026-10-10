@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const doseService = require('./dose-service');
 const lineFlex = require('./line-flex');
 const M = require('./line-messages');
+const escalation = require('./escalation-service');
 
 const CODE_TTL_MIN = 10;
 const GUESS_MAX = 5;
@@ -126,6 +127,19 @@ async function todayFlex(db, userId, env) {
   return M.buildToday(shaped, d.d, env);
 }
 
+// สรุป "วันนี้" ของผู้ป่วยทุกคนที่ LINE นี้เป็นผู้ดูแล (แบบย่อ ไม่แสดงชื่อยา) ; ไม่ได้ดูแลใครหรือไม่มียาของวันนี้เลย = null
+async function caregiverTodayFlex(db, lineId, env) {
+  const pats = await db.query('SELECT DISTINCT u.id, u.display_name FROM caregivers c JOIN users u ON u.id = c.user_id WHERE c.line_user_id = ? AND c.is_active = 1 ORDER BY u.id', [lineId]);
+  if (!pats.length) return null;
+  const list = [];
+  for (const p of pats) {
+    const q = doseService.todayQuery(p.id, { withDue: true });
+    list.push({ name: p.display_name, shaped: doseService.shapeToday(await db.query(q.sql, q.params)) });
+  }
+  const [d] = await db.query("SELECT DATE_FORMAT(CURDATE(), '%Y-%m-%d') AS d");
+  return M.buildCaregiverToday(list, d.d, env);
+}
+
 // ผู้ใช้ LINE คนนี้คือใคร: ผู้ป่วย (users.line_user_id) / ผู้ดูแลอย่างเดียว / ยังไม่เชื่อม ; ใช้เลือก quick reply และข้อความ
 async function whoIs(db, lineId) {
   const p = await db.query('SELECT id, display_name FROM users WHERE line_user_id = ?', [lineId]);
@@ -176,6 +190,17 @@ async function handlePostback(event, deps) {
   const action = p.get('a');
   const send = (messages, ctx, meta) => (event.replyToken ? client.reply(event.replyToken, lineFlex.withQuickReply(messages, ctx, env), { db, ...meta }) : null);
   if (action === 'preview') { await send([M.TEXT.previewNote()], 'patient', {}); return; }
+  // ปุ่มของข้อความแจ้งญาติ (ผู้ดูแล) — ตรวจสิทธิ์ผู้ดูแลที่ escalation-service ; ไม่มีสิทธิ์ = แจ้งชัดเจน ไม่เงียบ
+  if (action === 'cg_ack') {
+    const r = await escalation.acknowledge(db, lineId, String(p.get('e') || '').split(',').filter((x) => /^\d{1,15}$/.test(x)));
+    await send([r.found ? M.TEXT.cgAck() : M.TEXT.cgAckNotFound()], 'caregiver', { recipient: 'caregiver' });
+    return;
+  }
+  if (action === 'cg_take') {
+    const r = await escalation.confirmTaken(db, client, lineId, String(p.get('d') || '').split(',').filter((x) => /^\d{1,15}$/.test(x)), env);
+    await send([r.noauth ? M.TEXT.cgNoAuth() : M.caregiverTakeResult(r)], 'caregiver', { recipient: 'caregiver' });
+    return;
+  }
   if (action !== 'take') return;
   const ids = String(p.get('d') || '').split(',').filter((x) => /^\d{1,15}$/.test(x)).slice(0, 50);
   if (!ids.length) return;
@@ -242,9 +267,12 @@ async function handleEvent(event, deps) {
   const meta = { userId: who.userId, kind: 'other' };
 
   if (cmd === 'วันนี้' || cmd === 'ยาวันนี้') {
-    if (who.ctx === 'patient') await send([await todayFlex(db, who.userId, env)], 'patient', meta);
-    else if (who.ctx === 'caregiver') await send([M.TEXT.caregiverOnly(who.patients)], 'caregiver', meta);
-    else await send([M.TEXT.notLinked()], 'unlinked', meta);
+    const msgs = [];
+    if (who.ctx === 'patient') msgs.push(await todayFlex(db, who.userId, env));
+    const cg = who.ctx === 'unlinked' ? null : await caregiverTodayFlex(db, lineId, env);   // เป็นผู้ดูแลด้วย → สรุปของผู้ป่วยที่ดูแล (เฉพาะยาวันนี้)
+    if (cg) msgs.push(cg);
+    if (!msgs.length) await send([who.ctx === 'unlinked' ? M.TEXT.notLinked() : M.TEXT.caregiverOnly(who.patients)], who.ctx, meta);
+    else await send(msgs, who.ctx, meta);
     return;
   }
   if (cmd === 'วิธีใช้') { await send([M.buildWelcome(who.ctx === 'patient', env)], who.ctx, meta); return; }
@@ -287,5 +315,5 @@ async function handleEvents(events, deps) {
 
 module.exports = {
   verifySignature, randomCode, parseCode, formatCode, oaMessageUrl, createDedup, createGuessLimiter, parseBody, dropDuplicates,
-  issueCode, codeBody, patientLinkCode, status, unlink, claimCode, handlePostback, handleEvent, handleEvents, whoIs, todayFlex, CODE_TTL_MIN
+  issueCode, codeBody, patientLinkCode, status, unlink, claimCode, handlePostback, caregiverTodayFlex, handleEvent, handleEvents, whoIs, todayFlex, CODE_TTL_MIN
 };

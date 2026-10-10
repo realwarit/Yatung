@@ -39,7 +39,8 @@ function validate(body, partial) {
 
 async function list(db, userId) {
   const rows = await db.query(`SELECT ${COLS} FROM caregivers WHERE user_id = ? AND is_active = 1 ORDER BY id`, [userId]);
-  return { status: 200, body: { caregivers: rows.map(shape) } };
+  const recent = await require('./escalation-service').recentFor(db, rows.map((r) => r.id));   // ประวัติการแจ้งล่าสุด 5 รายการต่อคน (วันที่ 7A)
+  return { status: 200, body: { caregivers: rows.map((r) => ({ ...shape(r), recent_escalations: recent.get(r.id) || [] })) } };
 }
 
 async function create(db, userId, body) {

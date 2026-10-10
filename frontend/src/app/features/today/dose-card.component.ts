@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { MatButton } from '@angular/material/button';
 import { Dose } from '../../core/api/models';
+import { sourceLabel } from '../../core/i18n/labels';
 import { DoseQtyPipe, MealLabelPipe } from '../../core/i18n/labels.pipe';
 import { IconComponent } from '../../shared/icon.component';
 
@@ -22,6 +23,8 @@ export class DoseCardComponent {
   readonly lateMin = input(0);
   /** เวลาที่กิน 'HH:mm' */
   readonly takenClock = input<string | null>(null);
+  /** ช่องทางที่ยืนยัน (dose_logs.source) */
+  readonly source = input<string | null>(null);
   readonly canUndo = input(false);
   readonly busy = input(false);
   /** เพิ่งกดกิน → เล่น animation เครื่องหมายถูกเด้ง */
@@ -29,6 +32,8 @@ export class DoseCardComponent {
 
   readonly take = output<void>();
   readonly undo = output<void>();
+
+  protected readonly sourceText = computed(() => sourceLabel(this.source()));
 
   /** < 1 ชม.: "เลยเวลามา 45 นาที" · ≥ 1 ชม.: "ยังไม่ได้กิน · เลยเวลามา 13 ชม." (ไม่แสดงนาที) */
   protected readonly lateText = computed(() => {

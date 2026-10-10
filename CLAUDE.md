@@ -29,7 +29,7 @@
   login ผิดเกิน 5 ครั้ง/5 นาที/email → 429 (flow context `loginFails`, หายเมื่อ restart Node-RED)
 - node id ทุกตัวต้องไม่ซ้ำ, ทุก `http in` ต้องมี `http response` ปลายทาง
 - `lib/dose-check.js` / `lib/validate-llm-output.js` เป็นฟังก์ชันล้วน ทดสอบด้วย `node --test` ที่ `node-red/test/`
-- library ใช้ผ่าน `global.get()`: `jwt`, `bcrypt`, `webpush`, `crypto`, `medicineValidator`, `prompts`, `scanService`, `prescriptionService`, `llmOutput`, `lineClient`, `lineService`, `caregiverService`
+- library ใช้ผ่าน `global.get()`: `jwt`, `bcrypt`, `webpush`, `crypto`, `medicineValidator`, `prompts`, `scanService`, `prescriptionService`, `llmOutput`, `lineClient`, `lineService`, `caregiverService`, `reminderService`, `escalationService`, `lineEnv`
   (กำหนดใน `node-red/data/settings.js` → `functionGlobalContext`; `prompts` = `medicineSystem`, `medicineUserImage`, `medicineUserText`, `medicineSchema`, `medicineGeminiSchema`, `mockResponse`)
 - env ใช้ `env.get('JWT_SECRET')` เป็นต้น
 - **transaction:** node `mysql` ทำ transaction ไม่ได้ (1 query = 1 connection) → ใช้ `global.get('db')` (`lib/db.js`, pool `mysql2` อ่าน `DB_*` จาก env ไม่ผ่าน credentials; timezone +07:00, `dateStrings`, `decimalNumbers`)
@@ -45,7 +45,7 @@
 - logic ฝั่ง backend แยกเป็น `node-red/data/lib/*-service.js` (global: `medicationService`, `doseService`; รับ `(db, userId, …)` คืน `{status, body}`) function node ใน flow แค่เรียกแล้วใส่ `msg.statusCode/payload`;
   แก้ `lib/` หรือ `settings.js` ต้อง `docker compose restart nodered`. ข้อมูลที่ไม่ใช่ของ `msg.user.id` = 404 เสมอ (ไม่ใช่ 403)
 - ทดสอบ Day 3A (รวมเคส stop/resume): `DEMO_PASSWORD=… bash scripts/test-day3a.sh` (login ใหม่ในสคริปต์, user ที่ 2 สุ่ม, ลบข้อมูลทดสอบตอนจบ)
-- แบ่ง tab: 0-Middleware, 1-Auth, 2-AI-Scan, 3-Medications, 4-Doses, 5-Dashboard (ยังไม่มี จองไว้), 6-Scheduler, 7-LINE (มีแล้ว), 8-Push (ยังไม่มี)
+- แบ่ง tab: 0-Middleware, 1-Auth, 2-AI-Scan, 3-Medications, 4-Doses, 5-Dashboard (ยังไม่มี จองไว้), 6-Scheduler (cron 00:05 สร้างรอบ / 03:00 ลบรูป + ปิดรอบค้างเป็น missed), 7-LINE (มีแล้ว ; cron 1 นาที = เตือน + เตือนซ้ำ + แจ้งญาติ), 8-Push (ยังไม่มี ทำ 7C), 9-Stock (ยังไม่มี ทำ 7B)
 - **กฎการจัด flow (ใช้กับทุก tab):** ทุก endpoint มี `group` ครอบ (ชื่อ = `METHOD /path`; สี: เขียว = เขียนข้อมูล, ฟ้า = อ่านอย่างเดียว, แดง = error/catch, เหลืองน้ำตาล = cron/เรียกภายนอก)
   endpoint ที่มีหลายขั้นตอน (เช่น `POST /api/scan`) ให้มี group ย่อยแยกตามขั้นตอนซ้อนใน group นั้น; ทุก node ตั้งชื่อเป็นภาษาไทยที่อ่านแล้วรู้ว่าทำอะไร
   (ชื่อ `http in` ใช้ `METHOD /path`); ใส่ `g` ให้ node สมาชิกทุกตัว; ทุก tab มี `catch` + group "ข้อผิดพลาดที่ไม่คาดคิด → 500"
@@ -90,6 +90,22 @@
   - **ทดสอบ 6C:** `node --test "node-red/test/*.test.js"` (line-flex, line-messages, reminder-service) + `bash scripts/test-day6c.sh` (LINE ปลอม; recreate nodered 3 ครั้ง; ต้อง `docker compose up -d --build frontend` ก่อน) ; เทส 6/6b ที่เคยตรวจข้อความ reply แบบเดิมอัปเดตให้ตรงข้อความใหม่แล้ว (`scripts/lib/fl-text.js` แปลง Flex เป็นข้อความให้ assert)
   - **`.env` / `.env.example`: ตัวแปรที่ถูกอ้างด้วย `${X}` ต้องประกาศก่อนตัวที่อ้าง** (`NGROK_DOMAIN` ก่อน `PUBLIC_BASE_URL` ก่อน `LINE_MASCOT_URL`) — Compose แทนค่าจากตัวแปรที่ประกาศก่อนหน้าเท่านั้น (ไม่งั้นได้ค่าว่าง)
   - **ngrok ฟรี:** image `ngrok/ngrok:3.39.11-alpine` (tag `3.39.11` เปล่าไม่มี) · เปิดลิงก์ด้วยเบราว์เซอร์ครั้งแรกเจอหน้าเตือน ต้องกด Visit Site; LINE ดึงรูป/ส่ง webhook ไม่เจอ (เช็กด้วย `demo-check.sh` ที่ UA ไม่ใช่เบราว์เซอร์; ถ้าได้ HTML ให้ตั้ง `LINE_MASCOT_URL` ไปโฮสต์อื่น)
+- **LINE (วันที่ 7A): แจ้งญาติเมื่อลืมกินยา** (แผนเต็ม `docs/day7-plan.md`; migration `002_escalation.sql`)
+  - **cron เดิมทุก 1 นาที (tab 7)** รัน 3 ขั้นตามลำดับ แต่ละขั้นอยู่ใน `try` ของตัวเอง: `reminderService.run` → `reminderService.runFollowup` → `escalationService.run` ; `REMINDER_CRON=off` ปิดทั้งสามขั้น (เฉพาะทดสอบ)
+  - `lib/escalation-service.js` (global `escalationService`) เลือก dose (ต่อผู้ดูแล): `status IN (pending, missed)` · ยา `is_active=1 AND as_needed=0` · `scheduled_at ≤ NOW − escalate_after_min` **และ** `≥ NOW − (escalate_after_min + 60)` (กันส่งย้อนหลังเป็นกอง) · ผู้ดูแล `is_active=1` + เชื่อม LINE · ยังไม่มีแถว `dose_escalations` ของคู่ (dose, ผู้ดูแล) ;
+    จัดกลุ่ม (ผู้ดูแล, ผู้ป่วย, scheduled_at) = 1 ข้อความ (แบ่งก้อน ≤ 15 รายการ และ postback ≤ 300) ; **จองก่อนส่ง**: transaction `SELECT … FOR UPDATE` แถว dose แล้ว `INSERT IGNORE dose_escalations` (UNIQUE dose_id+caregiver_id) ส่งเฉพาะ dose ที่ `affectedRows=1` (ผู้ป่วยกินไปแล้วระหว่างนั้นไม่ถูกจอง) + ตั้ง `dose_logs.escalated_at` (undo อ่านค่านี้) ;
+    โควตา `canPush(db,'escalation')` ไปได้ถึง `effective_cap` เต็ม = `console.log('escalation_quota_skipped left=…')` ไม่จอง ไม่ส่ง (ลองใหม่ได้ในหน้าต่างเดิม) ; push ล้มเหลว = `dose_escalations.status='failed'` ไม่คืนการจอง ; `REMINDER_ONLY_EMAIL_SUFFIX` กรองผู้ป่วยเหมือน reminder
+  - **ตาราง `dose_escalations`**: `sent_at, status(sent|failed), acknowledged_at (กดรับทราบ), confirmed_at (กดยืนยันว่ากินแล้ว), resolved_notified_at (ปิดเรื่องแล้ว)` ; หน้า Settings แสดง 5 รายการล่าสุดต่อผู้ดูแลจาก `GET /api/caregivers` → `recent_escalations[] { sent_at, scheduled_at, slot, time, doses, outcome: confirmed|acknowledged|none|failed }`
+  - **Flex ญาติ** (`line-messages.js` `buildEscalation`): หัวพื้นเหลือง mascot-bell "คุณ{ชื่อแรก ≤10 ตัวอักษร}ยังไม่ได้กินยานะคะ" (หัวข้อ ≤ 26 ตัวอักษรฐาน) + ป้าย "🌆 มื้อเย็น 18:00 น. · เลยมา 1 ชม. 5 นาที" + รายการยา ≤ 6 + "ลองโทรถามคุณ…ได้นะคะ" ; ปุ่มหลัก "✓ ยืนยันว่ากินแล้ว" postback `a=cg_take&d=<dose ids>` ; ปุ่มรอง "รับทราบ" postback `a=cg_ack&e=<dose_escalations ids>` ; altText "⚠️ คุณ…ยังไม่ได้กินยามื้อ… · เลยมา …"
+  - **ปุ่ม `cg_take`** (`escalationService.confirmTaken`): ต้องเป็น `caregivers.line_user_id` (active) ของผู้ป่วยเจ้าของ dose จริง — **ไม่มีสิทธิ์เลย = reply "ไม่พบสิทธิ์ผู้ดูแล" (ไม่เงียบ)** → `doseService.takeMany(db, patientId, ids, 'caregiver', {noHook:true})` (`takeInTx` ตัวเดียวกัน หักยา 1 ครั้ง) → ตั้ง `confirmed_at` → ปิดเรื่องให้ญาติคนอื่น ; reply บอกว่า "ผู้ป่วยกินไปก่อนหน้านี้แล้ว (บันทึกเมื่อ HH:MM น.)" หรือ "มีญาติยืนยันไว้แล้ว" เมื่อ dose taken อยู่แล้ว (ไม่หักซ้ำ, ตั้ง `acknowledged_at`)
+  - **ปิดเรื่อง** (`notifyResolved`): `doseService.setAfterTaken(fn)` (ตั้งใน `settings.js`) เรียกหลัง COMMIT ของ `take()`/`takeMany()` ทุกช่องทาง (app/line/push/caregiver) → ส่ง "💚 คุณ…กินยามื้อ…แล้วค่ะ" (kind=escalation) ให้ผู้ดูแลที่ถูกแจ้งไว้ ครั้งเดียวต่อ (ผู้ดูแล, dose) จอง `resolved_notified_at` ก่อนส่ง ; ข้ามคนที่ `confirmed_at` ไม่ว่าง (กดยืนยันเอง) ; hook ล้มเหลวไม่ทำให้การบันทึกกินยาล้ม
+  - **เตือนซ้ำผู้ป่วย** `REMINDER_FOLLOWUP_MIN` (ค่าเริ่มต้น 0 = ปิด ; ส่งผ่าน `lineEnv`): `reminderService.runFollowup` — dose pending ที่เคยเตือนปกติแล้ว (`reminded_at` ไม่ว่าง) `followup_at` ว่าง และ `N ≤ เลยเวลา ≤ N+30 นาที` → จอง `followup_at` แล้วส่ง Flex หัวเหลือง (`buildReminder(…, {followup:true})`) kind=reminder (งบเตือนปกติ)
+  - **"วันนี้" ของผู้ดูแล**: `lineService.caregiverTodayFlex` → `buildCaregiverToday` Flex แบบย่อต่อผู้ป่วย (ความคืบหน้า + มื้อที่ยังไม่ครบ **ไม่แสดงชื่อยา**) ; LINE ที่เป็นทั้งผู้ป่วยและผู้ดูแลได้ 2 ข้อความ (ของตัวเอง + ผู้ที่ดูแล)
+  - **เดโม** `POST /api/demo/escalate-now` (JWT, `DEMO_MODE≠true` = 404): กลุ่ม pending ของวันนี้ใกล้ `NOW()` ที่สุด แจ้งผู้ดูแลที่เชื่อม LINE ทุกคนทันที (ข้าม `escalate_after_min` ; การ์ดแสดง "เลยมา" ตามเวลาที่ผู้ดูแลตั้ง ; ยังจองก่อนส่ง) ·
+    409 `NO_CAREGIVER_LINKED` / `NO_PENDING_DOSE` / `ALREADY_ESCALATED` (body `{quota_left, reserve}`) · body `{force:true}` ส่งซ้ำได้ (ไม่เพิ่มแถว, `resent:true`, log `escalate_force caregiver_id=… doses=…`) · 429 `LINE_QUOTA` · 502 · หน้า Settings: ปุ่ม "ทดลองแจ้งญาติตอนนี้" ถ้าได้ 409 ALREADY_ESCALATED แสดง dialog "แจ้งญาติไปแล้ว ส่งซ้ำไหม?" พร้อมโควตาสำรองที่เหลือ · inject "แจ้งญาติทดสอบ (demo user)" ใน tab 7
+  - **ปิดรอบค้าง (tab 6, cron 03:00 + inject "▶ รันตอนนี้")**: `doseService.closeStaleDoses` ตั้ง `status='missed'` ให้ dose ที่ยัง `pending` และ `scheduled_at < CURDATE()` (รันซ้ำได้ ไม่แตะวันนี้/taken ; กินย้อนหลังได้ missed → taken จากทุกช่องทาง ; `REMINDER_ONLY_EMAIL_SUFFIX` กรองเฉพาะตอนรันเทส) — ก่อนหน้านี้ไม่มีโค้ดตั้ง missed เลย ทำให้ Dashboard (taken ÷ (taken+missed)) คำนวณผิด
+  - **ช่องทางที่ยืนยัน (`dose_logs.source`)**: `app|line|push|caregiver` ; `GET /api/doses/today` ส่ง `source` ; เว็บแสดงผ่าน `sourceLabel()` (`core/i18n/labels.ts` mapping เดียว): `caregiver` = "ญาติยืนยันแล้ว", `push` = "จากการแจ้งเตือนบนเครื่อง", `line` = "ยืนยันทาง LINE", `app` = ไม่แสดง
+  - **ทดสอบ 7A:** `node --test` (`escalation-service.test.js` + ขยาย line-flex/line-messages) + `bash scripts/test-day7a.sh` (LINE ปลอม ; recreate nodered 2 ครั้ง ; เคารพ `REMINDER_ONLY_EMAIL_SUFFIX` + `real-snapshot.sh` ซึ่งเทียบ `followup_at`, `source` และจำนวน `dose_escalations` ของผู้ใช้จริงเพิ่ม) · รัน lib ใน container โดยตรง: `docker compose exec -T nodered node -e "…require('/data/lib/escalation-service').run(db, createClient(), process.env)"`
 - **แก้ frontend แล้ว container ไม่เปลี่ยน:** ต้อง `docker compose up -d --build frontend` (`demo-check.sh` เตือนถ้า image เก่ากว่าไฟล์ที่แก้ล่าสุดใน `frontend/` และเช็ก tunnel running + `PUBLIC_BASE_URL` มีโดเมน)
 - API prefix `/api/*`, LINE webhook `/line/webhook` (nginx proxy ไว้แล้ว; body สูงสุด 10mb)
 - error response รูปแบบเดียว: `{ error: "CODE", details: "ข้อความไทย" }`
@@ -153,7 +169,8 @@
 - `medications` (dose_per_time, unit, meal_relation, as_needed, warnings JSON, remaining_qty, refill_alert_days, refill_alerted_at)
 - `medication_slots` (ยากินมื้อไหน: morning/noon/evening/bedtime)
 - **`dose_logs` คือหัวใจ:** 1 แถว = ยา 1 ตัว × 1 รอบ, สถานะ pending → taken | missed,
-  `UNIQUE(medication_id, scheduled_at)` ให้ cron สร้างซ้ำได้ (idempotent), มี source app/line/push, reminded_at, escalated_at
+  `UNIQUE(medication_id, scheduled_at)` ให้ cron สร้างซ้ำได้ (idempotent), มี source app/line/push/caregiver, reminded_at, followup_at (เตือนซ้ำ), escalated_at
+- `dose_escalations` (วันที่ 7A: ประวัติแจ้งญาติ 1 แถว = (dose, ผู้ดูแล) UNIQUE ใช้จองก่อนส่ง)
 - `push_subscriptions` (Web Push), `notification_logs` (ทุกข้อความที่ส่งออก)
 - Views: `v_daily_adherence` (taken ÷ (taken+missed), ไม่นับ pending), `v_medication_supply` (days_left)
 - แก้ schema → แก้ไฟล์ SQL แล้ว `docker compose down -v && docker compose up -d --build` (**ข้อมูลหาย**; init รันเฉพาะตอน volume ว่าง)
@@ -169,7 +186,8 @@
 - **take:** `taken` แล้ว = 409 `ALREADY_TAKEN`; รับ `missed` ได้ (กินช้า); `remaining_qty` ลดไม่ต่ำกว่า 0 (NULL = ไม่แตะ)
 - **undo** (≤ 10 นาทีหลังกด; เกิน = 409 `UNDO_EXPIRED`, ไม่ใช่ taken = 409 `NOT_TAKEN`):
   `escalated_at IS NOT NULL` → กลับเป็น **missed** (กันแจ้งญาติซ้ำ) · `escalated_at IS NULL` → **pending**; ล้าง `taken_at/source`; คืน `remaining_qty` ไม่เกิน `total_qty`
-  → งาน escalation (วัน 7) ต้องตั้ง `escalated_at` ทุกครั้งที่แจ้งญาติ และห้ามแจ้งซ้ำเมื่อ `escalated_at` ไม่ว่าง
+  → `escalationService` ตั้ง `escalated_at` ครั้งแรกที่แจ้งผู้ดูแลคนใดก็ตาม ; กันแจ้งซ้ำด้วย UNIQUE(dose_id, caregiver_id) ใน `dose_escalations` (ไม่ใช่ `escalated_at`)
+- **missed:** cron 03:00 (tab 6) ตั้ง `pending` ที่ `scheduled_at < CURDATE()` เป็น `missed` ; `take` รับ missed ได้ (กินย้อนหลัง) ; หน้าวันนี้แสดงเฉพาะรอบของวันนี้
 - **PUT /api/settings/slot-times:** ต้อง HH:MM เรียง เช้า < กลางวัน < เย็น < ก่อนนอน; ย้ายทุก dose ของ**วันนี้**ที่ `status='pending' AND reminded_at IS NULL` ไปเวลาใหม่ (ไม่ว่าเวลาเดิมจะผ่านแล้วหรือไม่);
   dose ที่ `reminded_at` ไม่ว่างคงเวลาเดิม; ไม่สร้างรอบใหม่ให้มื้อที่เคยถูกข้าม
 - งาน reminder (วัน 5–6) ต้องตั้ง `reminded_at` ตอนส่งเตือน เพราะกฎ slot-times พึ่งคอลัมน์นี้

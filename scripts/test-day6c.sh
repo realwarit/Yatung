@@ -182,7 +182,7 @@ say "$LA" "วันนี้"
 expect_match "กินครบ → ชมด้วย mascot-cheer" "$REPLY" 'กินครบทุกรายการแล้ว.*กินแล้ว 4 จาก 4 รายการ.*วันนี้กินครบทุกรายการแล้ว เก่งมากค่ะ 🌟'
 expect "  รูปท่าดีใจ" "$(fl_last reply 'JSON.stringify(r.body.messages[0].contents.header).match(/mascot-[a-z]+/)[0]')" "mascot-cheer"
 say "$LC" "วันนี้"
-expect_match "ผู้ดูแลอย่างเดียว → text บอกว่าเป็นผู้ดูแลของใคร" "$REPLY" '💚 คุณเป็นผู้ดูแลของ ผู้ทดสอบ day6c A.*จะแจ้งที่แชทนี้'
+expect_match "ผู้ดูแลอย่างเดียว → Flex สรุปยาวันนี้ของผู้ป่วยที่ดูแล (7A) มีชื่อผู้ป่วย" "$REPLY" '📋 ยาวันนี้ของผู้ที่คุณดูแล 1 คน.*ผู้ทดสอบ day6c A'
 expect "  quick reply (ผู้ดูแล)" "$(qr_labels)" "❓ ช่วยเหลือ"
 say "$LU" "วันนี้"
 expect_match "ยังไม่เชื่อม → วิธีเชื่อมแบบสั้น" "$REPLY" '🔗 ยังไม่ได้เชื่อมบัญชีค่ะ.*รับรหัสเชื่อม LINE'
