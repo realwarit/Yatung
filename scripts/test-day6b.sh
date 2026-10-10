@@ -230,7 +230,7 @@ press "$LA" "a=take&d=$IDS" wait
 expect_match "กดซ้ำทั้งชุด (อีก 2 รายการยังไม่กิน) → บันทึกอีก 2 รายการ" "$REPLY" "กินยา 2 รายการ"
 expect "  หักสต็อกรวม: ยา 3 ตัวเหลือ 29 ตัวละ" "$(sql "SELECT GROUP_CONCAT(remaining_qty ORDER BY id) FROM medications WHERE user_id=$UA AND as_needed=0;")" "29.00,29.00,29.00"
 press "$LA" "a=take&d=$IDS" wait
-expect "กดซ้ำหลังกินครบ → reply 'บันทึกไว้แล้วค่ะ' (text)" "$REPLY" "✅ บันทึกไว้แล้วค่ะ น้องยาตรงจำไว้ให้แล้ว ไม่ต้องกดซ้ำนะคะ"
+expect "กดซ้ำหลังกินครบ → reply 'บันทึกไว้แล้วค่ะ' (text)" "$REPLY" "✅ บันทึกไว้แล้วค่ะ ไม่ต้องกดซ้ำนะคะ"
 expect "  ไม่หักสต็อกซ้ำ" "$(sql "SELECT GROUP_CONCAT(remaining_qty ORDER BY id) FROM medications WHERE user_id=$UA AND as_needed=0;")" "29.00,29.00,29.00"
 req POST "/api/doses/$FIRST/take" "$TA"; expect "ปุ่มในแอปหลังกินทาง LINE → 409 ALREADY_TAKEN (พฤติกรรม API เดิม)" "$STATUS" "409"
 req POST "/api/doses/$FIRST/undo" "$TA"; expect "undo ของ dose ที่กินทาง LINE → 200" "$STATUS" "200"

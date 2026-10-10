@@ -148,14 +148,14 @@ say "$LC" "$CODE_C"
 expect_match "ผู้ดูแลส่งรหัส → Flex เชื่อมเป็นผู้ดูแล + กี่นาที" "$REPLY" 'เชื่อมเป็นผู้ดูแลแล้วค่ะ 💚.*ผู้ดูแลของคุณ ผู้ทดสอบ day6c A.*เกิน 90 นาที'
 expect "  quick reply (ผู้ดูแลอย่างเดียว)" "$(qr_labels)" "❓ ช่วยเหลือ"
 say "$LU" "123456"
-expect_match "รหัสผิด → ข้อความ text" "$REPLY" '🤔 รหัสนี้ใช้ไม่ได้ค่ะ รหัสใช้ได้ภายใน 10 นาทีเท่านั้น'
+expect_match "รหัสผิด → ข้อความ text" "$REPLY" '🤔 รหัสนี้ใช้ไม่ได้ค่ะ รหัสใช้ได้ 10 นาทีเท่านั้น'
 expect "  quick reply (ยังไม่เชื่อม)" "$(qr_labels)" "🔗 วิธีเชื่อมบัญชี,📱 เปิดแอป"
 for i in 1 2 3 4; do say "$LU" "12345$i"; done
 say "$LU" "654321"
 expect_match "ผิดเกิน 5 ครั้ง → ลองหลายครั้งเกินไป" "$REPLY" '⏳ ลองหลายครั้งเกินไปค่ะ'
 req POST /api/line/link-code "$TB"; CODE_B="$(jget 'o.code')"
 say "$LA" "$CODE_B"
-expect_match "LINE ที่เชื่อมผู้ป่วยอื่นแล้ว ส่งรหัสของ B → conflict" "$REPLY" '🔒 LINE นี้เชื่อมกับผู้ป่วยคนอื่นแล้วค่ะ'
+expect_match "LINE ที่เชื่อมผู้ป่วยอื่นแล้ว ส่งรหัสของ B → conflict" "$REPLY" '🔒 LINE นี้เชื่อมไว้แล้วค่ะ'
 sql "UPDATE users SET line_user_id='$LB', line_display_name='สมหญิง ทดสอบ' WHERE id=$UB;" >/dev/null
 
 section "'วันนี้' ทุกสถานะ"
@@ -197,7 +197,7 @@ expect_match "  ยังมีมื้อถัดไป (ก่อนนอ�
 expect "  source = line" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE id IN ($D_TAKEN,$D_MISSED) AND source='line' AND status='taken';")" "2"
 expect "  quick reply (ผู้ป่วย)" "$(qr_labels)" "📋 ยาวันนี้,📱 เปิดแอป,❓ ช่วยเหลือ"
 press "$LA" "a=take&d=$D_TAKEN,$D_MISSED"
-expect "กดซ้ำ → text 'บันทึกไว้แล้วค่ะ' (ไม่หักสต็อกซ้ำ)" "$REPLY" "✅ บันทึกไว้แล้วค่ะ น้องยาตรงจำไว้ให้แล้ว ไม่ต้องกดซ้ำนะคะ"
+expect "กดซ้ำ → text 'บันทึกไว้แล้วค่ะ' (ไม่หักสต็อกซ้ำ)" "$REPLY" "✅ บันทึกไว้แล้วค่ะ ไม่ต้องกดซ้ำนะคะ"
 expect "  สต็อกยาเช้าลด 1 ครั้งเดียว" "$(sql "SELECT remaining_qty FROM medications WHERE id=$M1;")" "29.00"
 sql "UPDATE dose_logs SET status='taken', taken_at=NOW(), source='app' WHERE id=$D_LATE;" >/dev/null
 press "$LA" "a=take&d=$D_WAIT"
@@ -221,7 +221,7 @@ expect "LINE ผู้ดูแลอย่างเดียวกดปุ่�
 
 section "ช่วยเหลือ / วิธีใช้"
 say "$LA" "ช่วยเหลือ"
-expect_match "ช่วยเหลือ → text 4 บรรทัด" "$REPLY" '😊 น้องยาตรงช่วยได้แบบนี้ค่ะ 📋 พิมพ์ "วันนี้" ดูยาของวันนี้ 🔗 ส่งรหัส 6 หลัก เพื่อเชื่อมบัญชี หรือแตะปุ่มด้านล่าง'
+expect_match "ช่วยเหลือ → text หลายบรรทัดสั้น" "$REPLY" '😊 น้องยาตรงช่วยได้แบบนี้ค่ะ 📋 พิมพ์ "วันนี้" เพื่อดูยาของวันนี้ 🔗 ส่งรหัส 6 หลัก เพื่อเชื่อมบัญชี หรือแตะปุ่มด้านล่าง ได้เลยนะคะ'
 say "$LA" "สวัสดีครับ"
 expect_match "ข้อความอื่นๆ → เมนูช่วยเหลือ" "$REPLY" 'น้องยาตรงช่วยได้แบบนี้ค่ะ'
 say "$LA" "วิธีใช้"

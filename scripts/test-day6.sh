@@ -203,9 +203,9 @@ say "$LG" "วันนี้"
 expect_match "'วันนี้' จาก LINE ที่ยังไม่เชื่อม → บอกให้เชื่อมก่อน" "$REPLY" 'ยังไม่ได้เชื่อมบัญชี'
 say "$LA" "วันนี้"
 expect_match "'วันนี้' ของผู้ป่วยที่เชื่อมแล้วแต่ยังไม่มียา" "$REPLY" 'วันนี้ไม่มียาที่ต้องกินค่ะ'
+sql "UPDATE user_slot_times SET slot_time='23:59:00' WHERE user_id=$UA AND slot='bedtime';" >/dev/null   # ก่อนสร้างยา เพื่อให้เทสไม่ขึ้นกับเวลาของวัน
 req POST /api/medications "$TA" '{"name":"TEST-day6-พารา","strength":"500 mg","dose_per_time":0.5,"unit":"tablet","meal_relation":"after","as_needed":false,"slots":["bedtime"],"total_qty":30}'
 expect "สร้างยาทดสอบ → 201" "$STATUS" "201"
-sql "UPDATE user_slot_times SET slot_time='23:59:00' WHERE user_id=$UA AND slot='bedtime';" >/dev/null
 say "$LA" "วันนี้"
 expect_match "'วันนี้' สรุปยา (Flex: ยังไม่ได้กิน/รอเวลา + ชื่อยาใต้มื้อ + ความคืบหน้า)" "$(echo "$REPLY" | paste -sd' ' -)" '📋 ยาของวันนี้.*กินแล้ว 0 จาก 1 รายการ.*• TEST-day6-พารา 500 mg'
 expect "  reply ไม่ทำให้นับ push" "$(fl_count push)" "0"
@@ -220,7 +220,7 @@ expect "  ผู้ป่วย B ยังไม่ถูกเชื่อม"
 
 section "LINE เดียวชนผู้ป่วยคนอื่น"
 say "$LA" "$CODE_B"
-expect_match "LA (เชื่อมกับ A แล้ว) ส่งรหัสของ B → อธิบายว่าเชื่อมซ้ำไม่ได้" "$REPLY" 'LINE นี้เชื่อมกับผู้ป่วยคนอื่นแล้วค่ะ'
+expect_match "LA (เชื่อมกับ A แล้ว) ส่งรหัสของ B → อธิบายว่าเชื่อมซ้ำไม่ได้" "$REPLY" 'LINE นี้เชื่อมไว้แล้วค่ะ'
 expect "  B ยังไม่ถูกเชื่อม" "$(sql "SELECT line_user_id IS NULL FROM users WHERE id=$UB;")" "1"
 expect "  A ยังเชื่อมกับ LA" "$(sql "SELECT line_user_id='$LA' FROM users WHERE id=$UA;")" "1"
 expect "  รหัสของ B ยังไม่ถูกใช้ทิ้ง" "$(sql "SELECT line_link_code='$CODE_B' FROM users WHERE id=$UB;")" "1"

@@ -166,15 +166,16 @@ async function notifyResolved(db, client, doseIds, env = process.env) {
   const ids = toIds(doseIds);
   if (!ids.length) return { groups: 0, sent: 0 };
   const rows = await db.query(
-    "SELECT e.id, e.caregiver_id, e.user_id, c.line_user_id AS cg_line, d.id AS dose_id, d.slot, DATE_FORMAT(d.scheduled_at, '%Y-%m-%d %H:%i:%s') AS scheduled_at, u.display_name AS patient " +
+    "SELECT e.id, e.caregiver_id, e.user_id, c.line_user_id AS cg_line, d.id AS dose_id, d.slot, DATE_FORMAT(d.scheduled_at, '%Y-%m-%d %H:%i:%s') AS scheduled_at, DATE_FORMAT(d.taken_at, '%H:%i') AS taken_hm, d.source, u.display_name AS patient " +
     'FROM dose_escalations e JOIN caregivers c ON c.id = e.caregiver_id AND c.is_active = 1 AND c.line_user_id IS NOT NULL ' +
     'JOIN dose_logs d ON d.id = e.dose_id JOIN users u ON u.id = e.user_id ' +
     "WHERE e.dose_id IN (?) AND e.status = 'sent' AND e.resolved_notified_at IS NULL AND e.confirmed_at IS NULL AND d.status = 'taken' ORDER BY e.caregiver_id, d.scheduled_at, e.id", [ids]);
   const map = new Map();
   for (const r of rows) {
     const key = r.caregiver_id + '|' + r.user_id + '|' + r.scheduled_at;
-    if (!map.has(key)) map.set(key, { caregiver_id: r.caregiver_id, cg_line: r.cg_line, user_id: r.user_id, patient: r.patient, slot: r.slot, scheduled_at: r.scheduled_at, esc: [], first_dose: r.dose_id });
+    if (!map.has(key)) map.set(key, { caregiver_id: r.caregiver_id, cg_line: r.cg_line, user_id: r.user_id, patient: r.patient, slot: r.slot, scheduled_at: r.scheduled_at, esc: [], doses: [], at: r.taken_hm, source: r.source, first_dose: r.dose_id });
     map.get(key).esc.push(r.id);
+    map.get(key).doses.push(r.dose_id);
   }
   const out = { groups: map.size, sent: 0 };
   for (const g of map.values()) {
@@ -240,7 +241,7 @@ async function escalateNow(db, client, userId, body = {}, env = process.env) {
   let sent = 0, failed = 0, quotaSkipped = 0, resent = false, doses = 0;
   for (const cg of cgs) {
     const g = groupRows(sel.map((r) => ({ ...r, caregiver_id: cg.id, cg_line: cg.line_user_id, escalate_after_min: cg.escalate_after_min })))[0];
-    g.late_sec = Math.max(g.late_sec, Number(cg.escalate_after_min) * 60);   // เดโมข้ามเวลารอ → ให้การ์ดแสดง "เลยมา" ตามเวลาที่ผู้ดูแลตั้งไว้
+    // เดโมข้ามเวลารอ แต่การ์ดแสดงเวลาที่เลยมาจริง (now − scheduled_at) ; ยังไม่ถึงเวลา = "ใกล้ถึงเวลา"
     const resend = done(cg);
     if (resend && !force) continue;
     if (resend) { resent = true; console.log('escalate_force caregiver_id=' + cg.id + ' doses=' + ids.length); }

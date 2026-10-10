@@ -1,0 +1,151 @@
+{
+  "type": "bubble",
+  "size": "mega",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "image",
+        "url": "https://example.ngrok-free.dev/line/mascot-bell.png",
+        "size": "88px",
+        "aspectMode": "fit",
+        "aspectRatio": "1:1",
+        "align": "center"
+      },
+      {
+        "type": "text",
+        "text": "คุณสมชายยังไม่ได้กินยานะคะ",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#78350f",
+        "weight": "bold",
+        "align": "center"
+      },
+      {
+        "type": "text",
+        "text": "🌆 มื้อเย็น 18:00 น. · เลยมา 1 ชม. 5 นาที",
+        "wrap": true,
+        "scaling": true,
+        "size": "md",
+        "color": "#78350f",
+        "weight": "bold",
+        "align": "center"
+      }
+    ],
+    "spacing": "sm",
+    "paddingAll": "16px",
+    "backgroundColor": "#fef3c7",
+    "alignItems": "center"
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "พาราเซตามอล 500 mg",
+            "wrap": true,
+            "scaling": true,
+            "size": "xl",
+            "color": "#12302d",
+            "weight": "bold"
+          },
+          {
+            "type": "text",
+            "text": "ครั้งละ 1 เม็ด · หลังอาหาร",
+            "wrap": true,
+            "scaling": true,
+            "size": "md",
+            "color": "#4b5f5c"
+          }
+        ],
+        "spacing": "xs"
+      },
+      {
+        "type": "separator",
+        "margin": "md",
+        "color": "#d3e2df"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "เมตฟอร์มิน 500 mg",
+            "wrap": true,
+            "scaling": true,
+            "size": "xl",
+            "color": "#12302d",
+            "weight": "bold"
+          },
+          {
+            "type": "text",
+            "text": "ครั้งละ ½ เม็ด · หลังอาหาร",
+            "wrap": true,
+            "scaling": true,
+            "size": "md",
+            "color": "#4b5f5c"
+          }
+        ],
+        "spacing": "xs",
+        "margin": "md"
+      },
+      {
+        "type": "separator",
+        "margin": "md",
+        "color": "#d3e2df"
+      },
+      {
+        "type": "text",
+        "text": "ลองโทรถามคุณสมชายได้นะคะ",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#12302d",
+        "weight": "bold"
+      }
+    ],
+    "spacing": "md",
+    "paddingAll": "16px"
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "button",
+        "style": "primary",
+        "color": "#0f766e",
+        "height": "md",
+        "scaling": true,
+        "action": {
+          "label": "✓ ยืนยันว่ากินแล้ว",
+          "type": "postback",
+          "data": "a=preview",
+          "displayText": "ยืนยันว่าคุณสมชายกินยาแล้ว"
+        }
+      },
+      {
+        "type": "button",
+        "style": "secondary",
+        "height": "md",
+        "scaling": true,
+        "action": {
+          "label": "รับทราบ",
+          "type": "postback",
+          "data": "a=preview",
+          "displayText": "รับทราบ"
+        }
+      }
+    ],
+    "spacing": "sm",
+    "paddingAll": "16px"
+  }
+}

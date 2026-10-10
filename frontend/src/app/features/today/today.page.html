@@ -74,7 +74,7 @@
               <div class="doses">
                 @for (v of s.doses; track v.dose.id) {
                   <app-dose-card [dose]="v.dose" [state]="v.state" [lateMin]="v.lateMin" [takenClock]="v.takenClock" [source]="v.dose.source ?? null"
-                                 [canUndo]="v.canUndo" [busy]="isBusy(v.dose.id)" [pop]="popId() === v.dose.id"
+                                 [canUndo]="v.canUndo" [busy]="isBusy(v.dose.id)" [pop]="popId() === v.dose.id" [showTime]="s.multiTime"
                                  (take)="take(v, s.slot)" (undo)="undo(v.dose.id, s.slot)" />
                 }
               </div>

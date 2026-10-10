@@ -1,0 +1,183 @@
+{
+  "type": "bubble",
+  "size": "mega",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "image",
+        "url": "https://example.ngrok-free.dev/line/mascot-hello.png",
+        "size": "88px",
+        "aspectMode": "fit",
+        "aspectRatio": "1:1",
+        "align": "center"
+      },
+      {
+        "type": "text",
+        "text": "📋 ยาวันนี้ที่คุณดูแล",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#134e4a",
+        "weight": "bold",
+        "align": "center"
+      },
+      {
+        "type": "text",
+        "text": "ศ. 9 ต.ค.",
+        "wrap": true,
+        "scaling": true,
+        "size": "md",
+        "color": "#0f766e",
+        "weight": "bold",
+        "align": "center"
+      }
+    ],
+    "spacing": "sm",
+    "paddingAll": "16px",
+    "backgroundColor": "#e8f7f3",
+    "alignItems": "center"
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "คุณสมชาย ใจดี",
+            "wrap": true,
+            "scaling": true,
+            "size": "xl",
+            "color": "#12302d",
+            "weight": "bold"
+          },
+          {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+              {
+                "type": "text",
+                "text": "กินแล้ว 1 จาก 3 รายการ",
+                "wrap": true,
+                "scaling": true,
+                "size": "md",
+                "color": "#12302d",
+                "weight": "bold"
+              },
+              {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                  {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [],
+                    "width": "33%",
+                    "height": "10px",
+                    "backgroundColor": "#0f766e",
+                    "cornerRadius": "5px"
+                  }
+                ],
+                "height": "10px",
+                "backgroundColor": "#d3e2df",
+                "cornerRadius": "5px"
+              }
+            ],
+            "spacing": "sm"
+          },
+          {
+            "type": "text",
+            "text": "🌆 มื้อเย็น 18:00 น. · ยังไม่ได้กิน",
+            "wrap": true,
+            "scaling": true,
+            "size": "md",
+            "color": "#78350f",
+            "weight": "bold"
+          },
+          {
+            "type": "text",
+            "text": "🌙 มื้อก่อนนอน 21:00 น. · รอเวลา",
+            "wrap": true,
+            "scaling": true,
+            "size": "md",
+            "color": "#12302d",
+            "weight": "regular"
+          }
+        ],
+        "spacing": "sm"
+      },
+      {
+        "type": "separator",
+        "margin": "md",
+        "color": "#d3e2df"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "คุณมาลี ใจงาม",
+            "wrap": true,
+            "scaling": true,
+            "size": "xl",
+            "color": "#12302d",
+            "weight": "bold"
+          },
+          {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+              {
+                "type": "text",
+                "text": "กินแล้ว 1 จาก 1 รายการ",
+                "wrap": true,
+                "scaling": true,
+                "size": "md",
+                "color": "#12302d",
+                "weight": "bold"
+              },
+              {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                  {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [],
+                    "width": "100%",
+                    "height": "10px",
+                    "backgroundColor": "#0f766e",
+                    "cornerRadius": "5px"
+                  }
+                ],
+                "height": "10px",
+                "backgroundColor": "#d3e2df",
+                "cornerRadius": "5px"
+              }
+            ],
+            "spacing": "sm"
+          },
+          {
+            "type": "text",
+            "text": "กินครบทุกรายการแล้ว 🌟",
+            "wrap": true,
+            "scaling": true,
+            "size": "md",
+            "color": "#15803d",
+            "weight": "bold"
+          }
+        ],
+        "spacing": "sm",
+        "margin": "md"
+      }
+    ],
+    "spacing": "md",
+    "paddingAll": "16px"
+  }
+}

@@ -25,6 +25,8 @@ export class DoseCardComponent {
   readonly takenClock = input<string | null>(null);
   /** ช่องทางที่ยืนยัน (dose_logs.source) */
   readonly source = input<string | null>(null);
+  /** มื้อนี้มีหลายเวลา → แสดงเวลาของยาตัวนี้ในการ์ด */
+  readonly showTime = input(false);
   readonly canUndo = input(false);
   readonly busy = input(false);
   /** เพิ่งกดกิน → เล่น animation เครื่องหมายถูกเด้ง */

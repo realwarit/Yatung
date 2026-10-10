@@ -54,8 +54,63 @@ test('ชื่อผู้ป่วยยาว/ตกแต่ง → หั�
 
 test('Flex ปิดเรื่อง: altText ตามสเปก "💚 คุณ…กินยามื้อ…แล้วค่ะ"', () => {
   const m = M.buildEscalationResolved(group(), ENV);
-  assert.equal(m.altText, '💚 คุณสมชายกินยามื้อเย็นแล้วค่ะ');
+  assert.equal(m.altText, '💚 คุณสมชายกินยามื้อเย็นแล้วค่ะ · 18:00 น.');
   assert.equal(flat(m.contents).filter((n) => n.type === 'button').length, 0);
+});
+
+test('Flex ปิดเรื่อง: เนื้อหา = เวลาที่ผู้ป่วยกดจริง + จำนวน · ช่องทาง + ขอบคุณ (ไม่ซ้ำหัวการ์ด)', () => {
+  const m = M.buildEscalationResolved(group({ at: '16:33', source: 'push', doses: [dose(1), dose(2), dose(3)] }), ENV);
+  const texts = flat(m.contents.body).filter((n) => n.type === 'text').map((n) => n.text);
+  assert.deepEqual(texts, ['✅ บันทึกเมื่อ 16:33 น.', '3 รายการ · ผ่านทาง แจ้งเตือนบนเครื่อง', 'ขอบคุณที่ช่วยดูแลนะคะ']);
+  assert.match(m.altText, /คุณสมชาย.*มื้อเย็น/);
+  const line = flat(M.buildEscalationResolved(group({ at: '08:01', source: 'line', doses: [dose(1)] }), ENV).contents.body).filter((n) => n.type === 'text').map((n) => n.text);
+  assert.equal(line[1], '1 รายการ · ผ่านทาง LINE');
+  const app = flat(M.buildEscalationResolved(group({ at: '08:01', source: 'app', doses: [dose(1)] }), ENV).contents.body).filter((n) => n.type === 'text').map((n) => n.text);
+  assert.equal(app[1], '1 รายการ · ผ่านทาง แอป');
+});
+
+test('Flex แจ้งญาติ: เลยมาตามเวลาจริง (now − scheduled_at) ไม่ใช่ escalate_after_min', () => {
+  const m = M.buildEscalation(group({ late_min: 2.4 }), ENV);   // เดโมส่งตอนเลยมา 2 นาที
+  assert.equal(m.altText, '⚠️ คุณสมชายยังไม่ได้กินยามื้อเย็น · เลยมา 2 นาที');
+  const texts = flat(m.contents).filter((n) => n.type === 'text').map((n) => n.text);
+  assert.ok(texts.includes('🌆 มื้อเย็น 18:00 น. · เลยมา 2 นาที'));
+  assert.ok(!texts.some((t) => /30 นาที/.test(t)));
+  assert.match(M.buildEscalation(group({ late_min: 0.3 }), ENV).altText, /เลยมาไม่ถึง 1 นาที/);
+});
+
+test('Flex แจ้งญาติ: ยังไม่ถึงเวลา (late_min < 0) = "ใกล้ถึงเวลา" ไม่แสดงว่าเลยมา', () => {
+  const m = M.buildEscalation(group({ late_min: -4.2 }), ENV);
+  assert.equal(m.altText, '⏰ คุณสมชายใกล้ถึงเวลากินยามื้อเย็น · อีก 5 นาที');
+  assert.equal(m.contents.header.backgroundColor === F.COLOR.warningSoft, false);
+  const texts = flat(m.contents).filter((n) => n.type === 'text').map((n) => n.text);
+  assert.ok(texts.includes('คุณสมชายใกล้ถึงเวลากินยา'));
+  assert.ok(texts.includes('🌆 มื้อเย็น 18:00 น. · อีก 5 นาที'));
+  assert.ok(!texts.some((t) => /เลยมา|ยังไม่ได้กินยา/.test(t)));
+});
+
+test('เดโมแจ้งญาติ: escalateNow ส่ง late_min ตามเวลาจริง ไม่บวก escalate_after_min', async () => {
+  const sent = [];
+  const rows = [{ id: 1, user_id: 1, slot: 'evening', scheduled_at: '2026-10-09 16:30:00', late_sec: 125, name: 'ยา', strength: null, dose_per_time: 1, unit: 'tablet', meal_relation: 'after', patient: 'การ์ตูน' }];
+  const db = {
+    async query(sql) {
+      if (/SELECT email FROM users/.test(sql)) return [{ email: 'a@b.c' }];
+      if (/FROM caregivers/.test(sql)) return [{ id: 7, line_user_id: 'Ucg', escalate_after_min: 30 }];
+      if (/FROM dose_logs d JOIN medications/.test(sql)) return rows;
+      return [];
+    },
+    async withTransaction(fn) {
+      return fn({ async query(sql) { return /INSERT IGNORE/.test(sql) ? [{ affectedRows: 1 }] : [rows.map((r) => ({ id: r.id }))]; } });
+    }
+  };
+  const client = {
+    async quotaStatus() { return { remaining_for_escalation: 10, reserve: 30 }; },
+    async canPush() { return { allowed: true, left: 10 }; },
+    async push(to, messages) { sent.push(messages[0]); return { ok: true }; }
+  };
+  const r = await esc.escalateNow(db, client, 1, {}, {});
+  assert.equal(r.status, 200);
+  assert.match(sent[0].altText, /เลยมา 2 นาที/);
+  assert.doesNotMatch(sent[0].altText, /30 นาที/);
 });
 
 test('Flex เตือนซ้ำ (followup) = หัวพื้นเหลือง "ยังไม่ได้กินยา…" แม้เลยเวลาแค่ 10 นาที', () => {
@@ -69,11 +124,11 @@ test('Flex เตือนซ้ำ (followup) = หัวพื้นเหล�
 
 test('reply ผู้ดูแลกดยืนยัน: บันทึกแล้ว / ผู้ป่วยกินไปแล้วก่อนหน้า / ญาติคนอื่นยืนยันแล้ว', () => {
   const a = M.caregiverTakeResult({ taken: [{ name: 'สมชาย ใจดี', slot: 'evening' }] }).text;
-  assert.match(a, /บันทึกแล้วค่ะ\nยืนยันว่าคุณสมชาย ใจดีกินยามื้อเย็นแล้ว/);
+  assert.equal(a, '✅ บันทึกแล้วค่ะ\nคุณสมชาย ใจดี · มื้อเย็น\nขอบคุณที่ช่วยดูแลนะคะ');
   const b = M.caregiverTakeResult({ already: [{ name: 'สมชาย ใจดี', slot: 'evening', at: '18:12', by: 'self' }] }).text;
-  assert.match(b, /ผู้ป่วยกินไปก่อนหน้านี้แล้ว \(บันทึกเมื่อ 18:12 น\.\)/);
+  assert.equal(b, '✅ กินไปแล้วค่ะ\nคุณสมชาย ใจดี · มื้อเย็น\nผู้ป่วยกินเมื่อ 18:12 น.\nไม่ต้องกดซ้ำนะคะ');
   const c = M.caregiverTakeResult({ already: [{ name: 'ก', slot: 'noon', at: '12:00', by: 'caregiver' }] }).text;
-  assert.match(c, /มีญาติยืนยันไว้แล้ว/);
+  assert.equal(c, '✅ กินไปแล้วค่ะ\nคุณก · มื้อกลางวัน\nญาติยืนยันเมื่อ 12:00 น.\nไม่ต้องกดซ้ำนะคะ');
   for (const t of [a, b, c, M.TEXT.cgAck().text, M.TEXT.cgNoAuth().text]) {
     for (const line of t.split('\n')) assert.ok((line.match(/\p{Extended_Pictographic}/gu) || []).length <= 1, line);
   }

@@ -1,0 +1,75 @@
+{
+  "type": "bubble",
+  "size": "mega",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "image",
+        "url": "https://example.ngrok-free.dev/line/mascot-cheer.png",
+        "size": "88px",
+        "aspectMode": "fit",
+        "aspectRatio": "1:1",
+        "align": "center"
+      },
+      {
+        "type": "text",
+        "text": "คุณสมชายกินยาแล้วค่ะ",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#134e4a",
+        "weight": "bold",
+        "align": "center"
+      },
+      {
+        "type": "text",
+        "text": "💚 มื้อเย็น 18:00 น.",
+        "wrap": true,
+        "scaling": true,
+        "size": "md",
+        "color": "#0f766e",
+        "weight": "bold",
+        "align": "center"
+      }
+    ],
+    "spacing": "sm",
+    "paddingAll": "16px",
+    "backgroundColor": "#e8f7f3",
+    "alignItems": "center"
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "✅ บันทึกเมื่อ 18:42 น.",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#12302d",
+        "weight": "bold"
+      },
+      {
+        "type": "text",
+        "text": "2 รายการ · ผ่านทาง LINE",
+        "wrap": true,
+        "scaling": true,
+        "size": "md",
+        "color": "#12302d"
+      },
+      {
+        "type": "text",
+        "text": "ขอบคุณที่ช่วยดูแลนะคะ",
+        "wrap": true,
+        "scaling": true,
+        "size": "md",
+        "color": "#4b5f5c"
+      }
+    ],
+    "spacing": "md",
+    "paddingAll": "16px"
+  }
+}
