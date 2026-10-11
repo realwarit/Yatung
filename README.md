@@ -146,6 +146,13 @@ npx cap open android
 <uses-permission android:name="android.permission.CAMERA" />
 ```
 
+## กันความลับหลุดเข้า git
+- ห้าม commit `.env`, `node-red/data/flows_cred.json`, `node-red/data/.sessions.json`, `*.backup`, `.config.*.json` และห้ามฝังค่าลับ (LINE secret/token, ngrok authtoken, Gemini key, VAPID private key, JWT secret, hash รหัสผ่านจริง) ในโค้ด/เทส/เอกสาร
+- เปิด hook ครั้งเดียวหลัง clone: `bash scripts/setup-hooks.sh` (ตั้ง `core.hooksPath=.githooks`) → **pre-commit** บล็อก commit ที่ stage ไฟล์ต้องห้ามหรือมีรูปแบบความลับ · **pre-push** สแกน commit ที่ยังไม่อยู่บน remote ใดเลย
+- ไม่ต้องติดตั้ง gitleaks (ใช้ Node ล้วน `scripts/check-secrets.mjs`; ตัวตรวจ `scripts/lib/secret-scan.mjs`) ; ผลแสดงแค่ ชนิด/ไฟล์/บรรทัด ไม่แสดงค่า ; สแกนทั้งประวัติ: `node scripts/check-secrets.mjs --log --all`
+- `demo-check.sh` หัวข้อ 0 ตรวจ `git ls-files` ไม่มีไฟล์ต้องห้าม (ขึ้น ✗ ถ้ามี)
+- ถ้าความลับหลุดไปแล้ว: เปลี่ยนค่าที่ต้นทางก่อน (สร้างคีย์ใหม่/เปลี่ยนรหัสผ่าน) แล้วค่อยเอาออกจาก git — การลบไฟล์ไม่ลบประวัติ
+
 ## ก่อนนำเสนอ
 
 ```bash

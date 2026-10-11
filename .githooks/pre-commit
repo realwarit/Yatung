@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# บล็อก commit ที่มีไฟล์ต้องห้าม (.env, flows_cred.json, .sessions.json, *.backup …) หรือรูปแบบความลับ — ดู scripts/check-secrets.mjs
+exec node "$(git rev-parse --show-toplevel)/scripts/check-secrets.mjs"
