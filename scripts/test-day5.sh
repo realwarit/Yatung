@@ -8,6 +8,7 @@
 set -u
 BASE="${BASE:-http://localhost:1880}"
 cd "$(dirname "$0")/.."
+source scripts/lib/clock.sh; clock_guard 5 5   # กันรันใกล้เที่ยงคืน (รอบกินยาข้ามวัน) ดู scripts/lib/clock.sh
 IMG=docs/sample-images
 UP=node-red/data/uploads
 

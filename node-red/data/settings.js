@@ -19,6 +19,7 @@ const { resolveAdmin } = require('./lib/admin-auth');
 const reminderService = require('./lib/reminder-service');
 const escalationService = require('./lib/escalation-service');
 const stockService = require('./lib/stock-service');
+const pushService = require('./lib/push-service').createPushService();
 const lineEnv = require('./lib/line-env');
 
 const PROMPT_DIR = path.join(__dirname, 'prompts');
@@ -38,6 +39,9 @@ const rawBody = createRawBodyMiddleware();
 
 // ผู้ป่วยกินยา (ทุกช่องทาง) หลังแจ้งญาติไปแล้ว → บอกญาติ "ปิดเรื่อง" 1 ครั้ง (ล้มเหลวไม่กระทบการบันทึกกินยา)
 doseService.setAfterTaken((ids) => escalationService.notifyResolved(db, lineClient, ids, lineEnv.pick((k) => process.env[k])));
+
+// Web Push ต้องมี VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT (สร้างด้วย node scripts/gen-vapid.mjs) — ไม่ log ค่า
+console.log('[yatung] Web Push: ' + (pushService.configured() ? 'พร้อม (ตั้ง VAPID ครบ)' : 'ยังไม่ได้ตั้ง VAPID_* — แจ้งเตือนบนเครื่องปิดอยู่'));
 
 // อุ่น Gemini 1 ครั้งตอนเริ่ม (ไม่บล็อก ไม่ล้มเหลวทั้งระบบ)
 require('./lib/gemini-warmup').warmup().catch(() => {});
@@ -78,6 +82,7 @@ module.exports = {
     reminderService,                          // cron ส่งเตือน / demo (lib/reminder-service.js)
     escalationService,                        // แจ้งญาติเมื่อลืมกินยา / ปิดเรื่อง / demo (lib/escalation-service.js)
     stockService,                             // แจ้งยาใกล้หมด / is_low / demo (lib/stock-service.js)
+    pushService,                              // Web Push: subscribe / ส่ง / action token (lib/push-service.js) ; เลือกช่องทางที่ lib/notify-service.js
     lineEnv,                                  // pick(env.get) → env ที่ lib ฝั่ง LINE ใช้ (lib/line-env.js)
     llmOutput,                                // process / reviewFlags / redactPii (lib/validate-llm-output.js)
     prompts: {

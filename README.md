@@ -97,6 +97,28 @@ LINE Messaging API ส่ง webhook เข้ามาที่ `https://<NGROK
 cron 03:00 ปิดรอบที่ค้าง `pending` ของวันก่อนๆ เป็น `missed` (กินย้อนหลังได้) · โหมดเดโม: ปุ่ม "ทดลองแจ้งญาติตอนนี้" (`POST /api/demo/escalate-now` ถ้าแจ้งไปแล้วถามก่อนส่งซ้ำ) ·
 ทดสอบ: `bash scripts/test-day7a.sh` (LINE ปลอม ไม่ส่งข้อความจริง ไม่แตะผู้ใช้จริง) · checklist ทดสอบกับ LINE จริง: [`docs/line-console-checklist.md`](docs/line-console-checklist.md) หัวข้อ 9
 
+**เตือนยาใกล้หมด (7B):** หน้า "ยาของฉัน"/"วันนี้" ขึ้นป้ายเหลือง และส่ง LINE วันละครั้งหลัง `LOW_STOCK_NOTIFY_AT` (09:00) · ทดสอบ: `bash scripts/test-day7b.sh`
+
+### Web Push — แจ้งเตือนบนเครื่อง (7C)
+
+เตือนกินยาเป็น **notification บนมือถือ/คอม** สำหรับคนที่ไม่ได้เชื่อม LINE (หรือเปิดสวิตช์ "ทั้ง LINE และเครื่อง") — ไม่นับโควตา LINE
+ตั้งค่าครั้งเดียวบนเครื่องที่รัน:
+```bash
+node scripts/gen-vapid.mjs                       # สร้างคู่คีย์ VAPID ลง .env (ไม่เขียนทับของเดิม ; แสดงเฉพาะ public key)
+# แก้ VAPID_SUBJECT ใน .env เป็น mailto:<อีเมลของคุณ>  (หรือ https://<NGROK_DOMAIN>)
+docker compose up -d --force-recreate nodered
+docker compose up -d --build frontend
+bash scripts/demo-check.sh                       # หัวข้อ 8) Web Push ต้องผ่าน
+```
+- ผู้ใช้เปิดที่ **ตั้งค่า → แจ้งเตือนบนเครื่องนี้** (iPhone ต้อง "เพิ่มลงหน้าจอโฮม" ก่อน — หน้าจอมีวิธี ①②③ ให้) · ต้องเปิดผ่าน https (tunnel) ไม่ใช่ `localhost`
+- กฎเลือกช่องทาง (ใช้กับเตือนปกติ, เตือนซ้ำ, ยาใกล้หมด; แจ้งญาติใช้ LINE อย่างเดียว): เชื่อม LINE → LINE · ไม่เชื่อมแต่มีเครื่องที่เปิดแจ้งเตือน → Web Push · เปิด "ทั้ง LINE และเครื่อง" → ทั้งสองทาง ·
+  โควตา LINE เต็มแต่มีเครื่องที่เปิดแจ้งเตือน → ใช้ Web Push แทน · ทุกช่องทางผ่านการ "จองก่อนส่ง" ตัวเดียวกัน (ไม่ส่งซ้ำ)
+- ปุ่ม "✓ กินแล้ว" บนแจ้งเตือน (Android Chrome): เปิด `/today#take=<token>` — token อยู่ใน **fragment** ไม่ใช่ query string เพราะ fragment ไม่ถูกส่งไปเซิร์ฟเวอร์ (ไม่ติด access log ของ nginx / ngrok inspector) และแอปลบออกจาก URL ทันที (`history.replaceState`) ก่อนเรียก API ; แอปที่เปิดค้างอยู่รับผ่าน `hashchange` ด้วย ; ลิงก์เก่า `?take=` ยังรับและลบทันที — แล้วแอปบันทึกให้ (token เซ็นด้วย HMAC ผูกผู้ใช้ + dose, อายุ 12 ชม., ใช้ซ้ำไม่หักยาซ้ำ) · iPhone ไม่แสดงปุ่ม action — แตะแจ้งเตือนเพื่อเปิดหน้า "วันนี้" · payload **ไม่มีชื่อยา** (เห็นบนหน้าจอล็อก)
+- **ถ้า iPhone ไม่ได้รับแจ้งเตือน** และ `docker compose logs nodered | grep web_push_error` เห็น `status=403 reason=BadJwtToken` (Apple ปฏิเสธ `VAPID_SUBJECT`): ตั้ง `VAPID_SUBJECT=https://<NGROK_DOMAIN>` (หรือ mailto ที่เป็นอีเมลจริง) → `docker compose up -d --force-recreate nodered` → บน iPhone ปิดแล้วเปิดการแจ้งเตือนใหม่
+  (log ไม่มี JWT/คีย์ ; มีเฉพาะ status กับ reason สั้นๆ)
+- ngrok ฟรีแสดงหน้า "Visit Site" ให้เบราว์เซอร์ครั้งแรก — กดครั้งเดียวต่ออุปกรณ์ (iPhone ที่เปิดจากไอคอนหน้าจอโฮม cookie แยกจาก Safari ต้องกดอีกครั้ง) ; `demo-check.sh` ตรวจว่า `ngsw-worker.js`/`manifest` ผ่าน tunnel ได้ไฟล์จริง
+- ทดสอบอัตโนมัติ (push service ปลอมถอดรหัส payload จริง + ตรวจลายเซ็น VAPID): `bash scripts/test-day7c.sh` · ทดสอบบนมือถือจริง (iPhone / Android แยก 2 ชุด): [`docs/web-push-test.md`](docs/web-push-test.md)
+
 ### 3. Dev แบบ hot reload
 
 ```cmd
@@ -139,6 +161,22 @@ Webhook URL + Use webhook ใน LINE Console · **โควตา push: จร�
 - สแกนช้า > 15 วินาที = รุ่นหลักไม่ตอบแล้วสลับรุ่นสำรองอัตโนมัติ (ยังใช้ได้) — ดู `docker compose logs nodered | grep gemini_http`; Gemini ฝั่ง Google ช้าเป็นช่วงๆ ไม่เกี่ยวกับการเปิด container ใหม่
 - ถ้าสแกนไม่ได้เลยตอนนำเสนอ: ตั้ง `AI_MOCK=true` ใน `.env` แล้ว `docker compose up -d --force-recreate nodered` (ตอบผลตัวอย่างหลังรอ 2 วินาที)
 - Node-RED เรียก Gemini `models.get` 1 ครั้งตอนเริ่ม (log `gemini_warmup … status=200`) เพื่ออุ่น DNS/TLS และให้เห็นว่า key/เครือข่ายใช้ได้ก่อนสแกนจริง
+
+### ชุดทดสอบทั้งหมด (`scripts/test-all.sh`)
+
+```bash
+bash scripts/test-all.sh          # unit + 3a, 4 (mock), 5, 6, 6b, 6c, 7a, 7b, 7c แล้วสรุปตาราง ผ่าน/ไม่ผ่าน
+bash scripts/test-all.sh 6b 7a    # เฉพาะบางชุด
+```
+
+> **วันนำเสนอห้ามรันในช่วง 30 นาทีก่อนเดโม** (และอย่ารันใกล้มื้อยาของผู้ใช้จริง): ชุดทดสอบ recreate `nodered` หลายรอบและปิด cron เตือนจริงชั่วคราว (`REMINDER_CRON=off`) จึงไม่มีการเตือน/แจ้งญาติจริงระหว่างนั้น และ `nodered` จะรีสตาร์ตหลายครั้ง — ให้เทสเสร็จก่อน แล้วค่อยรัน `bash scripts/demo-check.sh`
+
+- **เวลาของวัน:** บางเคสสร้างรอบกินยาย้อนหลัง/ล่วงหน้าตามนาฬิกา DB ซึ่งระบบนับ "วันนี้" ด้วย `CURDATE()` — ใกล้เที่ยงคืนรอบจะข้ามวัน ผลเทสจึงเพี้ยน (ไม่ใช่บั๊ก) ทุกชุดเรียก `scripts/lib/clock.sh` ตอนเริ่ม: นอกช่วงปลอดภัยแต่รอไม่เกิน 12 นาทีจะรอเอง นานกว่านั้นจะออกด้วย exit 3 พร้อมบอกเวลาที่รันได้ (ชุด 7A ต้องรันหลัง 02:15 ถึงก่อน 23:40; `CLOCK_GUARD=off` ข้ามตัวกัน)
+- `DEMO_PASSWORD` ของ 3a/4 อ่านจาก `.env` เองถ้าไม่ได้ตั้งใน environment (ไม่แสดงค่า) · 6c ต้อง `docker compose up -d --build frontend` ก่อน
+- `LINE_QUOTA_CACHE_MS` (ค่าเริ่มต้น 300000) — ชุดทดสอบตั้งเป็น 0 เพื่อปรับยอดโควตาของ LINE ปลอมกลางเทสได้ ; ตอนใช้งานจริงอย่าตั้ง
+- หลังเทส `test-all.sh` ตรวจ `http://localhost:8080/api/me` = 401 และรีสตาร์ต `frontend` ให้ถ้าไม่ใช่ (nginx หา IP ของ `nodered` ตอนเริ่มเท่านั้น)
+- **tunnel ค้างกับ network เก่า** ("network … not found" ตอน `--profile tunnel up`): เกิดเมื่อ `docker compose down` แล้ว `up` โดยไม่ใส่ profile — container `tunnel` เก่ายังอ้าง network ที่ถูกลบไปแล้ว แก้ด้วย
+  `docker compose --profile tunnel up -d --force-recreate tunnel` · ชุดทดสอบไม่ `down` stack (recreate เฉพาะ `nodered`) ; ถ้าต้อง `down` ให้ใส่ `--profile tunnel` เสมอ (`docker compose --profile tunnel down`) · `demo-check.sh` ตรวจว่า `tunnel` อยู่ network เดียวกับ `frontend` และแสดงคำสั่งแก้ให้
 
 ## AI pipeline (`POST /api/scan`)
 
@@ -197,3 +235,5 @@ docker compose down            # หยุดระบบ (ข้อมูลย
 docker compose logs -f nodered # ดู log ของ Node-RED
 
 docker compose --profile tunnel up -d
+docker compose --profile tunnel up -d --force-recreate tunnel   # ถ้า tunnel ค้างกับ network เก่า ("network … not found")
+docker compose --profile tunnel down                             # ถ้าจะ down ให้ใส่ profile เสมอ

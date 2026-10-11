@@ -13,9 +13,10 @@
 set -u
 BASE="${BASE:-http://localhost:1880}"          # ตรงเข้า Node-RED (nginx 8080 ต้อง build frontend ใหม่ถึงจะรับ body 12m)
 DEMO_EMAIL="${DEMO_EMAIL:-demo@yatung.app}"
-: "${DEMO_PASSWORD:?ตั้ง DEMO_PASSWORD ก่อนรัน}"
 MODE="${1:-all}"
 cd "$(dirname "$0")/.."
+source scripts/lib/demo-password.sh   # อ่าน DEMO_PASSWORD จาก .env เองถ้าไม่ได้ตั้ง (ไม่แสดงค่า)
+source scripts/lib/clock.sh; clock_guard 5 5   # กันรันใกล้เที่ยงคืน (รอบกินยาข้ามวัน) ดู scripts/lib/clock.sh
 RES=scripts/.day4-results
 IMG=docs/sample-images
 mkdir -p "$RES"

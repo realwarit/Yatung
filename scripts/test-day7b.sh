@@ -7,6 +7,7 @@
 
 set -u
 cd "$(dirname "$0")/.."
+source scripts/lib/clock.sh; clock_guard 5 5   # กันรันใกล้เที่ยงคืน (รอบกินยาข้ามวัน) ดู scripts/lib/clock.sh
 BASE="${BASE:-http://localhost:1880}"
 FAKE_PORT=8798
 FAKE="http://localhost:$FAKE_PORT"
@@ -106,7 +107,7 @@ node scripts/fake-line.js $FAKE_PORT >"$TMP/fake.log" 2>&1 &
 FAKE_PID=$!
 sleep 1
 fl_config "{\"profiles\":{\"$LA\":\"ผู้ป่วย ทดสอบ\"},\"quota\":200,\"usage\":0}"
-NR_ENV=(LINE_CHANNEL_SECRET="$SECRET" LINE_CHANNEL_ACCESS_TOKEN="$TOKEN_LINE" LINE_API_BASE="http://host.docker.internal:$FAKE_PORT" LINE_OA_BASIC_ID="@014rktvr" LINE_PUSH_MONTHLY_CAP=200 LINE_PUSH_RESERVE=30 PUBLIC_BASE_URL="$PUBLIC" LINE_MASCOT_URL="" REMINDER_ONLY_EMAIL_SUFFIX="@example.test" LOW_STOCK_QTY_PRN=5)
+NR_ENV=(LINE_CHANNEL_SECRET="$SECRET" LINE_CHANNEL_ACCESS_TOKEN="$TOKEN_LINE" LINE_API_BASE="http://host.docker.internal:$FAKE_PORT" LINE_OA_BASIC_ID="@014rktvr" LINE_PUSH_MONTHLY_CAP=200 LINE_PUSH_RESERVE=30 LINE_QUOTA_CACHE_MS=0 PUBLIC_BASE_URL="$PUBLIC" LINE_MASCOT_URL="" REMINDER_ONLY_EMAIL_SUFFIX="@example.test" LOW_STOCK_QTY_PRN=5)
 restart_nodered "${NR_ENV[@]}" DEMO_MODE=true REMINDER_CRON=off || exit 1
 ok "nodered พร้อม (cron จริงปิด)"
 
@@ -234,7 +235,15 @@ expect_match "  log มี low_stock_force (ไม่มีข้อมูลส
 new_user E; TE="$TOKEN_NEW"; mkmed "$TE" "TEST-7B-E" 2
 req POST /api/demo/low-stock-now "$TE"; expect "ยังไม่เชื่อม LINE → 409" "$STATUS" "409"
 expect "  code LINE_NOT_LINKED" "$(jget 'o.error')" "LINE_NOT_LINKED"
-# (429 LINE_QUOTA ของเดโมครอบคลุมใน stock-service.test.js — quotaStatus แคชยอดจาก LINE 5 นาที จึงปรับ usage กลางเทสไม่ได้)
+# โควตาเต็ม → 429 LINE_QUOTA (LINE_QUOTA_CACHE_MS=0 จึงปรับ usage ของ LINE ปลอมกลางเทสได้)
+sql "UPDATE medications SET refill_alerted_at=NULL WHERE id=$MD1;" >/dev/null
+fl_config "{\"quota\":200,\"usage\":175}"      # cap 200 − reserve 30 = หยุดที่ 170
+fl_clear; req POST /api/demo/low-stock-now "$TD"
+expect "โควตาเหลือต่ำกว่าส่วนสำรอง → 429" "$STATUS" "429"
+expect "  code LINE_QUOTA" "$(jget 'o.error')" "LINE_QUOTA"
+expect "  ไม่ส่ง" "$(fl_count push)" "0"
+expect "  ไม่จอง" "$(alerted "$MD1")" "no"
+fl_config "{\"quota\":200,\"usage\":0}"
 req POST /api/demo/low-stock-now ""; expect "ไม่มี JWT → 401" "$STATUS" "401"
 
 section "ไม่แตะผู้ใช้จริง + log ไม่มีความลับ"

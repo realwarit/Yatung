@@ -2,7 +2,11 @@
 // กฎ: จัดกลุ่มตาม (user, scheduled_at) = 1 ข้อความต่อกลุ่ม ; จอง reminded_at ก่อนส่ง (transaction + FOR UPDATE กันส่งซ้ำเมื่อรันพร้อมกัน) ;
 //     REMINDER_ONLY_EMAIL_SUFFIX (เฉพาะตอนรันเทส) = แตะเฉพาะ user ที่อีเมลลงท้ายด้วยค่านี้ — กันเทสที่ชี้ LINE ปลอมไปจอง reminded_at ของผู้ใช้จริง ;
 //     push ล้มเหลว (หลัง retry) = บันทึกว่าล้มเหลวแต่ไม่คืน reminded_at ; โควตา: kind=reminder หยุดที่ (cap − reserve) ดู lib/line-client.js
+// ช่องทาง (7C, lib/notify-service.js): เชื่อม LINE → LINE · ไม่เชื่อมแต่มีเครื่องที่เปิดแจ้งเตือน → Web Push · notify_both → ทั้งสอง ;
+//     จองครั้งเดียวแล้วส่งทุกช่องทาง ; โควตา LINE เต็ม + มีเครื่อง → ใช้ Web Push แทน ; ไม่ส่ง pushService เข้ามา (opts.push) = LINE อย่างเดียวเหมือนเดิม
 const lineFlex = require('./line-flex');
+const notify = require('./notify-service');
+const pushLib = require('./push-service');
 const { SLOT_LABEL } = require('./labels-th');
 
 const WINDOW_MIN = 30;
@@ -10,7 +14,7 @@ const err = (status, error, details) => ({ status, body: { error, details } });
 
 const COLS = 'd.id, d.user_id, d.slot, DATE_FORMAT(d.scheduled_at, \'%Y-%m-%d %H:%i:%s\') AS scheduled_at, d.reminded_at IS NOT NULL AS was_reminded, ' +
   'TIMESTAMPDIFF(SECOND, d.scheduled_at, NOW()) AS late_sec, ' +
-  'm.name, m.strength, m.dose_per_time, m.unit, m.meal_relation, u.line_user_id';
+  'm.name, m.strength, m.dose_per_time, m.unit, m.meal_relation, u.line_user_id, ' + notify.CHANNEL_COLS;
 
 // ตัวกรองผู้ใช้ตอนรันเทส: REMINDER_ONLY_EMAIL_SUFFIX ตั้งไว้ = เฉพาะอีเมลที่ลงท้ายด้วยค่านี้ (ไม่ตั้ง = ทุกคน)
 const onlySuffix = (env) => String((env && env.REMINDER_ONLY_EMAIL_SUFFIX) || '').trim();
@@ -20,10 +24,10 @@ function userFilter(env) {
   return suf ? { sql: " AND u.email LIKE ? ESCAPE '!'", params: ['%' + likeEscape(suf)] } : { sql: '', params: [] };
 }
 
-// dose ที่ถึงเวลาเตือน: pending, ยังไม่เคยเตือน, เลยเวลามาไม่เกิน 30 นาที, ยา active และไม่ใช่ as_needed, user เชื่อม LINE แล้ว
+// dose ที่ถึงเวลาเตือน: pending, ยังไม่เคยเตือน, เลยเวลามาไม่เกิน 30 นาที, ยา active และไม่ใช่ as_needed, user มีช่องทาง (เชื่อม LINE แล้ว หรือมีเครื่องที่เปิดแจ้งเตือน)
 const dueSql = (extra = '') => `SELECT ${COLS} FROM dose_logs d JOIN medications m ON m.id = d.medication_id JOIN users u ON u.id = d.user_id ` +
   "WHERE d.status = 'pending' AND d.reminded_at IS NULL AND d.scheduled_at <= NOW() AND d.scheduled_at >= NOW() - INTERVAL " + WINDOW_MIN + ' MINUTE ' +
-  'AND m.is_active = 1 AND m.as_needed = 0 AND u.line_user_id IS NOT NULL' + extra + ' ORDER BY d.user_id, d.scheduled_at, m.name, d.id';
+  'AND m.is_active = 1 AND m.as_needed = 0 AND ' + notify.HAS_CHANNEL_SQL + extra + ' ORDER BY d.user_id, d.scheduled_at, m.name, d.id';
 const DUE_SQL = dueSql();
 
 // แถวเป็นกลุ่ม (user_id, scheduled_at) ตามลำดับเดิม
@@ -31,7 +35,7 @@ function groupRows(rows) {
   const map = new Map();
   for (const r of rows) {
     const key = r.user_id + '|' + r.scheduled_at;
-    if (!map.has(key)) map.set(key, { user_id: r.user_id, line_user_id: r.line_user_id, slot: r.slot, scheduled_at: r.scheduled_at, late_sec: Number(r.late_sec), doses: [] });
+    if (!map.has(key)) map.set(key, { user_id: r.user_id, line_user_id: r.line_user_id, has_push: r.has_push, notify_both: r.notify_both, slot: r.slot, scheduled_at: r.scheduled_at, late_sec: Number(r.late_sec), doses: [] });
     map.get(key).doses.push({ id: r.id, name: r.name, strength: r.strength, dose_per_time: r.dose_per_time, unit: r.unit, meal_relation: r.meal_relation, was_reminded: !!Number(r.was_reminded) });
   }
   return [...map.values()];
@@ -48,39 +52,66 @@ async function claim(db, ids) {
   });
 }
 
-// ส่งเตือน 1 กลุ่ม ; opts = { claim: true (ค่าเริ่มต้น), env } ; คืน { sent, failed, doses, skipped?: 'quota'|'claimed' }
-async function sendGroup(db, client, group, opts = {}) {
-  const env = opts.env || process.env;
-  let doses = group.doses;
-  const chunks = lineFlex.chunkDoses(doses);
+// ช่องทางที่ใช้ได้จริงของกลุ่มนี้ (ยังไม่รู้ผลโควตา LINE) — push = pushService (ไม่ส่งมา = Web Push ใช้ไม่ได้)
+const pushReadyOf = (push) => !!(push && typeof push.configured === 'function' && push.configured());
+const channelsOf = (g, push) => notify.chooseChannels({ lineUserId: g.line_user_id, hasPush: !!Number(g.has_push), notifyBoth: g.notify_both, pushReady: pushReadyOf(push) });
 
-  const q = await client.canPush(db, 'reminder', chunks.length);
-  if (!q.allowed) return { sent: 0, failed: 0, doses: doses.length, skipped: 'quota', quota: q.status };   // ไม่จอง reminded_at → ลองใหม่ได้ภายในหน้าต่าง 30 นาที
+// ส่งเตือน/เตือนซ้ำ 1 กลุ่มผ่านทุกช่องทางที่ใช้ได้ ; จองก่อนส่ง "ครั้งเดียว" (claimFn) แล้วค่อยส่ง LINE และ/หรือ Web Push
+// opts = { claim: true (ค่าเริ่มต้น), env, push, followup, claimFn } ; คืน { sent, failed, doses, push_sent, push_failed, skipped?: 'quota'|'claimed'|'no_channel' }
+// sent/failed = ข้อความ LINE ; push_sent/push_failed = จำนวนเครื่อง
+async function deliver(db, client, group, opts = {}) {
+  const env = opts.env || process.env;
+  const push = opts.push || null;
+  const followup = !!opts.followup;
+  const hasPush = !!Number(group.has_push);
+  let doses = group.doses;
+  let ch = channelsOf(group, push);
+  if (!ch.line && !ch.push) return { sent: 0, failed: 0, doses: doses.length, push_sent: 0, push_failed: 0, skipped: 'no_channel' };
+
+  if (ch.line) {
+    const q = await client.canPush(db, 'reminder', lineFlex.chunkDoses(doses).length);
+    ch = notify.applyLineQuota(ch, q.allowed, { hasPush, pushReady: pushReadyOf(push) });   // LINE เต็ม + มีเครื่อง → Web Push แทน
+    if (!ch.line && !ch.push) return { sent: 0, failed: 0, doses: doses.length, push_sent: 0, push_failed: 0, skipped: 'quota', quota: q.status };   // ไม่จอง → ลองใหม่ได้ภายในหน้าต่าง 30 นาที
+  }
 
   if (opts.claim !== false) {
-    const mine = new Set(await claim(db, doses.map((d) => d.id)));
+    const mine = new Set(await (opts.claimFn || claim)(db, doses.map((d) => d.id)));
     doses = doses.filter((d) => mine.has(d.id));
-    if (!doses.length) return { sent: 0, failed: 0, doses: 0, skipped: 'claimed' };
+    if (!doses.length) return { sent: 0, failed: 0, doses: 0, push_sent: 0, push_failed: 0, skipped: 'claimed' };
   }
 
-  let sent = 0, failed = 0;
-  for (const part of lineFlex.chunkDoses(doses)) {
-    const msg = lineFlex.buildReminder({ slot: group.slot, scheduled_at: group.scheduled_at, late_min: (group.late_sec || 0) / 60, doses: part }, env);
-    const r = await client.push(group.line_user_id, [msg], { db, userId: group.user_id, doseLogId: part[0].id, kind: 'reminder', recipient: 'patient' });
-    if (r.ok) sent++; else failed++;
+  const out = { sent: 0, failed: 0, doses: doses.length, push_sent: 0, push_failed: 0 };
+  if (ch.line) {
+    for (const part of lineFlex.chunkDoses(doses)) {
+      const msg = lineFlex.buildReminder({ slot: group.slot, scheduled_at: group.scheduled_at, late_min: (group.late_sec || 0) / 60, doses: part }, env, followup ? { followup: true } : undefined);
+      const r = await client.push(group.line_user_id, [msg], { db, userId: group.user_id, doseLogId: part[0].id, kind: 'reminder', recipient: 'patient' });
+      if (r.ok) out.sent++; else out.failed++;
+    }
   }
-  return { sent, failed, doses: doses.length };
+  if (ch.push) {
+    try {
+      const token = push.newActionToken(group.user_id, doses.map((d) => d.id));
+      const r = await push.sendToUser(db, group.user_id, pushLib.reminderPayload({ slot: group.slot, count: doses.length, token, followup }), { kind: 'reminder', doseLogId: doses[0].id });
+      out.push_sent += r.sent; out.push_failed += r.failed + r.removed;
+    } catch (e) {
+      out.push_failed++;
+      console.log('push_group_error ' + String(e.message).slice(0, 200));
+    }
+  }
+  return out;
 }
 
+const sendGroup = (db, client, group, opts = {}) => deliver(db, client, group, opts);
+
 // cron ทุก 1 นาที ; คืนสรุป (ไม่มีข้อมูลส่วนตัว)
-async function run(db, client, env = process.env) {
+async function run(db, client, env = process.env, push = null) {
   const f = userFilter(env);
-  const groups = groupRows(await db.query(dueSql(f.sql), f.params));
-  const out = { groups: groups.length, sent: 0, failed: 0, quota_skipped: 0, claimed_by_other: 0 };
+  const groups = groupRows(await db.query(dueSql(f.sql), f.params)).filter((g) => { const c = channelsOf(g, push); return c.line || c.push; });
+  const out = { groups: groups.length, sent: 0, failed: 0, quota_skipped: 0, claimed_by_other: 0, push_sent: 0, push_failed: 0 };
   for (const g of groups) {
     try {
-      const r = await sendGroup(db, client, g, { env });
-      out.sent += r.sent; out.failed += r.failed;
+      const r = await sendGroup(db, client, g, { env, push });
+      out.sent += r.sent; out.failed += r.failed; out.push_sent += r.push_sent; out.push_failed += r.push_failed;
       if (r.skipped === 'quota') out.quota_skipped++;
       if (r.skipped === 'claimed') out.claimed_by_other++;
     } catch (e) {
@@ -88,7 +119,7 @@ async function run(db, client, env = process.env) {
       console.log('reminder_group_error ' + String(e.message).slice(0, 200));
     }
   }
-  if (out.groups) console.log(`reminder_run groups=${out.groups} sent=${out.sent} failed=${out.failed} quota_skipped=${out.quota_skipped} claimed_by_other=${out.claimed_by_other}`);
+  if (out.groups) console.log(`reminder_run groups=${out.groups} sent=${out.sent} failed=${out.failed} push_sent=${out.push_sent} push_failed=${out.push_failed} quota_skipped=${out.quota_skipped} claimed_by_other=${out.claimed_by_other}`);
   return out;
 }
 
@@ -99,7 +130,7 @@ const followupMin = (env) => { const n = Number(env && env.REMINDER_FOLLOWUP_MIN
 const followupSql = (n, extra = '') => `SELECT ${COLS} FROM dose_logs d JOIN medications m ON m.id = d.medication_id JOIN users u ON u.id = d.user_id ` +
   "WHERE d.status = 'pending' AND d.reminded_at IS NOT NULL AND d.followup_at IS NULL " +
   `AND d.scheduled_at <= NOW() - INTERVAL ${n} MINUTE AND d.scheduled_at >= NOW() - INTERVAL ${n + WINDOW_MIN} MINUTE ` +
-  'AND m.is_active = 1 AND m.as_needed = 0 AND u.line_user_id IS NOT NULL' + extra + ' ORDER BY d.user_id, d.scheduled_at, m.name, d.id';
+  'AND m.is_active = 1 AND m.as_needed = 0 AND ' + notify.HAS_CHANNEL_SQL + extra + ' ORDER BY d.user_id, d.scheduled_at, m.name, d.id';
 
 async function claimFollowup(db, ids) {
   if (!ids.length) return [];
@@ -111,31 +142,25 @@ async function claimFollowup(db, ids) {
   });
 }
 
-async function runFollowup(db, client, env = process.env) {
+async function runFollowup(db, client, env = process.env, push = null) {
   const n = followupMin(env);
-  const out = { groups: 0, sent: 0, failed: 0, quota_skipped: 0, claimed_by_other: 0 };
+  const out = { groups: 0, sent: 0, failed: 0, quota_skipped: 0, claimed_by_other: 0, push_sent: 0, push_failed: 0 };
   if (!n) return out;
   const f = userFilter(env);
-  const groups = groupRows(await db.query(followupSql(n, f.sql), f.params));
+  const groups = groupRows(await db.query(followupSql(n, f.sql), f.params)).filter((g) => { const c = channelsOf(g, push); return c.line || c.push; });
   out.groups = groups.length;
   for (const g of groups) {
     try {
-      const q = await client.canPush(db, 'reminder', lineFlex.chunkDoses(g.doses).length);
-      if (!q.allowed) { out.quota_skipped++; continue; }
-      const mine = new Set(await claimFollowup(db, g.doses.map((d) => d.id)));
-      const doses = g.doses.filter((d) => mine.has(d.id));
-      if (!doses.length) { out.claimed_by_other++; continue; }
-      for (const part of lineFlex.chunkDoses(doses)) {
-        const msg = lineFlex.buildReminder({ slot: g.slot, scheduled_at: g.scheduled_at, late_min: g.late_sec / 60, doses: part }, env, { followup: true });
-        const r = await client.push(g.line_user_id, [msg], { db, userId: g.user_id, doseLogId: part[0].id, kind: 'reminder', recipient: 'patient' });
-        if (r.ok) out.sent++; else out.failed++;
-      }
+      const r = await deliver(db, client, g, { env, push, followup: true, claimFn: claimFollowup });
+      out.sent += r.sent; out.failed += r.failed; out.push_sent += r.push_sent; out.push_failed += r.push_failed;
+      if (r.skipped === 'quota') out.quota_skipped++;
+      if (r.skipped === 'claimed') out.claimed_by_other++;
     } catch (e) {
       out.failed++;
       console.log('followup_group_error ' + String(e.message).slice(0, 200));
     }
   }
-  if (out.groups) console.log(`reminder_followup groups=${out.groups} sent=${out.sent} failed=${out.failed} quota_skipped=${out.quota_skipped}`);
+  if (out.groups) console.log(`reminder_followup groups=${out.groups} sent=${out.sent} failed=${out.failed} push_sent=${out.push_sent} quota_skipped=${out.quota_skipped}`);
   return out;
 }
 
@@ -175,4 +200,4 @@ async function remindDemoUser(db, client, env = process.env, email = 'demo@yatun
   return remindNow(db, client, u[0].id, env);
 }
 
-module.exports = { run, runFollowup, followupSql, followupMin, sendGroup, remindNow, remindDemoUser, groupRows, claim, DUE_SQL, dueSql, userFilter, WINDOW_MIN };
+module.exports = { run, runFollowup, followupSql, followupMin, sendGroup, deliver, channelsOf, remindNow, remindDemoUser, groupRows, claim, DUE_SQL, dueSql, userFilter, WINDOW_MIN };

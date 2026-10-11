@@ -6,7 +6,7 @@
 const crypto = require('crypto');
 
 const TIMEOUT_MS = 10000;
-const QUOTA_CACHE_MS = 5 * 60 * 1000;
+const QUOTA_CACHE_MS = 5 * 60 * 1000;   // ค่าเริ่มต้น ; ปรับด้วย env LINE_QUOTA_CACHE_MS (ทดสอบตั้ง 0 = ไม่แคช)
 const RETRY_DELAY_MS = 800;
 
 const tail6 = (id) => (id ? String(id).slice(-6) : '-');
@@ -24,6 +24,10 @@ function createClient(opts = {}) {
   const monthlyCap = () => {
     const n = Number(env.LINE_PUSH_MONTHLY_CAP);
     return Number.isFinite(n) && n >= 0 && env.LINE_PUSH_MONTHLY_CAP !== '' && env.LINE_PUSH_MONTHLY_CAP != null ? n : 200;
+  };
+  const quotaCacheMs = () => {
+    const n = Number(env.LINE_QUOTA_CACHE_MS);
+    return Number.isFinite(n) && n >= 0 && env.LINE_QUOTA_CACHE_MS !== '' && env.LINE_QUOTA_CACHE_MS != null ? n : QUOTA_CACHE_MS;
   };
   const reserve = () => {
     const n = Number(env.LINE_PUSH_RESERVE);
@@ -94,9 +98,9 @@ function createClient(opts = {}) {
     return { displayName: r.json.displayName || null };
   }
 
-  // quota จริงของเดือนนี้ ; cache 5 นาที ; คืน { quota: number|null, used: number|null }
+  // quota จริงของเดือนนี้ ; cache ตาม LINE_QUOTA_CACHE_MS (ค่าเริ่มต้น 5 นาที) ; คืน { quota: number|null, used: number|null }
   async function fetchQuota(force = false) {
-    if (!force && cache.value && Date.now() - cache.at < QUOTA_CACHE_MS) return cache.value;
+    if (!force && cache.value && Date.now() - cache.at < quotaCacheMs()) return cache.value;
     const [q, c] = await Promise.all([call('GET', '/v2/bot/message/quota'), call('GET', '/v2/bot/message/quota/consumption')]);
     const value = {
       quota: q.status === 200 && q.json && q.json.type === 'limited' ? Number(q.json.value) : null,

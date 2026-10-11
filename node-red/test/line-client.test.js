@@ -121,6 +121,13 @@ test('quota: cache 5 นาที (เรียก LINE รอบแรกคร
   await c.quotaStatus(fakeDb());
   assert.equal(f.calls.length, 2);   // quota + consumption
 });
+test('quota: LINE_QUOTA_CACHE_MS=0 → ไม่แคช (เรียก LINE ทุกครั้ง)', async () => {
+  const f = quotaFetch(200, 5);
+  const c = mk(f, { ...ENV, LINE_QUOTA_CACHE_MS: '0' });
+  await c.quotaStatus(fakeDb());
+  await c.quotaStatus(fakeDb());
+  assert.equal(f.calls.length, 4);
+});
 test('canPush: reminder หยุดที่ cap-reserve ; escalation ไปได้ถึง cap', async () => {
   const at = async (used, kind) => (await mk(quotaFetch(200, used)).canPush(fakeDb(), kind)).allowed;
   assert.equal(await at(169, 'reminder'), true);

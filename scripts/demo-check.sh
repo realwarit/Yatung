@@ -117,6 +117,12 @@ if printf '%s' "$pbu" | grep -qE '^https://[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+(/.*)?
 else bad "PUBLIC_BASE_URL ใน container ไม่มีโดเมน ('${pbu:-ว่าง}') — ใน .env ต้องประกาศ NGROK_DOMAIN ก่อนบรรทัด PUBLIC_BASE_URL=https://\${NGROK_DOMAIN} แล้ว docker compose up -d --force-recreate nodered"; fi
 tstate="$(docker compose ps --all --format '{{.State}}' tunnel 2>/dev/null | head -1)"
 if [ "$tstate" = "running" ]; then
+  # tunnel ต้องต่อ network เดียวกับ frontend (หลัง docker compose down/up network ถูกสร้างใหม่ แต่ tunnel เก่าอาจค้างกับ network เดิม → "network … not found" / ngrok ต่อ frontend ไม่ได้)
+  fe_id="$(docker compose ps -q frontend 2>/dev/null | head -1)"; tn_id="$(docker compose ps --all -q tunnel 2>/dev/null | head -1)"
+  fe_net="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$v.NetworkID}} {{end}}' "$fe_id" 2>/dev/null)"
+  tn_net="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$v.NetworkID}} {{end}}' "$tn_id" 2>/dev/null)"
+  if [ -n "$fe_net" ] && [ -n "$tn_net" ] && [ "$fe_net" = "$tn_net" ]; then ok "tunnel อยู่ network เดียวกับ frontend"
+  else bad "tunnel ไม่ได้อยู่ network เดียวกับ frontend (network เก่าค้างหลัง down/up) — แก้: docker compose --profile tunnel up -d --force-recreate tunnel"; fi
   pub="$(curl -s -m 5 http://127.0.0.1:4040/api/tunnels 2>/dev/null | jget 'o.tunnels[0].public_url')"
   if [ -n "$pub" ]; then
     ok "tunnel (ngrok) รันอยู่: $pub"
@@ -177,6 +183,73 @@ cgn="$(docker compose exec -T db sh -c 'mysql -N -B -u"$MYSQL_USER" -p"$MYSQL_PA
 if [ -n "$cgn" ]; then ok "แจ้งญาติ: ผู้ดูแลที่เชื่อม LINE แล้ว ${cgn%% *} คน · แจ้งไปแล้วเดือนนี้ $(printf '%s' "$cgn" | awk '{print $2}') รายการ"; else warn "อ่านข้อมูลแจ้งญาติจากฐานข้อมูลไม่ได้ (รัน bash scripts/migrate.sh แล้วหรือยัง?)"; fi
 fu="$(docker compose exec -T nodered printenv REMINDER_FOLLOWUP_MIN 2>/dev/null | tr -d '')"
 [ -n "$fu" ] && [ "$fu" != "0" ] && ok "เตือนซ้ำผู้ป่วย: เปิด (เลยเวลามา $fu นาที)" || ok "เตือนซ้ำผู้ป่วย: ปิด (REMINDER_FOLLOWUP_MIN=0)"
+
+
+echo "== 8) Web Push (แจ้งเตือนบนเครื่อง)"
+# คีย์ VAPID: ตรวจว่าตั้งครบและเป็นคู่กัน โดยไม่แสดงค่าใดๆ (สร้างด้วย node scripts/gen-vapid.mjs แล้ว docker compose up -d --force-recreate nodered)
+vres="$(docker compose exec -T nodered node -e '
+const c=require("crypto"), e=process.env, miss=["VAPID_PUBLIC_KEY","VAPID_PRIVATE_KEY","VAPID_SUBJECT"].filter(k=>!String(e[k]||"").trim());
+if (miss.length) { console.log("MISSING " + miss.join(",")); process.exit(0); }
+try {
+  const k=c.createECDH("prime256v1"); k.setPrivateKey(Buffer.from(e.VAPID_PRIVATE_KEY.trim(),"base64url"));
+  const pub=Buffer.from(e.VAPID_PUBLIC_KEY.trim(),"base64url");
+  if (pub.length!==65 || !k.getPublicKey().equals(pub)) { console.log("MISMATCH"); process.exit(0); }
+} catch (x) { console.log("MISMATCH"); process.exit(0); }
+const s=e.VAPID_SUBJECT.trim();
+console.log(/^(mailto:[^@\s]+@[^@\s]+|https:\/\/\S+)$/.test(s) ? (/^mailto:.*(example|localhost)/i.test(s) ? "OK_WEAKSUBJECT" : "OK") : "BADSUBJECT");
+' 2>/dev/null | tr -d '')"
+case "$vres" in
+  OK) ok "VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT ตั้งครบ และเป็นคู่กัน (ไม่แสดงค่า)" ;;
+  OK_WEAKSUBJECT) ok "VAPID ตั้งครบ และเป็นคู่กัน (ไม่แสดงค่า)"; warn "VAPID_SUBJECT เป็น mailto ของโดเมนสมมติ — Android/Chrome ไม่สน แต่ถ้า iPhone ไม่ได้รับแจ้งเตือน (log: status=403 BadJwtToken) ให้เปลี่ยนเป็น https://<NGROK_DOMAIN> แล้ว docker compose up -d --force-recreate nodered" ;;
+  MISSING*) bad "VAPID ไม่ครบใน container (${vres#MISSING }) — รัน: node scripts/gen-vapid.mjs ; ตั้ง VAPID_SUBJECT ใน .env ; docker compose up -d --force-recreate nodered" ;;
+  MISMATCH) bad "VAPID_PUBLIC_KEY กับ VAPID_PRIVATE_KEY ไม่ใช่คู่กัน (หรือรูปแบบผิด) — อย่าแก้ทีละตัว ลบทั้งคู่ใน .env แล้วรัน node scripts/gen-vapid.mjs" ;;
+  BADSUBJECT) bad "VAPID_SUBJECT ต้องเป็น mailto:อีเมล หรือ https://โดเมน" ;;
+  *) warn "ตรวจ VAPID ไม่ได้ (nodered ไม่ตอบ)" ;;
+esac
+# ตัวแปรเฉพาะทดสอบ (ยอมรับ cert เซ็นเอง / โฮสต์ push ปลอม) ต้องว่างตอนใช้งานจริง — ไม่แสดงค่า
+for k in PUSH_ALLOW_INSECURE_TLS PUSH_ENDPOINT_ALLOW; do
+  in_env="$(grep -E "^$k=" .env 2>/dev/null | head -1 | cut -d= -f2- | sed 's/[[:space:]]*#.*$//' | tr -d '"' | tr -d "'" | tr -d ' ')"
+  in_ctr="$(docker compose exec -T nodered printenv "$k" 2>/dev/null | tr -d '')"
+  if [ -n "$in_env" ] || [ -n "$in_ctr" ]; then bad "$k มีค่า ($( [ -n "$in_env" ] && echo '.env' )$( [ -n "$in_env" ] && [ -n "$in_ctr" ] && echo ' + ' )$( [ -n "$in_ctr" ] && echo 'container')) — ตัวแปรนี้ใช้เฉพาะรันชุดทดสอบ ลบออกจาก .env แล้ว docker compose up -d --force-recreate nodered"
+  else ok "$k ว่าง (ปลอดภัย)"; fi
+done
+pk_code="$(code "$WEB/api/push/public-key")"
+if [ "$vres" = "OK" ] || [ "$vres" = "OK_WEAKSUBJECT" ]; then
+  [ "$pk_code" = "200" ] && ok "GET /api/push/public-key = 200 (ผ่าน nginx)" || bad "GET /api/push/public-key ได้ $pk_code (ควร 200)"
+else
+  [ "$pk_code" = "503" ] && ok "GET /api/push/public-key = 503 PUSH_NOT_CONFIGURED (ยังไม่ตั้ง VAPID — หน้าตั้งค่าจะแจ้งผู้ใช้ให้เอง)" || warn "GET /api/push/public-key ได้ $pk_code"
+fi
+pn="$(docker compose exec -T db sh -c 'mysql -N -B -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SELECT COUNT(*), COUNT(DISTINCT user_id), IFNULL(SUM(fail_count>0),0) FROM push_subscriptions; SELECT COUNT(*) FROM users WHERE notify_both=1"' 2>/dev/null | tr '
+	' '  ')"
+if [ -n "$pn" ]; then
+  set -- $pn
+  ok "เครื่องที่เปิดแจ้งเตือน: $1 เครื่อง ($2 ผู้ใช้) · ส่งล้มเหลวค้างอยู่ $3 เครื่อง · เปิด \"ส่งทั้ง LINE และแจ้งเตือนบนเครื่อง\" $4 คน"
+  [ "${3:-0}" != "0" ] && warn "มีเครื่องที่ fail_count > 0 — ดู: docker compose logs nodered | grep web_push_error"
+else warn "อ่านจำนวน push_subscriptions ไม่ได้ (ยังไม่ได้รัน bash scripts/migrate.sh?)"; fi
+# service worker + manifest ต้องได้ไฟล์จริงผ่านทุกทาง (ngrok ฟรีอาจแทรกหน้าเตือน HTML ให้คำขอที่ดูเหมือนเบราว์เซอร์ → ลงทะเบียน SW ไม่ได้)
+swcheck() { # swcheck LABEL BASE_URL [extra curl args…]  — ตรวจว่าได้ไฟล์จริง (ไม่ใช่ HTML) และ no-cache
+  local label="$1" base="$2"; shift 2
+  local f h ct cc body
+  for f in ngsw-worker.js manifest.webmanifest ngsw.json; do
+    h="$(curl -s -m 10 -D - -o /tmp/yt-sw-body "$@" -A 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1' -H 'Accept: */*' "$base/$f" | tr -d '')"
+    ct="$(printf '%s' "$h" | grep -i '^content-type:' | tail -1 | cut -d: -f2- | tr 'A-Z' 'a-z')"
+    cc="$(printf '%s' "$h" | grep -i '^cache-control:' | tail -1 | cut -d: -f2- | tr 'A-Z' 'a-z')"
+    body="$(head -c 300 /tmp/yt-sw-body 2>/dev/null)"
+    if printf '%s' "$h" | head -1 | grep -q ' 200' && ! printf '%s%s' "$ct" "$body" | grep -qiE 'text/html|<!doctype|<html'; then
+      case "$cc" in *no-cache*) ok "$label /$f = 200 ($(printf '%s' "$ct" | cut -d';' -f1 | tr -d ' ')) · no-cache" ;; *) bad "$label /$f ไม่มี Cache-Control: no-cache (ได้ '${cc:-ไม่มี}') — เบราว์เซอร์อาจใช้ service worker เก่า" ;; esac
+    else bad "$label /$f ไม่ได้ไฟล์จริง (ได้ $(printf '%s' "$h" | head -1) / ${ct:-ไม่มี content-type}) — ถ้าเป็นหน้า HTML: build frontend ใหม่ (docker compose up -d --build frontend)"; fi
+  done
+  rm -f /tmp/yt-sw-body
+}
+swcheck "เว็บ" "$WEB"
+if [ -n "${pub:-}" ]; then
+  # ngrok ฟรีแทรกหน้าเตือน (HTML) ให้คำขอที่ดูเหมือนเบราว์เซอร์จนกว่าจะกด Visit Site (ตั้ง cookie) → ตรวจ 2 แบบ
+  #  1) เหมือนเบราว์เซอร์ที่กด Visit Site แล้ว (ส่ง header ข้ามหน้าเตือน) — ต้องได้ไฟล์จริง ไม่งั้นลงทะเบียน service worker ไม่ได้
+  swcheck "tunnel (หลังกด Visit Site)" "$pub" -H 'ngrok-skip-browser-warning: 1'
+  #  2) เบราว์เซอร์ที่ยังไม่เคยกด — คาดว่าได้หน้าเตือน (แจ้งเฉยๆ ไม่ผิด)
+  first="$(curl -s -m 10 -o /dev/null -w '%{content_type}' -A 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1' -H 'Accept: text/html' "$pub/")"
+  case "$first" in text/html*) warn "ngrok ฟรี: เปิดครั้งแรกด้วยเบราว์เซอร์จะเจอหน้า \"Visit Site\" — กดครั้งเดียวต่ออุปกรณ์ ; iPhone ที่เปิดจากไอคอนหน้าจอโฮม cookie แยกจาก Safari ต้องกดอีกครั้งในแอป (ดู docs/web-push-test.md)" ;; esac
+else warn "ข้ามเช็ก service worker ผ่าน tunnel (tunnel ไม่ได้รัน)"; fi
 
 echo
 if [ "$FAIL" = 0 ]; then echo "สรุป: ✓ พร้อมนำเสนอ"; else echo "สรุป: ✗ ไม่ผ่าน $FAIL ข้อ — แก้ก่อนนำเสนอ"; exit 1; fi

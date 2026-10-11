@@ -11,6 +11,8 @@ REAL_SNAP_ESC="${REAL_SNAP_ESC:-0}"   # จำนวน dose_escalations ขอ�
 REAL_SNAP_BAD=0
 REAL_SNAP_MEDS=""   # refill_alerted_at ของยาผู้ใช้จริง (วันที่ 7B)
 _REAL_MED_SQL="SELECT m.id, IFNULL(m.refill_alerted_at,'-') FROM medications m JOIN users u ON u.id = m.user_id WHERE u.email NOT LIKE '%@example.test' ORDER BY m.id"
+REAL_SNAP_PUSH=""   # push_subscriptions + users.notify_both ของผู้ใช้จริง (วันที่ 7C)
+_REAL_PUSH_SQL="SELECT CONCAT(IFNULL(p.id,'-'),':',IFNULL(p.fail_count,'-'),':',IFNULL(p.last_success_at,'-'),':',u.id,':',u.notify_both) FROM users u LEFT JOIN push_subscriptions p ON p.user_id = u.id WHERE u.email NOT LIKE '%@example.test' ORDER BY u.id, p.id"
 _real_sql() { docker compose exec -T db sh -c 'mysql --default-character-set=utf8mb4 -N -B -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' 2>/dev/null <<<"$1"; }
 _REAL_DOSE_SQL="SELECT d.id, d.status, IFNULL(d.reminded_at,'-'), IFNULL(d.taken_at,'-'), IFNULL(d.escalated_at,'-'), IFNULL(d.followup_at,'-'), IFNULL(d.source,'-') FROM dose_logs d JOIN users u ON u.id = d.user_id WHERE u.email NOT LIKE '%@example.test'"
 real_snapshot_take() {
@@ -18,6 +20,7 @@ real_snapshot_take() {
   REAL_SNAP_NOTIF="$(_real_sql "SELECT COUNT(*) FROM notification_logs n JOIN users u ON u.id = n.user_id WHERE u.email NOT LIKE '%@example.test';")"
   REAL_SNAP_ESC="$(_real_sql "SELECT COUNT(*) FROM dose_escalations e JOIN users u ON u.id = e.user_id WHERE u.email NOT LIKE '%@example.test';")"
   REAL_SNAP_MEDS="$(_real_sql "$_REAL_MED_SQL;")"
+  REAL_SNAP_PUSH="$(_real_sql "$_REAL_PUSH_SQL;")"
   echo "  (snapshot ผู้ใช้จริง: dose_logs $(wc -l < "$REAL_SNAP_FILE" | tr -d ' ') แถว, notification_logs $REAL_SNAP_NOTIF แถว)"
 }
 real_snapshot_check() {
@@ -30,6 +33,9 @@ real_snapshot_check() {
   local meds; meds="$(_real_sql "$_REAL_MED_SQL;")"
   if [ "$meds" != "$REAL_SNAP_MEDS" ]; then diff="$diff"$'
 '"ยาผู้ใช้จริง: refill_alerted_at เปลี่ยน"; fi
+  local pushs; pushs="$(_real_sql "$_REAL_PUSH_SQL;")"
+  if [ "$pushs" != "$REAL_SNAP_PUSH" ]; then diff="$diff"$(printf '
+')"เครื่องแจ้งเตือน/notify_both ของผู้ใช้จริงเปลี่ยน"; fi
   if [ -z "$(echo "$diff" | sed "/^$/d")" ] && [ "$notif" = "$REAL_SNAP_NOTIF" ] && [ "$esc" = "$REAL_SNAP_ESC" ]; then
     echo "  ✔ ข้อมูลผู้ใช้จริงไม่เปลี่ยน (dose_logs $(wc -l < "$REAL_SNAP_FILE" | tr -d ' ') แถว: status/reminded_at/taken_at/escalated_at/followup_at/source เท่าเดิม, dose_escalations เท่าเดิม, notification_logs $notif แถวเท่าเดิม)"
     return 0

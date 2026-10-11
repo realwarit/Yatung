@@ -22,6 +22,7 @@ CREATE TABLE users (
   tts_rate        DECIMAL(3,2)  NOT NULL DEFAULT 0.90,  -- ความเร็วเสียงอ่าน (ผู้สูงอายุชอบช้าลง)
   created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  notify_both     TINYINT(1)    NOT NULL DEFAULT 0,                 -- 1 = เชื่อม LINE แล้วยังส่ง Web Push ด้วย (วันที่ 7C)
   PRIMARY KEY (id),
   UNIQUE KEY uq_users_email (email),
   UNIQUE KEY uq_users_line_user (line_user_id),
@@ -185,6 +186,8 @@ CREATE TABLE push_subscriptions (
   auth        VARCHAR(100) NOT NULL,
   user_agent  VARCHAR(255) NULL,
   created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_success_at DATETIME NULL,                              -- ส่งสำเร็จล่าสุด (วันที่ 7C)
+  fail_count  INT UNSIGNED NOT NULL DEFAULT 0,                -- ล้มเหลวติดกัน (404/410 ลบทิ้ง ; สำเร็จแล้วรีเซ็ต 0)
   PRIMARY KEY (id),
   UNIQUE KEY uq_push_endpoint (endpoint(255)),
   CONSTRAINT fk_push_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

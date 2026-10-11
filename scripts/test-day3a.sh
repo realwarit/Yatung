@@ -2,7 +2,7 @@
 # ทดสอบ Day 3A: ยา / ตารางวันนี้ / กินแล้ว-undo / ความเป็นเจ้าของข้อมูล / cron
 # ต้องรันระบบอยู่ (docker compose up -d) ; ไม่มี credential ฝังในไฟล์:
 #   DEMO_EMAIL    (ค่าเริ่มต้น demo@yatung.app — ดู db/init/02_seed.sql)
-#   DEMO_PASSWORD (ต้องตั้งเอง)        BASE (ค่าเริ่มต้น http://localhost:8080)
+#   DEMO_PASSWORD (ไม่ตั้ง = อ่านจาก .env เอง)        BASE (ค่าเริ่มต้น http://localhost:8080)
 # user ที่ 2 สร้างใหม่ด้วยอีเมล/รหัสผ่านสุ่มทุกครั้ง แล้วลบทิ้งตอนจบ
 # ข้อควรระวัง: ทดสอบด้วยการตั้งเวลามื้อของบัญชีเดโมชั่วคราว (แล้วคืนค่าเดิม) อย่ารันช่วง 23:55–00:05
 #   DEMO_PASSWORD=... bash scripts/test-day3a.sh
@@ -10,8 +10,9 @@
 set -u
 BASE="${BASE:-http://localhost:8080}"
 DEMO_EMAIL="${DEMO_EMAIL:-demo@yatung.app}"
-: "${DEMO_PASSWORD:?ตั้ง DEMO_PASSWORD ก่อนรัน เช่น DEMO_PASSWORD=... bash scripts/test-day3a.sh}"
 cd "$(dirname "$0")/.."
+source scripts/lib/demo-password.sh   # อ่าน DEMO_PASSWORD จาก .env เองถ้าไม่ได้ตั้ง (ไม่แสดงค่า)
+source scripts/lib/clock.sh; clock_guard 5 6   # กันรันใกล้เที่ยงคืน (รอบกินยาข้ามวัน) ดู scripts/lib/clock.sh
 
 PASS=0; FAIL=0
 STATUS=""; BODY=""
