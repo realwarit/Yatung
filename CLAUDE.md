@@ -220,8 +220,11 @@
   `escalated_at IS NOT NULL` → กลับเป็น **missed** (กันแจ้งญาติซ้ำ) · `escalated_at IS NULL` → **pending**; ล้าง `taken_at/source`; คืน `remaining_qty` ไม่เกิน `total_qty`
   → `escalationService` ตั้ง `escalated_at` ครั้งแรกที่แจ้งผู้ดูแลคนใดก็ตาม ; กันแจ้งซ้ำด้วย UNIQUE(dose_id, caregiver_id) ใน `dose_escalations` (ไม่ใช่ `escalated_at`)
 - **missed:** cron 03:00 (tab 6) ตั้ง `pending` ที่ `scheduled_at < CURDATE()` เป็น `missed` ; `take` รับ missed ได้ (กินย้อนหลัง) ; หน้าวันนี้แสดงเฉพาะรอบของวันนี้
-- **PUT /api/settings/slot-times:** ต้อง HH:MM เรียง เช้า < กลางวัน < เย็น < ก่อนนอน; ย้ายทุก dose ของ**วันนี้**ที่ `status='pending' AND reminded_at IS NULL` ไปเวลาใหม่ (ไม่ว่าเวลาเดิมจะผ่านแล้วหรือไม่);
-  dose ที่ `reminded_at` ไม่ว่างคงเวลาเดิม; ไม่สร้างรอบใหม่ให้มื้อที่เคยถูกข้าม
+- **กฎหลัก (invariant): ยา 1 ตัวมีได้ไม่เกิน 1 dose ต่อ (มื้อ, วัน)** — ทุกที่ที่สร้างหรือย้าย dose ต้องรักษากฎนี้ ; DB บังคับด้วย `dose_logs.scheduled_date` (generated) + UNIQUE `uq_dose_med_slot_day (medication_id, slot, scheduled_date)` (migration `005_one_dose_per_slot_day.sql`; ถ้ามีรอบซ้ำอยู่ migration จะ SKIP การสร้าง UNIQUE → รัน `node scripts/fix-duplicate-doses.mjs` [dry-run ค่าเริ่มต้น, `--apply` ทำจริง] แล้ว `bash scripts/migrate.sh` ซ้ำ) ;
+  `GENERATE_TODAY_SQL` (POST/PUT/resume ยา + cron 00:05) มี `NOT EXISTS` ของ (ยา, มื้อ, วันนี้) จึงไม่สร้างซ้ำไม่ว่าแถวเดิมสถานะอะไรหรือเวลาอะไร
+- **PUT /api/settings/slot-times:** ต้อง HH:MM เรียง เช้า < กลางวัน < เย็น < ก่อนนอน ; ใน transaction เดียว (`moveTodayDoses` + `planSlotMoves` ฟังก์ชันล้วน): ย้ายแถว dose ของ**วันนี้**ที่ `status='pending'` (เตือนแล้วหรือยังก็ตาม) ไปเวลาใหม่ **ห้ามสร้างแถวใหม่** ;
+  เวลาใหม่ > now → ล้าง `reminded_at`+`followup_at` (เตือนใหม่ที่เวลาใหม่) · เวลาใหม่ ≤ now → คง `reminded_at` (ไม่เตือนซ้ำ) · เวลาไม่เปลี่ยน = ไม่แตะ · `escalated_at`/`dose_escalations` คงเดิม (id dose เดิม + UNIQUE = ไม่แจ้งญาติซ้ำ ; ประวัติแจ้งญาติในหน้า Settings จะแสดงเวลามื้อ**ใหม่**ของ dose นั้น ส่วน sent_at คงเดิม) ;
+  taken/missed ไม่ย้าย ; มื้อที่มี taken/missed หรือแถวซ้ำอยู่แล้ว (ข้อมูลเก่า) ไม่แตะรอบอื่นของมื้อนั้น ; ชน UNIQUE(medication_id, scheduled_at) ของยาตัวเดียวกัน = 409 `SLOT_CONFLICT` ; ไม่สร้างรอบใหม่ให้มื้อที่เคยถูกข้าม
 - งาน reminder (วัน 5–6) ต้องตั้ง `reminded_at` ตอนส่งเตือน เพราะกฎ slot-times พึ่งคอลัมน์นี้
 
 ## Frontend (`frontend/`)

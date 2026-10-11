@@ -250,3 +250,9 @@ test('sendGroup: push ล้มเหลว → ตั้งสถานะ fail
   assert.ok(calls.queries.some((q) => /SET status = 'failed'/.test(q)));
   assert.ok(!calls.queries.some((q) => /DELETE/.test(q)));
 });
+
+test('DUE_SQL: dose ที่แจ้งญาติแล้วแล้วถูกย้ายเวลา (id เดิม) ไม่ถูกเลือกซ้ำ — กันด้วยแถว dose_escalations ของคู่ (dose, ผู้ดูแล)', () => {
+  const sql = esc.DUE_SQL.replace(/\s+/g, ' ');
+  assert.match(sql, /LEFT JOIN dose_escalations e ON e\.dose_id = d\.id AND e\.caregiver_id = c\.id/);
+  assert.match(sql, /e\.id IS NULL/);
+});

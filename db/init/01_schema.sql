@@ -142,8 +142,10 @@ CREATE TABLE dose_logs (
   followup_at    DATETIME NULL,                         -- เตือนซ้ำผู้ป่วย (REMINDER_FOLLOWUP_MIN) จองก่อนส่ง
   escalated_at   DATETIME NULL,
   created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  scheduled_date DATE AS (DATE(scheduled_at)) STORED,   -- กฎ: ยา 1 ตัวมีได้ไม่เกิน 1 dose ต่อ (มื้อ, วัน) ดู migration 005
   PRIMARY KEY (id),
   UNIQUE KEY uq_dose_med_time (medication_id, scheduled_at),
+  UNIQUE KEY uq_dose_med_slot_day (medication_id, slot, scheduled_date),
   KEY idx_dose_due (status, scheduled_at),               -- cron หา dose ที่ถึงเวลา
   KEY idx_dose_user_time (user_id, scheduled_at),        -- หน้า today + dashboard
   CONSTRAINT fk_dose_med  FOREIGN KEY (medication_id) REFERENCES medications(id) ON DELETE CASCADE,
