@@ -191,17 +191,23 @@ vres="$(docker compose exec -T nodered node -e '
 const c=require("crypto"), e=process.env, miss=["VAPID_PUBLIC_KEY","VAPID_PRIVATE_KEY","VAPID_SUBJECT"].filter(k=>!String(e[k]||"").trim());
 if (miss.length) { console.log("MISSING " + miss.join(",")); process.exit(0); }
 try {
-  const k=c.createECDH("prime256v1"); k.setPrivateKey(Buffer.from(e.VAPID_PRIVATE_KEY.trim(),"base64url"));
-  const pub=Buffer.from(e.VAPID_PUBLIC_KEY.trim(),"base64url");
-  if (pub.length!==65 || !k.getPublicKey().equals(pub)) { console.log("MISMATCH"); process.exit(0); }
+  const priv=Buffer.from(e.VAPID_PRIVATE_KEY.trim(),"base64url"), pub=Buffer.from(e.VAPID_PUBLIC_KEY.trim(),"base64url");
+  if (priv.length!==32) { console.log("PRIV_LEN"); process.exit(0); }
+  if (pub.length!==65) { console.log("PUB_LEN"); process.exit(0); }
+  if (pub[0]!==4) { console.log("PUB_PREFIX"); process.exit(0); }
+  const k=c.createECDH("prime256v1"); k.setPrivateKey(priv);
+  if (!k.getPublicKey().equals(pub)) { console.log("MISMATCH"); process.exit(0); }
 } catch (x) { console.log("MISMATCH"); process.exit(0); }
 const s=e.VAPID_SUBJECT.trim();
 console.log(/^(mailto:[^@\s]+@[^@\s]+|https:\/\/\S+)$/.test(s) ? (/^mailto:.*(example|localhost)/i.test(s) ? "OK_WEAKSUBJECT" : "OK") : "BADSUBJECT");
 ' 2>/dev/null | tr -d '')"
 case "$vres" in
-  OK) ok "VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT ตั้งครบ และเป็นคู่กัน (ไม่แสดงค่า)" ;;
+  OK) ok "VAPID: private 32 ไบต์ · public 65 ไบต์ขึ้นต้น 0x04 · เป็นคู่กัน · SUBJECT ตั้งแล้ว (ไม่แสดงค่า)" ;;
   OK_WEAKSUBJECT) ok "VAPID ตั้งครบ และเป็นคู่กัน (ไม่แสดงค่า)"; warn "VAPID_SUBJECT เป็น mailto ของโดเมนสมมติ — Android/Chrome ไม่สน แต่ถ้า iPhone ไม่ได้รับแจ้งเตือน (log: status=403 BadJwtToken) ให้เปลี่ยนเป็น https://<NGROK_DOMAIN> แล้ว docker compose up -d --force-recreate nodered" ;;
   MISSING*) bad "VAPID ไม่ครบใน container (${vres#MISSING }) — รัน: node scripts/gen-vapid.mjs ; ตั้ง VAPID_SUBJECT ใน .env ; docker compose up -d --force-recreate nodered" ;;
+  PRIV_LEN) bad "VAPID_PRIVATE_KEY ถอดแล้วไม่ใช่ 32 ไบต์ (ถูกตัด 0 นำหน้า?)  — ลบทั้งสองบรรทัด VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY ใน .env แล้วรัน node scripts/gen-vapid.mjs (แล้ว recreate nodered)" ;;
+  PUB_LEN) bad "VAPID_PUBLIC_KEY ถอดแล้วไม่ใช่ 65 ไบต์  — ลบทั้งสองบรรทัด VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY ใน .env แล้วรัน node scripts/gen-vapid.mjs (แล้ว recreate nodered)" ;;
+  PUB_PREFIX) bad "VAPID_PUBLIC_KEY ไม่ได้ขึ้นต้นด้วย 0x04 (ไม่ใช่ uncompressed point) — ลบทั้งสองบรรทัด VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY ใน .env แล้วรัน node scripts/gen-vapid.mjs (แล้ว recreate nodered)" ;;
   MISMATCH) bad "VAPID_PUBLIC_KEY กับ VAPID_PRIVATE_KEY ไม่ใช่คู่กัน (หรือรูปแบบผิด) — อย่าแก้ทีละตัว ลบทั้งคู่ใน .env แล้วรัน node scripts/gen-vapid.mjs" ;;
   BADSUBJECT) bad "VAPID_SUBJECT ต้องเป็น mailto:อีเมล หรือ https://โดเมน" ;;
   *) warn "ตรวจ VAPID ไม่ได้ (nodered ไม่ตอบ)" ;;
