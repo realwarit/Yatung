@@ -136,7 +136,7 @@ function fakeDb(subs = [{ id: 1, endpoint: EP, p256dh: KEYS.p256dh, auth: KEYS.a
     }
   };
 }
-const mk = (sender, env = ENV) => P.createPushService({ env, sender, log: () => {} });
+const mk = (sender, env = ENV) => P.createPushService({ env, sender, log: () => {}, retryDelayMs: 0 });
 const statusErr = (code, body) => { const e = new Error('x'); e.statusCode = code; if (body) e.body = body; return e; };
 
 test('sendToUser: ส่งสำเร็จ → TTL 3600, urgency high, last_success_at, log web_push', async () => {
@@ -230,4 +230,22 @@ test('take: token ถูก → takeMany(…, "push") ; token ผิด/หม�
   const exp = P.signActionToken(SECRET, { uid: 5, ids: [1], exp: 1 });
   assert.match((await svc.take({}, doseService, exp)).body.details, /หมดอายุ/);
   assert.equal(calls.length, 1);
+});
+
+test('sendToUser: เครือข่ายล่ม/ไม่ตอบ (ไม่มี status) → ลองใหม่ได้สูงสุด 3 ครั้ง แล้วสำเร็จ', async () => {
+  let n = 0; const db = fakeDb();
+  const svc = mk(async (sub, body, o) => { n++; assert.equal(o.timeout, 6000); if (n < 3) { const e = new Error('hang up'); e.code = 'ECONNRESET'; throw e; } return {}; });
+  assert.deepEqual(await svc.sendToUser(db, 5, P.testPayload()), { subs: 1, sent: 1, failed: 0, removed: 0 });
+  assert.equal(n, 3); assert.equal(db.st.subs[0].fail_count, 0);
+});
+test('sendToUser: ล้มเหลวครบ 3 ครั้ง → นับล้มเหลวครั้งเดียว + log มี code (ECONNRESET) ไม่มี endpoint', async () => {
+  let n = 0; const lines = []; const db = fakeDb();
+  const svc = P.createPushService({ env: ENV, retryDelayMs: 0, log: (m) => lines.push(m), sender: async () => { n++; const e = new Error('x'); e.code = 'ECONNRESET'; throw e; } });
+  assert.deepEqual(await svc.sendToUser(db, 5, P.testPayload()), { subs: 1, sent: 0, failed: 1, removed: 0 });
+  assert.equal(n, 3); assert.equal(db.st.subs[0].fail_count, 1);
+  assert.match(lines.join(), /status=network code=ECONNRESET/); assert.match(db.st.logs[0].error, /push network ECONNRESET/);
+  assert.equal((lines.join() + db.st.logs[0].error).includes('abc123'), false);   // path ของ endpoint ห้ามหลุด
+});
+test('sendToUser: 4xx (403/410) ไม่ลองใหม่', async () => {
+  for (const code of [403, 410]) { let n = 0; const svc = mk(async () => { n++; throw statusErr(code); }); await svc.sendToUser(fakeDb(), 5, P.testPayload()); assert.equal(n, 1); }
 });

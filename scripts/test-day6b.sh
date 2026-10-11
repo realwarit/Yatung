@@ -271,7 +271,7 @@ fl_config '{"quota":200,"usage":0}'
 section "cron จริงใน Node-RED (รอ 1 รอบ ≤ 80 วินาที)"
 restart_nodered "${NR_ENV[@]}" DEMO_MODE=true || exit 1   # เปิด cron จริง (ไม่ตั้ง REMINDER_CRON)
 # REMINDER_ONLY_EMAIL_SUFFIX ทำให้ cron จริงแตะเฉพาะผู้ใช้ทดสอบ → ไม่ต้องข้ามส่วนนี้เมื่อมี dose จริงที่เข้าเงื่อนไขเตือน
-due "$UA" 5; sql "UPDATE medications SET remaining_qty=30 WHERE user_id=$UA;" >/dev/null; fl_clear
+fl_clear; due "$UA" 5; sql "UPDATE medications SET remaining_qty=30 WHERE user_id=$UA;" >/dev/null   # ล้างก่อนตั้ง dose (cron จริงอาจยิงทันทีหลัง due ; ล้างทีหลังจะลบ push ที่ส่งไปแล้ว)
 for i in $(seq 40); do [ "$(fl_count push)" -ge 1 ] && break; sleep 2; done
 expect "cron ส่งเตือนเอง 1 push" "$(fl_count push)" "1"
 expect "  ถึง LINE ของ A" "$(fl_last push 'r.body.to')" "$LA"

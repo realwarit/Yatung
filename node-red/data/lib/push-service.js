@@ -9,6 +9,8 @@ const crypto = require('crypto');
 const { SLOT_LABEL } = require('./labels-th');
 
 const TTL_SECONDS = 3600;
+const SEND_TIMEOUT_MS = 6000;   // ผู้ให้บริการ push (เช่น Apple) บางครั้งไม่ตอบ/ตัดการเชื่อมต่อ ~1 ใน 3 ครั้งจากบางเครือข่าย → ตั้ง timeout สั้นแล้วลองใหม่
+const SEND_ATTEMPTS = 3;
 const TOKEN_TTL_SECONDS = 12 * 3600;
 const MAX_TOKEN_IDS = 50;
 const ICON = '/icons/icon-192x192.png';
@@ -108,12 +110,14 @@ function describeFailure(e, host) {
   else if (status === 401 || status === 403) hint = ' hint=VAPID_ไม่ตรงกับ_subscription(เปิดแจ้งเตือนใหม่ถ้าเพิ่งเปลี่ยนคีย์)';
   else if (status === 413) hint = ' hint=payload_ใหญ่เกิน';
   else if (status === 429) hint = ' hint=ผู้ให้บริการ_push_จำกัดความถี่';
-  return { status, reason, hint, text: `push ${status || 'network'}${reason ? ' ' + reason : ''}` };
+  const code = !status && e && /^[A-Z_]{3,20}$/.test(String(e.code || '')) ? String(e.code) : '';   // ETIMEDOUT / ECONNRESET … (ไม่มี URL/คีย์)
+  return { status, reason, code, hint, text: `push ${status || 'network'}${code ? ' ' + code : ''}${reason ? ' ' + reason : ''}` };
 }
 
 function createPushService(opts = {}) {
   const env = opts.env || process.env;
   const log = opts.log || ((m) => console.log(m));
+  const retryDelay = opts.retryDelayMs == null ? 300 : opts.retryDelayMs;
   const webpush = opts.webpush || (() => { try { return require('web-push'); } catch { return null; } })();
   const secret = () => env.JWT_SECRET;
   const vapid = () => ({ subject: String(env.VAPID_SUBJECT || '').trim(), publicKey: String(env.VAPID_PUBLIC_KEY || '').trim(), privateKey: String(env.VAPID_PRIVATE_KEY || '').trim() });
@@ -147,8 +151,18 @@ function createPushService(opts = {}) {
       let host = '';
       try { host = new URL(s.endpoint).hostname; } catch { /* ข้าม */ }
       try {
-        await sender({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, body,
-          { TTL: TTL_SECONDS, urgency: 'high', vapidDetails: { subject: v.subject, publicKey: v.publicKey, privateKey: v.privateKey } });
+        // ลองใหม่เฉพาะเมื่อเครือข่ายล่ม/ไม่ตอบ (ไม่มี status) หรือ 502/503/504 ; 4xx ไม่ลองใหม่ (token/คีย์ผิดลองกี่ครั้งก็เหมือนเดิม)
+        for (let attempt = 1; ; attempt++) {
+          try {
+            await sender({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, body,
+              { TTL: TTL_SECONDS, urgency: 'high', timeout: SEND_TIMEOUT_MS, vapidDetails: { subject: v.subject, publicKey: v.publicKey, privateKey: v.privateKey } });
+            break;
+          } catch (e) {
+            const st = e && e.statusCode ? Number(e.statusCode) : 0;
+            if (attempt >= SEND_ATTEMPTS || !(st === 0 || st === 502 || st === 503 || st === 504)) throw e;
+            await new Promise((r) => setTimeout(r, retryDelay));
+          }
+        }
         out.sent++;
         await db.query('UPDATE push_subscriptions SET last_success_at = NOW(), fail_count = 0 WHERE id = ?', [s.id]);
         await logSend(db, userId, meta.kind, meta.doseLogId, true);
@@ -163,7 +177,7 @@ function createPushService(opts = {}) {
           await db.query('UPDATE push_subscriptions SET fail_count = fail_count + 1 WHERE id = ?', [s.id]);
           await logSend(db, userId, meta.kind, meta.doseLogId, false, d.text);
         }
-        log(`web_push_error user_tail=${String(userId).slice(-4)} host=${host || '-'} status=${d.status || 'network'}${d.reason ? ' reason=' + d.reason : ''}${d.hint}`);
+        log(`web_push_error user_tail=${String(userId).slice(-4)} host=${host || '-'} status=${d.status || 'network'}${d.code ? ' code=' + d.code : ''}${d.reason ? ' reason=' + d.reason : ''}${d.hint}`);
       }
     }
     return out;
