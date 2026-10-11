@@ -1,5 +1,5 @@
 -- Migration 005 (fix 7C): ยา 1 ตัวมีได้ไม่เกิน 1 dose ต่อ (มื้อ, วัน)
---   dose_logs.scheduled_date = DATE(scheduled_at) (generated, STORED) + UNIQUE uq_dose_med_slot_day (medication_id, slot, scheduled_date)
+--   dose_logs.scheduled_date = DATE(scheduled_at) (GENERATED ALWAYS … STORED NOT NULL ; scheduled_at เป็นเวลา Asia/Bangkok อยู่แล้ว ไม่มีโค้ดใส่ค่าเอง) + UNIQUE uq_dose_med_slot_day (medication_id, slot, scheduled_date)
 --   เดิมมีแค่ UNIQUE(medication_id, scheduled_at) → เปลี่ยนเวลามื้อหลังเตือนแล้ว ทำให้เกิด 2 รอบในมื้อเดียวของวันเดียว
 -- ถ้ามีข้อมูลซ้ำอยู่แล้ว จะ "ไม่" สร้าง UNIQUE (แสดง SKIP) แต่ยังเพิ่มคอลัมน์ให้ → รัน node scripts/fix-duplicate-doses.mjs (dry-run แล้ว --apply) แล้วรัน migrate.sh ซ้ำ
 -- รันซ้ำได้: bash scripts/migrate.sh
@@ -12,7 +12,7 @@ BEGIN
   DECLARE dup INT DEFAULT 0;
   IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
                  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'dose_logs' AND COLUMN_NAME = 'scheduled_date') THEN
-    ALTER TABLE dose_logs ADD COLUMN scheduled_date DATE AS (DATE(scheduled_at)) STORED;
+    ALTER TABLE dose_logs ADD COLUMN scheduled_date DATE GENERATED ALWAYS AS (DATE(scheduled_at)) STORED NOT NULL;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.STATISTICS
                  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'dose_logs' AND INDEX_NAME = 'uq_dose_med_slot_day') THEN

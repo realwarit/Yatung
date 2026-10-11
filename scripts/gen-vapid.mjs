@@ -19,7 +19,8 @@ const b64url = (buf) => Buffer.from(buf).toString('base64url');
 export function generateVapidKeys() {
   const ecdh = crypto.createECDH('prime256v1');
   ecdh.generateKeys();
-  return { publicKey: b64url(ecdh.getPublicKey()), privateKey: b64url(ecdh.getPrivateKey().subarray(0, 32)) };
+  // getPrivateKey() ตัด 0 นำหน้า (~1/256 ของคีย์) → เติมให้ครบ 32 ไบต์
+  return { publicKey: b64url(ecdh.getPublicKey()), privateKey: b64url(Buffer.concat([Buffer.alloc(32), ecdh.getPrivateKey()]).subarray(-32)) };
 }
 
 // ค่าของ KEY ในข้อความ .env (ตัดคอมเมนต์ท้ายบรรทัดและเครื่องหมายคำพูด) ; ไม่มีบรรทัด = null

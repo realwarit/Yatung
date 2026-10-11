@@ -206,7 +206,9 @@ expect_match "กินรอบสุดท้ายครบ → 'วันน
 press "$LA" "a=take&d=99999999"
 expect_match "รหัสรอบที่ไม่มีอยู่ → 'ไม่พบรายการยานี้แล้ว'" "$REPLY" '🔍 ไม่พบรายการยานี้แล้วค่ะ อาจถูกแก้ไขในแอป'
 req PATCH "/api/medications/$M2/stop" "$TA"
-sql "INSERT INTO dose_logs (medication_id, user_id, slot, scheduled_at, status) VALUES ($M2, $UA, 'noon', CONCAT(CURDATE(), ' 13:00:00'), 'pending');" >/dev/null
+# กฎ 1 dose ต่อ (มื้อ, วัน): แทรกรอบในมื้อที่ยา M2 ยังไม่มีแถววันนี้ (เลือกจากมื้อที่ว่าง)
+FREE_SLOT="$(sql "SELECT s.slot FROM (SELECT 'morning' slot UNION SELECT 'noon' UNION SELECT 'evening' UNION SELECT 'bedtime') s WHERE NOT EXISTS (SELECT 1 FROM dose_logs x WHERE x.medication_id=$M2 AND x.slot=s.slot AND DATE(x.scheduled_at)=CURDATE()) LIMIT 1;")"
+sql "INSERT INTO dose_logs (medication_id, user_id, slot, scheduled_at, status) VALUES ($M2, $UA, '$FREE_SLOT', CONCAT(CURDATE(), ' 13:00:00'), 'pending');" >/dev/null
 OLDID="$(sql "SELECT id FROM dose_logs WHERE medication_id=$M2 AND scheduled_at=CONCAT(CURDATE(), ' 13:00:00');")"
 req PATCH "/api/medications/$M2/resume" "$TA"; req PATCH "/api/medications/$M2/stop" "$TA"
 expect "ยาถูกหยุด → pending ถูกลบ" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE id=$OLDID;")" "0"

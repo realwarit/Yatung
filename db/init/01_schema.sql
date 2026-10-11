@@ -142,7 +142,7 @@ CREATE TABLE dose_logs (
   followup_at    DATETIME NULL,                         -- เตือนซ้ำผู้ป่วย (REMINDER_FOLLOWUP_MIN) จองก่อนส่ง
   escalated_at   DATETIME NULL,
   created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  scheduled_date DATE AS (DATE(scheduled_at)) STORED,   -- กฎ: ยา 1 ตัวมีได้ไม่เกิน 1 dose ต่อ (มื้อ, วัน) ดู migration 005
+  scheduled_date DATE GENERATED ALWAYS AS (DATE(scheduled_at)) STORED NOT NULL,   -- DATETIME เก็บเวลา Asia/Bangkok อยู่แล้ว (session +07:00) จึงได้วันตามไทย ไม่มีโค้ดใส่ค่าเอง ;   -- กฎ: ยา 1 ตัวมีได้ไม่เกิน 1 dose ต่อ (มื้อ, วัน) ดู migration 005
   PRIMARY KEY (id),
   UNIQUE KEY uq_dose_med_time (medication_id, scheduled_at),
   UNIQUE KEY uq_dose_med_slot_day (medication_id, slot, scheduled_date),
