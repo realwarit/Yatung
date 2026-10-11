@@ -3,7 +3,10 @@ const assert = require('node:assert/strict');
 const { resolveAdmin, SAMPLE_HASH } = require('../data/lib/admin-auth');
 const { createRawBodyMiddleware } = require('../data/lib/raw-body');
 
-const GOOD = '$2y$08$.qmTU89S4pEYKqR79sdRWumIek4cytzn1bUFUpsmmxwHbnkZzi0x2';
+// hash ปลอมที่มีรูปแบบ bcrypt ถูกต้อง สุ่มใหม่ทุกครั้งที่รัน — ห้ามฝัง hash จริง/ค่าจาก .env ในเทส (ทดสอบแค่รูปแบบ ไม่ได้ตรวจรหัสผ่าน)
+const B64 = './ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+const randomBcrypt = () => '$2y$08$' + Array.from(require('node:crypto').randomBytes(53), (b) => B64[b % 64]).join('');
+const GOOD = randomBcrypt();
 
 test('admin: ไม่มี / ว่าง / ช่องว่างล้วน → fail closed (ไม่มี hash สำรอง)', () => {
   for (const env of [{}, { NODE_RED_ADMIN_HASH: '' }, { NODE_RED_ADMIN_HASH: '   ' }, { NODE_RED_ADMIN_USER: 'admin' }]) {

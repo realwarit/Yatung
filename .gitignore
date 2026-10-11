@@ -13,3 +13,7 @@ node-red/data/uploads/
 .DS_Store
 
 scripts/.day4-results/
+
+# ไฟล์ session/สำรองของ Node-RED editor (มี token ห้าม commit)
+node-red/data/.sessions.json
+node-red/data/.*.backup

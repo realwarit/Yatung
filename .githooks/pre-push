@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# สแกน commit ที่ยังไม่อยู่บน remote ใดเลยก่อน push (ไฟล์ต้องห้าม + รูปแบบความลับ)
+exec node "$(git rev-parse --show-toplevel)/scripts/check-secrets.mjs" --log HEAD --not --remotes

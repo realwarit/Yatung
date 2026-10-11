@@ -18,6 +18,12 @@ warn() { echo "  ! $1"; }
 jget() { node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const o=JSON.parse(s);const v=eval(process.argv[1]);console.log(v===undefined?"":typeof v==="object"?JSON.stringify(v):v)}catch(e){console.log("")}})' "$1"; }
 code() { curl -s -o /dev/null -m 10 -w '%{http_code}' "$@"; }
 
+echo "== 0) ไฟล์ต้องห้ามใน git (ความลับ)"
+secout="$(node scripts/check-secrets.mjs --tracked 2>&1)"; secrc=$?
+if [ "$secrc" -eq 0 ]; then ok "ไม่มีไฟล์ต้องห้ามถูก track (.env, flows_cred.json, .sessions.json, *.backup, .config.*.json)"
+else echo "$secout" | grep "✗" | while read -r l; do echo "  $l"; done; FAIL=$((FAIL+1)); echo "  ✗ → git rm --cached <ไฟล์> แล้วเพิ่มใน .gitignore"; fi
+git config core.hooksPath 2>/dev/null | grep -q githooks && ok "hook กันความลับเปิดอยู่ (core.hooksPath=.githooks)" || warn "hook กันความลับยังไม่เปิด — รัน: bash scripts/setup-hooks.sh"
+
 echo "== 1) container"
 for svc in db nodered frontend; do
   state="$(docker compose ps --format '{{.State}}' "$svc" 2>/dev/null | head -1)"
