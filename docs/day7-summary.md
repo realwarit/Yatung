@@ -67,7 +67,7 @@ Day 7: แจ้งญาติเมื่อลืมกินยา (7A) · �
 - Capacitor/Android Studio, PWA ตรวจรอบสุดท้าย (วันที่ 9)
 - `today.page.scss` เกินงบ 4 kB อยู่ 118 ไบต์ (warning ของ build)
 - ถ้า ngrok ฟรียังมีปัญหากับ service worker ให้ย้ายไป Cloudflare Tunnel
-- `node-red/data/.sessions.json` และ `.config.users.json.backup` ถูก track อยู่ใน `main` ตั้งแต่ Day 1 (ไม่ได้มาจาก branch นี้) ควร `git rm --cached` + เพิ่มใน `.gitignore`
+- (เสร็จแล้วใน branch chore/remove-tracked-secrets) เอา `.sessions.json` และ `.config.users.json.backup` ออกจาก git + hook กันความลับ
 
 ห้าม merge จนกว่าจะรีวิวเสร็จ
 
