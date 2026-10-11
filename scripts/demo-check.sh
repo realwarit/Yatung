@@ -206,6 +206,13 @@ case "$vres" in
   BADSUBJECT) bad "VAPID_SUBJECT ต้องเป็น mailto:อีเมล หรือ https://โดเมน" ;;
   *) warn "ตรวจ VAPID ไม่ได้ (nodered ไม่ตอบ)" ;;
 esac
+# ตัวแปรเฉพาะทดสอบ (ยอมรับ cert เซ็นเอง / โฮสต์ push ปลอม) ต้องว่างตอนใช้งานจริง — ไม่แสดงค่า
+for k in PUSH_ALLOW_INSECURE_TLS PUSH_ENDPOINT_ALLOW; do
+  in_env="$(grep -E "^$k=" .env 2>/dev/null | head -1 | cut -d= -f2- | sed 's/[[:space:]]*#.*$//' | tr -d '"' | tr -d "'" | tr -d ' ')"
+  in_ctr="$(docker compose exec -T nodered printenv "$k" 2>/dev/null | tr -d '')"
+  if [ -n "$in_env" ] || [ -n "$in_ctr" ]; then bad "$k มีค่า ($( [ -n "$in_env" ] && echo '.env' )$( [ -n "$in_env" ] && [ -n "$in_ctr" ] && echo ' + ' )$( [ -n "$in_ctr" ] && echo 'container')) — ตัวแปรนี้ใช้เฉพาะรันชุดทดสอบ ลบออกจาก .env แล้ว docker compose up -d --force-recreate nodered"
+  else ok "$k ว่าง (ปลอดภัย)"; fi
+done
 pk_code="$(code "$WEB/api/push/public-key")"
 if [ "$vres" = "OK" ] || [ "$vres" = "OK_WEAKSUBJECT" ]; then
   [ "$pk_code" = "200" ] && ok "GET /api/push/public-key = 200 (ผ่าน nginx)" || bad "GET /api/push/public-key ได้ $pk_code (ควร 200)"

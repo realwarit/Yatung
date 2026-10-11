@@ -57,7 +57,7 @@ test('payload เตือน: title/body ตามสเปก ไม่มี�
   assert.equal(p.notification.badge, '/icons/badge-96.png');
   assert.deepEqual(p.notification.actions, [{ action: 'take', title: '✓ กินแล้ว' }]);
   assert.deepEqual(p.notification.data.onActionClick.default, { operation: 'navigateLastFocusedOrOpen', url: '/today' });
-  assert.deepEqual(p.notification.data.onActionClick.take, { operation: 'navigateLastFocusedOrOpen', url: '/today?take=TOK' });
+  assert.deepEqual(p.notification.data.onActionClick.take, { operation: 'navigateLastFocusedOrOpen', url: '/today#take=TOK' });
   assert.ok(J(p).length < 1500);
 });
 test('payload เตือนซ้ำ / ทุกมื้อ / ยาใกล้หมด / ทดลอง', () => {

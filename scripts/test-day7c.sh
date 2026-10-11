@@ -297,8 +297,11 @@ RAWQ="$(fp "$FPUSH/_requests" | node -e 'let s="";process.stdin.on("data",d=>s+=
 expect_nomatch "payload ไม่มีชื่อยา (TEST-7C-)" "$RAWQ" 'TEST-7C|ยาคิว'
 expect_nomatch "payload ไม่มีความแรง/หน่วย (500 mg / เม็ด)" "$RAWQ" '500 ?mg|เม็ด'
 TAKEURL="$(fp_last q1 'r.p.notification.data.onActionClick.take.url')"
-expect_match "ปุ่ม take เปิด /today?take=<token>" "$TAKEURL" '^/today\?take=[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$'
+expect_match "ปุ่ม take เปิด /today#take=<token> (fragment ไม่ใช่ query string)" "$TAKEURL" '^/today#take=[A-Za-z0-9_-]+[.][A-Za-z0-9_-]+$'
+expect_nomatch "  ไม่มี ?take= ใน URL ของปุ่ม" "$TAKEURL" '[?]take='
+expect_nomatch "  URL แตะตัว notification ไม่มี token" "$(fp_last q1 'r.p.notification.data.onActionClick.default.url')" 'take'
 TOK="${TAKEURL#*take=}"
+TOKHEAD="${TOK:0:16}"; TOKTAIL="${TOK: -16}"; TOKBODY="${TOK%%.*}"; TOKSIG="${TOK#*.}"
 
 section "POST /api/push/take: action token (ไม่มี JWT) — บันทึกกินแล้ว · กดซ้ำไม่หักซ้ำ · ผิด/หมดอายุ/ถูกแก้ = 401"
 DQ="$(dose_of "$UQ")"
@@ -320,6 +323,23 @@ XTOKEN="$(sign_token "$UQ" "$(dose_of "$UR")" 3600)"   # token ของ Q แ�
 req POST /api/push/take "" "{\"token\":\"$XTOKEN\"}"; expect "token ของ Q + dose ของ R → ข้ามเงียบ (taken=0 already=0)" "$STATUS $(jget 'o.taken+":"+o.already')" "200 0:0"
 expect "  dose ของ R ยัง pending" "$(sql "SELECT status FROM dose_logs WHERE user_id=$UR;")" "pending"
 req POST /api/push/take "" "{\"token\":\"$(sign_token "$UR" "$(dose_of "$UR")" 3600)\"}"; expect "token ที่เซ็นถูกของ R → 200 taken=1" "$STATUS $(jget 'o.taken')" "200 1"
+
+section "token ไม่รั่วลง access log: กดผ่าน nginx (:8080) แล้ว log ของ frontend (nginx) และ nodered ต้องไม่มี token (เต็ม/บางส่วน)"
+TOK2="$(sign_token "$UT" "$(dose_of "$UT")" 3600)"
+curl -s -o /dev/null "$WEB/today#take=$TOK2"                       # curl ไม่ส่ง fragment ไปเซิร์ฟเวอร์ (เหมือนเบราว์เซอร์)
+curl -s -o /dev/null "$WEB/api/push/public-key"
+curl -s -o "$TMP/t2.json" -w '%{http_code}' -X POST "$WEB/api/push/take" -H 'Content-Type: application/json' -d "{\"token\":\"$TOK2\"}" > "$TMP/t2.code"
+expect "POST /api/push/take ผ่าน nginx → 200" "$(cat "$TMP/t2.code")" "200"
+expect "  dose ของ T ถูกบันทึก source=push" "$(sql "SELECT CONCAT(status,':',source) FROM dose_logs WHERE user_id=$UT;")" "taken:push"
+sleep 1
+NGX="$(docker compose logs frontend 2>&1)"; NRL="$(docker compose logs nodered 2>&1)"
+expect_match "  access log ของ nginx มีคำขอ /today และ /api/push/take (log ใช้งานได้จริง)" "$(printf '%s' "$NGX" | grep -c -E 'GET /today|POST /api/push/take')" '^[1-9]'
+for pair in "เต็ม:$TOK2" "ต้น 16 ตัว:${TOK2:0:16}" "ท้าย 16 ตัว:${TOK2: -16}" "ส่วนเนื้อ:${TOK2%%.*}" "ลายเซ็น:${TOK2#*.}"; do
+  n="${pair%%:*}"; v="${pair#*:}"
+  if printf '%s' "$NGX" | grep -qF -- "$v"; then bad "nginx access log มี token ($n)"; else ok "nginx access log ไม่มี token ($n)"; fi
+  if printf '%s' "$NRL" | grep -qF -- "$v"; then bad "log ของ nodered มี token ($n)"; else ok "log ของ nodered ไม่มี token ($n)"; fi
+done
+if printf '%s' "$NGX" | grep -qE 'take='; then bad "nginx access log มี 'take='"; else ok "nginx access log ไม่มี 'take='"; fi
 
 section "โควตา LINE เต็ม + มีเครื่อง → ใช้ Web Push แทน (ไม่จอง reminded_at ฟรี) ; ไม่มีเครื่อง → ไม่จอง"
 new_user U "$LU"; TU="$TOKEN_NEW"; UU="$UID_NEW"; mkmed "$TU" "TEST-7C-ยูยู" 30; subscribe_as "$TU" u1

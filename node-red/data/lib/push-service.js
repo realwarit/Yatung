@@ -3,7 +3,7 @@
 //   - ส่ง: TTL 1 ชม., urgency high ; 404/410 = ลบ subscription ; error อื่น = fail_count+1 ; ทุกครั้งบันทึก notification_logs (channel=web_push)
 //   - payload ห้ามมีชื่อยา/ข้อมูลสุขภาพ (เห็นบนหน้าจอล็อก) : มีแค่ชื่อมื้อ + จำนวนรายการ
 //   - ปุ่ม "✓ กินแล้ว": service worker ไม่มี JWT จึงใช้ action token (HMAC-SHA256, ผูก user + dose ids, อายุ 12 ชม.)
-//     ngsw ทำ sendRequest ได้แค่ GET → ปุ่มเปิด /today?take=<token> แล้วแอปเรียก POST /api/push/take เอง (ดู docs/day7-plan.md คำถามข้อ 1-A)
+//     ngsw ทำ sendRequest ได้แค่ GET → ปุ่มเปิด /today#take=<token> (fragment ไม่ไปถึงเซิร์ฟเวอร์/access log) แล้วแอปเรียก POST /api/push/take เอง (ดู docs/day7-plan.md คำถามข้อ 1-A)
 //   - log: status/จำนวน/สาเหตุสั้นๆ เท่านั้น — ห้าม log endpoint เต็ม, คีย์, JWT, payload
 const crypto = require('crypto');
 const { SLOT_LABEL } = require('./labels-th');
@@ -62,7 +62,7 @@ function reminderPayload({ slot, count, token, followup = false }) {
     title: followup ? `⏰ ยังไม่ได้กินยามื้อ${meal}นะคะ` : `⏰ ถึงเวลากินยามื้อ${meal}แล้ว`,
     body: `${count} รายการ · แตะเพื่อดูและบันทึก`,
     tag: `yt-dose-${slot || 'x'}`, url: '/today',
-    actions: token ? TAKE_ACTION : null, takeUrl: token ? `/today?take=${token}` : null, requireInteraction: true
+    actions: token ? TAKE_ACTION : null, takeUrl: token ? `/today#take=${token}` : null, requireInteraction: true
   });
 }
 function lowStockPayload({ count }) {

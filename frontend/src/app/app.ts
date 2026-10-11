@@ -15,7 +15,7 @@ export class App {
   protected readonly title = signal('frontend');
 
   constructor() {
-    // เปิดจากปุ่ม "✓ กินแล้ว" ของการแจ้งเตือน (/today?take=…) → บันทึกก่อนที่ guard จะพาไปหน้าอื่น
-    inject(PushTakeService).consumeFromUrl();
+    // เปิดจากปุ่ม "✓ กินแล้ว" ของการแจ้งเตือน (/today#take=…) → บันทึกก่อนที่ guard จะพาไปหน้าอื่น
+    inject(PushTakeService).watch();
   }
 }

@@ -64,7 +64,7 @@ test('ไม่เชื่อม LINE + มีเครื่อง → Web Pus
   assert.equal(push.sent.length, 1);
   assert.deepEqual([r.groups, r.sent, r.push_sent], [1, 0, 1]);
   assert.equal(push.sent[0].payload.notification.title, '⏰ ถึงเวลากินยามื้อเช้าแล้ว');
-  assert.equal(push.sent[0].payload.notification.data.onActionClick.take.url, '/today?take=T-7-1');
+  assert.equal(push.sent[0].payload.notification.data.onActionClick.take.url, '/today#take=T-7-1');
   assert.equal(push.sent[0].meta.kind, 'reminder');
   assert.equal(JSON.stringify(push.sent[0].payload).includes('SECRET-DRUG'), false);
   assert.equal(db.table[0].reminded, true);
@@ -82,7 +82,7 @@ test('notify_both → ทั้งสองทาง อย่างละ 1 ค
   const r = await svc.run(db, line, ENV, push);
   assert.equal(line.pushes.length, 1); assert.equal(push.sent.length, 1);
   assert.equal(push.sent[0].payload.notification.body, '2 รายการ · แตะเพื่อดูและบันทึก');
-  assert.equal(push.sent[0].payload.notification.data.onActionClick.take.url, '/today?take=T-7-1_2');
+  assert.equal(push.sent[0].payload.notification.data.onActionClick.take.url, '/today#take=T-7-1_2');
   await svc.run(db, line, ENV, push);   // รันซ้ำ
   assert.equal(line.pushes.length, 1); assert.equal(push.sent.length, 1);
   assert.equal(r.groups, 1);
