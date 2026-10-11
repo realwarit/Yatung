@@ -300,5 +300,12 @@ tab: escalation และยาใกล้หมดอยู่ใน 7-LINE �
    - `takeInTx` รองรับ missed → taken อยู่แล้ว ตรวจว่ากินย้อนหลังจาก LINE/เว็บ/push ใช้ได้
    - escalation, follow-up, "วันนี้", หน้า Today นับ missed ถูกต้อง
    - เทส: เมื่อวาน pending → missed, ของวันนี้ไม่ถูกแตะ, taken ไม่ถูกแตะ, รันซ้ำได้, real-snapshot (ระหว่างเทสเคารพ `REMINDER_ONLY_EMAIL_SUFFIX`)
+10. **(เพิ่ม fix 7C) 1 dose ต่อ (มื้อ, วัน):** ปัญหา = เปลี่ยนเวลามื้อหลังเตือนแล้ว รอบเดิมคงเวลาเดิม แต่ PUT/POST ยา/cron สร้างรอบใหม่ที่เวลาใหม่ → ยาตัวเดียวมี 2 รอบในมื้อเดียวของวันเดียว (เสี่ยงกินซ้ำ แจ้งญาติผิด Dashboard นับผิด)
+   - **invariant:** ยา 1 ตัวมี dose ได้ไม่เกิน 1 ต่อ (มื้อ, วัน) ทุกที่ที่สร้างหรือย้าย dose ; DB บังคับด้วย UNIQUE `uq_dose_med_slot_day` บน `dose_logs.scheduled_date` (generated column) — migration 005 รันซ้ำได้ และข้ามการสร้าง UNIQUE (พร้อมข้อความ) ถ้ามีข้อมูลซ้ำค้างอยู่
+   - เปลี่ยนเวลามื้อ (transaction เดียว): pending ของวันนี้ในมื้อนั้น (เตือนแล้วหรือไม่) **ย้าย** ไปเวลาใหม่ ไม่สร้างใหม่ ; เวลาใหม่ > now ล้าง `reminded_at`/`followup_at` ; ≤ now คง `reminded_at` ; `dose_escalations` คงไว้ (ไม่แจ้งญาติซ้ำ ; ประวัติแสดงเวลามื้อใหม่ของ dose เดิม) ; taken/missed ไม่ย้าย ; มื้อที่ taken แล้วไม่สร้าง/ย้ายรอบอื่นมาเพิ่ม
+   - ตัวสร้างรอบทุกทาง (`GENERATE_TODAY_SQL`: POST/PUT/resume ยา, cron 00:05) เช็ก `NOT EXISTS` ของ (ยา, มื้อ, วันนี้)
+   - ล้างข้อมูลเดิม: `node scripts/fix-duplicate-doses.mjs` (dry-run ค่าเริ่มต้น ผู้ใช้ตรวจแล้วค่อย `--apply`) — เก็บ taken ก่อน ไม่มีก็เก็บตัวใหม่กว่า ลบที่เหลือที่ไม่ใช่ taken ; ย้าย `reminded_at/followup_at/escalated_at`, `dose_escalations`, `notification_logs.dose_log_id` ไปตัวที่เก็บก่อนลบ
+   - หน้าตั้งค่าเวลามื้อ: "รอบวันนี้ที่ยังไม่ได้กินจะย้ายไปเวลาใหม่ รอบที่กินแล้วไม่เปลี่ยน"
+   - เทส: `node-red/test/slot-move.test.js` + `scripts/test-day3a.sh` หัวข้อ 9
 
 commit `docs/day7-plan.md` พร้อม 7A ; จบ 7A บอกผู้ใช้ทดสอบ escalation กับ LINE จริง (ผู้ดูแลบัญชีที่สองเชื่อมไว้แล้ว)

@@ -81,3 +81,13 @@ test('CLI: พิมพ์เฉพาะ public key ไม่พิมพ์ pr
   assert.equal(fs.readFileSync(p, 'utf8'), before);
   assert.equal(out2.includes(priv), false);
 });
+
+test('private key ครบ 32 ไบต์เสมอ แม้ ECDH ตัด 0 นำหน้า (เคยได้ 42 ตัวอักษร ~1/256)', async () => {
+  const crypto = require('node:crypto');
+  const orig = crypto.createECDH;
+  crypto.createECDH = (...a) => { const e = orig(...a); const g = e.getPrivateKey.bind(e); e.getPrivateKey = () => g().subarray(0, 31); return e; };   // จำลองคีย์ที่ขึ้นต้น 0 (ถูกตัดเหลือ 31 ไบต์)
+  try {
+    const { generateVapidKeys } = await import('../../scripts/gen-vapid.mjs');
+    assert.equal(Buffer.from(generateVapidKeys().privateKey, 'base64url').length, 32);
+  } finally { crypto.createECDH = orig; }
+});

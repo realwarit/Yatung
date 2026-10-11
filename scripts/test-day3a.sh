@@ -165,7 +165,8 @@ sql "UPDATE dose_logs SET reminded_at = NOW() WHERE id = $D_EVE;"
 OLD_EVE="$(sql "SELECT scheduled_at FROM dose_logs WHERE id=$D_EVE;")"
 req PUT /api/settings/slot-times "$TOKEN_A" '{"morning":"00:01","noon":"00:02","evening":"23:50","bedtime":"23:59"}'
 expect "PUT slot-times ใหม่ 200" "$STATUS" "200"
-expect "dose ที่ reminded แล้ว คงเวลาเดิม" "$(sql "SELECT scheduled_at FROM dose_logs WHERE id=$D_EVE;")" "$OLD_EVE"
+expect "dose ที่ reminded แล้ว (pending) ย้ายไปเวลาใหม่ 23:50 (กฎใหม่ fix 7C: ย้ายแถวเดิม ไม่สร้างใหม่)" "$(sql "SELECT TIME(scheduled_at) FROM dose_logs WHERE id=$D_EVE;")" "23:50:00"
+expect "  เวลาใหม่ยังไม่ถึง → ล้าง reminded_at (เตือนใหม่)" "$(sql "SELECT reminded_at IS NULL FROM dose_logs WHERE id=$D_EVE;")" "1"
 sql "UPDATE dose_logs SET reminded_at = NULL WHERE id = $D_EVE;"
 req PUT /api/settings/slot-times "$TOKEN_A" '{"morning":"00:01","noon":"00:02","evening":"23:50","bedtime":"23:59"}'
 expect "dose ที่ยังไม่เตือน ย้ายไปเวลาใหม่ (23:50)" "$(sql "SELECT TIME(scheduled_at) FROM dose_logs WHERE id=$D_EVE;")" "23:50:00"
@@ -225,6 +226,56 @@ expect "รอบที่ 1 สร้างครบ 4 รอบของยา
 expect "รอบที่ 2 ไม่สร้างเพิ่ม" "$R2" "0"
 expect "จำนวนแถวไม่เปลี่ยนหลังรอบที่ 2" "$C2" "$C1"
 expect "ยาที่หยุดแล้วไม่ถูกสร้างรอบ" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE medication_id=$MED AND status='pending';")" "0"
+
+section "9) fix 7C: 1 dose ต่อ (มื้อ, วัน) — ย้ายรอบเมื่อเปลี่ยนเวลามื้อ ไม่สร้างแถวใหม่"
+# ใช้เวลาแบบสัมพัทธ์กับ "ตอนนี้" (เฉพาะวันนี้ ข้ามถ้าเกินเที่ยงคืน) ; มื้อที่ใช้ทดสอบ = เย็น ของยา TEST-day3a-one
+if [ "$(date +%H)" -ge 2 ] && [ "$(date +%H)" -le 21 ]; then
+  HM() { date -d "$1" +%H:%M 2>/dev/null || date -v"$1" +%H:%M; }
+  F1="$(HM '+60 min')"; F2="$(HM '+90 min')"; PAST="$(HM '-30 min')"
+  req PUT /api/settings/slot-times "$TOKEN_A" '{"morning":"00:01","noon":"00:02","evening":"23:50","bedtime":"23:59"}'
+  req POST /api/medications "$TOKEN_A" '{"name":"TEST-day3a-one","dose_per_time":1,"unit":"tablet","meal_relation":"any","as_needed":false,"slots":["evening"],"total_qty":20}'
+  M1="$(jget 'o.id')"
+  cnt() { sql "SELECT COUNT(*) FROM dose_logs WHERE medication_id=$M1 AND slot='evening' AND DATE(scheduled_at)=CURDATE();"; }
+  expect "เริ่มต้นมี 1 รอบ" "$(cnt)" "1"
+  DID="$(sql "SELECT id FROM dose_logs WHERE medication_id=$M1 AND slot='evening';")"
+  sql "UPDATE dose_logs SET reminded_at=NOW() - INTERVAL 5 MINUTE, followup_at=NOW() WHERE id=$DID;"
+  put_times() { req PUT /api/settings/slot-times "$TOKEN_A" "{\"morning\":\"00:01\",\"noon\":\"00:02\",\"evening\":\"$1\",\"bedtime\":\"23:59\"}"; }
+  put_times "$F1"
+  expect "9a) เตือนแล้ว + เวลาใหม่ยังไม่ถึง → ย้ายแถวเดิม (id เดิม)" "$(sql "SELECT id FROM dose_logs WHERE medication_id=$M1 AND slot='evening' AND TIME(scheduled_at)='$F1:00';")" "$DID"
+  expect "  ยังมี 1 รอบ" "$(cnt)" "1"
+  expect "  ล้าง reminded_at/followup_at (เตือนใหม่ที่เวลาใหม่)" "$(sql "SELECT reminded_at IS NULL AND followup_at IS NULL FROM dose_logs WHERE id=$DID;")" "1"
+  sql "UPDATE dose_logs SET reminded_at=NOW() WHERE id=$DID;"
+  put_times "$F1"
+  expect "9b) บันทึกเวลาเดิมซ้ำ → ไม่ล้าง reminded_at (ไม่เตือนซ้ำ)" "$(sql "SELECT reminded_at IS NOT NULL FROM dose_logs WHERE id=$DID;")" "1"
+  put_times "$F2"; put_times "$F1"
+  expect "9c) เปลี่ยนเวลา 2 ครั้งติดกัน ยังมี 1 รอบ" "$(cnt)" "1"
+  sql "UPDATE dose_logs SET reminded_at=NOW() - INTERVAL 1 HOUR WHERE id=$DID;"
+  put_times "$PAST"
+  expect "9d) เวลาใหม่ผ่านไปแล้ว → ย้ายแต่คง reminded_at" "$(sql "SELECT TIME(scheduled_at)='$PAST:00' AND reminded_at IS NOT NULL FROM dose_logs WHERE id=$DID;")" "1"
+  # escalation: ใส่แถว dose_escalations แล้วย้าย → แถวยังอยู่ ผูกกับ dose เดิม (UNIQUE กันแจ้งซ้ำ)
+  CGID="$(sql "INSERT INTO caregivers (user_id, name, escalate_after_min) VALUES ((SELECT user_id FROM medications WHERE id=$M1), 'TEST-day3a-cg', 60); SELECT LAST_INSERT_ID();")"
+  sql "INSERT INTO dose_escalations (dose_id, caregiver_id, user_id) SELECT $DID, $CGID, user_id FROM medications WHERE id=$M1;"
+  put_times "$F2"
+  expect "9e) แจ้งญาติไปแล้วแล้วย้ายเวลา → dose_escalations ยังผูก dose เดิม 1 แถว" "$(sql "SELECT COUNT(*) FROM dose_escalations WHERE dose_id=$DID AND caregiver_id=$CGID;")" "1"
+  # taken แล้ว: ย้ายเวลาไม่แตะ และ cron ไม่สร้างแถวเพิ่ม
+  sql "UPDATE dose_logs SET status='taken', taken_at=NOW(), source='app' WHERE id=$DID;"
+  OLDT="$(sql "SELECT scheduled_at FROM dose_logs WHERE id=$DID;")"
+  put_times "$F1"
+  expect "9f) taken แล้วไม่ถูกย้าย" "$(sql "SELECT scheduled_at FROM dose_logs WHERE id=$DID;")" "$OLDT"
+  expect "  ไม่มีแถวเพิ่ม" "$(cnt)" "1"
+  run_cron >/dev/null; run_cron >/dev/null
+  expect "9g) cron สร้าง dose ไม่สร้างซ้ำในมื้อที่ taken แล้ว" "$(cnt)" "1"
+  req PUT /api/medications/$M1 "$TOKEN_A" '{"name":"TEST-day3a-one","dose_per_time":1,"unit":"tablet","meal_relation":"any","as_needed":false,"slots":["evening"],"total_qty":20}'
+  expect "  PUT ยา ก็ไม่สร้างซ้ำ" "$(cnt)" "1"
+  # ด่านสุดท้ายใน DB: INSERT แถวที่ 2 ในมื้อเดียวกันต้องถูกปฏิเสธ
+  DUPERR="$(docker compose exec -T db sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' 2>&1 <<<"INSERT INTO dose_logs (medication_id, user_id, slot, scheduled_at) SELECT $M1, user_id, 'evening', CONCAT(CURDATE(), ' 05:00:00') FROM medications WHERE id=$M1;")"
+  case "$DUPERR" in *"Duplicate entry"*uq_dose_med_slot_day*) ok "9h) INSERT ซ้ำ (ยา, มื้อ, วัน) ตรงๆ ใน SQL → Duplicate key uq_dose_med_slot_day" ;; *) bad "9h) INSERT ซ้ำต้องได้ duplicate key (ได้: $DUPERR)" ;; esac
+  expect "  จำนวนรอบยังเป็น 1" "$(cnt)" "1"
+  expect "9i) scheduled_date ตรงกับ DATE(scheduled_at) ทุกแถว และไม่เป็น NULL" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE scheduled_date IS NULL OR scheduled_date <> DATE(scheduled_at);")" "0"
+  sql "DELETE FROM caregivers WHERE id=$CGID;"
+else
+  echo "  - ข้ามหัวข้อ 9 (ทำงานเฉพาะช่วง 02:00–21:59 เพราะใช้เวลาสัมพัทธ์ของวันนี้)"
+fi
 
 echo
 echo "สรุป: ผ่าน $PASS · ไม่ผ่าน $FAIL"
