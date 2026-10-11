@@ -2,6 +2,10 @@
 // โมดูลภายนอกติดตั้งใน image ที่ /usr/src/node-red/node_modules (ดู Dockerfile: NODE_PATH)
 
 const fs = require('fs');
+
+// Node 20 ลองเชื่อมต่อทีละ IP (autoSelectFamily) โดยให้เวลา IP ละ 250 ms — สั้นกว่า RTT ไป web.push.apple.com (~0.6 วินาทีจากเครื่องนี้)
+// ทุกรอบจึง timeout → Web Push ไป iPhone ได้ ETIMEDOUT ทั้งที่ต่อ IP ตรงๆ ได้ ; ตั้งให้ 3 วินาทีต่อ IP (ผล: ต่อ Apple สำเร็จ)
+require('net').setDefaultAutoSelectFamilyAttemptTimeout(3000);
 const path = require('path');
 const Ajv2020 = require('ajv/dist/2020');
 const addFormats = require('ajv-formats');
