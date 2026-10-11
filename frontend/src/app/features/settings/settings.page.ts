@@ -13,12 +13,13 @@ import { DemoApi } from '../../core/api/line.api';
 import { CaregiversSectionComponent } from './caregivers-section.component';
 import { DemoSectionComponent } from './demo-section.component';
 import { LineSectionComponent } from './line-section.component';
+import { PushSectionComponent } from './push-section.component';
 
 const SLOT_ICON: Record<Slot, IconName> = { morning: 'sunrise', noon: 'sun', evening: 'sunset', bedtime: 'moon' };
 
 @Component({
   selector: 'app-settings-page',
-  imports: [MatButton, IconComponent, TimeRowComponent, FontSizeToggleComponent, LineSectionComponent, CaregiversSectionComponent, DemoSectionComponent],
+  imports: [MatButton, IconComponent, TimeRowComponent, FontSizeToggleComponent, LineSectionComponent, PushSectionComponent, CaregiversSectionComponent, DemoSectionComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './settings.page.html',
   styleUrl: './settings.page.scss',

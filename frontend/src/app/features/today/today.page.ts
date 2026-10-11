@@ -6,6 +6,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { filter, forkJoin, fromEvent } from 'rxjs';
 import { DoseApi } from '../../core/api/dose.api';
 import { MedicationApi } from '../../core/api/medication.api';
+import { PushTakeService } from '../../core/push/push-take.service';
 import { errorCode, errorText } from '../../core/api/api-error';
 import { Dose, DoseActionResult, Medication, Slot, TodayResponse } from '../../core/api/models';
 import { AuthService } from '../../core/auth/auth.service';
@@ -45,6 +46,7 @@ export class TodayPage {
   private medApi = inject(MedicationApi);
   private auth = inject(AuthService);
   private snack = inject(MatSnackBar);
+  private pushTake = inject(PushTakeService);
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
   private destroyRef = inject(DestroyRef);
 
@@ -144,6 +146,8 @@ export class TodayPage {
       filter(() => document.visibilityState === 'visible'),
       takeUntilDestroyed(),
     ).subscribe(() => { this.now.set(Date.now()); this.load(true); });
+    // กด "✓ กินแล้ว" จากการแจ้งเตือนเสร็จ → ดึงข้อมูลใหม่ให้เห็นผลทันที
+    this.pushTake.done.pipe(takeUntilDestroyed()).subscribe(() => this.load(true));
   }
 
   protected load(silent = false): void {

@@ -2,8 +2,11 @@
 // สูตร "พอใช้กี่วัน" อยู่ที่ SQL view v_medication_supply.days_left เท่านั้น (ไม่เขียนซ้ำที่นี่) ;
 // เกณฑ์ใกล้หมด : ยาประจำ days_left ≤ medications.refill_alert_days (ต่อยา) · ยาเมื่อมีอาการ remaining_qty ≤ LOW_STOCK_QTY_PRN (ค่าเริ่มต้น 5)
 // กันแจ้งซ้ำ : medications.refill_alerted_at (ตั้งตอนจองก่อนส่ง ; ล้างเมื่อยาพ้นเกณฑ์ — resetRecovered เรียกจากเติมยา/แก้ยา/undo และ cron)
-// ช่องทางส่ง : LINE (kind=low_stock ใช้งบเตือนปกติ หยุดที่ cap − reserve) ; ผู้ใช้ที่ไม่ได้เชื่อม LINE ข้าม (Web Push = 7C)
+// ช่องทางส่ง (7C, lib/notify-service.js) : เชื่อม LINE → LINE (kind=low_stock ใช้งบเตือนปกติ หยุดที่ cap − reserve) · ไม่เชื่อมแต่มีเครื่องที่เปิดแจ้งเตือน → Web Push · notify_both → ทั้งสอง ;
+//   จองครั้งเดียว (refill_alerted_at) แล้วส่งทุกช่องทาง ; LINE เต็ม + มีเครื่อง → Web Push แทน ; ไม่ส่ง pushService เข้ามา = LINE อย่างเดียว
 const M = require('./line-messages');
+const notify = require('./notify-service');
+const pushLib = require('./push-service');
 
 const DEFAULT_PRN_QTY = 5;
 const DEFAULT_NOTIFY_AT = '09:00';
@@ -30,7 +33,7 @@ function isLow(row, env = process.env) {
 
 const LOW_SELECT =
   'SELECT m.id, m.user_id, m.name, m.strength, m.unit, m.as_needed, m.is_active, m.remaining_qty, m.refill_alert_days, ' +
-  '(m.refill_alerted_at IS NOT NULL) AS alerted, v.days_left, u.line_user_id, u.email ' +
+  '(m.refill_alerted_at IS NOT NULL) AS alerted, v.days_left, u.line_user_id, u.email, ' + notify.CHANNEL_COLS + ' ' +
   'FROM medications m JOIN users u ON u.id = m.user_id LEFT JOIN v_medication_supply v ON v.medication_id = m.id ';
 
 const likeEscape = (v) => v.replace(/[!%_]/g, (c) => '!' + c);
@@ -71,28 +74,48 @@ async function claim(db, ids) {
 
 const medOf = (r) => ({ name: r.name, strength: r.strength, unit: r.unit, remaining_qty: Number(r.remaining_qty), days_left: r.days_left == null ? null : Number(r.days_left), as_needed: !!Number(r.as_needed) });
 
-async function pushLow(db, client, userId, lineUserId, rows, env) {
-  const msg = M.buildLowStock(rows.map(medOf), env);
-  const r = await client.push(lineUserId, [msg], { db, userId, kind: 'low_stock', recipient: 'patient' });
-  return r.ok;
+const pushReadyOf = (push) => !!(push && typeof push.configured === 'function' && push.configured());
+const channelsOf = (r, push) => notify.chooseChannels({ lineUserId: r.line_user_id, hasPush: !!Number(r.has_push), notifyBoth: r.notify_both, pushReady: pushReadyOf(push) });
+
+// ส่งตามช่องทางที่เลือกไว้ (ch = { line, push }) ; คืน true ถ้าอย่างน้อยหนึ่งช่องทางส่งสำเร็จ
+async function sendLow(db, client, push, userId, user, rows, env, ch) {
+  let ok = false;
+  if (ch.line) {
+    const msg = M.buildLowStock(rows.map(medOf), env);
+    const r = await client.push(user.line_user_id, [msg], { db, userId, kind: 'low_stock', recipient: 'patient' });
+    ok = ok || r.ok;
+  }
+  if (ch.push) {
+    try {
+      const r = await push.sendToUser(db, userId, pushLib.lowStockPayload({ count: rows.length }), { kind: 'low_stock' });
+      ok = ok || r.sent > 0;
+    } catch (e) {
+      console.log('low_stock_push_error ' + String(e.message).slice(0, 200));
+    }
+  }
+  return ok;
 }
 
 // cron : ส่ง 1 ข้อความต่อผู้ป่วย รวมยาที่ "เพิ่งใกล้หมด" (ยังไม่เคยแจ้งในรอบนี้) ; คืนสรุป (ไม่มีข้อมูลส่วนตัว)
-async function run(db, client, env = process.env) {
+async function run(db, client, env = process.env, push = null) {
   const out = { users: 0, sent: 0, failed: 0, quota_skipped: 0, claimed_by_other: 0, reset: 0 };
   out.reset = (await resetRecovered((s, p) => db.query(s, p), env)).length;
-  const fresh = (await lowRows((s, p) => db.query(s, p), env)).filter((r) => !Number(r.alerted) && r.line_user_id);
+  const fresh = (await lowRows((s, p) => db.query(s, p), env)).filter((r) => { if (Number(r.alerted)) return false; const c = channelsOf(r, push); return c.line || c.push; });
   const byUser = new Map();
   for (const r of fresh) { if (!byUser.has(r.user_id)) byUser.set(r.user_id, []); byUser.get(r.user_id).push(r); }
   out.users = byUser.size;
   for (const [userId, rows] of byUser) {
     try {
-      const q = await client.canPush(db, 'low_stock', 1);
-      if (!q.allowed) { out.quota_skipped++; console.log(`low_stock_quota_skipped left=${q.left}`); continue; }
+      let ch = channelsOf(rows[0], push);
+      if (ch.line) {
+        const q = await client.canPush(db, 'low_stock', 1);
+        ch = notify.applyLineQuota(ch, q.allowed, { hasPush: !!Number(rows[0].has_push), pushReady: pushReadyOf(push) });   // LINE เต็ม + มีเครื่อง → Web Push แทน
+        if (!ch.line && !ch.push) { out.quota_skipped++; console.log(`low_stock_quota_skipped left=${q.left}`); continue; }
+      }
       const mine = new Set(await claim(db, rows.map((r) => r.id)));
       const send = rows.filter((r) => mine.has(r.id));
       if (!send.length) { out.claimed_by_other++; continue; }
-      if (await pushLow(db, client, userId, rows[0].line_user_id, send, env)) out.sent++; else out.failed++;
+      if (await sendLow(db, client, push, userId, rows[0], send, env, ch)) out.sent++; else out.failed++;
     } catch (e) {
       out.failed++;
       console.log('low_stock_user_error ' + String(e.message).slice(0, 200));
@@ -112,9 +135,9 @@ function isDue(now, state, env = process.env) {
 }
 
 // cron ทุก 1 นาที เรียกฟังก์ชันนี้ ; คืน null ถ้ายังไม่ถึงเวลา
-async function tick(db, client, env = process.env, state = {}, now = new Date()) {
+async function tick(db, client, env = process.env, state = {}, now = new Date(), push = null) {
   if (!isDue(now, state, env)) return null;
-  const r = await run(db, client, env);
+  const r = await run(db, client, env, push);
   state.day = localDay(now);   // ตั้งหลังรันสำเร็จ (ถ้า throw จะลองใหม่นาทีถัดไป)
   return r;
 }
@@ -139,7 +162,7 @@ async function notifyNow(db, client, userId, body = {}, env = process.env) {
   if (!q.allowed) return err(429, 'LINE_QUOTA', 'โควตาข้อความ LINE ของเดือนนี้ใกล้หมดแล้ว จึงไม่ส่งแจ้งเพิ่มค่ะ');
   if (fresh.length) await claim(db, fresh.map((r) => r.id));
   else console.log('low_stock_force user_meds=' + rows.length);
-  const ok = await pushLow(db, client, userId, u[0].line_user_id, rows, env);
+  const ok = await sendLow(db, client, null, userId, { line_user_id: u[0].line_user_id }, rows, env, { line: true, push: false });
   if (!ok) return err(502, 'LINE_PUSH_FAILED', 'ส่งข้อความไป LINE ไม่สำเร็จ กรุณาลองใหม่ภายหลังค่ะ');
   const message = `ส่งแจ้งยาใกล้หมด ${rows.length} รายการเข้า LINE แล้วค่ะ${fresh.length ? '' : ' — ส่งซ้ำรายการที่แจ้งไปแล้ว'}`;
   return { status: 200, body: { sent: 1, meds: rows.length, resent: !fresh.length, message } };
@@ -153,4 +176,4 @@ async function notifyDemoUser(db, client, env = process.env, email = 'demo@yatun
   return notifyNow(db, client, u[0].id, {}, env);
 }
 
-module.exports = { isLow, prnQty, notifyAt, lowRows, resetRecovered, claim, run, tick, isDue, notifyNow, notifyDemoUser, LOW_SELECT, DEFAULT_PRN_QTY, DEFAULT_NOTIFY_AT };
+module.exports = { channelsOf, isLow, prnQty, notifyAt, lowRows, resetRecovered, claim, run, tick, isDue, notifyNow, notifyDemoUser, LOW_SELECT, DEFAULT_PRN_QTY, DEFAULT_NOTIFY_AT };

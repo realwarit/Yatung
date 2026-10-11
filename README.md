@@ -97,6 +97,28 @@ LINE Messaging API ส่ง webhook เข้ามาที่ `https://<NGROK
 cron 03:00 ปิดรอบที่ค้าง `pending` ของวันก่อนๆ เป็น `missed` (กินย้อนหลังได้) · โหมดเดโม: ปุ่ม "ทดลองแจ้งญาติตอนนี้" (`POST /api/demo/escalate-now` ถ้าแจ้งไปแล้วถามก่อนส่งซ้ำ) ·
 ทดสอบ: `bash scripts/test-day7a.sh` (LINE ปลอม ไม่ส่งข้อความจริง ไม่แตะผู้ใช้จริง) · checklist ทดสอบกับ LINE จริง: [`docs/line-console-checklist.md`](docs/line-console-checklist.md) หัวข้อ 9
 
+**เตือนยาใกล้หมด (7B):** หน้า "ยาของฉัน"/"วันนี้" ขึ้นป้ายเหลือง และส่ง LINE วันละครั้งหลัง `LOW_STOCK_NOTIFY_AT` (09:00) · ทดสอบ: `bash scripts/test-day7b.sh`
+
+### Web Push — แจ้งเตือนบนเครื่อง (7C)
+
+เตือนกินยาเป็น **notification บนมือถือ/คอม** สำหรับคนที่ไม่ได้เชื่อม LINE (หรือเปิดสวิตช์ "ทั้ง LINE และเครื่อง") — ไม่นับโควตา LINE
+ตั้งค่าครั้งเดียวบนเครื่องที่รัน:
+```bash
+node scripts/gen-vapid.mjs                       # สร้างคู่คีย์ VAPID ลง .env (ไม่เขียนทับของเดิม ; แสดงเฉพาะ public key)
+# แก้ VAPID_SUBJECT ใน .env เป็น mailto:<อีเมลของคุณ>  (หรือ https://<NGROK_DOMAIN>)
+docker compose up -d --force-recreate nodered
+docker compose up -d --build frontend
+bash scripts/demo-check.sh                       # หัวข้อ 8) Web Push ต้องผ่าน
+```
+- ผู้ใช้เปิดที่ **ตั้งค่า → แจ้งเตือนบนเครื่องนี้** (iPhone ต้อง "เพิ่มลงหน้าจอโฮม" ก่อน — หน้าจอมีวิธี ①②③ ให้) · ต้องเปิดผ่าน https (tunnel) ไม่ใช่ `localhost`
+- กฎเลือกช่องทาง (ใช้กับเตือนปกติ, เตือนซ้ำ, ยาใกล้หมด; แจ้งญาติใช้ LINE อย่างเดียว): เชื่อม LINE → LINE · ไม่เชื่อมแต่มีเครื่องที่เปิดแจ้งเตือน → Web Push · เปิด "ทั้ง LINE และเครื่อง" → ทั้งสองทาง ·
+  โควตา LINE เต็มแต่มีเครื่องที่เปิดแจ้งเตือน → ใช้ Web Push แทน · ทุกช่องทางผ่านการ "จองก่อนส่ง" ตัวเดียวกัน (ไม่ส่งซ้ำ)
+- ปุ่ม "✓ กินแล้ว" บนแจ้งเตือน (Android Chrome): เปิด `/today?take=<token>` แล้วแอปบันทึกให้ (token เซ็นด้วย HMAC ผูกผู้ใช้ + dose, อายุ 12 ชม., ใช้ซ้ำไม่หักยาซ้ำ) · iPhone ไม่แสดงปุ่ม action — แตะแจ้งเตือนเพื่อเปิดหน้า "วันนี้" · payload **ไม่มีชื่อยา** (เห็นบนหน้าจอล็อก)
+- **ถ้า iPhone ไม่ได้รับแจ้งเตือน** และ `docker compose logs nodered | grep web_push_error` เห็น `status=403 reason=BadJwtToken` (Apple ปฏิเสธ `VAPID_SUBJECT`): ตั้ง `VAPID_SUBJECT=https://<NGROK_DOMAIN>` (หรือ mailto ที่เป็นอีเมลจริง) → `docker compose up -d --force-recreate nodered` → บน iPhone ปิดแล้วเปิดการแจ้งเตือนใหม่
+  (log ไม่มี JWT/คีย์ ; มีเฉพาะ status กับ reason สั้นๆ)
+- ngrok ฟรีแสดงหน้า "Visit Site" ให้เบราว์เซอร์ครั้งแรก — กดครั้งเดียวต่ออุปกรณ์ (iPhone ที่เปิดจากไอคอนหน้าจอโฮม cookie แยกจาก Safari ต้องกดอีกครั้ง) ; `demo-check.sh` ตรวจว่า `ngsw-worker.js`/`manifest` ผ่าน tunnel ได้ไฟล์จริง
+- ทดสอบอัตโนมัติ (push service ปลอมถอดรหัส payload จริง + ตรวจลายเซ็น VAPID): `bash scripts/test-day7c.sh` · ทดสอบบนมือถือจริง (iPhone / Android แยก 2 ชุด): [`docs/web-push-test.md`](docs/web-push-test.md)
+
 ### 3. Dev แบบ hot reload
 
 ```cmd
@@ -143,7 +165,7 @@ Webhook URL + Use webhook ใน LINE Console · **โควตา push: จร�
 ### ชุดทดสอบทั้งหมด (`scripts/test-all.sh`)
 
 ```bash
-bash scripts/test-all.sh          # unit + 3a, 4 (mock), 5, 6, 6b, 6c, 7a, 7b แล้วสรุปตาราง ผ่าน/ไม่ผ่าน
+bash scripts/test-all.sh          # unit + 3a, 4 (mock), 5, 6, 6b, 6c, 7a, 7b, 7c แล้วสรุปตาราง ผ่าน/ไม่ผ่าน
 bash scripts/test-all.sh 6b 7a    # เฉพาะบางชุด
 ```
 

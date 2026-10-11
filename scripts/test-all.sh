@@ -4,7 +4,7 @@
 #   bash scripts/test-all.sh 6b 7a        # เฉพาะบางชุด (unit = node --test)
 # ข้อควรระวัง:
 #   - ห้ามรันในช่วง 30 นาทีก่อนเดโม/นำเสนอ และอย่ารันใกล้มื้อยาของผู้ใช้จริง: ชุดทดสอบ recreate nodered หลายรอบและปิด cron เตือนจริงชั่วคราว
-#   - ต้อง docker compose up -d --build (รวม frontend) ก่อน ; day4 รันเฉพาะโหมด mock (ไม่เรียก Gemini จริง ไม่เปลืองโควตา)
+#   - ต้อง docker compose up -d --build (รวม frontend) ก่อน (6c และ 7c ตรวจไฟล์ที่ build ใหม่) ; day4 รันเฉพาะโหมด mock (ไม่เรียก Gemini จริง ไม่เปลืองโควตา)
 #   - บางชุดไม่รันใกล้เที่ยงคืน (scripts/lib/clock.sh) — ชุดที่ถูกข้ามด้วยเหตุนี้ขึ้น "ข้าม (เวลา)" และทำให้ exit ไม่เป็น 0
 set -u
 cd "$(dirname "$0")/.."
@@ -20,6 +20,7 @@ add 6b     'bash scripts/test-day6b.sh'
 add 6c     'bash scripts/test-day6c.sh'
 add 7a     'bash scripts/test-day7a.sh'
 add 7b     'bash scripts/test-day7b.sh'
+add 7c     'bash scripts/test-day7c.sh'
 
 WANT=" $* "
 LOGDIR="$(mktemp -d)"

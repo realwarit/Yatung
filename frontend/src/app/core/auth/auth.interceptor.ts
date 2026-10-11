@@ -7,7 +7,8 @@ import { AuthService } from './auth.service';
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const isApi = req.url.startsWith('/api/');
-  const isAuthEndpoint = req.url.startsWith('/api/auth/');   // 401 ที่นี่ = รหัสผิด ไม่ใช่ session หมดอายุ
+  // 401 ที่นี่ = รหัสผิด / action token ของการแจ้งเตือนใช้ไม่ได้ ไม่ใช่ session หมดอายุ → ห้าม logout
+  const isAuthEndpoint = req.url.startsWith('/api/auth/') || req.url === '/api/push/take';
 
   const token = auth.token;
   if (isApi && token) {

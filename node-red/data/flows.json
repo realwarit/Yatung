@@ -304,7 +304,7 @@
                 "me_select"
             ]
         ],
-        "func": "msg.topic = 'SELECT u.id, u.email, u.display_name, u.line_user_id, u.line_link_code, u.tts_rate, s.slot, s.slot_time ' +\n  'FROM users u LEFT JOIN user_slot_times s ON s.user_id = u.id WHERE u.id = ?';\nmsg.payload = [msg.user.id];\nreturn msg;",
+        "func": "msg.topic = 'SELECT u.id, u.email, u.display_name, u.line_user_id, u.line_link_code, u.tts_rate, u.notify_both, (SELECT COUNT(*) FROM push_subscriptions ps WHERE ps.user_id = u.id) AS push_devices, s.slot, s.slot_time ' +\n  'FROM users u LEFT JOIN user_slot_times s ON s.user_id = u.id WHERE u.id = ?';\nmsg.payload = [msg.user.id];\nreturn msg;",
         "g": "auth_grp_me"
     },
     {
@@ -340,7 +340,7 @@
                 "auth_res"
             ]
         ],
-        "func": "const rows = Array.isArray(msg.payload) ? msg.payload : [];\nif (!rows.length) {\n  msg.statusCode = 401;\n  msg.payload = { error: 'UNAUTHORIZED', details: 'ไม่พบบัญชีผู้ใช้ กรุณาเข้าสู่ระบบใหม่' };\n  return msg;\n}\nconst u = rows[0];\nconst order = ['morning', 'noon', 'evening', 'bedtime'];\nconst times = {};\nfor (const r of rows) if (r.slot) times[r.slot] = String(r.slot_time).slice(0, 5);\nconst slot_times = {};\nfor (const s of order) if (times[s]) slot_times[s] = times[s];\nmsg.statusCode = 200;\nmsg.payload = {\n  id: u.id, email: u.email, display_name: u.display_name,\n  line_linked: !!u.line_user_id, line_link_code: u.line_link_code,\n  tts_rate: Number(u.tts_rate), slot_times: slot_times\n};\nreturn msg;",
+        "func": "const rows = Array.isArray(msg.payload) ? msg.payload : [];\nif (!rows.length) {\n  msg.statusCode = 401;\n  msg.payload = { error: 'UNAUTHORIZED', details: 'ไม่พบบัญชีผู้ใช้ กรุณาเข้าสู่ระบบใหม่' };\n  return msg;\n}\nconst u = rows[0];\nconst order = ['morning', 'noon', 'evening', 'bedtime'];\nconst times = {};\nfor (const r of rows) if (r.slot) times[r.slot] = String(r.slot_time).slice(0, 5);\nconst slot_times = {};\nfor (const s of order) if (times[s]) slot_times[s] = times[s];\nmsg.statusCode = 200;\nmsg.payload = {\n  id: u.id, email: u.email, display_name: u.display_name,\n  line_linked: !!u.line_user_id, line_link_code: u.line_link_code,\n  tts_rate: Number(u.tts_rate), slot_times: slot_times,\n  notify_both: !!u.notify_both, push_subscribed: Number(u.push_devices) > 0\n};\nreturn msg;",
         "g": "auth_grp_me"
     },
     {
@@ -4588,7 +4588,7 @@
         "type": "function",
         "z": "tab_line",
         "name": "ส่งเตือน + เตือนซ้ำ + แจ้งญาติ (จองก่อนส่งทุกขั้น)",
-        "func": "// REMINDER_CRON=off ปิดเฉพาะ cron อัตโนมัติ (เฉพาะทดสอบ — ไม่ให้แย่ง dose กับสคริปต์เทส) ; ปุ่ม ▶ รันตอนนี้ ยังใช้ได้\nif (env.get('REMINDER_CRON') === 'off' && msg.topic === 'line-reminder') { msg.payload = { skipped: true }; return msg; }\nconst db = global.get('db');\nconst client = global.get('lineClient');\nconst e = global.get('lineEnv').pick((k) => env.get(k));\n// แต่ละขั้นแยก try (ขั้นหนึ่งล้มต้องไม่ทำให้ขั้นอื่นไม่ทำงาน) ; cron ไม่มี http response จึงไม่ส่งต่อให้ catch ของ tab\nconst step = async (name, fn) => { try { return await fn(); } catch (err) { node.error(name + ' ' + String(err.message).slice(0, 200)); return { error: true }; } };\nconst reminder = await step('reminder_cron', () => global.get('reminderService').run(db, client, e));\nconst followup = await step('followup_cron', () => global.get('reminderService').runFollowup(db, client, e));\nconst escalation = await step('escalation_cron', () => global.get('escalationService').run(db, client, e));\nmsg.payload = { ...reminder, followup, escalation };\nreturn msg;",
+        "func": "// REMINDER_CRON=off ปิดเฉพาะ cron อัตโนมัติ (เฉพาะทดสอบ — ไม่ให้แย่ง dose กับสคริปต์เทส) ; ปุ่ม ▶ รันตอนนี้ ยังใช้ได้\nif (env.get('REMINDER_CRON') === 'off' && msg.topic === 'line-reminder') { msg.payload = { skipped: true }; return msg; }\nconst db = global.get('db');\nconst client = global.get('lineClient');\nconst e = global.get('lineEnv').pick((k) => env.get(k));\nconst push = global.get('pushService');   // Web Push (7C) — เลือกช่องทางตาม lib/notify-service.js ; แจ้งญาติใช้ LINE อย่างเดียว\n// แต่ละขั้นแยก try (ขั้นหนึ่งล้มต้องไม่ทำให้ขั้นอื่นไม่ทำงาน) ; cron ไม่มี http response จึงไม่ส่งต่อให้ catch ของ tab\nconst step = async (name, fn) => { try { return await fn(); } catch (err) { node.error(name + ' ' + String(err.message).slice(0, 200)); return { error: true }; } };\nconst reminder = await step('reminder_cron', () => global.get('reminderService').run(db, client, e, push));\nconst followup = await step('followup_cron', () => global.get('reminderService').runFollowup(db, client, e, push));\nconst escalation = await step('escalation_cron', () => global.get('escalationService').run(db, client, e));\nmsg.payload = { ...reminder, followup, escalation };\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -5536,7 +5536,7 @@
         "type": "function",
         "z": "tab_stock",
         "name": "แจ้งยาใกล้หมด (หลังเวลาที่ตั้ง วันละครั้ง ; กด ▶ = รันทันที ; จองก่อนส่ง)",
-        "func": "// cron (topic low-stock) : stockService.tick ตรวจว่าถึงเวลา LOW_STOCK_NOTIFY_AT และวันนี้ยังไม่เคยรัน ; กด ▶ รันตอนนี้ = run ทันที\n// REMINDER_CRON=off ปิดเฉพาะ cron อัตโนมัติ (เฉพาะทดสอบ)\nif (msg.topic === 'low-stock' && env.get('REMINDER_CRON') === 'off') return null;\nconst stock = global.get('stockService');\nconst e = global.get('lineEnv').pick((k) => env.get(k));\ntry {\n  let r;\n  if (msg.topic === 'low-stock') {\n    const state = flow.get('lowStockState') || {};\n    r = await stock.tick(global.get('db'), global.get('lineClient'), e, state);\n    flow.set('lowStockState', state);\n  } else {\n    r = await stock.run(global.get('db'), global.get('lineClient'), e);\n  }\n  if (r === null) return null;   // ยังไม่ถึงเวลา / วันนี้รันแล้ว — ไม่ส่งอะไรต่อ\n  msg.payload = r;\n  return msg;\n} catch (err) {\n  node.error('low_stock_cron ' + String(err.message).slice(0, 200));\n  return null;\n}",
+        "func": "// cron (topic low-stock) : stockService.tick ตรวจว่าถึงเวลา LOW_STOCK_NOTIFY_AT และวันนี้ยังไม่เคยรัน ; กด ▶ รันตอนนี้ = run ทันที\n// REMINDER_CRON=off ปิดเฉพาะ cron อัตโนมัติ (เฉพาะทดสอบ)\nif (msg.topic === 'low-stock' && env.get('REMINDER_CRON') === 'off') return null;\nconst stock = global.get('stockService');\nconst e = global.get('lineEnv').pick((k) => env.get(k));\nconst push = global.get('pushService');   // Web Push (7C) สำหรับคนที่ไม่เชื่อม LINE หรือเปิด notify_both\ntry {\n  let r;\n  if (msg.topic === 'low-stock') {\n    const state = flow.get('lowStockState') || {};\n    r = await stock.tick(global.get('db'), global.get('lineClient'), e, state, new Date(), push);\n    flow.set('lowStockState', state);\n  } else {\n    r = await stock.run(global.get('db'), global.get('lineClient'), e, push);\n  }\n  if (r === null) return null;   // ยังไม่ถึงเวลา / วันนี้รันแล้ว — ไม่ส่งอะไรต่อ\n  msg.payload = r;\n  return msg;\n} catch (err) {\n  node.error('low_stock_cron ' + String(err.message).slice(0, 200));\n  return null;\n}",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -5856,6 +5856,702 @@
         ],
         "x": 70,
         "y": 575,
+        "w": 1520,
+        "h": 90
+    },
+    {
+        "id": "tab_push",
+        "type": "tab",
+        "label": "8-Push",
+        "disabled": false,
+        "info": "Web Push (วันที่ 7C): สมัคร/ยกเลิกเครื่อง, ส่งทดลอง, ปุ่ม \"✓ กินแล้ว\" บน notification (POST /api/push/take ไม่ใช้ JWT แต่ต้องมี action token), ตั้งค่า notify_both\nส่งจริงเมื่อถึงเวลาเตือน/ยาใกล้หมดอยู่ใน cron ของ tab 7-LINE และ 9-Stock (ผ่าน lib/notify-service.js เลือกช่องทาง) — tab นี้มีแค่ endpoint ของเครื่องผู้ใช้\nสีเขียว = เขียนข้อมูล · สีฟ้า = อ่านอย่างเดียว · สีแดง = error\nlogic อยู่ lib/push-service.js (global: pushService) ; VAPID_* / JWT_SECRET จาก env"
+    },
+    {
+        "id": "psh_key_in",
+        "type": "http in",
+        "z": "tab_push",
+        "name": "GET /api/push/public-key",
+        "url": "/api/push/public-key",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 120,
+        "wires": [
+            [
+                "psh_key_fn"
+            ]
+        ],
+        "g": "psh_key_grp"
+    },
+    {
+        "id": "psh_key_fn",
+        "type": "function",
+        "z": "tab_push",
+        "name": "อ่าน VAPID public key (สาธารณะ ไม่ต้อง JWT)",
+        "func": "const r = global.get('pushService').publicKey();\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ/ไม่มีสิทธิ์ (4xx, 5xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 120,
+        "g": "psh_key_grp",
+        "outputLabels": [
+            "สำเร็จ",
+            "503 ยังไม่ได้ตั้ง VAPID"
+        ],
+        "wires": [
+            [
+                "psh_key_ok"
+            ],
+            [
+                "psh_key_err"
+            ]
+        ]
+    },
+    {
+        "id": "psh_key_ok",
+        "type": "http response",
+        "z": "tab_push",
+        "name": "ตอบ 200 สำเร็จ",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 120,
+        "wires": [],
+        "g": "psh_key_grp"
+    },
+    {
+        "id": "psh_key_err",
+        "type": "http response",
+        "z": "tab_push",
+        "name": "ตอบ 4xx/5xx ผิดพลาด",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 180,
+        "wires": [],
+        "g": "psh_key_grp"
+    },
+    {
+        "id": "psh_key_grp",
+        "type": "group",
+        "z": "tab_push",
+        "name": "GET /api/push/public-key",
+        "style": {
+            "stroke": "#1d4ed8",
+            "fill": "#e8f0fe",
+            "label": true,
+            "label-position": "nw",
+            "color": "#1d4ed8"
+        },
+        "nodes": [
+            "psh_key_in",
+            "psh_key_fn",
+            "psh_key_ok",
+            "psh_key_err"
+        ],
+        "x": 70,
+        "y": 75,
+        "w": 1520,
+        "h": 150
+    },
+    {
+        "id": "psh_sub_in",
+        "type": "http in",
+        "z": "tab_push",
+        "name": "POST /api/push/subscribe",
+        "url": "/api/push/subscribe",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 310,
+        "wires": [
+            [
+                "psh_sub_jwt"
+            ]
+        ],
+        "g": "psh_sub_grp"
+    },
+    {
+        "id": "psh_sub_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_push",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 310,
+        "wires": [
+            [
+                "psh_sub_fn"
+            ]
+        ],
+        "g": "psh_sub_grp"
+    },
+    {
+        "id": "psh_sub_fn",
+        "type": "function",
+        "z": "tab_push",
+        "name": "ลงทะเบียนเครื่องนี้ (upsert ตาม endpoint ; ย้ายเจ้าของมาเป็นผู้เรียก)",
+        "func": "const ua = (msg.req && msg.req.headers && msg.req.headers['user-agent']) || '';\nconst r = await global.get('pushService').subscribe(global.get('db'), msg.user.id, msg.payload, ua);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ/ไม่มีสิทธิ์ (4xx, 5xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 310,
+        "g": "psh_sub_grp",
+        "outputLabels": [
+            "สำเร็จ",
+            "400 ข้อมูลไม่ถูกต้อง"
+        ],
+        "wires": [
+            [
+                "psh_sub_ok"
+            ],
+            [
+                "psh_sub_err"
+            ]
+        ]
+    },
+    {
+        "id": "psh_sub_ok",
+        "type": "http response",
+        "z": "tab_push",
+        "name": "ตอบ 200 สำเร็จ",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 310,
+        "wires": [],
+        "g": "psh_sub_grp"
+    },
+    {
+        "id": "psh_sub_err",
+        "type": "http response",
+        "z": "tab_push",
+        "name": "ตอบ 4xx/5xx ผิดพลาด",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 370,
+        "wires": [],
+        "g": "psh_sub_grp"
+    },
+    {
+        "id": "psh_sub_grp",
+        "type": "group",
+        "z": "tab_push",
+        "name": "POST /api/push/subscribe",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "psh_sub_in",
+            "psh_sub_jwt",
+            "psh_sub_fn",
+            "psh_sub_ok",
+            "psh_sub_err"
+        ],
+        "x": 70,
+        "y": 265,
+        "w": 1520,
+        "h": 150
+    },
+    {
+        "id": "psh_unsub_in",
+        "type": "http in",
+        "z": "tab_push",
+        "name": "DELETE /api/push/subscribe",
+        "url": "/api/push/subscribe",
+        "method": "delete",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 500,
+        "wires": [
+            [
+                "psh_unsub_jwt"
+            ]
+        ],
+        "g": "psh_unsub_grp"
+    },
+    {
+        "id": "psh_unsub_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_push",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 500,
+        "wires": [
+            [
+                "psh_unsub_fn"
+            ]
+        ],
+        "g": "psh_unsub_grp"
+    },
+    {
+        "id": "psh_unsub_fn",
+        "type": "function",
+        "z": "tab_push",
+        "name": "ยกเลิกเครื่องนี้ (?endpoint=… ; ลบเฉพาะของตัวเอง ไม่ใช่ = 404)",
+        "func": "// DELETE ใน Node-RED ไม่มี body parser → รับ endpoint จาก query string (รับ body ด้วยถ้ามี)\nconst body = (msg.payload && typeof msg.payload === 'object' && msg.payload.endpoint) ? msg.payload : { endpoint: msg.req && msg.req.query ? msg.req.query.endpoint : undefined };\nconst r = await global.get('pushService').unsubscribe(global.get('db'), msg.user.id, body);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ/ไม่มีสิทธิ์ (4xx, 5xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 500,
+        "g": "psh_unsub_grp",
+        "outputLabels": [
+            "สำเร็จ",
+            "400/404"
+        ],
+        "wires": [
+            [
+                "psh_unsub_ok"
+            ],
+            [
+                "psh_unsub_err"
+            ]
+        ]
+    },
+    {
+        "id": "psh_unsub_ok",
+        "type": "http response",
+        "z": "tab_push",
+        "name": "ตอบ 200 สำเร็จ",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 500,
+        "wires": [],
+        "g": "psh_unsub_grp"
+    },
+    {
+        "id": "psh_unsub_err",
+        "type": "http response",
+        "z": "tab_push",
+        "name": "ตอบ 4xx/5xx ผิดพลาด",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 560,
+        "wires": [],
+        "g": "psh_unsub_grp"
+    },
+    {
+        "id": "psh_unsub_grp",
+        "type": "group",
+        "z": "tab_push",
+        "name": "DELETE /api/push/subscribe",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "psh_unsub_in",
+            "psh_unsub_jwt",
+            "psh_unsub_fn",
+            "psh_unsub_ok",
+            "psh_unsub_err"
+        ],
+        "x": 70,
+        "y": 455,
+        "w": 1520,
+        "h": 150
+    },
+    {
+        "id": "psh_test_in",
+        "type": "http in",
+        "z": "tab_push",
+        "name": "POST /api/push/test",
+        "url": "/api/push/test",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 690,
+        "wires": [
+            [
+                "psh_test_jwt"
+            ]
+        ],
+        "g": "psh_test_grp"
+    },
+    {
+        "id": "psh_test_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_push",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 690,
+        "wires": [
+            [
+                "psh_test_fn"
+            ]
+        ],
+        "g": "psh_test_grp"
+    },
+    {
+        "id": "psh_test_fn",
+        "type": "function",
+        "z": "tab_push",
+        "name": "ส่งแจ้งเตือนทดลองไปทุกเครื่องของตัวเอง",
+        "func": "const r = await global.get('pushService').sendTest(global.get('db'), msg.user.id);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ/ไม่มีสิทธิ์ (4xx, 5xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 690,
+        "g": "psh_test_grp",
+        "outputLabels": [
+            "สำเร็จ",
+            "409 ไม่มีเครื่อง / 502 / 503"
+        ],
+        "wires": [
+            [
+                "psh_test_ok"
+            ],
+            [
+                "psh_test_err"
+            ]
+        ]
+    },
+    {
+        "id": "psh_test_ok",
+        "type": "http response",
+        "z": "tab_push",
+        "name": "ตอบ 200 สำเร็จ",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 690,
+        "wires": [],
+        "g": "psh_test_grp"
+    },
+    {
+        "id": "psh_test_err",
+        "type": "http response",
+        "z": "tab_push",
+        "name": "ตอบ 4xx/5xx ผิดพลาด",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 750,
+        "wires": [],
+        "g": "psh_test_grp"
+    },
+    {
+        "id": "psh_test_grp",
+        "type": "group",
+        "z": "tab_push",
+        "name": "POST /api/push/test",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "psh_test_in",
+            "psh_test_jwt",
+            "psh_test_fn",
+            "psh_test_ok",
+            "psh_test_err"
+        ],
+        "x": 70,
+        "y": 645,
+        "w": 1520,
+        "h": 150
+    },
+    {
+        "id": "psh_take_in",
+        "type": "http in",
+        "z": "tab_push",
+        "name": "POST /api/push/take",
+        "url": "/api/push/take",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 880,
+        "wires": [
+            [
+                "psh_take_fn"
+            ]
+        ],
+        "g": "psh_take_grp"
+    },
+    {
+        "id": "psh_take_fn",
+        "type": "function",
+        "z": "tab_push",
+        "name": "กด \"✓ กินแล้ว\" จากการแจ้งเตือน (ไม่มี JWT — ใช้ action token ที่เซ็นด้วย HMAC)",
+        "func": "const token = msg.payload && typeof msg.payload === 'object' ? msg.payload.token : undefined;\nconst r = await global.get('pushService').take(global.get('db'), global.get('doseService'), token);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ/ไม่มีสิทธิ์ (4xx, 5xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 880,
+        "g": "psh_take_grp",
+        "outputLabels": [
+            "สำเร็จ",
+            "401 token ใช้ไม่ได้/หมดอายุ"
+        ],
+        "wires": [
+            [
+                "psh_take_ok"
+            ],
+            [
+                "psh_take_err"
+            ]
+        ]
+    },
+    {
+        "id": "psh_take_ok",
+        "type": "http response",
+        "z": "tab_push",
+        "name": "ตอบ 200 สำเร็จ",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 880,
+        "wires": [],
+        "g": "psh_take_grp"
+    },
+    {
+        "id": "psh_take_err",
+        "type": "http response",
+        "z": "tab_push",
+        "name": "ตอบ 4xx/5xx ผิดพลาด",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 940,
+        "wires": [],
+        "g": "psh_take_grp"
+    },
+    {
+        "id": "psh_take_grp",
+        "type": "group",
+        "z": "tab_push",
+        "name": "POST /api/push/take",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "psh_take_in",
+            "psh_take_fn",
+            "psh_take_ok",
+            "psh_take_err"
+        ],
+        "x": 70,
+        "y": 835,
+        "w": 1520,
+        "h": 150
+    },
+    {
+        "id": "psh_notify_in",
+        "type": "http in",
+        "z": "tab_push",
+        "name": "PUT /api/settings/notify",
+        "url": "/api/settings/notify",
+        "method": "put",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 1070,
+        "wires": [
+            [
+                "psh_notify_jwt"
+            ]
+        ],
+        "g": "psh_notify_grp"
+    },
+    {
+        "id": "psh_notify_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_push",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 1070,
+        "wires": [
+            [
+                "psh_notify_fn"
+            ]
+        ],
+        "g": "psh_notify_grp"
+    },
+    {
+        "id": "psh_notify_fn",
+        "type": "function",
+        "z": "tab_push",
+        "name": "ตั้ง \"ส่งทั้ง LINE และแจ้งเตือนบนเครื่อง\" (notify_both)",
+        "func": "const b = msg.payload && typeof msg.payload === 'object' ? msg.payload : {};\nlet r;\nif (typeof b.notify_both !== 'boolean') r = { status: 400, body: { error: 'VALIDATION', details: 'notify_both ต้องเป็น true หรือ false' } };\nelse {\n  await global.get('db').query('UPDATE users SET notify_both = ? WHERE id = ?', [b.notify_both ? 1 : 0, msg.user.id]);\n  r = { status: 200, body: { notify_both: b.notify_both } };\n}\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ข้อมูลผิด/ไม่พบ/ไม่มีสิทธิ์ (4xx, 5xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 1070,
+        "g": "psh_notify_grp",
+        "outputLabels": [
+            "สำเร็จ",
+            "400 ข้อมูลไม่ถูกต้อง"
+        ],
+        "wires": [
+            [
+                "psh_notify_ok"
+            ],
+            [
+                "psh_notify_err"
+            ]
+        ]
+    },
+    {
+        "id": "psh_notify_ok",
+        "type": "http response",
+        "z": "tab_push",
+        "name": "ตอบ 200 สำเร็จ",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1070,
+        "wires": [],
+        "g": "psh_notify_grp"
+    },
+    {
+        "id": "psh_notify_err",
+        "type": "http response",
+        "z": "tab_push",
+        "name": "ตอบ 4xx/5xx ผิดพลาด",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1130,
+        "wires": [],
+        "g": "psh_notify_grp"
+    },
+    {
+        "id": "psh_notify_grp",
+        "type": "group",
+        "z": "tab_push",
+        "name": "PUT /api/settings/notify",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "psh_notify_in",
+            "psh_notify_jwt",
+            "psh_notify_fn",
+            "psh_notify_ok",
+            "psh_notify_err"
+        ],
+        "x": 70,
+        "y": 1025,
+        "w": 1520,
+        "h": 150
+    },
+    {
+        "id": "psh_catch",
+        "type": "catch",
+        "z": "tab_push",
+        "name": "ดักข้อผิดพลาดของ tab นี้",
+        "scope": null,
+        "uncaught": false,
+        "x": 190,
+        "y": 1260,
+        "wires": [
+            [
+                "psh_err"
+            ]
+        ],
+        "g": "psh_grp"
+    },
+    {
+        "id": "psh_err",
+        "type": "function",
+        "z": "tab_push",
+        "name": "แปลง error เป็น JSON 500",
+        "func": "node.error(msg.error && msg.error.message ? msg.error.message : 'unknown error');\nmsg.statusCode = 500;\nmsg.payload = { error: 'INTERNAL_ERROR', details: 'ระบบขัดข้อง กรุณาลองใหม่ภายหลัง' };\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 1260,
+        "wires": [
+            [
+                "psh_res"
+            ]
+        ],
+        "g": "psh_grp"
+    },
+    {
+        "id": "psh_res",
+        "type": "http response",
+        "z": "tab_push",
+        "name": "ตอบ 500 ระบบขัดข้อง",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 1260,
+        "wires": [],
+        "g": "psh_grp"
+    },
+    {
+        "id": "psh_grp",
+        "type": "group",
+        "z": "tab_push",
+        "name": "ข้อผิดพลาดที่ไม่คาดคิด → 500",
+        "style": {
+            "stroke": "#b91c1c",
+            "fill": "#fdeaea",
+            "label": true,
+            "label-position": "nw",
+            "color": "#b91c1c"
+        },
+        "nodes": [
+            "psh_catch",
+            "psh_err",
+            "psh_res"
+        ],
+        "x": 70,
+        "y": 1215,
         "w": 1520,
         "h": 90
     }

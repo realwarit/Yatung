@@ -44,6 +44,15 @@ for (const s of [72, 96, 128, 144, 152, 192, 384, 512]) out(`public/icons/icon-$
 for (const s of [192, 512]) out(`public/icons/icon-maskable-${s}x${s}.png`, await png(maskSvg, s));
 out('public/icons/apple-touch-icon.png', await png(anySvg, 180));
 
+// badge-96.png : ไอคอนแถบสถานะของ Android สำหรับ Web Push — เงาขาวบนพื้นโปร่งใส (ระบบใช้เฉพาะช่อง alpha) ; เจาะเส้นกลางแคปซูลกับดวงตาให้เห็นเป็นน้องยาตรง
+const badgeSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="96" height="96"><defs><mask id="m"><rect width="200" height="200" fill="black"/>
+  <rect x="52" y="34" width="96" height="140" rx="48" fill="white"/>
+  <path d="M52 96h96" stroke="black" stroke-width="9"/><circle cx="82" cy="122" r="9.5" fill="black"/><circle cx="118" cy="122" r="9.5" fill="black"/>
+  <path d="M91 138Q100 148 109 138" fill="none" stroke="black" stroke-width="6.5" stroke-linecap="round"/></mask></defs>
+  <rect width="200" height="200" fill="white" mask="url(#m)"/></svg>`;
+out('public/icons/badge-96.png', await sharp(Buffer.from(badgeSvg)).resize(96, 96).png().toBuffer());
+
+
 // favicon.svg: มุมมน, แคปซูลใหญ่ขึ้นให้ชัดที่ 16–32px
 out('public/favicon.svg', svg(64, 0.4, { radius: 14 }));
 const sizes = [16, 32, 48];
