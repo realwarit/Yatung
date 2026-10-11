@@ -117,6 +117,12 @@ if printf '%s' "$pbu" | grep -qE '^https://[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+(/.*)?
 else bad "PUBLIC_BASE_URL ใน container ไม่มีโดเมน ('${pbu:-ว่าง}') — ใน .env ต้องประกาศ NGROK_DOMAIN ก่อนบรรทัด PUBLIC_BASE_URL=https://\${NGROK_DOMAIN} แล้ว docker compose up -d --force-recreate nodered"; fi
 tstate="$(docker compose ps --all --format '{{.State}}' tunnel 2>/dev/null | head -1)"
 if [ "$tstate" = "running" ]; then
+  # tunnel ต้องต่อ network เดียวกับ frontend (หลัง docker compose down/up network ถูกสร้างใหม่ แต่ tunnel เก่าอาจค้างกับ network เดิม → "network … not found" / ngrok ต่อ frontend ไม่ได้)
+  fe_id="$(docker compose ps -q frontend 2>/dev/null | head -1)"; tn_id="$(docker compose ps --all -q tunnel 2>/dev/null | head -1)"
+  fe_net="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$v.NetworkID}} {{end}}' "$fe_id" 2>/dev/null)"
+  tn_net="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$v.NetworkID}} {{end}}' "$tn_id" 2>/dev/null)"
+  if [ -n "$fe_net" ] && [ -n "$tn_net" ] && [ "$fe_net" = "$tn_net" ]; then ok "tunnel อยู่ network เดียวกับ frontend"
+  else bad "tunnel ไม่ได้อยู่ network เดียวกับ frontend (network เก่าค้างหลัง down/up) — แก้: docker compose --profile tunnel up -d --force-recreate tunnel"; fi
   pub="$(curl -s -m 5 http://127.0.0.1:4040/api/tunnels 2>/dev/null | jget 'o.tunnels[0].public_url')"
   if [ -n "$pub" ]; then
     ok "tunnel (ngrok) รันอยู่: $pub"

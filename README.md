@@ -140,6 +140,22 @@ Webhook URL + Use webhook ใน LINE Console · **โควตา push: จร�
 - ถ้าสแกนไม่ได้เลยตอนนำเสนอ: ตั้ง `AI_MOCK=true` ใน `.env` แล้ว `docker compose up -d --force-recreate nodered` (ตอบผลตัวอย่างหลังรอ 2 วินาที)
 - Node-RED เรียก Gemini `models.get` 1 ครั้งตอนเริ่ม (log `gemini_warmup … status=200`) เพื่ออุ่น DNS/TLS และให้เห็นว่า key/เครือข่ายใช้ได้ก่อนสแกนจริง
 
+### ชุดทดสอบทั้งหมด (`scripts/test-all.sh`)
+
+```bash
+bash scripts/test-all.sh          # unit + 3a, 4 (mock), 5, 6, 6b, 6c, 7a, 7b แล้วสรุปตาราง ผ่าน/ไม่ผ่าน
+bash scripts/test-all.sh 6b 7a    # เฉพาะบางชุด
+```
+
+> **วันนำเสนอห้ามรันในช่วง 30 นาทีก่อนเดโม** (และอย่ารันใกล้มื้อยาของผู้ใช้จริง): ชุดทดสอบ recreate `nodered` หลายรอบและปิด cron เตือนจริงชั่วคราว (`REMINDER_CRON=off`) จึงไม่มีการเตือน/แจ้งญาติจริงระหว่างนั้น และ `nodered` จะรีสตาร์ตหลายครั้ง — ให้เทสเสร็จก่อน แล้วค่อยรัน `bash scripts/demo-check.sh`
+
+- **เวลาของวัน:** บางเคสสร้างรอบกินยาย้อนหลัง/ล่วงหน้าตามนาฬิกา DB ซึ่งระบบนับ "วันนี้" ด้วย `CURDATE()` — ใกล้เที่ยงคืนรอบจะข้ามวัน ผลเทสจึงเพี้ยน (ไม่ใช่บั๊ก) ทุกชุดเรียก `scripts/lib/clock.sh` ตอนเริ่ม: นอกช่วงปลอดภัยแต่รอไม่เกิน 12 นาทีจะรอเอง นานกว่านั้นจะออกด้วย exit 3 พร้อมบอกเวลาที่รันได้ (ชุด 7A ต้องรันหลัง 02:15 ถึงก่อน 23:40; `CLOCK_GUARD=off` ข้ามตัวกัน)
+- `DEMO_PASSWORD` ของ 3a/4 อ่านจาก `.env` เองถ้าไม่ได้ตั้งใน environment (ไม่แสดงค่า) · 6c ต้อง `docker compose up -d --build frontend` ก่อน
+- `LINE_QUOTA_CACHE_MS` (ค่าเริ่มต้น 300000) — ชุดทดสอบตั้งเป็น 0 เพื่อปรับยอดโควตาของ LINE ปลอมกลางเทสได้ ; ตอนใช้งานจริงอย่าตั้ง
+- หลังเทส `test-all.sh` ตรวจ `http://localhost:8080/api/me` = 401 และรีสตาร์ต `frontend` ให้ถ้าไม่ใช่ (nginx หา IP ของ `nodered` ตอนเริ่มเท่านั้น)
+- **tunnel ค้างกับ network เก่า** ("network … not found" ตอน `--profile tunnel up`): เกิดเมื่อ `docker compose down` แล้ว `up` โดยไม่ใส่ profile — container `tunnel` เก่ายังอ้าง network ที่ถูกลบไปแล้ว แก้ด้วย
+  `docker compose --profile tunnel up -d --force-recreate tunnel` · ชุดทดสอบไม่ `down` stack (recreate เฉพาะ `nodered`) ; ถ้าต้อง `down` ให้ใส่ `--profile tunnel` เสมอ (`docker compose --profile tunnel down`) · `demo-check.sh` ตรวจว่า `tunnel` อยู่ network เดียวกับ `frontend` และแสดงคำสั่งแก้ให้
+
 ## AI pipeline (`POST /api/scan`)
 
 ```
@@ -197,3 +213,5 @@ docker compose down            # หยุดระบบ (ข้อมูลย
 docker compose logs -f nodered # ดู log ของ Node-RED
 
 docker compose --profile tunnel up -d
+docker compose --profile tunnel up -d --force-recreate tunnel   # ถ้า tunnel ค้างกับ network เก่า ("network … not found")
+docker compose --profile tunnel down                             # ถ้าจะ down ให้ใส่ profile เสมอ
