@@ -25,7 +25,7 @@ add 8      'bash scripts/test-day8.sh'
 
 WANT=" $* "
 LOGDIR="$(mktemp -d)"
-declare -a ROWS
+declare -a ROWS NOTES
 ANY_FAIL=0
 START=$(date +%s)
 
@@ -43,10 +43,15 @@ for i in "${!NAMES[@]}"; do
     line="$(grep -E '^สรุป: ผ่าน [0-9]+ · ไม่ผ่าน [0-9]+' "$LOGDIR/$n.log" | tail -1)"
     p="$(printf '%s' "$line" | sed -nE 's/^สรุป: ผ่าน ([0-9]+) .*/\1/p')"; f="$(printf '%s' "$line" | sed -nE 's/.*ไม่ผ่าน ([0-9]+).*/\1/p')"
   fi
+  # หัวข้อที่เทสข้ามเองตามเวลา (บรรทัด "  - ข้าม…" หรือ "  ! ข้าม…") — นับแยกจาก "ผ่าน"
+  skipped="$(grep -E '^ +[-!] ข้าม' "$LOGDIR/$n.log" | sed -E 's/^ +[-!] //')"
+  ns=0; [ -n "$skipped" ] && ns="$(printf '%s
+' "$skipped" | wc -l | tr -d ' ')"
   if [ "$rc" -eq 3 ] && grep -q 'รันชุดนี้ตอนนี้ไม่ได้' "$LOGDIR/$n.log"; then res="ข้าม (เวลา)"; ANY_FAIL=1
-  elif [ "$rc" -eq 0 ] && [ "${f:-x}" = "0" ]; then res="ผ่าน"
+  elif [ "$rc" -eq 0 ] && [ "${f:-x}" = "0" ]; then res="ผ่าน"; [ "$ns" -gt 0 ] && res="ผ่านบางส่วน"
   else res="ไม่ผ่าน (exit $rc)"; ANY_FAIL=1; fi
-  ROWS+=("$(printf '%-6s | %-18s | %6s | %8s | %5ss' "$n" "$res" "${p:--}" "${f:--}" "$dt")")
+  ROWS+=("$(printf '%-6s | %-18s | %6s | %5s | %8s | %5ss' "$n" "$res" "${p:--}" "$ns" "${f:--}" "$dt")")
+  [ "$ns" -gt 0 ] && while IFS= read -r l; do NOTES+=("ชุด $n ข้าม: $l"); done <<< "$skipped"
 done
 
 # nginx (frontend) resolve ชื่อ nodered ตอนเริ่มเท่านั้น — หลัง nodered ถูก recreate หลายรอบ ถ้า IP เปลี่ยนจะได้ 502 : ตรวจแล้วรีสตาร์ต frontend ให้
