@@ -91,12 +91,13 @@ for (const scale of scales) {
           const b = e.getBoundingClientRect();
           return b.width > 0 && (b.right > cw + 0.5 || b.left < -0.5) && getComputedStyle(e).position !== 'fixed';
         }).slice(0, 12).map((e) => `${sel(e)}  right=${Math.round(e.getBoundingClientRect().right)} width=${Math.round(e.getBoundingClientRect().width)} (หน้ากว้าง ${cw})`);
-        return { scrollers, over };
+        const pg = document.querySelector('.yt-page');
+        return { scrollers, over, pageH: pg ? Math.round(pg.getBoundingClientRect().height) : 0 };
       });
       total++;
       const fail = m.scrollers.length > 0 || (probe && m.over.length > 0);
       if (fail) bad++;
-      console.log(`${fail ? '✘' : '✓'} ${r} @${w}px ก${scale === '100' ? '' : scale === '112' ? '+' : '++'}${fail ? '\n    ' + [...m.scrollers, ...m.over].join('\n    ') : ''}`);
+      console.log(`${fail ? '✘' : '✓'} ${r} @${w}px ก${scale === '100' ? '' : scale === '112' ? '+' : '++'}${r === '/overview' ? ' [สูง ' + m.pageH + 'px]' : ''}${fail ? '\n    ' + [...m.scrollers, ...m.over].join('\n    ') : ''}`);
     }
     await ctx.close();
   }

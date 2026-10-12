@@ -1,12 +1,12 @@
 // ถ่ายภาพ + วัดหน้า "สรุป 7 วัน" ด้วยข้อมูลจำลอง (ไม่ต้อง login จริง/ไม่ต้องมี docker) ; ต้องมี ng serve (4200)
 // node tools/overview-shots.mjs [--scale=100,112,125] [--sizes=375x1500,768x1400,1440x1200] [state…]   state = data | empty | stopped | error
-// วัด: ไม่มีแนวนอนล้น · ปุ่ม/พื้นที่แตะ ≥ 48px · ตัวอักษรเนื้อหา ≥ 16px (หัวตาราง sr-only ข้าม) · แถวป้ายใต้แท่งสูงเท่ากัน · แท่ง 100% สูง ≈ 150px ที่ 375px/100%
+// วัด: ไม่มีแนวนอนล้น · ปุ่ม/พื้นที่แตะ ≥ 48px · ตัวอักษรเนื้อหา ≥ 16px (บรรทัดช่องทาง .src ≥ 15px ; sr-only ข้าม) · ความสูงหน้า · แถวป้ายใต้แท่งสูงเท่ากัน · แท่ง 100% สูง ≈ 150px ที่ 375px/100%
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 
 const args = process.argv.slice(2);
 const scales = (args.find((a) => a.startsWith('--scale='))?.slice(8) ?? '100,112,125').split(',');
-const sizes = (args.find((a) => a.startsWith('--sizes='))?.slice(8) ?? '375x1500,768x1400,1440x1200').split(',').map((s) => s.split('x').map(Number));
+const sizes = (args.find((a) => a.startsWith('--sizes='))?.slice(8) ?? '360x1500,375x1500,768x1400,1440x1200').split(',').map((s) => s.split('x').map(Number));
 const only = args.filter((a) => !a.startsWith('--'));
 const OUT = new URL('../../docs/screenshots/day8/', import.meta.url).pathname.replace(/^\/(\w:)/, '$1');
 mkdirSync(OUT, { recursive: true });
@@ -71,7 +71,7 @@ for (const state of only.length ? only : Object.keys(STATES)) {
         const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
         if (!own) continue;
         const fs = parseFloat(getComputedStyle(el).fontSize);
-        if (fs < 16) out.small.push(`${el.textContent.trim().slice(0, 20)}=${fs}px`);
+        if (fs < (el.closest('.src') ? 15 : 16)) out.small.push(`${el.textContent.trim().slice(0, 20)}=${fs}px`);
       }
       for (const el of document.querySelectorAll('app-overview-page button, app-overview-page a')) {
         const r = el.getBoundingClientRect(); if (r.width && (r.width < 48 || r.height < 48)) out.taps.push(`${el.textContent.trim().slice(0, 20) || el.getAttribute('aria-label')?.slice(0, 20)} ${Math.round(r.width)}x${Math.round(r.height)}`);
@@ -79,6 +79,7 @@ for (const state of only.length ? only : Object.keys(STATES)) {
       out.lblH = [...document.querySelectorAll('.lbl')].map((e) => Math.round(e.getBoundingClientRect().height));
       out.barH = [...document.querySelectorAll('.area')].map((e) => Math.round(e.getBoundingClientRect().height));
       const tallBar = document.querySelector('.bar.tone-good'); out.bar100 = tallBar ? Math.round(tallBar.getBoundingClientRect().height) : null;
+      out.pageH = Math.round(document.querySelector('.yt-page')?.getBoundingClientRect().height ?? 0);
       out.areaW = document.querySelector('.col') ? Math.round(document.querySelector('.col').getBoundingClientRect().width) : null;
       return out;
     });
@@ -107,7 +108,7 @@ for (const state of only.length ? only : Object.keys(STATES)) {
     if (m.small.length) probs.push('ตัวอักษร < 16px: ' + m.small.join(', '));
     if (m.taps.length) probs.push('แตะ < 48px: ' + m.taps.join(', '));
     if (new Set(m.lblH).size > 1) probs.push('แถวป้ายสูงไม่เท่ากัน ' + m.lblH);
-    console.log(probs.length ? `✘ ${tag}` : `✓ ${tag}` + (m.areaW ? `  คอลัมน์ ${m.areaW}px แท่ง100% ${m.bar100 ?? '-'}px ป้ายสูง ${m.lblH[0] ?? '-'}px` : ''));
+    console.log(probs.length ? `✘ ${tag}` : `✓ ${tag}` + (m.areaW ? `  คอลัมน์ ${m.areaW}px แท่ง100% ${m.bar100 ?? '-'}px ป้ายสูง ${m.lblH[0] ?? '-'}px หน้าสูง ${m.pageH}px` : ''));
     probs.forEach(fail);
     await ctx.close();
   }

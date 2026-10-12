@@ -31,6 +31,7 @@
   &.on { background: var(--yt-primary); }
 }
 
+:host(.bar) .btn { width: 100%; background: var(--yt-primary-soft); &.on { background: var(--yt-primary); } }   // สูง 48px (min-height ของ .btn)
 :host(.small) .btn { margin-left: auto; }
 :host(.inline) .btn { margin-top: var(--yt-space-2); }
 

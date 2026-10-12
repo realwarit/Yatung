@@ -12,7 +12,7 @@ import { IconComponent } from '../../icon.component';
   selector: 'app-tts-button',
   imports: [IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[class.big]': 'variant() === "big"', '[class.small]': 'variant() === "small"', '[class.inline]': 'variant() === "inline"' },
+  host: { '[class.big]': 'variant() === "big"', '[class.small]': 'variant() === "small"', '[class.inline]': 'variant() === "inline"', '[class.bar]': 'variant() === "bar"' },
   template: `
     @if (tts.hasThai()) {
       <button type="button" class="btn" [class.on]="active()" [attr.aria-pressed]="active()" [attr.aria-label]="aria()" (click)="press()">
@@ -34,7 +34,8 @@ export class TtsButtonComponent {
   readonly ttsKey = input.required<string>();
   /** สร้างท่อนข้อความตอนกด (ไม่คำนวณล่วงหน้า) */
   readonly build = input.required<() => string[]>();
-  readonly variant = input<'big' | 'small' | 'inline'>('small');
+  /** big = เต็มความกว้าง 56px · bar = เต็มความกว้าง 48px (ในการ์ด) · small = ชิดขวา · inline = ใต้ช่องกรอก */
+  readonly variant = input<'big' | 'bar' | 'small' | 'inline'>('small');
 
   protected readonly active = computed(() => this.tts.speaking() && this.tts.speakingKey() === this.ttsKey());
   protected readonly aria = computed(() => (this.active() ? 'หยุดอ่านออกเสียง' : (this.ariaLabel() ?? this.label())));

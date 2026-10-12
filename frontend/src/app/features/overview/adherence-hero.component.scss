@@ -1,44 +1,27 @@
 :host { display: block; }
 
-// ขนาดที่ 375px (html 18px): การ์ด padding 16 · วงแหวน 8rem = 144 · เลขกลาง ≈ 44 · มาสคอต 96 · ข้อความระดับ 20 · ชิป สูง 48
-.hero {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: var(--yt-space-3);
-  padding: var(--yt-space-4);
-}
-.row { display: flex; align-items: center; justify-content: center; gap: var(--yt-space-4); }
+// แถวบนของการ์ดภาพรวม (375px, html 18px): วงแหวน 104px | ข้อความ (19px / 17px) | น้องยาตรง 56px ชิดขวา
+.top { display: flex; align-items: center; gap: var(--yt-space-3); }
 
-.ring { width: 8rem; flex: none; height: auto; }
+.ring { width: 5.78rem; flex: none; height: auto; }   // 104px ที่ ก
 circle { fill: none; stroke-width: 12; }
-.track { stroke: var(--yt-primary-soft); }
-.bar { stroke: var(--yt-primary); stroke-linecap: round; transition: stroke-dasharray 400ms var(--yt-ease); }
-.complete .bar { stroke: var(--yt-success); }
-.big { font: 700 36px var(--yt-font-body); font-variant-numeric: tabular-nums; fill: var(--yt-text); }
-.pct { font-size: 18px; }
-.unit { font: 600 15px var(--yt-font-body); fill: var(--yt-text-muted); }
+.track { stroke: var(--yt-border); }
+.bar {
+  stroke-linecap: round;
+  transition: stroke-dasharray 400ms var(--yt-ease);
+  &.tone-good { stroke: var(--yt-scale-good); }
+  &.tone-mid { stroke: var(--yt-scale-mid); }
+  &.tone-low { stroke: var(--yt-scale-low); }
+}
+.big { font: 700 34px var(--yt-font-body); font-variant-numeric: tabular-nums; fill: var(--yt-text); }
+.pct { font-size: 16px; }
 
+.txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--yt-space-1); }
 .say {
   margin: 0;
-  font: 500 1.1rem / var(--yt-line-height-tight) var(--yt-font-display);   // 20px
+  font: 500 1.05rem / var(--yt-line-height-tight) var(--yt-font-display);   // 19px
   color: var(--yt-primary-deep);
-  text-align: center;
   text-wrap: balance;
 }
-.sub { margin: 0; text-align: center; color: var(--yt-text-muted); }
-
-.chip {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--yt-space-2);
-  align-self: center;
-  min-height: 3rem;   // 48px
-  margin: 0;
-  padding: 0 var(--yt-space-4);
-  border-radius: var(--yt-radius-pill);
-  background: var(--yt-success-soft);
-  color: var(--yt-on-success-soft);
-  font-weight: 600;
-}
+.sub { margin: 0; font-size: 0.95rem; color: var(--yt-text-muted); }       // 17px
+.mascot { flex: none; align-self: center; }

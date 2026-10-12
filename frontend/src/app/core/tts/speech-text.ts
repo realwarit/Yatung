@@ -134,7 +134,7 @@ export function slotSpeech(s: SpeakableSlot): string[] {
 }
 
 /** หน้าสรุป: อ่านตัวเลขเป็นประโยค (ไม่อ่านชื่อยา) */
-export function adherenceSpeech(a: AdherenceResponse): string[] {
+export function adherenceSpeech(a: AdherenceResponse, lineLinked: boolean | null = null): string[] {
   const days = a.range.days;
   if (a.overall.rate === null) return chunkSpeech([`สรุปการกินยา ${days} วันค่ะ`, 'ยังไม่มีข้อมูลยาในช่วงนี้ค่ะ']);
   const parts = [
@@ -143,7 +143,7 @@ export function adherenceSpeech(a: AdherenceResponse): string[] {
     `กินแล้ว ${a.overall.taken} ครั้ง จากที่ถึงเวลา ${a.overall.due} ครั้ง`,
   ];
   if (a.streak_days > 0) parts.push(`กินครบต่อเนื่อง ${a.streak_days} วันแล้วค่ะ`);
-  parts.push(levelOf(a.overall.rate).text);
+  parts.push(levelOf(a.overall.rate, lineLinked).text);
   return chunkSpeech(parts);
 }
 

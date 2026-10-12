@@ -146,6 +146,6 @@ test('adherence-level: ตารางข้อความ 5 ระดับ �
   assert.deepStrictEqual([100, 99, 80, 79, 50, 49, 0, null].map((r) => levelOf(r).key), ['perfect', 'good', 'good', 'ok', 'ok', 'low', 'low', 'none']);
   assert.strictEqual(levelOf(100).text, 'เยี่ยมมากค่ะ กินครบทุกมื้อเลย');
   assert.strictEqual(levelOf(85).pose, 'cheer');
-  assert.strictEqual(levelOf(30).text, 'ให้น้องยาตรงช่วยเตือนใน LINE นะคะ');
+  assert.strictEqual(levelOf(30).text, 'พรุ่งนี้ลองใหม่นะคะ');   // LINE = เชื่อมแล้วเสมอ
   for (const r of [100, 90, 60, 10, null]) assert.ok(!/(ลืม|แย่|ไม่ดี|ผิด)/.test(levelOf(r).text));
 });

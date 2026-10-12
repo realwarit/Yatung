@@ -4,28 +4,15 @@
     <ul>
       @for (m of meds(); track m.medication_id) {
         <li>
-          <p class="name">{{ m.name }}@if (m.strength) { <span class="strength"> {{ m.strength }}</span> }@if (!m.is_active) { <span class="stopped"> (หยุดใช้แล้ว)</span> }</p>
-          <div class="track" aria-hidden="true"><div class="fill" [style.width.%]="width(m)"></div></div>
-          <p class="line">
-            <span>
-              @if (m.due > 0) { กิน <span class="num">{{ m.taken }}</span> จาก <span class="num">{{ m.due }}</span> ครั้ง }
-              @else { ยังไม่มีรอบที่ถึงเวลา }
-            </span>
-            <span class="rate num">{{ m.rate === null ? '–' : m.rate + '%' }}</span>
-          </p>
+          <div class="row">
+            <p class="name">{{ m.name }}@if (m.strength) { <span class="muted"> {{ m.strength }}</span> }@if (!m.is_active) { <span class="muted"> (หยุดใช้แล้ว)</span> }</p>
+            <p class="cnt num" [class]="'cnt num ink-' + tone(m)">{{ m.due > 0 ? m.taken + '/' + m.due : '–' }}</p>
+          </div>
+          <div class="track" aria-hidden="true"><div [class]="'fill tone-' + tone(m)" [style.width.%]="width(m)"></div></div>
+          <span class="sr-only">{{ m.due > 0 ? 'กิน ' + m.taken + ' จาก ' + m.due + ' ครั้ง' : 'ยังไม่มีรอบที่ถึงเวลา' }}</span>
         </li>
       }
     </ul>
-  </section>
-}
-
-@if (anySource()) {
-  <section class="src yt-card" aria-labelledby="h-src">
-    <h2 id="h-src">ช่องทางที่บันทึกว่ากินแล้ว</h2>
-    <ul class="chips">
-      @for (g of groups(); track g.key) {
-        <li class="chip">{{ g.label }} <span class="num">{{ g.count }}</span></li>
-      }
-    </ul>
+    @if (line()) { <p class="src">{{ line() }}</p> }
   </section>
 }
