@@ -18,6 +18,8 @@ export class AdherenceHeroComponent {
   readonly taken = input(0);
   readonly due = input(0);
   readonly days = input(7);
+  /** กินครบติดกันกี่วัน — แสดงบรรทัดเล็กเมื่อ ≥ 2 */
+  readonly streak = input(0);
   /** เชื่อม LINE แล้วหรือยัง (null = ไม่ทราบ) — มีผลกับข้อความเมื่ออัตราต่ำกว่า 50 */
   readonly linked = input<boolean | null>(null);
 

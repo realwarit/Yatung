@@ -71,10 +71,10 @@ for (const state of only.length ? only : Object.keys(STATES)) {
         const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
         if (!own) continue;
         const fs = parseFloat(getComputedStyle(el).fontSize);
-        if (fs < (el.closest('.src') ? 15 : 16)) out.small.push(`${el.textContent.trim().slice(0, 20)}=${fs}px`);
+        if (fs < 16) out.small.push(`${el.textContent.trim().slice(0, 20)}=${fs}px`);
       }
       for (const el of document.querySelectorAll('app-overview-page button, app-overview-page a')) {
-        const r = el.getBoundingClientRect(); if (r.width && (r.width < 48 || r.height < 48)) out.taps.push(`${el.textContent.trim().slice(0, 20) || el.getAttribute('aria-label')?.slice(0, 20)} ${Math.round(r.width)}x${Math.round(r.height)}`);
+        const r = el.getBoundingClientRect(); if (r.width && (r.width < (el.closest('.taps') && r.height >= 100 ? 44 : 48) || r.height < 48)) out.taps.push(`${el.textContent.trim().slice(0, 20) || el.getAttribute('aria-label')?.slice(0, 20)} ${Math.round(r.width)}x${Math.round(r.height)}`);
       }
       out.lblH = [...document.querySelectorAll('.lbl')].map((e) => Math.round(e.getBoundingClientRect().height));
       out.barH = [...document.querySelectorAll('.area')].map((e) => Math.round(e.getBoundingClientRect().height));

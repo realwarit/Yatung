@@ -11,6 +11,9 @@
     @if (due() > 0) {
       <p class="sub">กินแล้ว <span class="num">{{ taken() }}</span> จาก <span class="num">{{ due() }}</span> ครั้ง</p>
     }
+    @if (streak() >= 2) {
+      <p class="streak">กินครบติดกัน <span class="num">{{ streak() }}</span> วัน</p>
+    }
   </div>
   <app-mascot class="mascot" [mood]="level().mood" [size]="56" />
 </div>

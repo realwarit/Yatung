@@ -1,8 +1,8 @@
 :host { display: block; }
 
-// ขนาดที่ 375px (html 18px): คอลัมน์ 7 × 48–50 (page padding 12 · กราฟเต็มความกว้างการ์ด) · แท่งสูงสุด 96px (5.33rem) กว้าง 26px · เลขบนแท่ง 18px ห่างหัวแท่ง 4px · ป้ายวัน 2 บรรทัด 16/18px
-.chart { margin: 0 calc(var(--yt-space-3) * -1); }   // ยื่นเต็มความกว้างการ์ด (การ์ดมี padding ข้าง 12px)
-figcaption { padding: 0 var(--yt-space-3); }
+// ขนาดที่ 375px (html 18px): คอลัมน์ 7 × ≈ 47 ที่ 360px / 49 ที่ 375px (กราฟชิดขอบการ์ด) — แคบกว่า 48px ได้เพราะปุ่มแตะสูงเกิน 100px (ข้อยกเว้นใน CLAUDE.md) · แท่งสูงสุด 96px (5.33rem) กว้าง 26px · เลขบนแท่ง 18px ห่างหัวแท่ง 4px · ป้ายวัน 2 บรรทัด 16/18px
+.chart { margin: 0 calc(var(--yt-space-4) * -1); }   // ชิดขอบการ์ด (margin ติดลบเท่า padding การ์ด 16px)
+figcaption { padding: 0 var(--yt-space-4); }
 h3 { margin: 0 0 var(--yt-space-2); font: 600 1rem / var(--yt-line-height-tight) var(--yt-font-display); }   // 18px
 
 .plot { position: relative; --bar-max: 5.33rem; }
@@ -74,7 +74,7 @@ h3 { margin: 0 0 var(--yt-space-2); font: 600 1rem / var(--yt-line-height-tight)
   align-items: center;
   gap: var(--yt-space-2);
   min-height: 3rem;
-  margin: var(--yt-space-3) var(--yt-space-3) 0;
+  margin: var(--yt-space-3) var(--yt-space-4) 0;
 }
 .dl { font-weight: 700; }
 .chip {

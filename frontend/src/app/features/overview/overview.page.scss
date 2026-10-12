@@ -1,13 +1,12 @@
 :host { display: block; container-type: inline-size; }
 
 // หน้านี้มี 2 การ์ด (ภาพรวม+รายวัน / แยกตามยา) — ที่ 375px ก ยาวไม่เกินประมาณ 1.5 จอ
-.yt-page { padding-inline: var(--yt-space-3); }   // 12px: เพื่อให้คอลัมน์กราฟ 7 แท่งกว้าง ≥ 48px (พื้นที่แตะ) แม้จอ 360px
 .head { margin-bottom: var(--yt-space-3); }
 .title { margin: 0; font: 600 1.45rem / var(--yt-line-height-tight) var(--yt-font-display); color: var(--yt-text); }   // 26px
 .range { margin: 0; font-size: 0.9rem; color: var(--yt-text-muted); }                                              // 16px
 
 .grid { display: grid; gap: var(--yt-space-3); grid-template-columns: minmax(0, 1fr); max-width: 40rem; margin: 0 auto; }
-.card { display: flex; flex-direction: column; gap: var(--yt-space-3); padding: var(--yt-space-4) var(--yt-space-3); }
+.card { display: flex; flex-direction: column; gap: var(--yt-space-3); padding: var(--yt-space-4); }
 .sep { width: 100%; margin: 0; border: 0; border-top: 1px solid var(--yt-border); }
 
 // ข้อสังเกตมื้อ: บรรทัดเดียวในการ์ด ไม่มีกล่องสี

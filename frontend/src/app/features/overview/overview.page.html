@@ -16,7 +16,7 @@
     <div class="grid yt-enter">
       <!-- การ์ด 1: ภาพรวม + รายวัน -->
       <section class="card yt-card" aria-label="ภาพรวมและรายวัน">
-        <app-adherence-hero [rate]="d.overall.rate" [taken]="d.overall.taken" [due]="d.overall.due" [days]="d.range.days" [linked]="lineLinked()" />
+        <app-adherence-hero [rate]="d.overall.rate" [taken]="d.overall.taken" [due]="d.overall.due" [days]="d.range.days" [streak]="d.streak_days" [linked]="lineLinked()" />
         <app-tts-button variant="bar" label="อ่านสรุปให้ฟัง" ttsKey="overview" [build]="speak" />
 
         @if (empty()) {
