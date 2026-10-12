@@ -36,7 +36,8 @@
 
   <p class="detail" role="status" aria-live="polite">{{ detail() }}</p>
 
-  <table class="sr-only">
+  <div class="sr-only">
+  <table>
     <caption>ตารางอัตราการกินยารายวัน</caption>
     <thead><tr><th scope="col">วัน</th><th scope="col">กินแล้ว</th><th scope="col">ลืม</th><th scope="col">ยังไม่กิน</th><th scope="col">ยังไม่ถึงเวลา</th><th scope="col">อัตรา</th></tr></thead>
     <tbody>
@@ -45,4 +46,5 @@
       }
     </tbody>
   </table>
+  </div>
 </figure>

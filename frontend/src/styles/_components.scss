@@ -126,6 +126,7 @@
   max-width: 72rem;
   margin: 0 auto;
   padding: var(--yt-space-2) var(--yt-space-4) var(--yt-space-5);
+  overflow-x: clip;   // ตาข่ายกันพลาดเท่านั้น (clip ไม่ใช่ hidden เพื่อไม่ให้ sticky เสีย) — ต้นเหตุต้องแก้ที่ตัวที่ล้น ตรวจด้วย tools/overflow-check.mjs
 
   // มือถือ: เว้นล่าง = ความสูงแถบเมนู + ส่วนที่ปุ่มกล้องยื่นขึ้น + safe-area (--yt-bottom-clearance) เหมือนกันทุกหน้า ปุ่มสุดท้ายจึงไม่ถูกแถบ/ปุ่มสแกนบัง
   // หน้าโฟกัส (ซ่อนแถบเมนู: /scan, /review) ShellComponent ใส่ class .focus ที่ host → ใช้ระยะปกติ

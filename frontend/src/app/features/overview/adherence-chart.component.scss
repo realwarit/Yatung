@@ -74,4 +74,5 @@ h2 { font-size: 1.3rem; }
   border: 2px solid var(--yt-primary-soft);
 }
 
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+// sr-only มาตรฐาน: ใส่ที่ <div> ครอบตาราง (ไม่ใส่ที่ <table> เอง — ตารางไม่ยอมย่อความกว้างเป็น 1px จึงดันหน้าให้กว้างและเลื่อนซ้ายขวาได้)
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }

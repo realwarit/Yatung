@@ -2,7 +2,7 @@
 
 .progress { display: flex; flex-direction: column; align-items: center; gap: var(--yt-space-3); padding: var(--yt-space-4); }
 .progress__row { display: flex; align-items: center; justify-content: center; gap: var(--yt-space-4); }
-app-progress-ring { width: 8rem; }
+app-progress-ring { width: min(8rem, 44%); }   // ไม่ใช้ 8rem ตายตัว: ที่ 320px ก++ วงแหวน+น้องยาตรงกว้างเกินจอ
 .say {
   position: relative;
   align-self: stretch;
