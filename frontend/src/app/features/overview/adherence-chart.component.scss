@@ -1,6 +1,6 @@
 :host { display: block; }
 
-// ขนาดที่ 375px (html 18px): คอลัมน์ 7 × 49 (การ์ดไม่มี padding ข้าง) · ตัวเลข 18 · แถวไอคอน 24 · แท่งสูงสุด 150 (8.33rem) กว้าง 32 · แถวป้าย min-height คงที่
+// ขนาดที่ 375px (html 18px): คอลัมน์ 7 × 49 (การ์ดไม่มี padding ข้าง) · ตัวเลข 18 · แถวไอคอน 24 · แท่งสูงสุด 150 (8.33rem) กว้าง 32 · แถวป้ายมีตัวจองที่ "● วันนี้" ทุกคอลัมน์
 .chart { margin: 0; padding: var(--yt-space-4) 0 var(--yt-space-4); }
 figcaption { padding: 0 var(--yt-space-4); }
 h2 { font-size: 1.3rem; }

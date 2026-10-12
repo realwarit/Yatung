@@ -21,7 +21,7 @@
           <span class="lbl">
             <span>{{ dow(d) }}</span>
             <span class="num">{{ dayNo(d) }}</span>
-            <span class="now">@if (d.is_today) { <span aria-hidden="true">●</span><span>วันนี้</span> }</span>
+            <span class="now" [class.ph]="!d.is_today"><span aria-hidden="true">●</span><span>วันนี้</span></span>
           </span>
         </div>
       }
