@@ -15,9 +15,9 @@ import { DoseQtyPipe, MealLabelPipe, SlotLabelPipe } from '../../core/i18n/label
 import { clockTime, duration, greeting, parseServerTime, thaiDate, toServerTime } from '../../core/time';
 import { ConfettiComponent } from '../../shared/components/confetti/confetti.component';
 import { MascotComponent, MascotMood } from '../../shared/components/mascot/mascot.component';
-import { ProgressRingComponent } from '../../shared/components/progress-ring/progress-ring.component';
 import { IconComponent, IconName } from '../../shared/icon.component';
 import { DoseCardComponent, DoseState } from './dose-card.component';
+import { TodayProgressComponent } from './today-progress.component';
 import { hasMultipleTimes, slotTimeLabel } from './slot-time';
 import { lowStockText } from './low-stock';
 
@@ -35,8 +35,8 @@ interface SlotVM {
 
 @Component({
   selector: 'app-today-page',
-  imports: [RouterLink, MatButton, IconComponent, MascotComponent, ProgressRingComponent, ConfettiComponent,
-    DoseCardComponent, DoseQtyPipe, MealLabelPipe, SlotLabelPipe],
+  imports: [RouterLink, MatButton, IconComponent, MascotComponent, ConfettiComponent,
+    DoseCardComponent, TodayProgressComponent, DoseQtyPipe, MealLabelPipe, SlotLabelPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './today.page.html',
   styleUrl: './today.page.scss',

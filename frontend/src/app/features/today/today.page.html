@@ -29,29 +29,8 @@
     <div class="layout yt-enter">
       <!-- ความคืบหน้า + รอบถัดไป (จอกว้าง: คอลัมน์ขวา sticky) -->
       <div class="aside">
-        <section class="progress yt-card" aria-label="ความคืบหน้าวันนี้">
-          <div class="progress__row">
-            <app-progress-ring [done]="taken()" [total]="total()" />
-            <app-mascot [mood]="mood()" [size]="130" />
-          </div>
-          <p class="say" aria-hidden="true">{{ bubble() }}</p>
-        </section>
-
-        <div class="next" [class.next--late]="notTaken() > 0" [class.next--done]="allDone()" role="status">
-          @if (total() === 0) {
-            <p><app-icon name="clock" /> <span>วันนี้ไม่มีรอบกินยาที่ต้องเตือน</span></p>
-          } @else if (allDone()) {
-            <p><app-icon name="check" /> <span>กินครบทุกรอบแล้ว</span></p>
-          } @else {
-            @if (notTaken() > 0) {
-              <p class="next__late"><app-icon name="alert" /> <span>ยังมี <span class="num">{{ notTaken() }}</span> รายการที่ยังไม่ได้กิน</span></p>
-              <button type="button" class="next__go" (click)="goFirstNotTaken()">ดูรายการ</button>
-            }
-            @if (next(); as n) {
-              <p><app-icon name="clock" /> <span>รอบถัดไป: {{ n.label }} <span class="num">{{ n.time }}</span> (อีก {{ n.remain }})</span></p>
-            }
-          }
-        </div>
+        <app-today-progress [taken]="taken()" [total]="total()" [mood]="mood()" [bubble]="bubble()" [notTaken]="notTaken()" [allDone]="allDone()"
+                            [next]="next()" (goFirst)="goFirstNotTaken()" />
       </div>
 
       <div class="list">
