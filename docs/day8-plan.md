@@ -209,3 +209,9 @@ GROUP BY d.scheduled_date, d.slot, d.medication_id, d.source
 12. ngsw.json ไม่มี /api — มีเทสใน test-day8.sh
 
 กติกา: ทำ 8A → รายงาน → commit → หยุดรอรีวิวก่อน 8B; ถามก่อนรัน test-day8.sh / test-all.sh / push / เปิด PR; หยุด nodered ก่อนแก้ flows.json
+
+## งานเพิ่มสำหรับ 8C (จากรีวิว 8A ของชีฟ — ยังไม่ทำจนถึง 8C)
+
+- `demo-check.sh` เพิ่มหัวข้อ **"เวลาฐานข้อมูล"**: แสดง `@@global.time_zone` และ `@@session.time_zone` (ของ connection ที่แอปใช้ = pool ของ `lib/db.js`) แล้วเทียบ `NOW()` ของ MySQL กับเวลาไทยจาก JS ถ้าต่างกันเกิน 2 นาที ขึ้น ❌ พร้อมข้อความว่า "คิวรีเดิมที่ใช้ NOW() จะนับผิดวัน"
+- **ห้ามแก้คิวรี `NOW()`/`CURDATE()` เดิม (~50 จุด) ในวันที่ 8**
+- (เสนอ ยังไม่ทำ) หน้าสรุป: แถวป้ายใต้แท่งใช้ตัวจองที่ (placeholder `visibility:hidden` ของบรรทัด "วันนี้" ในทุกคอลัมน์) แทน `min-height: 6.2rem` เพื่อให้สูงเท่ากันโดยโครงสร้างและขยายตามขนาดตัวอักษรเอง

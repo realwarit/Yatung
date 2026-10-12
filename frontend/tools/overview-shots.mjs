@@ -82,6 +82,24 @@ for (const state of only.length ? only : Object.keys(STATES)) {
       out.areaW = document.querySelector('.col') ? Math.round(document.querySelector('.col').getBoundingClientRect().width) : null;
       return out;
     });
+    if (args.includes('--fonts')) {
+      const f = await page.evaluate(() => {
+        const rows = new Map();
+        for (const el of document.querySelectorAll('app-overview-page *')) {
+          if (el.closest('.sr-only') || el.closest('svg')) continue;
+          const own = [...el.childNodes].filter((n) => n.nodeType === 3 && n.textContent.trim()).map((n) => n.textContent.trim()).join(' ');
+          if (!own) continue;
+          const px = Math.round(parseFloat(getComputedStyle(el).fontSize) * 10) / 10;
+          const where = (el.closest('[class]')?.className?.toString() || el.tagName).split(' ')[0] + '>' + (el.className?.toString().split(' ')[0] || el.tagName.toLowerCase());
+          const k = px + '|' + where;
+          if (!rows.has(k)) rows.set(k, own.slice(0, 28));
+        }
+        const lbl = document.querySelector('.col:last-child .lbl'), parts = [...(lbl?.children || [])].map((c) => c.className + ':' + Math.round(c.getBoundingClientRect().height));
+        return { rows: [...rows.entries()].sort((x, y) => parseFloat(x[0]) - parseFloat(y[0])), lbl: lbl ? Math.round(lbl.getBoundingClientRect().height) : null, parts, nowH: Math.round(document.querySelector('.now')?.getBoundingClientRect().height ?? 0), line: getComputedStyle(lbl || document.body).lineHeight };
+      });
+      console.log('--- ขนาดตัวอักษร (px | ที่ | ตัวอย่างข้อความ)'); for (const [k, t] of f.rows) console.log('  ' + k.replace('|', ' | ') + ' | ' + t);
+      console.log('--- แถวป้ายใต้แท่ง (คอลัมน์วันนี้) สูงรวม', f.lbl, 'line-height', f.line, 'ส่วนประกอบ', f.parts.join(', '), 'วันนี้สูง', f.nowH);
+    }
     const tag = `${state} ${w}x${h} s${scale}`;
     const probs = [];
     if (m.overflowX > 0) probs.push(`หน้าล้นแนวนอน ${m.overflowX}px`);
