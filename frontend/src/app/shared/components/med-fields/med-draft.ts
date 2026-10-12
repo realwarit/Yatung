@@ -2,11 +2,13 @@ import { MedicationInput } from '../../../core/api/models';
 import { DoseUnit, MealRelation, Slot } from '../../../core/api/medicine-parse.model';
 import { MEAL_LABEL, SLOT_LABEL, SLOT_ORDER, doseText, thaiJoin, unitInDose } from '../../../core/i18n/labels';
 
-export type MedField = 'name' | 'strength' | 'dose' | 'unit' | 'meal' | 'slots' | 'indication' | 'warnings' | 'total';
+export type MedField = 'name' | 'strength' | 'dose' | 'unit' | 'meal' | 'slots' | 'indication' | 'warnings' | 'total' | 'tts';
 
 /** ค่าในฟอร์มยา (ใช้ร่วมกันระหว่างหน้าเพิ่ม/แก้ไขยาและหน้า Review) — dose/meal ว่างได้เมื่อ AI อ่านไม่ได้ */
 export interface MedDraft {
   name: string;
+  /** ชื่อที่ให้อ่านออกเสียง (ไม่บังคับ) */
+  ttsName: string;
   strength: string;
   dose: number | null;
   unit: DoseUnit;
@@ -20,14 +22,14 @@ export interface MedDraft {
 }
 
 export const EMPTY_DRAFT: MedDraft = {
-  name: '', strength: '', dose: 1, unit: 'tablet', meal: 'after', asNeeded: false,
+  name: '', ttsName: '', strength: '', dose: 1, unit: 'tablet', meal: 'after', asNeeded: false,
   slots: ['morning'], indication: '', warnings: '', total: null,
 };
 
 // backend ตอบ error เป็นข้อความเดียว ไม่ระบุฟิลด์ → จับจากคำขึ้นต้นเพื่อแสดงใต้ช่องที่ผิด
 // ถ้าแก้ข้อความใน validate-medication.js ต้องแก้ตารางนี้ด้วย (ตัดคำนำหน้า "รายการที่ N: " ออกก่อนเทียบ)
 const FIELD_BY_MESSAGE: [RegExp, MedField][] = [
-  [/^ชื่อยา/, 'name'], [/^ความแรง/, 'strength'], [/^ปริมาณ/, 'dose'], [/^หน่วย/, 'unit'], [/^เวลากิน/, 'meal'],
+  [/^ชื่อที่ให้อ่านออกเสียง/, 'tts'], [/^ชื่อยา/, 'name'], [/^ความแรง/, 'strength'], [/^ปริมาณ/, 'dose'], [/^หน่วย/, 'unit'], [/^เวลากิน/, 'meal'],
   [/^(มื้อที่กิน|ยาที่กินเมื่อ|ต้องเลือกมื้อ)/, 'slots'], [/^ข้อบ่งใช้/, 'indication'], [/^คำเตือน/, 'warnings'],
   [/^จำนวนยา/, 'total'],
 ];
@@ -51,6 +53,7 @@ export function previewText(d: MedDraft): string {
 export function toMedicationInput(d: MedDraft): MedicationInput {
   return {
     name: d.name.trim(),
+    tts_name: d.ttsName.trim() || null,
     strength: d.strength.trim() || null,
     dose_per_time: d.dose ?? 0,
     unit: d.unit,

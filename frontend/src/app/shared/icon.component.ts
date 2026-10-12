@@ -6,7 +6,7 @@ export type IconName =
   | 'alert' | 'check' | 'info' | 'pill'
   | 'sunrise' | 'sun' | 'sunset' | 'moon' | 'today' | 'chart' | 'sliders' | 'plus' | 'minus'
   | 'chevron-down' | 'logout' | 'clock' | 'undo' | 'edit' | 'ban' | 'bell' | 'dots' | 'thermometer'
-  | 'layers' | 'level' | 'bulb' | 'type' | 'trash' | 'image' | 'close' | 'arrow-right' | 'search' | 'share' | 'add-square';
+  | 'layers' | 'level' | 'bulb' | 'type' | 'trash' | 'image' | 'close' | 'arrow-right' | 'search' | 'share' | 'add-square' | 'volume' | 'stop';
 
 // เส้นไอคอนแบบ inline SVG (ไม่พึ่งฟอนต์ภายนอก ใช้ได้ออฟไลน์) — markup เป็นค่าคงที่ในไฟล์นี้เท่านั้น
 const PATHS: Record<IconName, string> = {
@@ -18,6 +18,8 @@ const PATHS: Record<IconName, string> = {
   camera: '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/>',
   chat: '<path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-8l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="M8 10h8M8 13h5"/>',
   heart: '<path d="M12 20s-8-4.8-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 9c0 6.2-8 11-8 11z"/>',
+  volume: '<path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/>',
+  stop: '<rect x="6" y="6" width="12" height="12" rx="2.5"/>',
   alert: '<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.6v.4"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.4"/>',

@@ -10,13 +10,15 @@ import { AdherenceChartComponent } from './adherence-chart.component';
 import { AdherenceHeroComponent } from './adherence-hero.component';
 import { hasData, worstMeal } from './adherence-level';
 import { MedBreakdownComponent } from './med-breakdown.component';
+import { TtsButtonComponent } from '../../shared/components/tts-button/tts-button.component';
+import { adherenceSpeech } from '../../core/tts/speech-text';
 
 const DAYS = 7;
 
 /** หน้า "สรุป" — อัตราการกินยา 7 วัน (ตัวเลขจาก GET /api/stats/adherence นิยามเดียวกับ LINE "สรุป") */
 @Component({
   selector: 'app-overview-page',
-  imports: [RouterLink, MatButton, IconComponent, MascotComponent, AdherenceHeroComponent, AdherenceChartComponent, MedBreakdownComponent],
+  imports: [RouterLink, MatButton, IconComponent, MascotComponent, AdherenceHeroComponent, AdherenceChartComponent, MedBreakdownComponent, TtsButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './overview.page.html',
   styleUrl: './overview.page.scss',
@@ -33,6 +35,8 @@ export class OverviewPage {
   protected readonly empty = computed(() => !hasData(this.data()));
   /** ข้อสังเกตมื้อ: มื้อ rate ต่ำสุดที่ < 100 และ due ≥ 2 */
   protected readonly worst = computed(() => { const d = this.data(); return d ? worstMeal(d.by_meal) : null; });
+
+  protected readonly speak = (): string[] => { const d = this.data(); return d ? adherenceSpeech(d) : []; };
 
   constructor() { this.load(); }
 

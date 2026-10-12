@@ -16,6 +16,8 @@ import { clockTime, duration, greeting, parseServerTime, thaiDate, toServerTime 
 import { ConfettiComponent } from '../../shared/components/confetti/confetti.component';
 import { MascotComponent, MascotMood } from '../../shared/components/mascot/mascot.component';
 import { IconComponent, IconName } from '../../shared/icon.component';
+import { TtsButtonComponent } from '../../shared/components/tts-button/tts-button.component';
+import { SpeakableSlot, slotSpeech, todaySpeech } from '../../core/tts/speech-text';
 import { DoseCardComponent, DoseState } from './dose-card.component';
 import { TodayProgressComponent } from './today-progress.component';
 import { AdherenceCardComponent } from './adherence-card.component';
@@ -37,7 +39,7 @@ interface SlotVM {
 @Component({
   selector: 'app-today-page',
   imports: [RouterLink, MatButton, IconComponent, MascotComponent, ConfettiComponent,
-    DoseCardComponent, TodayProgressComponent, AdherenceCardComponent, DoseQtyPipe, MealLabelPipe, SlotLabelPipe],
+    DoseCardComponent, TodayProgressComponent, AdherenceCardComponent, TtsButtonComponent, DoseQtyPipe, MealLabelPipe, SlotLabelPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './today.page.html',
   styleUrl: './today.page.scss',
@@ -103,6 +105,20 @@ export class TodayPage {
       };
     });
   });
+
+  /** ข้อมูลสำหรับอ่านออกเสียง (ใช้สถานะจากเซิร์ฟเวอร์ ไม่ใช่สถานะที่คำนวณฝั่ง client) */
+  private readonly speakable = computed<SpeakableSlot[]>(() => (this.data()?.slots ?? []).map((s) => ({ slot: s.slot, time: s.time, doses: s.doses })));
+  protected readonly speakAll = (): string[] => todaySpeech(this.speakable());
+  private readonly slotBuilders = new Map<Slot, () => string[]>();
+  /** ฟังก์ชันสร้างข้อความของมื้อ (อ้างอิงคงที่ต่อมื้อ ไม่สร้างใหม่ทุกรอบ change detection) */
+  protected speakSlot(slot: Slot): () => string[] {
+    let fn = this.slotBuilders.get(slot);
+    if (!fn) {
+      fn = () => { const s = this.speakable().find((x) => x.slot === slot); return s ? slotSpeech(s) : []; };
+      this.slotBuilders.set(slot, fn);
+    }
+    return fn;
+  }
 
   protected readonly total = computed(() => this.slots().reduce((n, s) => n + s.doses.length, 0));
   protected readonly taken = computed(() =>

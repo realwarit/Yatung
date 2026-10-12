@@ -33,6 +33,7 @@
       <div class="aside">
         <app-today-progress [taken]="taken()" [total]="total()" [mood]="mood()" [bubble]="bubble()" [notTaken]="notTaken()" [allDone]="allDone()"
                             [next]="next()" (goFirst)="goFirstNotTaken()" />
+        <app-tts-button variant="big" label="ฟังยาที่ต้องกินวันนี้" ttsKey="today-all" [build]="speakAll" />
       </div>
 
       <div class="list">
@@ -52,6 +53,7 @@
               </h2>
             }
             @if (!s.collapsed) {
+              <app-tts-button variant="small" label="ฟังมื้อนี้" [ariaLabel]="'ฟังรายการยามื้อ' + (s.slot | slotLabel)" [ttsKey]="'slot-' + s.slot" [build]="speakSlot(s.slot)" />
               <div class="doses">
                 @for (v of s.doses; track v.dose.id) {
                   <app-dose-card [dose]="v.dose" [state]="v.state" [lateMin]="v.lateMin" [takenClock]="v.takenClock" [source]="v.dose.source ?? null"

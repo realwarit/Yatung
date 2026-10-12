@@ -1,0 +1,37 @@
+:host { display: block; }
+:host(.small), :host(.inline) { display: flex; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--yt-space-2);
+  min-height: 3rem;                      // ≥ 48px ที่ฐาน 16px ; ปรับตามปุ่ม ก/ก+/ก++
+  padding: 0 var(--yt-space-4);
+  border: 2px solid var(--yt-primary);
+  border-radius: var(--yt-radius-pill);
+  background: var(--yt-surface);
+  color: var(--yt-primary-dark);
+  font: inherit;
+  font-family: var(--yt-font-display);
+  font-weight: 500;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  --icon-optical-offset: 0;
+
+  &.on { background: var(--yt-primary); color: var(--yt-surface); }
+  &:active { transform: scale(0.98); }
+}
+
+:host(.big) .btn {
+  width: 100%;
+  min-height: var(--yt-tap);
+  font-size: 1.1rem;
+  background: var(--yt-primary-soft);
+  &.on { background: var(--yt-primary); }
+}
+
+:host(.small) .btn { margin-left: auto; }
+:host(.inline) .btn { margin-top: var(--yt-space-2); }
+
+@media (prefers-reduced-motion: reduce) { .btn:active { transform: none; } }

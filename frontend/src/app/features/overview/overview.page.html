@@ -18,6 +18,7 @@
   } @else if (data(); as d) {
     <div class="grid yt-enter">
       <app-adherence-hero [rate]="d.overall.rate" [taken]="d.overall.taken" [due]="d.overall.due" [streak]="d.streak_days" [days]="d.range.days" />
+      <app-tts-button variant="big" label="อ่านสรุปให้ฟัง" ttsKey="overview" [build]="speak" />
 
       @if (empty()) {
         <section class="empty yt-card">

@@ -8,6 +8,8 @@ export type MealRelation = 'before' | 'after' | 'with' | 'any';
 export interface Medication {
   id: number;
   name: string;
+  /** ชื่อที่ให้อ่านออกเสียง (ไม่บังคับ) — null = อ่านจาก name */
+  tts_name: string | null;
   strength: string | null;
   dose_per_time: number;
   unit: DoseUnit;
@@ -34,6 +36,8 @@ export interface Medication {
 
 export interface MedicationInput {
   name: string;
+  /** ไม่ส่ง = คงค่าเดิม (PUT) ; '' / null = ล้างค่า */
+  tts_name?: string | null;
   strength?: string | null;
   dose_per_time: number;
   unit: DoseUnit;
@@ -52,6 +56,7 @@ export interface Dose {
   id: number;
   medication_id: number;
   name: string;
+  tts_name?: string | null;
   strength: string | null;
   dose_per_time: number;
   unit: DoseUnit;

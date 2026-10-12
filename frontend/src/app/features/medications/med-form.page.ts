@@ -69,11 +69,11 @@ export class MedFormPage implements HasUnsavedChanges {
 
   private fill(m: Medication): void {
     this.draft.set({
-      name: m.name, strength: m.strength ?? '', dose: m.dose_per_time, unit: m.unit, meal: m.meal_relation,
+      name: m.name, ttsName: m.tts_name ?? '', strength: m.strength ?? '', dose: m.dose_per_time, unit: m.unit, meal: m.meal_relation,
       asNeeded: m.as_needed, slots: m.slots, indication: m.indication ?? '', warnings: m.warnings.join('\n'),
       total: m.total_qty,
     });
-    this.moreOpen.set(!!(m.strength || m.indication || m.warnings.length || m.total_qty !== null));
+    this.moreOpen.set(!!(m.tts_name || m.strength || m.indication || m.warnings.length || m.total_qty !== null));
     this.initial = this.snapshot();
   }
 
@@ -108,7 +108,7 @@ export class MedFormPage implements HasUnsavedChanges {
         const field = fieldFromMessage(msg);
         if (field) {
           this.errors.set({ [field]: msg });
-          if (['strength', 'indication', 'warnings', 'total'].includes(field)) this.moreOpen.set(true);
+          if (['tts', 'strength', 'indication', 'warnings', 'total'].includes(field)) this.moreOpen.set(true);
           this.focusFirstError();
         } else {
           this.formError.set(msg);

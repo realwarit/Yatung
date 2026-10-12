@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ทดสอบ Day 8A: GET /api/stats/adherence (ตัวเลขทุกช่องตรงตัวกับข้อมูลที่ seed ให้รู้คำตอบ) + LINE "สรุป"
-#   (8B/8C จะเพิ่มหัวข้อ tts_name migration, ngsw.json ไม่มี /api, manifest ต่อท้ายไฟล์นี้)
+#   + 8B: migration 006 tts_name (รันซ้ำได้, init = live) + API ยารับ/คืน tts_name + ไม่รั่วไป LINE  (8C จะเพิ่ม ngsw.json ไม่มี /api, manifest)
 # ใช้ผู้ใช้ทดสอบสุ่มแล้วลบทิ้ง (@example.test) + LINE ปลอม (scripts/fake-line.js) ไม่มี push จริง ไม่กินโควตา ; real-snapshot ตรวจผู้ใช้จริงไม่ถูกแตะ
 #   bash scripts/test-day8.sh
 # ข้อควรระวัง: recreate nodered 2 ครั้ง (ปิด cron จริงชั่วคราว) — อย่ารันใกล้มื้อยา ; ต้องหยุด/เริ่ม nodered หลังแก้ flows.json แล้ว
@@ -247,6 +247,68 @@ expect "ยังไม่เชื่อม: quick reply" "$(qr_labels)" "🔗 
 say "$LA" "ช่วยเหลือ"
 expect_match "เมนูช่วยเหลือมีบรรทัดแนะนำ 'สรุป'" "$REPLY" 'พิมพ์ "สรุป"'
 expect "ตลอดชุดนี้ไม่มี push จริงสักครั้ง (fake-line)" "$(fl_count push)" "0"
+
+# ================= 8B: ชื่อที่ให้อ่านออกเสียง (medications.tts_name) =================
+section "8B: migration 006 รันซ้ำได้ + คอลัมน์ tts_name ใน init = live"
+bash scripts/migrate.sh >/dev/null 2>&1; expect "migrate.sh รันซ้ำ (ครั้งที่ 1) exit" "$?" "0"
+bash scripts/migrate.sh >/dev/null 2>&1; expect "migrate.sh รันซ้ำ (ครั้งที่ 2) exit" "$?" "0"
+rootsql() { docker compose exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" --default-character-set=utf8mb4' 2>/dev/null <<<"$1"; }
+rootsql "DROP DATABASE IF EXISTS yt_schema_test; CREATE DATABASE yt_schema_test;" >/dev/null
+docker compose exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" --default-character-set=utf8mb4 yt_schema_test' < db/init/01_schema.sql 2>/dev/null
+cols() { docker compose exec -T db sh -c "mysql -uroot -p\"\$MYSQL_ROOT_PASSWORD\" -N -B -e \"SELECT ORDINAL_POSITION, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, IFNULL(COLUMN_DEFAULT,'NULL') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='$1' AND TABLE_NAME='$2' ORDER BY ORDINAL_POSITION\"" 2>/dev/null; }
+LIVE_DB="$(docker compose exec -T db sh -c 'echo $MYSQL_DATABASE' | tr -d '')"
+expect "ตาราง medications: คอลัมน์ (ลำดับ/ชนิด/NULL) init = live" "$(cols yt_schema_test medications | md5sum)" "$(cols "$LIVE_DB" medications | md5sum)"
+expect "tts_name เป็น VARCHAR(100) NULL" "$(sql "SELECT CONCAT(COLUMN_TYPE,' ',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='medications' AND COLUMN_NAME='tts_name';")" "varchar(100) YES"
+rootsql "DROP DATABASE yt_schema_test;" >/dev/null
+
+section "8B: API ยารับ/คืน tts_name (ตัดช่องว่าง, ว่าง→null, >100 → 400, PUT ไม่ส่ง = คงเดิม)"
+new_user T; TT="$TOKEN_NEW"
+MBODY='"dose_per_time":1,"unit":"tablet","meal_relation":"after","as_needed":false,"slots":["evening"],"total_qty":30'
+req POST /api/medications "$TT" "{\"name\":\"TEST-8B-ไม่มีชื่ออ่าน\",$MBODY}"
+expect "POST ไม่ส่ง tts_name → 201" "$STATUS" "201"
+expect "POST ไม่ส่ง tts_name → คืน null" "$(jget 'o.tts_name')" "null"
+req POST /api/medications "$TT" "{\"name\":\"TEST-8B-Amlodipine\",\"tts_name\":\"  ยาความดัน  \",$MBODY}"
+expect "POST ส่ง tts_name → 201" "$STATUS" "201"
+expect "POST: tts_name ถูก trim" "$(jget 'o.tts_name')" "ยาความดัน"
+MT="$(jget 'o.id')"
+req GET "/api/medications/$MT" "$TT"
+expect "GET ยา: คืน tts_name" "$(jget 'o.tts_name')" "ยาความดัน"
+req GET /api/medications "$TT"
+expect "GET รายการยา: ทุกตัวมีคีย์ tts_name" "$(jget 'o.every(m => "tts_name" in m)')" "true"
+req PUT "/api/medications/$MT" "$TT" "{\"name\":\"TEST-8B-Amlodipine\",$MBODY}"
+expect "PUT ไม่ส่ง tts_name → 200" "$STATUS" "200"
+expect "PUT ไม่ส่ง tts_name → คงค่าเดิม" "$(jget 'o.tts_name')" "ยาความดัน"
+req PUT "/api/medications/$MT" "$TT" "{\"name\":\"TEST-8B-Amlodipine\",\"tts_name\":\"ยาเบาหวาน\",$MBODY}"
+expect "PUT ส่ง tts_name ใหม่ → เปลี่ยน" "$(jget 'o.tts_name')" "ยาเบาหวาน"
+req PUT "/api/medications/$MT" "$TT" "{\"name\":\"TEST-8B-Amlodipine\",\"tts_name\":\"   \",$MBODY}"
+expect "PUT ส่ง tts_name ว่าง → null" "$(jget 'o.tts_name')" "null"
+req PUT "/api/medications/$MT" "$TT" "{\"name\":\"TEST-8B-Amlodipine\",\"tts_name\":\"ยาความดัน\",$MBODY}"
+req PUT "/api/medications/$MT" "$TT" "{\"name\":\"TEST-8B-Amlodipine\",\"tts_name\":null,$MBODY}"
+expect "PUT ส่ง tts_name = null → ล้างค่า" "$(jget 'o.tts_name')" "null"
+LONG="$(node -e 'process.stdout.write("ก".repeat(101))')"
+req POST /api/medications "$TT" "{\"name\":\"TEST-8B-ยาว\",\"tts_name\":\"$LONG\",$MBODY}"
+expect "tts_name 101 ตัวอักษร → 400" "$STATUS" "400"
+expect_match "ข้อความ error ขึ้นต้นด้วย 'ชื่อที่ให้อ่านออกเสียง' (frontend map เข้าช่อง)" "$(jget 'o.details')" '^ชื่อที่ให้อ่านออกเสียง'
+expect "ชื่อ error code = VALIDATION" "$(jget 'o.error')" "VALIDATION"
+req POST /api/medications "$TT" "{\"name\":\"TEST-8B-ผิดชนิด\",\"tts_name\":5,$MBODY}"
+expect "tts_name ไม่ใช่ข้อความ → 400" "$STATUS" "400"
+LONG100="$(node -e 'process.stdout.write("ก".repeat(100))')"
+req POST /api/medications "$TT" "{\"name\":\"TEST-8B-100\",\"tts_name\":\"$LONG100\",$MBODY}"
+expect "tts_name 100 ตัวอักษร → 201" "$STATUS" "201"
+expect "DB: ยาของผู้ใช้ทดสอบที่ไม่ผ่าน validation ไม่ถูกสร้าง" "$(sql "SELECT COUNT(*) FROM medications WHERE user_id=(SELECT id FROM users WHERE email='${TEST_EMAILS[${#TEST_EMAILS[@]}-1]}') AND name IN ('TEST-8B-ยาว','TEST-8B-ผิดชนิด');")" "0"
+
+section "8B: GET /api/doses/today คืน tts_name · LINE/Web Push ไม่ใช้ tts_name"
+req PUT "/api/medications/$M1" "$TA" "{\"name\":\"TEST-8-ยาหลัก\",\"tts_name\":\"ชื่ออ่านพิเศษ\",\"strength\":\"5 mg\",\"dose_per_time\":1,\"unit\":\"tablet\",\"meal_relation\":\"after\",\"as_needed\":false,\"slots\":[\"morning\",\"evening\"],\"total_qty\":60}"
+expect "ตั้ง tts_name ให้ยาของ A → 200" "$STATUS" "200"
+req GET /api/doses/today "$TA"
+expect "doses/today: dose ของยานั้นมี tts_name" "$(jget 'o.slots.flatMap(s=>s.doses).filter(d=>d.medication_id==='"$M1"').map(d=>d.tts_name).join(",")')" "ชื่ออ่านพิเศษ,ชื่ออ่านพิเศษ"
+expect "doses/today: dose ของยาที่ไม่ตั้ง tts_name = null" "$(jget 'o.slots.flatMap(s=>s.doses).filter(d=>d.medication_id==='"$M2"').map(d=>d.tts_name).join(",")')" "null"
+say "$LA" "วันนี้"
+expect_match "LINE 'วันนี้': ยังแสดงชื่อยาจริง" "$REPLY" 'TEST-8-ยาหลัก'
+expect_nomatch "LINE 'วันนี้': ไม่แสดง tts_name" "$REPLY" 'ชื่ออ่านพิเศษ'
+expect_nomatch "LINE 'วันนี้': ไม่มี tts_name แม้ดูทั้ง JSON" "$(fl_last reply 'JSON.stringify(r.body.messages)')" 'ชื่ออ่านพิเศษ'
+expect "โค้ดที่แตะ tts_name มีเฉพาะ medication/dose/validate (ไม่มี line-*, push, reminder, escalation, stock)" "$(grep -l 'tts_name' node-red/data/lib/*.js | xargs -n1 basename | tr '
+' ' ')" "dose-service.js medication-service.js validate-medication.js "
 
 echo
 echo "สรุป: ผ่าน $PASS · ไม่ผ่าน $FAIL"

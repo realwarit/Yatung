@@ -89,6 +89,7 @@ CREATE TABLE medications (
   user_id          INT UNSIGNED NOT NULL,
   prescription_id  INT UNSIGNED NULL,                    -- NULL = กรอกเอง
   name             VARCHAR(150) NOT NULL,
+  tts_name         VARCHAR(100) NULL,                    -- ชื่อที่ให้อ่านออกเสียง เช่น "ยาความดัน" (NULL = อ่านจาก name)
   strength         VARCHAR(50)  NULL,                    -- เช่น "500 mg"
   dose_per_time    DECIMAL(5,2) NOT NULL DEFAULT 1.00,   -- รองรับครึ่งเม็ด (0.5)
   unit             ENUM('tablet','capsule','ml','teaspoon','tablespoon','sachet','drop','puff','other')
