@@ -52,12 +52,14 @@ for (const [w, h] of sizes) {
     const json = (b) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(b) });
     if (u === '/api/doses/today') return json(today);
     if (u === '/api/medications') return json(meds);
+    if (u === '/api/stats/adherence') return json({ overall: { taken: 13, missed: 2, pending_due: 2, due: 17, rate: 76 } });
     return json({});
   });
   await page.goto(BASE + '/today');
   await page.waitForSelector('app-dose-card');
   await page.addStyleTag({ content: '*{animation:none!important;transition:none!important}' });
   await page.waitForTimeout(500);
+  if (mode === 'card') { const t = await page.evaluate(() => { const a = document.querySelector('app-adherence-card a'); const r = a?.getBoundingClientRect(); return a ? `${a.textContent.trim()} ${Math.round(r.width)}x${Math.round(r.height)} href=${a.getAttribute('href')}` : 'ไม่พบการ์ด'; }); console.log('การ์ด 7 วัน:', t); }
   if (mode !== 'diff') {
     const file = `${OUT}today-${mode}-${w}x${h}-s${scale}.png`;
     await page.screenshot({ path: file, fullPage: true });

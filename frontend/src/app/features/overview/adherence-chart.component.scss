@@ -1,0 +1,77 @@
+:host { display: block; }
+
+// ขนาดที่ 375px (html 18px): คอลัมน์ 7 × 49 (การ์ดไม่มี padding ข้าง) · ตัวเลข 18 · แถวไอคอน 24 · แท่งสูงสุด 150 (8.33rem) กว้าง 32 · แถวป้าย min-height คงที่
+.chart { margin: 0; padding: var(--yt-space-4) 0 var(--yt-space-4); }
+figcaption { padding: 0 var(--yt-space-4); }
+h2 { font-size: 1.3rem; }
+.axis { margin: 0 0 var(--yt-space-3); color: var(--yt-text-muted); }
+
+.plot { position: relative; }
+.bars, .taps { display: grid; }
+.taps { position: absolute; inset: 0; }
+.taps button {
+  min-width: 0;
+  border: 0;
+  border-radius: var(--yt-radius-sm);
+  background: transparent;
+  cursor: pointer;
+  &.on { box-shadow: inset 0 0 0 3px var(--yt-primary); background: rgb(var(--yt-primary-rgb) / 0.06); }
+}
+
+.col { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.val { font-size: 1rem; line-height: 1.7rem; font-weight: 700; }
+.mark { display: flex; align-items: center; justify-content: center; height: 1.4rem; }
+.ok { color: var(--yt-success); }
+.bad { color: var(--yt-danger); }
+
+.area {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 8.33rem;
+  // เส้นอ้างอิง 100%
+  &::before { content: ''; position: absolute; inset: 0 0 auto; border-top: 1px dashed var(--yt-border-strong); opacity: 0.5; }
+}
+.bar {
+  position: relative;
+  width: 1.78rem;
+  min-height: 0.45rem;
+  border-radius: 8px 8px 2px 2px;
+  &.tone-good { background: var(--yt-primary); }
+  &.tone-mid { background: var(--yt-warning); }
+  &.tone-low { background: var(--yt-danger); }
+  // วันนี้: ลายทางเฉียง + กรอบ (ไม่ใช้สีอย่างเดียว)
+  &.today {
+    background-image: repeating-linear-gradient(45deg, transparent 0 6px, rgb(255 255 255 / 0.55) 6px 12px);
+    outline: 3px solid var(--yt-primary-dark);
+    outline-offset: 1px;
+  }
+}
+// วันไม่มียา: ไม่วาดแท่ง มีเส้นประที่ฐาน
+.empty { width: 1.78rem; border-bottom: 3px dashed var(--yt-border-strong); }
+
+.lbl {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 6.2rem;   // 3 บรรทัด + "วันนี้" ตัดบรรทัดได้ — กันแท่งแต่ละวันสูงไม่เท่ากันที่ ก++
+  margin-top: var(--yt-space-1);
+  font-size: 1rem;
+  line-height: 1.5;
+  text-align: center;
+  }
+// "● วันนี้": จุดอยู่บรรทัดบน ข้อความไม่ตัดกลางคำ (ที่ ก++ คอลัมน์ 49px ยังพอ)
+.now { display: flex; flex-direction: column; align-items: center; color: var(--yt-primary-dark); font-size: 0.9rem; font-weight: 700; white-space: nowrap; line-height: 1.4; }
+
+.detail {
+  margin: var(--yt-space-3) var(--yt-space-4) 0;
+  padding: var(--yt-space-3) var(--yt-space-4);
+  min-height: 4rem;
+  border-radius: var(--yt-radius-sm);
+  background: var(--yt-primary-softer);
+  border: 2px solid var(--yt-primary-soft);
+}
+
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

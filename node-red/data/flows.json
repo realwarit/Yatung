@@ -6554,5 +6554,171 @@
         "y": 1215,
         "w": 1520,
         "h": 90
+    },
+    {
+        "id": "tab_dash",
+        "type": "tab",
+        "label": "5-Dashboard",
+        "disabled": false,
+        "info": "สถิติอัตราการกินยา (วันที่ 8A): GET /api/stats/adherence?days=7 (JWT ; days 7–30)\nนิยาม: นับเฉพาะยา as_needed=0 · taken ÷ (taken + missed + pending ที่ถึงเวลาแล้ว) · วันที่ไม่มียา rate = null\nเวลา \"ตอนนี้/วันนี้\" คำนวณใน JS (เวลาไทย) แล้วส่งเข้า SQL เป็นพารามิเตอร์ — ไม่ใช้ NOW()/CURDATE()\nสีฟ้า = อ่านอย่างเดียว · สีแดง = error\nlogic อยู่ lib/stats-service.js (global: statsService) ; LINE \"สรุป\" ใช้ตัวเดียวกัน (tab 7)"
+    },
+    {
+        "id": "dash_grp",
+        "type": "group",
+        "z": "tab_dash",
+        "name": "GET /api/stats/adherence",
+        "style": {
+            "stroke": "#0070c0",
+            "fill": "#e8f1fa",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0070c0"
+        },
+        "nodes": [
+            "dash_in",
+            "dash_jwt",
+            "dash_calc",
+            "dash_ok"
+        ],
+        "x": 40,
+        "y": 115,
+        "w": 1100,
+        "h": 130
+    },
+    {
+        "id": "dash_in",
+        "type": "http in",
+        "z": "tab_dash",
+        "name": "GET /api/stats/adherence",
+        "url": "/api/stats/adherence",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 170,
+        "wires": [
+            [
+                "dash_jwt"
+            ]
+        ],
+        "g": "dash_grp"
+    },
+    {
+        "id": "dash_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_dash",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 170,
+        "wires": [
+            [
+                "dash_calc"
+            ]
+        ],
+        "g": "dash_grp"
+    },
+    {
+        "id": "dash_calc",
+        "type": "function",
+        "z": "tab_dash",
+        "name": "ตรวจ days แล้วคำนวณสถิติ 7–30 วัน",
+        "func": "const db = global.get('db');\nconst r = await global.get('statsService').adherence(db, msg.user.id, msg.req.query.days);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\nmsg.headers = { 'Cache-Control': 'private, no-store' };   // ข้อมูลสุขภาพของเจ้าของ ห้ามแคชร่วม\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 750,
+        "y": 170,
+        "wires": [
+            [
+                "dash_ok"
+            ]
+        ],
+        "g": "dash_grp"
+    },
+    {
+        "id": "dash_ok",
+        "type": "http response",
+        "z": "tab_dash",
+        "name": "ตอบ 200 สถิติ (400 ถ้า days ผิด)",
+        "statusCode": "",
+        "headers": {},
+        "x": 1000,
+        "y": 170,
+        "wires": [],
+        "g": "dash_grp"
+    },
+    {
+        "id": "dash_err_grp",
+        "type": "group",
+        "z": "tab_dash",
+        "name": "ข้อผิดพลาดที่ไม่คาดคิด → 500",
+        "style": {
+            "stroke": "#b91c1c",
+            "fill": "#fdeaea",
+            "label": true,
+            "label-position": "nw",
+            "color": "#b91c1c"
+        },
+        "nodes": [
+            "dash_catch",
+            "dash_err",
+            "dash_res"
+        ],
+        "x": 40,
+        "y": 285,
+        "w": 1100,
+        "h": 115
+    },
+    {
+        "id": "dash_catch",
+        "type": "catch",
+        "z": "tab_dash",
+        "name": "ดักข้อผิดพลาดของ tab นี้",
+        "scope": null,
+        "uncaught": false,
+        "x": 190,
+        "y": 340,
+        "wires": [
+            [
+                "dash_err"
+            ]
+        ],
+        "g": "dash_err_grp"
+    },
+    {
+        "id": "dash_err",
+        "type": "function",
+        "z": "tab_dash",
+        "name": "แปลง error เป็น JSON 500",
+        "func": "node.error(msg.error && msg.error.message ? msg.error.message : 'unknown error');\nmsg.statusCode = 500;\nmsg.payload = { error: 'INTERNAL_ERROR', details: 'ระบบขัดข้อง กรุณาลองใหม่ภายหลัง' };\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 700,
+        "y": 340,
+        "wires": [
+            [
+                "dash_res"
+            ]
+        ],
+        "g": "dash_err_grp"
+    },
+    {
+        "id": "dash_res",
+        "type": "http response",
+        "z": "tab_dash",
+        "name": "ตอบ 500 ระบบขัดข้อง",
+        "statusCode": "",
+        "headers": {},
+        "x": 1000,
+        "y": 340,
+        "wires": [],
+        "g": "dash_err_grp"
     }
 ]

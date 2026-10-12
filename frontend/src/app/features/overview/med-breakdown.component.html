@@ -1,0 +1,31 @@
+@if (meds().length) {
+  <section class="meds yt-card" aria-labelledby="h-meds">
+    <h2 id="h-meds">แยกตามยา</h2>
+    <ul>
+      @for (m of meds(); track m.medication_id) {
+        <li>
+          <p class="name">{{ m.name }}@if (m.strength) { <span class="strength"> {{ m.strength }}</span> }@if (!m.is_active) { <span class="stopped"> (หยุดใช้แล้ว)</span> }</p>
+          <div class="track" aria-hidden="true"><div class="fill" [style.width.%]="width(m)"></div></div>
+          <p class="line">
+            <span>
+              @if (m.due > 0) { กิน <span class="num">{{ m.taken }}</span> จาก <span class="num">{{ m.due }}</span> ครั้ง }
+              @else { ยังไม่มีรอบที่ถึงเวลา }
+            </span>
+            <span class="rate num">{{ m.rate === null ? '–' : m.rate + '%' }}</span>
+          </p>
+        </li>
+      }
+    </ul>
+  </section>
+}
+
+@if (anySource()) {
+  <section class="src yt-card" aria-labelledby="h-src">
+    <h2 id="h-src">ช่องทางที่บันทึกว่ากินแล้ว</h2>
+    <ul class="chips">
+      @for (g of groups(); track g.key) {
+        <li class="chip">{{ g.label }} <span class="num">{{ g.count }}</span></li>
+      }
+    </ul>
+  </section>
+}

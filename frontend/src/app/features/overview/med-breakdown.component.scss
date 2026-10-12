@@ -1,0 +1,30 @@
+:host { display: contents; }
+
+.meds, .src { padding: var(--yt-space-4); }
+h2 { margin: 0 0 var(--yt-space-3); font-size: 1.3rem; }
+ul { margin: 0; padding: 0; list-style: none; }
+
+// แถวยา: ชื่อ 20 · แถบ 12px · "กิน n จาก n ครั้ง" 18 + อัตราชิดขวา · สูงรวม ≥ 72
+.meds li { display: flex; flex-direction: column; gap: var(--yt-space-1); min-height: 4.5rem; padding: var(--yt-space-3) 0; }
+.meds li + li { border-top: 1px solid var(--yt-border); }
+.name { margin: 0; font: 600 1.1rem / var(--yt-line-height-tight) var(--yt-font-display); }
+.strength { font: 500 var(--yt-text-base) var(--yt-font-body); color: var(--yt-text-muted); }
+.stopped { font: 500 var(--yt-text-base) var(--yt-font-body); color: var(--yt-text-muted); }
+.track { height: 0.67rem; border-radius: var(--yt-radius-pill); background: var(--yt-primary-soft); overflow: hidden; }   // 12px
+.fill { height: 100%; border-radius: var(--yt-radius-pill); background: var(--yt-primary); }
+.line { display: flex; justify-content: space-between; gap: var(--yt-space-3); margin: 0; }
+.rate { font-size: 1.1rem; font-weight: 700; }
+
+.src { margin-top: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: var(--yt-space-2); }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--yt-space-2);
+  min-height: 3rem;   // 48px
+  padding: 0 var(--yt-space-4);
+  border-radius: var(--yt-radius-pill);
+  background: var(--yt-primary-softer);
+  border: 2px solid var(--yt-primary-soft);
+  font-weight: 600;
+}

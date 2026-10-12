@@ -5,6 +5,7 @@ const doseService = require('./dose-service');
 const lineFlex = require('./line-flex');
 const M = require('./line-messages');
 const escalation = require('./escalation-service');
+const statsService = require('./stats-service');
 
 const CODE_TTL_MIN = 10;
 const GUESS_MAX = 5;
@@ -138,6 +139,20 @@ async function caregiverTodayFlex(db, lineId, env) {
   }
   const [d] = await db.query("SELECT DATE_FORMAT(CURDATE(), '%Y-%m-%d') AS d");
   return M.buildCaregiverToday(list, d.d, env);
+}
+
+// "สรุป" = อัตราการกินยา 7 วัน (reply ทั้งหมด ไม่เสียโควตา) ; เวลา "ตอนนี้" ส่งจาก JS เข้า statsService (ไม่ใช้ NOW() ใน SQL)
+const SUMMARY_CMDS = new Set(['สรุป', 'สรุป 7 วัน', 'สรุปการกินยา']);
+async function summaryFlexes(db, who, lineId, env, now = new Date()) {
+  const msgs = [];
+  if (who.ctx === 'patient') msgs.push(M.buildAdherence((await statsService.adherence(db, who.userId, 7, now)).body, env));   // ของตัวเองก่อน
+  if (who.ctx !== 'unlinked') {
+    const pats = await db.query('SELECT DISTINCT u.id, u.display_name FROM caregivers c JOIN users u ON u.id = c.user_id WHERE c.line_user_id = ? AND c.is_active = 1 ORDER BY u.id', [lineId]);
+    const list = [];
+    for (const p of pats) list.push({ name: p.display_name, stats: (await statsService.adherence(db, p.id, 7, now)).body });
+    if (list.length) msgs.push(M.buildCaregiverAdherence(list, env));   // ตามด้วยผู้ป่วยที่ดูแล (ไม่มีชื่อยา)
+  }
+  return msgs;
 }
 
 // ผู้ใช้ LINE คนนี้คือใคร: ผู้ป่วย (users.line_user_id) / ผู้ดูแลอย่างเดียว / ยังไม่เชื่อม ; ใช้เลือก quick reply และข้อความ
@@ -275,6 +290,11 @@ async function handleEvent(event, deps) {
     else await send(msgs, who.ctx, meta);
     return;
   }
+  if (SUMMARY_CMDS.has(cmd.replace(/\s+/g, ' '))) {
+    const msgs = await summaryFlexes(db, who, lineId, env, deps.now ? new Date(deps.now) : new Date());
+    await send(msgs.length ? msgs : [who.ctx === 'unlinked' ? M.TEXT.notLinked() : M.TEXT.caregiverOnly(who.patients)], who.ctx, meta);
+    return;
+  }
   if (cmd === 'วิธีใช้') { await send([M.buildWelcome(who.ctx === 'patient', env)], who.ctx, meta); return; }
   // #ตัวอย่าง n — เฉพาะ DEMO_MODE=true และผู้ป่วยที่เชื่อมแล้ว ; ข้อมูลตัวอย่างอยู่ในหน่วยความจำ ไม่เขียน DB (DEMO_MODE=false = ข้อความทั่วไป)
   const pm = PREVIEW_RE.exec(cmd);
@@ -315,5 +335,5 @@ async function handleEvents(events, deps) {
 
 module.exports = {
   verifySignature, randomCode, parseCode, formatCode, oaMessageUrl, createDedup, createGuessLimiter, parseBody, dropDuplicates,
-  issueCode, codeBody, patientLinkCode, status, unlink, claimCode, handlePostback, caregiverTodayFlex, handleEvent, handleEvents, whoIs, todayFlex, CODE_TTL_MIN
+  issueCode, codeBody, patientLinkCode, status, unlink, claimCode, handlePostback, caregiverTodayFlex, summaryFlexes, handleEvent, handleEvents, whoIs, todayFlex, CODE_TTL_MIN
 };

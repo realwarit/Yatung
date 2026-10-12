@@ -23,6 +23,7 @@ const { resolveAdmin } = require('./lib/admin-auth');
 const reminderService = require('./lib/reminder-service');
 const escalationService = require('./lib/escalation-service');
 const stockService = require('./lib/stock-service');
+const statsService = require('./lib/stats-service');
 const pushService = require('./lib/push-service').createPushService();
 const lineEnv = require('./lib/line-env');
 
@@ -85,6 +86,7 @@ module.exports = {
     caregiverService,
     reminderService,                          // cron ส่งเตือน / demo (lib/reminder-service.js)
     escalationService,                        // แจ้งญาติเมื่อลืมกินยา / ปิดเรื่อง / demo (lib/escalation-service.js)
+    statsService,                             // อัตราการกินยา 7 วัน GET /api/stats/adherence + LINE "สรุป" (lib/stats-service.js)
     stockService,                             // แจ้งยาใกล้หมด / is_low / demo (lib/stock-service.js)
     pushService,                              // Web Push: subscribe / ส่ง / action token (lib/push-service.js) ; เลือกช่องทางที่ lib/notify-service.js
     lineEnv,                                  // pick(env.get) → env ที่ lib ฝั่ง LINE ใช้ (lib/line-env.js)

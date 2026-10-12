@@ -1,0 +1,11 @@
+// ข้อความ/ท่าน้องยาตรงตามระดับอัตราการกินยา (pure) — ใช้ร่วมกับ LINE ; ฝั่งเว็บอยู่ที่ frontend/src/app/features/overview/adherence-level.ts
+// ตารางทั้งสองฝั่งต้องตรงกัน (เทสเทียบกันที่ node-red/test/stats-service.test.js กับ adherence-level.spec.ts)
+// ห้ามใช้คำตำหนิ
+function levelOf(rate) {
+  if (rate === null || rate === undefined) return { key: 'none', pose: 'hello', text: 'ยังไม่มีข้อมูลยาในช่วงนี้ค่ะ' };
+  if (rate >= 100) return { key: 'perfect', pose: 'cheer', text: 'เยี่ยมมากค่ะ กินครบทุกมื้อเลย' };
+  if (rate >= 80) return { key: 'good', pose: 'cheer', text: 'เก่งมากค่ะ' };
+  if (rate >= 50) return { key: 'ok', pose: 'hello', text: 'ค่อยๆ เพิ่มขึ้นได้นะคะ' };
+  return { key: 'low', pose: 'hello', text: 'ให้น้องยาตรงช่วยเตือนใน LINE นะคะ' };
+}
+module.exports = { levelOf };

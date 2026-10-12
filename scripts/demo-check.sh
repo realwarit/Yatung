@@ -53,6 +53,12 @@ echo "== 2) เว็บและ API"
 [ "$(code "$WEB/")" = "200" ] && ok "เว็บ $WEB ตอบ 200" || bad "เว็บ $WEB ไม่ตอบ 200"
 [ "$(code "$WEB/api/me")" = "401" ] && ok "nginx proxy /api → Node-RED (ไม่มี token = 401)" || bad "$WEB/api/me ควรได้ 401"
 [ "$(code "$API/api/me")" = "401" ] && ok "Node-RED $API ตอบ" || bad "Node-RED $API ไม่ตอบ"
+[ "$(code "$WEB/api/stats/adherence")" = "401" ] && ok "GET /api/stats/adherence ไม่มี JWT = 401 (tab 5-Dashboard)" || bad "$WEB/api/stats/adherence ควรได้ 401 (tab 5-Dashboard โหลดแล้วหรือยัง?)"
+[ "$(code "$WEB/manifest.webmanifest")" = "200" ] && ok "manifest.webmanifest ตอบ 200" || bad "manifest.webmanifest ไม่ตอบ 200"
+if [ "$(code "$WEB/ngsw.json")" = "200" ]; then
+  ok "ngsw.json ตอบ 200"
+  curl -s -m 10 "$WEB/ngsw.json" | grep -q '/api' && bad "ngsw.json มี /api — ห้ามแคช API ใน service worker (ข้อมูลข้ามผู้ใช้)" || ok "ngsw.json ไม่มี /api (ไม่แคชข้อมูลสุขภาพใน service worker)"
+else bad "ngsw.json ไม่ตอบ 200"; fi
 
 echo "== 3) Node-RED log"
 logs="$(docker compose logs nodered 2>&1)"

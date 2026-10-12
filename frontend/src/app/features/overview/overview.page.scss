@@ -1,0 +1,23 @@
+:host { display: block; container-type: inline-size; }
+
+.head { margin-bottom: var(--yt-space-4); }
+.range { margin: 0; color: var(--yt-text-muted); }
+
+.grid { display: grid; gap: var(--yt-space-4); grid-template-columns: minmax(0, 1fr); max-width: 40rem; margin: 0 auto; }
+.insight { margin: 0; }
+
+.empty { display: flex; flex-direction: column; align-items: center; gap: var(--yt-space-3); padding: var(--yt-space-5); text-align: center; }
+.empty p { margin: 0; color: var(--yt-text-muted); }
+
+.sk-hero { height: 17rem; }
+.sk-chart { height: 22rem; }
+.sk-list { height: 12rem; }
+
+.yt-disclaimer { max-width: 40rem; margin-inline: auto; font-size: 0.9rem; }   // 16px
+
+// หน้ากว้าง: การ์ดหลัก + กราฟอยู่แถวเดียวกัน
+@container (min-width: 56rem) {
+  .grid { max-width: none; grid-template-columns: minmax(0, 22rem) minmax(0, 1fr); align-items: start; }
+  .grid > :not(app-adherence-hero):not(app-adherence-chart) { grid-column: 1 / -1; }
+  .sk-hero, .sk-chart, .sk-list { grid-column: auto; }
+}

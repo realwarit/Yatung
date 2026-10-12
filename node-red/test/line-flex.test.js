@@ -153,16 +153,17 @@ test('ข้อความไม่มีชื่อผู้ป่วย/user
 
 test('quickReply ตามประเภทผู้ใช้', () => {
   const labels = (ctx, env = ENV) => flex.quickReply(ctx, env).items.map((i) => i.action.label);
-  assert.deepEqual(labels('patient'), ['📋 ยาวันนี้', '📱 เปิดแอป', '❓ ช่วยเหลือ']);
+  assert.deepEqual(labels('patient'), ['📋 ยาวันนี้', '📊 สรุป', '📱 เปิดแอป', '❓ ช่วยเหลือ']);
   assert.deepEqual(labels('unlinked'), ['🔗 วิธีเชื่อมบัญชี', '📱 เปิดแอป']);
-  assert.deepEqual(labels('caregiver'), ['❓ ช่วยเหลือ']);
+  assert.deepEqual(labels('caregiver'), ['📊 สรุป', '❓ ช่วยเหลือ']);
   const p = flex.quickReply('patient', ENV).items;
   assert.deepEqual(p[0].action, { type: 'message', label: '📋 ยาวันนี้', text: 'วันนี้' });
-  assert.equal(p[1].action.uri, 'https://demo.ngrok-free.dev/today');
-  assert.equal(p[2].action.text, 'ช่วยเหลือ');
+  assert.deepEqual(p[1].action, { type: 'message', label: '📊 สรุป', text: 'สรุป' });
+  assert.equal(p[2].action.uri, 'https://demo.ngrok-free.dev/today');
+  assert.equal(p[3].action.text, 'ช่วยเหลือ');
   assert.equal(flex.quickReply('unlinked', ENV).items[0].action.text, 'วิธีใช้');
   assert.equal(flex.quickReply('unlinked', ENV).items[1].action.uri, 'https://demo.ngrok-free.dev/settings');
-  assert.deepEqual(labels('patient', {}), ['📋 ยาวันนี้', '❓ ช่วยเหลือ']);          // ไม่มี PUBLIC_BASE_URL = ไม่มีปุ่มลิงก์
+  assert.deepEqual(labels('patient', {}), ['📋 ยาวันนี้', '📊 สรุป', '❓ ช่วยเหลือ']);          // ไม่มี PUBLIC_BASE_URL = ไม่มีปุ่มลิงก์
   for (const ctx of ['patient', 'unlinked', 'caregiver']) for (const i of flex.quickReply(ctx, ENV).items) assert.ok(i.action.label.length <= 20);
 });
 

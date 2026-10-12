@@ -1,34 +1,47 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
+import { MatButton } from '@angular/material/button';
+import { AdherenceResponse, StatsApi } from '../../core/api/stats.api';
+import { errorText } from '../../core/api/api-error';
+import { IconComponent } from '../../shared/icon.component';
 import { MascotComponent } from '../../shared/components/mascot/mascot.component';
+import { AdherenceChartComponent } from './adherence-chart.component';
+import { AdherenceHeroComponent } from './adherence-hero.component';
+import { hasData, worstMeal } from './adherence-level';
+import { MedBreakdownComponent } from './med-breakdown.component';
 
-/** หน้า "ภาพรวม" (dashboard adherence 7 วัน) — ทำในวันที่ 8 ตอนนี้เป็น empty state */
+const DAYS = 7;
+
+/** หน้า "สรุป" — อัตราการกินยา 7 วัน (ตัวเลขจาก GET /api/stats/adherence นิยามเดียวกับ LINE "สรุป") */
 @Component({
   selector: 'app-overview-page',
-  imports: [MascotComponent],
+  imports: [RouterLink, MatButton, IconComponent, MascotComponent, AdherenceHeroComponent, AdherenceChartComponent, MedBreakdownComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <div class="yt-page">
-      <h1 class="yt-page-title">ภาพรวม</h1>
-      <section class="empty yt-card yt-enter">
-        <app-mascot mood="happy" [size]="180" [decorative]="false" />
-        <h2>เร็วๆ นี้นะคะ</h2>
-        <p>สรุปการกินยา 7 วันย้อนหลังกำลังจะมาให้ดูที่นี่ค่ะ</p>
-      </section>
-    </div>
-  `,
-  styles: `
-    .empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--yt-space-2);
-      max-width: 34rem;
-      margin: var(--yt-space-5) auto;
-      padding: var(--yt-space-6) var(--yt-space-5);
-      text-align: center;
-    }
-    h2 { font-size: 1.6rem; }
-    p { margin: 0; color: var(--yt-text-muted); }
-  `,
+  templateUrl: './overview.page.html',
+  styleUrl: './overview.page.scss',
 })
-export class OverviewPage {}
+export class OverviewPage {
+  private api = inject(StatsApi);
+  private destroyRef = inject(DestroyRef);
+
+  protected readonly data = signal<AdherenceResponse | null>(null);
+  protected readonly loading = signal(true);
+  protected readonly error = signal<string | null>(null);
+  protected readonly days = DAYS;
+
+  protected readonly empty = computed(() => !hasData(this.data()));
+  /** ข้อสังเกตมื้อ: มื้อ rate ต่ำสุดที่ < 100 และ due ≥ 2 */
+  protected readonly worst = computed(() => { const d = this.data(); return d ? worstMeal(d.by_meal) : null; });
+
+  constructor() { this.load(); }
+
+  protected load(): void {
+    this.loading.set(true);
+    this.error.set(null);
+    this.api.adherence(DAYS).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (r) => { this.data.set(r); this.loading.set(false); },
+      error: (e) => { this.error.set(errorText(e)); this.loading.set(false); },
+    });
+  }
+}

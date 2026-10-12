@@ -59,7 +59,7 @@ test('ตัวตรวจกฎอิโมจิจับกรณีผิ�
 });
 
 test('altText ทุกแบบมีและไม่เกิน 400 ตัวอักษร ; bubble ≤ 30 KB ; text/button มี scaling', () => {
-  const ORDER = ['xxs', 'xs', 'sm', 'md', 'lg', 'xl', 'xxl'];
+  const ORDER = ['xxs', 'xs', 'sm', 'md', 'lg', 'xl', 'xxl', '3xl', '4xl', '5xl'];
   for (const s of SAMPLES) for (const m of s.messages) {
     if (m.type !== 'flex') continue;
     assert.ok(m.altText && m.altText.length > 6 && m.altText.length <= 400, s.id);
@@ -129,7 +129,7 @@ test('4.4/4.7/4.8/4.9 ข้อความ text', () => {
   assert.match(M.TEXT.conflict().text, /^🔒 LINE นี้เชื่อมไว้แล้วค่ะ\n.+\n.+/);
   assert.equal(M.TEXT.alreadyTaken().text, '✅ บันทึกไว้แล้วค่ะ\nไม่ต้องกดซ้ำนะคะ');
   assert.equal(M.TEXT.doseNotFound().text, '🔍 ไม่พบรายการยานี้แล้วค่ะ\nอาจถูกแก้ไขในแอป\nแตะ "ยาวันนี้"\nเพื่อดูรายการล่าสุดนะคะ');
-  assert.match(M.TEXT.help().text, /^😊 น้องยาตรงช่วยได้แบบนี้ค่ะ\n📋 พิมพ์ "วันนี้"\nเพื่อดูยาของวันนี้\n🔗 ส่งรหัส 6 หลัก\nเพื่อเชื่อมบัญชี\nหรือแตะปุ่มด้านล่าง\nได้เลยนะคะ/);
+  assert.match(M.TEXT.help().text, /^😊 น้องยาตรงช่วยได้แบบนี้ค่ะ\n📋 พิมพ์ "วันนี้"\nเพื่อดูยาของวันนี้\n📊 พิมพ์ "สรุป"\nเพื่อดูผล 7 วัน\n🔗 ส่งรหัส 6 หลัก\nเพื่อเชื่อมบัญชี\nหรือแตะปุ่มด้านล่าง\nได้เลยนะคะ/);
 });
 
 test('ข้อความ text ทุกแบบ: บรรทัดที่เป็นข้อความคงที่ยาวไม่เกิน 22 ตัวอักษรไทย (จอ Android 360px)', () => {
@@ -299,9 +299,9 @@ const labels = (msgs) => msgs.at(-1).quickReply.items.map((i) => i.action.label)
 
 test('reply ทุกแบบแนบ quickReply ตามประเภทผู้ใช้ (ผู้ป่วย / ยังไม่เชื่อม / ผู้ดูแลอย่างเดียว)', async () => {
   for (const [opts, expected] of [
-    [{ patient: 'สมชาย' }, ['📋 ยาวันนี้', '📱 เปิดแอป', '❓ ช่วยเหลือ']],
+    [{ patient: 'สมชาย' }, ['📋 ยาวันนี้', '📊 สรุป', '📱 เปิดแอป', '❓ ช่วยเหลือ']],
     [{}, ['🔗 วิธีเชื่อมบัญชี', '📱 เปิดแอป']],
-    [{ caregiverOf: ['สมชาย'] }, ['❓ ช่วยเหลือ']]
+    [{ caregiverOf: ['สมชาย'] }, ['📊 สรุป', '❓ ช่วยเหลือ']]
   ]) {
     const h = harness(opts);
     await svc.handleEvent(ev('อะไรก็ไม่รู้'), { db: h.db, client: h.client, env: ENV });

@@ -42,7 +42,7 @@ export class ShellComponent {
     { path: '/medications', label: 'ยาของฉัน', icon: 'pill' },
   ];
   protected readonly right: NavItem[] = [
-    { path: '/overview', label: 'ภาพรวม', icon: 'chart' },
+    { path: '/overview', label: 'สรุป', icon: 'chart' },
     { path: '/settings', label: 'ตั้งค่า', icon: 'sliders' },
   ];
   protected readonly all = [...this.left, ...this.right];

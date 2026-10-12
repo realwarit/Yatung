@@ -172,7 +172,7 @@ Webhook URL + Use webhook ใน LINE Console · **โควตา push: จร�
 ### ชุดทดสอบทั้งหมด (`scripts/test-all.sh`)
 
 ```bash
-bash scripts/test-all.sh          # unit + 3a, 4 (mock), 5, 6, 6b, 6c, 7a, 7b, 7c แล้วสรุปตาราง ผ่าน/ไม่ผ่าน
+bash scripts/test-all.sh          # unit + 3a, 4 (mock), 5, 6, 6b, 6c, 7a, 7b, 7c, 8 แล้วสรุปตาราง ผ่าน/ไม่ผ่าน
 bash scripts/test-all.sh 6b 7a    # เฉพาะบางชุด
 ```
 
@@ -184,6 +184,13 @@ bash scripts/test-all.sh 6b 7a    # เฉพาะบางชุด
 - หลังเทส `test-all.sh` ตรวจ `http://localhost:8080/api/me` = 401 และรีสตาร์ต `frontend` ให้ถ้าไม่ใช่ (nginx หา IP ของ `nodered` ตอนเริ่มเท่านั้น)
 - **tunnel ค้างกับ network เก่า** ("network … not found" ตอน `--profile tunnel up`): เกิดเมื่อ `docker compose down` แล้ว `up` โดยไม่ใส่ profile — container `tunnel` เก่ายังอ้าง network ที่ถูกลบไปแล้ว แก้ด้วย
   `docker compose --profile tunnel up -d --force-recreate tunnel` · ชุดทดสอบไม่ `down` stack (recreate เฉพาะ `nodered`) ; ถ้าต้อง `down` ให้ใส่ `--profile tunnel` เสมอ (`docker compose --profile tunnel down`) · `demo-check.sh` ตรวจว่า `tunnel` อยู่ network เดียวกับ `frontend` และแสดงคำสั่งแก้ให้
+
+## สรุปอัตราการกินยา 7 วัน (Dashboard, วันที่ 8A)
+
+- เมนู **"สรุป"** (`/overview`): วงแหวนอัตรากินครบ 7 วัน + น้องยาตรง, ชิป "กินครบติดกัน n วัน", กราฟแท่งรายวัน (แตะแท่งดูรายละเอียด), ข้อสังเกตมื้อที่ลืมบ่อย, แยกตามยา และช่องทางที่บันทึก · การ์ดเล็ก "7 วันล่าสุด กินครบ n%" บนหน้าวันนี้
+- ตัวเลขมาจาก `GET /api/stats/adherence?days=7` (ต้อง login ; days 7–30) — **อัตรา = กินแล้ว ÷ (กินแล้ว + ลืม + ถึงเวลาแล้วแต่ยังไม่กิน)** ไม่นับรอบที่ยังไม่ถึงเวลาและยาเมื่อมีอาการ ; วันที่ไม่มียาแสดง "–"
+- ใน LINE พิมพ์ **"สรุป"** ได้ตัวเลขชุดเดียวกัน (ผู้ดูแลเห็นชื่อผู้ป่วยกับอัตรา ไม่เห็นชื่อยา)
+- ทดสอบ: `bash scripts/test-day8.sh` · ตรวจหน้าตา: `cd frontend && node tools/overview-shots.mjs --scale=125`
 
 ## AI pipeline (`POST /api/scan`)
 

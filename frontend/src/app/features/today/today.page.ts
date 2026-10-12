@@ -18,6 +18,7 @@ import { MascotComponent, MascotMood } from '../../shared/components/mascot/masc
 import { IconComponent, IconName } from '../../shared/icon.component';
 import { DoseCardComponent, DoseState } from './dose-card.component';
 import { TodayProgressComponent } from './today-progress.component';
+import { AdherenceCardComponent } from './adherence-card.component';
 import { hasMultipleTimes, slotTimeLabel } from './slot-time';
 import { lowStockText } from './low-stock';
 
@@ -36,7 +37,7 @@ interface SlotVM {
 @Component({
   selector: 'app-today-page',
   imports: [RouterLink, MatButton, IconComponent, MascotComponent, ConfettiComponent,
-    DoseCardComponent, TodayProgressComponent, DoseQtyPipe, MealLabelPipe, SlotLabelPipe],
+    DoseCardComponent, TodayProgressComponent, AdherenceCardComponent, DoseQtyPipe, MealLabelPipe, SlotLabelPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './today.page.html',
   styleUrl: './today.page.scss',
