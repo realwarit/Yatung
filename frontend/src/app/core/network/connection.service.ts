@@ -1,4 +1,5 @@
 import { DestroyRef, Injectable, InjectionToken, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { SwUpdate } from '@angular/service-worker';
 import { RECONNECT_PARAM, RECONNECT_URL, isHtmlContentType } from './html-response';
 
@@ -14,6 +15,7 @@ export const CONNECTION_ENV = new InjectionToken<ConnectionEnv>('CONNECTION_ENV'
   providedIn: 'root',
   factory: (): ConnectionEnv => {
     const sw = inject(SwUpdate, { optional: true });   // ไม่มี provider ถ้าไม่ได้เปิด service worker (เช่น ในเทส)
+    const router = inject(Router);
     return {
       swEnabled: () => !!sw?.isEnabled,
       fetchText: async (url, init) => {
@@ -22,7 +24,8 @@ export const CONNECTION_ENV = new InjectionToken<ConnectionEnv>('CONNECTION_ENV'
       },
       go: (url) => window.location.assign(url),
       location: () => ({ search: location.search, pathname: location.pathname, hash: location.hash }),
-      replaceUrl: (url) => history.replaceState(null, '', url),
+      // ผ่าน router (replaceUrl) ให้ state ของ router ตรงกับ URL ที่ลบพารามิเตอร์แล้ว ไม่ใช่แค่แก้ history เฉยๆ
+      replaceUrl: (url) => { void router.navigateByUrl(url, { replaceUrl: true }); },
     };
   },
 });
