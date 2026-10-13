@@ -23,6 +23,8 @@ const STATES = [
   { name: 'offline-dose-card', run: async (p, c) => { await c.ctx.setOffline(true); await p.evaluate(() => window.dispatchEvent(new Event('offline'))); }, expect: 'ต่ออินเทอร์เน็ตก่อนนะคะ', shot: 'app-dose-card:has(.yt-offline-hint)' },
   { name: 'conn-expired', run: async (p, c) => { c.html.on = true; await p.reload(); }, expect: 'หมดอายุ' },
   { name: 'install-android', run: async (p) => { await p.evaluate(fakePrompt); }, expect: 'ติดตั้ง' },
+  { name: 'today-error-ref', route: '/today', st: { todayStatus: 502 }, expect: '[(]E-502[)]' },
+  { name: 'settings-dev', route: '/settings', st: { demo: true }, seedLog: true, expect: 'ข้อมูลสำหรับผู้พัฒนา[\\s\\S]*E-304', shot: 'app-dev-info-section' },
   { name: 'install-ios', ctxOpts: { userAgent: IOS_UA }, expect: 'หน้าจอโฮม|เพิ่ม' },
 ];
 
@@ -37,8 +39,9 @@ for (const st of STATES.filter((s) => !only.length || only.includes(s.name))) {
       }, [scale, FAKE_JWT]);
       const page = await ctx.newPage();
       const html = { on: false };
-      await mockApi(page, { htmlMode: () => html.on });
-      await page.goto(BASE + '/today');
+      await mockApi(page, { htmlMode: () => html.on, todayStatus: st.st?.todayStatus ? () => st.st.todayStatus : undefined, demoMode: () => !!st.st?.demo });
+      if (st.seedLog) await page.addInitScript(() => { try { localStorage.setItem('yatung_errlog', JSON.stringify([{ t: '2026-10-13 17:40:01', route: '/today', code: 'E-304', endpoint: '/api/doses/today', status: 304 }, { t: '2026-10-13 17:41:12', route: '/medications', code: 'E-JS', endpoint: null, status: null }])); } catch {} });
+      await page.goto(BASE + (st.route ?? '/today'));
       await page.waitForLoadState('networkidle').catch(() => {});
       await page.waitForTimeout(600);
       await st.run?.(page, { ctx, html });
@@ -60,7 +63,7 @@ for (const st of STATES.filter((s) => !only.length || only.includes(s.name))) {
       console.log(`${issues.length ? '✘' : '✓'} ${st.name} @${w}px ก${scale === '100' ? '' : scale === '112' ? '+' : '++'}${issues.length ? '\n    ' + issues.join('\n    ') : ''}`);
       if (w === 360 && scale === '100') {
         if (!st.shot) await page.evaluate(() => document.querySelectorAll('.main, .yt-page').forEach((e) => { e.scrollTop = 0; })).catch(() => {});   // หน้าวันนี้เลื่อนไปมื้อถัดไปเอง
-        const target = st.shot ? page.locator(st.shot).first() : page;
+        const target = st. shot ? page.locator(st.shot).first() : page;
         await target.screenshot({ path: `${OUT}state-${st.name}.png` }).catch((e) => console.log(`  (ถ่ายภาพ ${st.name} ไม่ได้: ${e.message.split('\n')[0]})`));
       }
       await ctx.close();

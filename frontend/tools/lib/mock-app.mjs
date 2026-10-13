@@ -39,13 +39,14 @@ export async function mockApi(page, opts = {}) {
     const u = new URL(route.request().url()).pathname;
     if (opts.htmlMode?.()) return route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>ngrok</title>Visit Site' });
     if (u === '/api/me') return route.fulfill(json({ id: 1, email: 'x@example.test', display_name: 'ผู้ทดสอบ', notify_both: false, push_subscribed: false }));
+    if (u === '/api/doses/today' && opts.todayStatus) return route.fulfill({ status: opts.todayStatus(), contentType: 'text/plain', body: '' });
     if (u === '/api/doses/today') return route.fulfill(json(TODAY));
     if (u === '/api/medications') return route.fulfill(json([MED]));
     if (u === '/api/stats/adherence') return route.fulfill(json(ADH));
     if (u === '/api/settings/slot-times') return route.fulfill(json({ morning: '08:00', noon: '12:00', evening: '18:00', bedtime: '21:00' }));
     if (u === '/api/line/status') return route.fulfill(json({ linked: true, display_name: 'ผู้ทดสอบ' }));
     if (u === '/api/caregivers') return route.fulfill(json({ caregivers: [] }));
-    if (u === '/api/config') return route.fulfill(json({ demoMode: false }));
+    if (u === '/api/config') return route.fulfill(json({ demoMode: opts.demoMode?.() ?? false }));
     return route.fulfill(json({ error: 'NOT_MOCKED', details: u }, 404));
   });
 }
