@@ -1,0 +1,19 @@
+<div class="top">
+  <svg class="ring" viewBox="0 0 120 120" role="img" [attr.aria-label]="ringLabel()">
+    <circle class="track" cx="60" cy="60" [attr.r]="r" />
+    @if (rate() !== null) {
+      <circle class="bar" [class]="'bar tone-' + tone()" cx="60" cy="60" [attr.r]="r" [attr.stroke-dasharray]="dash()" transform="rotate(-90 60 60)" />
+    }
+    <text x="60" y="63" text-anchor="middle" dominant-baseline="middle" class="big">{{ rate() === null ? '–' : rate() }}@if (rate() !== null) {<tspan class="pct">%</tspan>}</text>
+  </svg>
+  <div class="txt">
+    <p class="say">{{ level().text }}</p>
+    @if (due() > 0) {
+      <p class="sub">กินแล้ว <span class="num">{{ taken() }}</span> จาก <span class="num">{{ due() }}</span> ครั้ง</p>
+    }
+    @if (streak() >= 2) {
+      <p class="streak">กินครบติดกัน <span class="num">{{ streak() }}</span> วัน</p>
+    }
+  </div>
+  <app-mascot class="mascot" [mood]="level().mood" [size]="56" />
+</div>

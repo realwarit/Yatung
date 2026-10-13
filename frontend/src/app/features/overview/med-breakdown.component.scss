@@ -1,0 +1,34 @@
+:host { display: contents; }
+
+.meds { padding: var(--yt-space-4); }
+h2 { margin: 0 0 var(--yt-space-2); font-size: 1.2rem; }
+ul { margin: 0; padding: 0; list-style: none; }
+
+// แถวยา ≈ 56px ที่ 375px: ชื่อ 17px ชิดซ้าย · "1/4" ตัวหนาชิดขวา · แถบ 8px ด้านล่าง (ไม่มี %)
+.meds li { position: relative; display: flex; flex-direction: column; gap: 6px; padding: var(--yt-space-2) 0; }
+.meds li + li { border-top: 1px solid var(--yt-border); }
+.row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--yt-space-3); }
+.name { min-width: 0; margin: 0; font: 600 1rem / var(--yt-line-height-tight) var(--yt-font-display); }   // 18px
+.muted { font: 500 1rem var(--yt-font-body); color: var(--yt-text-muted); }
+.cnt {
+  flex: none;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  &.ink-good { color: var(--yt-scale-good-ink); }
+  &.ink-mid { color: var(--yt-scale-mid-ink); }
+  &.ink-low { color: var(--yt-scale-low-ink); }
+  &.ink-none { color: var(--yt-text-muted); }
+}
+.track { height: 8px; border-radius: var(--yt-radius-pill); background: var(--yt-border); overflow: hidden; }
+.fill {
+  height: 100%;
+  border-radius: var(--yt-radius-pill);
+  &.tone-good { background: var(--yt-scale-good); }
+  &.tone-mid { background: var(--yt-scale-mid); }
+  &.tone-low { background: var(--yt-scale-low); }
+  &.tone-none { background: transparent; }
+}
+.src { margin: var(--yt-space-2) 0 0; padding-top: var(--yt-space-2); border-top: 1px solid var(--yt-border); font-size: 0.9rem; color: var(--yt-text-muted); }   // 16px
+
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }

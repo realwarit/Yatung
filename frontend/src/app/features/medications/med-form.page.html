@@ -10,7 +10,7 @@
         <div class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span>{{ fe }}</span></div>
       }
 
-      <app-med-fields [(draft)]="draft" [(moreOpen)]="moreOpen" [times]="times()" [errors]="errors()" (edited)="clearError($event)" />
+      <app-med-fields [showTts]="true" [(draft)]="draft" [(moreOpen)]="moreOpen" [times]="times()" [errors]="errors()" (edited)="clearError($event)" />
 
       <!-- preview -->
       <section class="preview" aria-label="สรุปก่อนบันทึก">

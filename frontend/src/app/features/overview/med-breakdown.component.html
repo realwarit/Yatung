@@ -1,0 +1,18 @@
+@if (meds().length) {
+  <section class="meds yt-card" aria-labelledby="h-meds">
+    <h2 id="h-meds">แยกตามยา</h2>
+    <ul>
+      @for (m of meds(); track m.medication_id) {
+        <li>
+          <div class="row">
+            <p class="name">{{ m.name }}@if (m.strength) { <span class="muted"> {{ m.strength }}</span> }@if (!m.is_active) { <span class="muted"> (หยุดใช้แล้ว)</span> }</p>
+            <p class="cnt num" [class]="'cnt num ink-' + tone(m)">{{ m.due > 0 ? m.taken + '/' + m.due : '–' }}</p>
+          </div>
+          <div class="track" aria-hidden="true"><div [class]="'fill tone-' + tone(m)" [style.width.%]="width(m)"></div></div>
+          <span class="sr-only">{{ m.due > 0 ? 'กิน ' + m.taken + ' จาก ' + m.due + ' ครั้ง' : 'ยังไม่มีรอบที่ถึงเวลา' }}</span>
+        </li>
+      }
+    </ul>
+    @if (line()) { <p class="src">{{ line() }}</p> }
+  </section>
+}

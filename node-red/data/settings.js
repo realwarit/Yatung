@@ -23,8 +23,10 @@ const { resolveAdmin } = require('./lib/admin-auth');
 const reminderService = require('./lib/reminder-service');
 const escalationService = require('./lib/escalation-service');
 const stockService = require('./lib/stock-service');
+const statsService = require('./lib/stats-service');
 const pushService = require('./lib/push-service').createPushService();
 const lineEnv = require('./lib/line-env');
+const errorLog = require('./lib/error-log');
 
 const PROMPT_DIR = path.join(__dirname, 'prompts');
 const readPrompt = (file) => fs.readFileSync(path.join(PROMPT_DIR, file), 'utf8');
@@ -40,6 +42,7 @@ const admin = resolveAdmin();
 if (!admin.enabled) console.warn('[yatung] editor/admin API ถูกปิด: ' + admin.reason + ' — ตั้ง NODE_RED_ADMIN_HASH ใน .env แล้ว docker compose up -d --force-recreate nodered');
 else if (admin.sample) console.warn('[yatung] NODE_RED_ADMIN_HASH เป็นค่าตัวอย่าง (รหัส demo1234) — เปลี่ยนก่อนเปิด tunnel');
 const rawBody = createRawBodyMiddleware();
+const { noStoreApi } = require('./lib/api-headers');
 
 // ผู้ป่วยกินยา (ทุกช่องทาง) หลังแจ้งญาติไปแล้ว → บอกญาติ "ปิดเรื่อง" 1 ครั้ง (ล้มเหลวไม่กระทบการบันทึกกินยา)
 doseService.setAfterTaken((ids) => escalationService.notifyResolved(db, lineClient, ids, lineEnv.pick((k) => process.env[k])));
@@ -66,7 +69,7 @@ module.exports = {
   // httpAdminMiddleware: admin app ผูกที่ "/" และมี bodyParser.json ของตัวเองรันก่อน route ของ http-in ทุกตัว (middleware นี้อยู่ก่อน parser นั้น แต่หลัง CORS ; ไม่ข้าม auth เพราะ admin ไม่มี route นี้)
   // httpNodeMiddleware: ใช้ตอน editor/admin ถูกปิด (httpAdminRoot: false → ไม่มี admin app) — ตั้งคู่กันเสมอ ตัวที่สองข้ามเองเมื่อ req._body ถูกตั้งแล้ว
   httpAdminMiddleware: rawBody,
-  httpNodeMiddleware: rawBody,
+  httpNodeMiddleware: [rawBody, noStoreApi],   // noStoreApi: /api/* ห้ามแคช + ไม่ตอบ 304 (lib/api-headers.js)
 
   // ให้ function node ใช้ผ่าน global.get('jwt') เป็นต้น
   functionGlobalContext: {
@@ -85,9 +88,11 @@ module.exports = {
     caregiverService,
     reminderService,                          // cron ส่งเตือน / demo (lib/reminder-service.js)
     escalationService,                        // แจ้งญาติเมื่อลืมกินยา / ปิดเรื่อง / demo (lib/escalation-service.js)
+    statsService,                             // อัตราการกินยา 7 วัน GET /api/stats/adherence + LINE "สรุป" (lib/stats-service.js)
     stockService,                             // แจ้งยาใกล้หมด / is_low / demo (lib/stock-service.js)
     pushService,                              // Web Push: subscribe / ส่ง / action token (lib/push-service.js) ; เลือกช่องทางที่ lib/notify-service.js
     lineEnv,                                  // pick(env.get) → env ที่ lib ฝั่ง LINE ใช้ (lib/line-env.js)
+    errorLog,                                 // log ของ group "ข้อผิดพลาดที่ไม่คาดคิด → 500" ทุก tab: report(node, msg) (lib/error-log.js)
     llmOutput,                                // process / reviewFlags / redactPii (lib/validate-llm-output.js)
     prompts: {
       medicineSystem: readPrompt('medicine-parse.system.txt'),

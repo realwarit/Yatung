@@ -53,6 +53,12 @@ echo "== 2) เว็บและ API"
 [ "$(code "$WEB/")" = "200" ] && ok "เว็บ $WEB ตอบ 200" || bad "เว็บ $WEB ไม่ตอบ 200"
 [ "$(code "$WEB/api/me")" = "401" ] && ok "nginx proxy /api → Node-RED (ไม่มี token = 401)" || bad "$WEB/api/me ควรได้ 401"
 [ "$(code "$API/api/me")" = "401" ] && ok "Node-RED $API ตอบ" || bad "Node-RED $API ไม่ตอบ"
+[ "$(code "$WEB/api/stats/adherence")" = "401" ] && ok "GET /api/stats/adherence ไม่มี JWT = 401 (tab 5-Dashboard)" || bad "$WEB/api/stats/adherence ควรได้ 401 (tab 5-Dashboard โหลดแล้วหรือยัง?)"
+[ "$(code "$WEB/manifest.webmanifest")" = "200" ] && ok "manifest.webmanifest ตอบ 200" || bad "manifest.webmanifest ไม่ตอบ 200"
+if [ "$(code "$WEB/ngsw.json")" = "200" ]; then
+  ok "ngsw.json ตอบ 200"
+  curl -s -m 10 "$WEB/ngsw.json" | grep -q '/api' && bad "ngsw.json มี /api — ห้ามแคช API ใน service worker (ข้อมูลข้ามผู้ใช้)" || ok "ngsw.json ไม่มี /api (ไม่แคชข้อมูลสุขภาพใน service worker)"
+else bad "ngsw.json ไม่ตอบ 200"; fi
 
 echo "== 3) Node-RED log"
 logs="$(docker compose logs nodered 2>&1)"
@@ -61,6 +67,12 @@ wl="$(echo "$logs" | grep -o 'gemini_warmup model=[^ ]* status=[^ ]* ms=[0-9]*' 
 if [ -z "$wl" ]; then warn "ไม่พบ gemini_warmup ใน log (AI_MOCK=true หรือไม่มี LLM_API_KEY?)"
 elif echo "$wl" | grep -q 'status=200'; then ok "Gemini warm-up: $wl"
 else bad "Gemini warm-up ผิดปกติ: $wl (ตรวจ LLM_API_KEY / เครือข่าย)"; fi
+# error ที่ไม่คาดคิด (500) ของวันนี้ — เขียนลง node-red/data/logs/errors.log ไม่หายเมื่อ recreate (หมุนไฟล์ที่ 1 MB เก็บ 3 ไฟล์)
+errf="node-red/data/logs/errors.log"; today_th="$(TZ=Asia/Bangkok date +%F)"
+if [ -f "$errf" ]; then
+  n_err="$(grep -c "^$today_th " "$errf" 2>/dev/null || true)"; n_err="${n_err:-0}"
+  if [ "$n_err" -gt 0 ]; then warn "errors.log: วันนี้มี unexpected_error $n_err บรรทัด (ดู $errf — ไม่แสดงเนื้อหาที่นี่)"; else ok "errors.log: วันนี้ไม่มี unexpected_error"; fi
+else ok "errors.log: ยังไม่มีไฟล์ (ยังไม่เคยเกิด unexpected_error ตั้งแต่เปิดใช้)"; fi
 mock="$(docker compose exec -T nodered printenv AI_MOCK 2>/dev/null | tr -d '\r')"
 [ "$mock" = "true" ] && warn "AI_MOCK=true — สแกนจะตอบผลตัวอย่าง ไม่ได้เรียก Gemini จริง"
 
@@ -262,6 +274,70 @@ if [ -n "${pub:-}" ]; then
   first="$(curl -s -m 10 -o /dev/null -w '%{content_type}' -A 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1' -H 'Accept: text/html' "$pub/")"
   case "$first" in text/html*) warn "ngrok ฟรี: เปิดครั้งแรกด้วยเบราว์เซอร์จะเจอหน้า \"Visit Site\" — กดครั้งเดียวต่ออุปกรณ์ ; iPhone ที่เปิดจากไอคอนหน้าจอโฮม cookie แยกจาก Safari ต้องกดอีกครั้งในแอป (ดู docs/web-push-test.md)" ;; esac
 else warn "ข้ามเช็ก service worker ผ่าน tunnel (tunnel ไม่ได้รัน)"; fi
+
+echo "== 9) schema (DB จริงต้องมีคอลัมน์ครบตาม db/init/01_schema.sql)"
+# อ่านอย่างเดียวกับ DB จริง: สร้าง DB ชั่วคราว yt_schema_check จาก db/init แล้วเทียบ information_schema (ไม่เรียก migrate.sh ; ลบ DB ชั่วคราวทิ้งตอนจบ)
+# สาเหตุที่ต้องมี: เพิ่ม migration แล้วลืม apply กับ DB จริง → nodered โค้ดใหม่อ้างคอลัมน์ที่ไม่มี → 500 ทุก endpoint ที่แตะตารางนั้น (13 ต.ค. tts_name)
+rootsql9() { docker compose exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" --default-character-set=utf8mb4' 2>/dev/null <<<"$1"; }
+cols9() { # cols9 DB → table.column|type|null|default (เรียง)
+  docker compose exec -T db sh -c "mysql -uroot -p\"\$MYSQL_ROOT_PASSWORD\" -N -B -e \"SELECT CONCAT(TABLE_NAME,'.',COLUMN_NAME,'|',COLUMN_TYPE,'|',IS_NULLABLE,'|',IFNULL(COLUMN_DEFAULT,'NULL')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='$1' AND TABLE_NAME IN (SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA='$1' AND TABLE_TYPE='BASE TABLE') ORDER BY 1\"" 2>/dev/null | tr -d '\r' | sort
+}
+live9="$(docker compose exec -T db sh -c 'echo $MYSQL_DATABASE' 2>/dev/null | tr -d '\r')"
+if [ -z "$live9" ]; then warn "ข้ามเช็ก schema (db ไม่ตอบ)"
+else
+  rootsql9 "DROP DATABASE IF EXISTS yt_schema_check; CREATE DATABASE yt_schema_check;" >/dev/null
+  docker compose exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" --default-character-set=utf8mb4 yt_schema_check' < db/init/01_schema.sql 2>/dev/null
+  want9="$(cols9 yt_schema_check)"; have9="$(cols9 "$live9")"
+  rootsql9 "DROP DATABASE IF EXISTS yt_schema_check;" >/dev/null
+  if [ -z "$want9" ]; then warn "ข้ามเช็ก schema (อ่าน db/init ไม่ได้)"
+  else
+    name9() { sed 's/|.*//'; }
+    miss9="$(comm -23 <(printf '%s\n' "$want9" | name9 | sort -u) <(printf '%s\n' "$have9" | name9 | sort -u))"
+    extra9="$(comm -13 <(printf '%s\n' "$want9" | name9 | sort -u) <(printf '%s\n' "$have9" | name9 | sort -u))"
+    diff9="$(comm -3 <(printf '%s\n' "$want9") <(printf '%s\n' "$have9") | sed 's/^\t*//' | name9 | sort -u | grep -vxFf <(printf '%s\n%s\n' "$miss9" "$extra9") | grep -v '^$')"
+    if [ -n "$miss9" ]; then
+      bad "DB จริงขาดคอลัมน์: $(printf '%s' "$miss9" | tr '\n' ' ')"
+      echo "    → รัน: bash scripts/migrate.sh   (แล้ว docker compose restart nodered ถ้า nodered เริ่มก่อน migrate)"
+    else ok "คอลัมน์ทุกตัวใน db/init มีใน DB จริงครบ ($(printf '%s\n' "$want9" | wc -l | tr -d ' ') คอลัมน์)"; fi
+    [ -n "$diff9" ] && warn "คอลัมน์ที่นิยามต่างจาก db/init (ชนิด/NULL/ค่าเริ่มต้น): $(printf '%s' "$diff9" | tr '\n' ' ')"
+    [ -n "$extra9" ] && warn "DB จริงมีคอลัมน์ที่ db/init ไม่มี: $(printf '%s' "$extra9" | tr '\n' ' ') (แก้ db/init/01_schema.sql ให้ตรง)"
+  fi
+fi
+
+echo "== 10) เวลาฐานข้อมูล (คิวรีเดิมที่ใช้ NOW()/CURDATE() พึ่งค่านี้)"
+# ใช้ pool ของแอป (lib/db.js: SET time_zone = '+07:00') เทียบ NOW() ของ MySQL กับเวลาไทยจาก JS ; ต่างกันเกิน 2 นาที = คิวรีเดิมจะนับผิดวัน
+tzout="$(docker compose exec -T nodered node -e '
+const db = require("/data/lib/db");
+(async () => {
+  const r = (await db.query("SELECT @@global.time_zone AS g, @@session.time_zone AS s, DATE_FORMAT(NOW(), \"%Y-%m-%d %H:%i:%s\") AS n"))[0];
+  const th = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 19).replace("T", " ");
+  const diff = Math.abs(Date.parse(r.n.replace(" ", "T") + "Z") - Date.parse(th.replace(" ", "T") + "Z")) / 1000;
+  console.log([r.g, r.s, r.n, th, Math.round(diff)].join("|"));
+  await db.close();
+})().catch((e) => { console.log("ERR " + (e.code || e.message)); process.exit(0); });
+' 2>/dev/null | tr -d '\r')"
+case "$tzout" in
+  ""|ERR*) warn "อ่านเวลา DB ไม่ได้ (${tzout:-nodered ไม่ตอบ})" ;;
+  *)
+    IFS='|' read -r tz_g tz_s tz_now tz_js tz_diff <<<"$tzout"
+    echo "    global.time_zone=$tz_g · session.time_zone=$tz_s · NOW() ของ MySQL=$tz_now · เวลาไทยจาก JS=$tz_js"
+    if [ "${tz_diff:-9999}" -le 120 ]; then ok "NOW() ของ MySQL ตรงกับเวลาไทย (ต่าง ${tz_diff} วินาที)"
+    else bad "NOW() ของ MySQL ต่างจากเวลาไทย ${tz_diff} วินาที — คิวรีเดิมที่ใช้ NOW()/CURDATE() จะนับผิดวัน (ตรวจ TZ ของ db/nodered และ SET time_zone ใน lib/db.js)"; fi
+    case "$tz_s" in "+07:00"|"Asia/Bangkok") ok "session.time_zone = $tz_s" ;; *) bad "session.time_zone = $tz_s (ควรเป็น +07:00)" ;; esac ;;
+esac
+
+echo "== 11) PWA และ API สรุป"
+c="$(code "$WEB/api/stats/adherence?days=7")"; [ "$c" = "401" ] && ok "GET /api/stats/adherence ไม่มี JWT = 401" || bad "GET /api/stats/adherence ไม่มี JWT ได้ $c (ควร 401)"
+mani="$(curl -s -m 10 "$WEB/manifest.webmanifest")"
+mchk="$(printf '%s' "$mani" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const m=JSON.parse(s);const e=[];
+if(!m.id)e.push("id");if(m.start_url!=="/today")e.push("start_url");if(!(m.shortcuts||[]).length)e.push("shortcuts");if(!/^#[0-9a-f]{6}$/i.test(m.background_color||""))e.push("background_color");
+if(!(m.icons||[]).some(i=>i.purpose==="maskable"&&i.sizes==="512x512"))e.push("maskable512");console.log(e.length?"MISSING "+e.join(","):"OK")}catch(x){console.log("NOTJSON")}})')"
+case "$mchk" in OK) ok "manifest.webmanifest = 200 ครบ (id, start_url /today, shortcuts, พื้นหลัง, maskable 512)" ;; NOTJSON) bad "manifest.webmanifest ไม่ใช่ JSON (docker compose up -d --build frontend ?)" ;; *) bad "manifest.webmanifest ขาด: ${mchk#MISSING } — build frontend ใหม่: docker compose up -d --build frontend" ;; esac
+ngsw="$(curl -s -m 10 -H 'Accept: application/json' "$WEB/ngsw.json")"
+nchk="$(printf '%s' "$ngsw" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const n=JSON.parse(s);console.log(JSON.stringify(n).includes("/api")?"HAS_API":(n.dataGroups&&n.dataGroups.length?"HAS_DATAGROUPS":"OK"))}catch(x){console.log("NOTJSON")}})')"
+case "$nchk" in OK) ok "ngsw.json เป็น JSON ไม่มี /api และไม่มี dataGroups (ไม่แคชข้อมูลข้ามผู้ใช้)" ;; HAS_API|HAS_DATAGROUPS) bad "ngsw.json แคช /api ($nchk) — ห้าม (cache key ไม่แยก JWT)" ;; *) bad "ngsw.json ไม่ใช่ JSON" ;; esac
+idx="$(curl -s -m 10 "$WEB/")"
+printf '%s' "$idx" | grep -qiE 'googleapis|gstatic|cdn\.' && bad "index.html โหลดอะไรจาก CDN ภายนอก (ฟอนต์/ไอคอนต้อง self-host)" || ok "index.html ไม่โหลดอะไรจาก CDN ภายนอก"
 
 echo
 if [ "$FAIL" = 0 ]; then echo "สรุป: ✓ พร้อมนำเสนอ"; else echo "สรุป: ✗ ไม่ผ่าน $FAIL ข้อ — แก้ก่อนนำเสนอ"; exit 1; fi

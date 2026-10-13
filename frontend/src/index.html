@@ -10,7 +10,12 @@
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
     <meta name="theme-color" content="#0f766e" />
     <link rel="manifest" href="manifest.webmanifest" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <!-- iPhone: เปิดจากหน้าจอโฮมแบบแอปเต็มจอ (ต้อง "เพิ่มไปยังหน้าจอโฮม" ก่อนถึงจะรับแจ้งเตือนได้) -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="ยาตรง" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="application-name" content="ยาตรง" />
     <script>
       // ตั้งขนาดตัวอักษรที่จำไว้ก่อนหน้า render ไม่ให้หน้ากระตุก
       try {

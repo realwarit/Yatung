@@ -9,6 +9,7 @@
 
 set -u
 cd "$(dirname "$0")/.."
+source scripts/lib/nodered-log.sh   # dump log nodered ก่อน recreate (ดู lib)
 source scripts/lib/clock.sh; clock_guard 5 10   # กันรันใกล้เที่ยงคืน (รอบกินยาข้ามวัน) ดู scripts/lib/clock.sh
 BASE="${BASE:-http://localhost:1880}"
 WEB="${WEB:-http://localhost:8080}"
@@ -140,14 +141,14 @@ req POST /api/line/link-code "$TA"; CODE_A="$(jget 'o.code')"
 say "$LA" "$CODE_A"
 expect_match "ผู้ป่วยส่งรหัส → Flex เชื่อมสำเร็จ + ชื่อ" "$REPLY" '🎉 เชื่อมสำเร็จแล้วค่ะ.*เชื่อมสำเร็จแล้วค่ะ 🎉.*สวัสดีคุณ สมชาย ทดสอบ'
 expect "  ปุ่ม 📋 ดูยาวันนี้ ส่งข้อความ 'วันนี้'" "$(fl_last reply 'JSON.stringify(r.body.messages[0].contents.footer).match(/\"text\":\"[^\"]+\"/)[0]')" '"text":"วันนี้"'
-expect "  quick reply (ผู้ป่วย)" "$(qr_labels)" "📋 ยาวันนี้,📱 เปิดแอป,❓ ช่วยเหลือ"
+expect "  quick reply (ผู้ป่วย)" "$(qr_labels)" "📋 ยาวันนี้,📊 สรุป,📱 เปิดแอป,❓ ช่วยเหลือ"
 follow "$LA"
 expect_match "follow ซ้ำของผู้ป่วยที่เชื่อมแล้ว → วิธีใช้ (ไม่ใช่ขั้นตอนเชื่อม)" "$REPLY" 'วิธีใช้น้องยาตรงนะคะ'
 req POST /api/caregivers "$TA" '{"name":"ลูกสาว","escalate_after_min":90}'; CG="$(jget 'o.id')"
 req POST "/api/caregivers/$CG/link-code" "$TA"; CODE_C="$(jget 'o.code')"
 say "$LC" "$CODE_C"
 expect_match "ผู้ดูแลส่งรหัส → Flex เชื่อมเป็นผู้ดูแล + กี่นาที" "$REPLY" 'เชื่อมเป็นผู้ดูแลแล้วค่ะ 💚.*ผู้ดูแลของคุณ ผู้ทดสอบ day6c A.*เกิน 90 นาที'
-expect "  quick reply (ผู้ดูแลอย่างเดียว)" "$(qr_labels)" "❓ ช่วยเหลือ"
+expect "  quick reply (ผู้ดูแลอย่างเดียว)" "$(qr_labels)" "📊 สรุป,❓ ช่วยเหลือ"
 say "$LU" "123456"
 expect_match "รหัสผิด → ข้อความ text" "$REPLY" '🤔 รหัสนี้ใช้ไม่ได้ค่ะ รหัสใช้ได้ 10 นาทีเท่านั้น'
 expect "  quick reply (ยังไม่เชื่อม)" "$(qr_labels)" "🔗 วิธีเชื่อมบัญชี,📱 เปิดแอป"
@@ -176,7 +177,7 @@ expect_match "  ความคืบหน้า 1 จาก 4 (นับ misse
 expect_match "  ป้ายสถานะครบ 3 แบบ" "$REPLY" '✅ กินแล้ว.*⏰ ยังไม่ได้กิน.*⏰ ยังไม่ได้กิน.*🕒 รอเวลา'
 expect_match "  ชื่อยาที่ยังไม่กินอยู่ใต้มื้อ" "$REPLY" '• TEST-6C-ยาเย็น 500 mg.*• TEST-6C-ยาเช้า 500 mg'
 expect_match "  วันที่ไทยแบบสั้น (วัน ที่ เดือน)" "$REPLY" '(อา\.|จ\.|อ\.|พ\.|พฤ\.|ศ\.|ส\.) [0-9]+ (ม\.ค\.|ก\.พ\.|มี\.ค\.|เม\.ย\.|พ\.ค\.|มิ\.ย\.|ก\.ค\.|ส\.ค\.|ก\.ย\.|ต\.ค\.|พ\.ย\.|ธ\.ค\.)'
-expect "  quick reply (ผู้ป่วย)" "$(qr_labels)" "📋 ยาวันนี้,📱 เปิดแอป,❓ ช่วยเหลือ"
+expect "  quick reply (ผู้ป่วย)" "$(qr_labels)" "📋 ยาวันนี้,📊 สรุป,📱 เปิดแอป,❓ ช่วยเหลือ"
 expect "  altText ไม่เกิน 400" "$(fl_last reply 'r.body.messages[0].altText.length<=400')" "true"
 sql "UPDATE dose_logs SET status='taken', taken_at=NOW(), source='app' WHERE user_id=$UA;" >/dev/null
 say "$LA" "วันนี้"
@@ -184,7 +185,7 @@ expect_match "กินครบ → ชมด้วย mascot-cheer" "$REPLY" '
 expect "  รูปท่าดีใจ" "$(fl_last reply 'JSON.stringify(r.body.messages[0].contents.header).match(/mascot-[a-z]+/)[0]')" "mascot-cheer"
 say "$LC" "วันนี้"
 expect_match "ผู้ดูแลอย่างเดียว → Flex สรุปยาวันนี้ของผู้ป่วยที่ดูแล (7A) มีชื่อผู้ป่วย" "$REPLY" '📋 ยาวันนี้ของผู้ที่คุณดูแล 1 คน.*ผู้ทดสอบ day6c A'
-expect "  quick reply (ผู้ดูแล)" "$(qr_labels)" "❓ ช่วยเหลือ"
+expect "  quick reply (ผู้ดูแล)" "$(qr_labels)" "📊 สรุป,❓ ช่วยเหลือ"
 say "$LU" "วันนี้"
 expect_match "ยังไม่เชื่อม → วิธีเชื่อมแบบสั้น" "$REPLY" '🔗 ยังไม่ได้เชื่อมบัญชีค่ะ.*รับรหัสเชื่อม LINE'
 
@@ -196,7 +197,7 @@ expect "กด 2 รายการ → Flex เล็ก" "$(fl_last reply 'r.b
 expect_match "  ชื่อยา + เวลาบันทึก + ความคืบหน้า" "$REPLY" 'เก่งมากเลยค่ะ! 🎉.*✅ TEST-6C-ยาเช้า 500 mg.*✅ TEST-6C-ยาเย็น 500 mg.*🕖 บันทึกเมื่อ [0-2][0-9]:[0-5][0-9] น\..*กินแล้ว [0-9] จาก 4 รายการ'
 expect_match "  ยังมีมื้อถัดไป (ก่อนนอน 23:59 ที่ยังไม่ถึงเวลา)" "$REPLY" '🌙 มื้อถัดไป: ก่อนนอน 23:59 น\.'
 expect "  source = line" "$(sql "SELECT COUNT(*) FROM dose_logs WHERE id IN ($D_TAKEN,$D_MISSED) AND source='line' AND status='taken';")" "2"
-expect "  quick reply (ผู้ป่วย)" "$(qr_labels)" "📋 ยาวันนี้,📱 เปิดแอป,❓ ช่วยเหลือ"
+expect "  quick reply (ผู้ป่วย)" "$(qr_labels)" "📋 ยาวันนี้,📊 สรุป,📱 เปิดแอป,❓ ช่วยเหลือ"
 press "$LA" "a=take&d=$D_TAKEN,$D_MISSED"
 expect "กดซ้ำ → text 'บันทึกไว้แล้วค่ะ' (ไม่หักสต็อกซ้ำ)" "$REPLY" "✅ บันทึกไว้แล้วค่ะ ไม่ต้องกดซ้ำนะคะ"
 expect "  สต็อกยาเช้าลด 1 ครั้งเดียว" "$(sql "SELECT remaining_qty FROM medications WHERE id=$M1;")" "29.00"
@@ -224,7 +225,7 @@ expect "LINE ผู้ดูแลอย่างเดียวกดปุ่�
 
 section "ช่วยเหลือ / วิธีใช้"
 say "$LA" "ช่วยเหลือ"
-expect_match "ช่วยเหลือ → text หลายบรรทัดสั้น" "$REPLY" '😊 น้องยาตรงช่วยได้แบบนี้ค่ะ 📋 พิมพ์ "วันนี้" เพื่อดูยาของวันนี้ 🔗 ส่งรหัส 6 หลัก เพื่อเชื่อมบัญชี หรือแตะปุ่มด้านล่าง ได้เลยนะคะ'
+expect_match "ช่วยเหลือ → text หลายบรรทัดสั้น" "$REPLY" '😊 น้องยาตรงช่วยได้แบบนี้ค่ะ 📋 พิมพ์ "วันนี้" เพื่อดูยาของวันนี้ 📊 พิมพ์ "สรุป" เพื่อดูผล 7 วัน 🔗 ส่งรหัส 6 หลัก เพื่อเชื่อมบัญชี หรือแตะปุ่มด้านล่าง ได้เลยนะคะ'
 say "$LA" "สวัสดีครับ"
 expect_match "ข้อความอื่นๆ → เมนูช่วยเหลือ" "$REPLY" 'น้องยาตรงช่วยได้แบบนี้ค่ะ'
 say "$LA" "วิธีใช้"

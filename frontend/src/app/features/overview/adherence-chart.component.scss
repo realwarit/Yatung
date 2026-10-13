@@ -1,0 +1,93 @@
+:host { display: block; }
+
+// ขนาดที่ 375px (html 18px): คอลัมน์ 7 × ≈ 47 ที่ 360px / 49 ที่ 375px (กราฟชิดขอบการ์ด) — แคบกว่า 48px ได้เพราะปุ่มแตะสูงเกิน 100px (ข้อยกเว้นใน CLAUDE.md) · แท่งสูงสุด 96px (5.33rem) กว้าง 26px · เลขบนแท่ง 18px ห่างหัวแท่ง 4px · ป้ายวัน 2 บรรทัด 16/18px
+.chart { margin: 0 calc(var(--yt-space-4) * -1); }   // ชิดขอบการ์ด (margin ติดลบเท่า padding การ์ด 16px)
+figcaption { padding: 0 var(--yt-space-4); }
+h3 { margin: 0 0 var(--yt-space-2); font: 600 1rem / var(--yt-line-height-tight) var(--yt-font-display); }   // 18px
+
+.plot { position: relative; --bar-max: 5.33rem; }
+.bars, .taps { display: grid; }
+.taps { position: absolute; inset: 0; }
+.taps button {
+  min-width: 0;
+  border: 0;
+  border-radius: var(--yt-radius-sm);
+  background: transparent;
+  cursor: pointer;
+  &.on { box-shadow: inset 0 0 0 3px var(--yt-primary); background: rgb(var(--yt-primary-rgb) / 0.06); }
+}
+
+.col { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+
+// พื้นที่แท่ง: เลขอยู่บนหัวแท่งเสมอ (ห่าง 4px) — แท่งเตี้ยเลขก็ลงต่ำตาม ไม่ลอยห่าง
+.area {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  height: calc(var(--bar-max) + 1.7rem + 4px);
+}
+.val {
+  font-size: 1rem;
+  line-height: 1.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: -0.02em;
+  &.ink-good { color: var(--yt-scale-good-ink); }
+  &.ink-mid { color: var(--yt-scale-mid-ink); }
+  &.ink-low { color: var(--yt-scale-low-ink); }
+  &.ink-none { color: var(--yt-text-muted); font-weight: 500; }
+}
+.bar {
+  width: 1.45rem;
+  height: calc(var(--bar-max) * var(--f, 0));
+  min-height: 0.27rem;
+  border-radius: 6px 6px 2px 2px;
+  &.tone-good { background: var(--yt-scale-good); }
+  &.tone-mid { background: var(--yt-scale-mid); }
+  &.tone-low { background: var(--yt-scale-low); }
+  // วันนี้ที่ยังไม่จบ: แท่งกรอบประสี teal สูงเท่า 100% (ยังนับไม่เสร็จ ไม่ใช่ข้อผิดพลาด)
+  &.partial { box-sizing: border-box; background: transparent; border: 2px dashed var(--yt-scale-good); border-bottom-width: 3px; }
+  // วันไม่มีข้อมูล: ขีดเทาบางๆ
+  &.none { height: 4px; min-height: 4px; border-radius: 2px; background: var(--yt-border-strong); opacity: 0.6; }
+}
+
+// ป้ายวัน 2 บรรทัดเสมอ (วันนี้ = "วันนี้" / เลขวัน) ความสูงทุกคอลัมน์จึงเท่ากันเอง
+.lbl {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: var(--yt-space-1);
+  line-height: 1.45;
+  text-align: center;
+  white-space: nowrap;
+}
+.dow { font-size: 0.9rem; color: var(--yt-text-muted); }   // 16px
+.dn { font-size: 1rem; font-weight: 600; }
+.today .dow, .today .dn { color: var(--yt-scale-good-ink); font-weight: 700; }
+
+.detail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--yt-space-2);
+  min-height: 3rem;
+  margin: var(--yt-space-3) var(--yt-space-4) 0;
+}
+.dl { font-weight: 700; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.2rem;
+  padding: 0 var(--yt-space-3);
+  border-radius: var(--yt-radius-pill);
+  background: var(--yt-primary-softer);
+  border: 2px solid var(--yt-primary-soft);
+  font-weight: 600;
+  &.chip--none { color: var(--yt-text-muted); font-weight: 500; }
+}
+
+// sr-only มาตรฐาน: ใส่ที่ <div> ครอบตาราง (ไม่ใส่ที่ <table> เอง — ตารางไม่ยอมย่อความกว้างเป็น 1px จึงดันหน้าให้กว้างและเลื่อนซ้ายขวาได้)
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }

@@ -115,6 +115,12 @@
   box-shadow: var(--yt-shadow-md);
 }
 
+.yt-hint {
+  margin: var(--yt-space-1) 0 var(--yt-space-2);
+  color: var(--yt-text-muted);
+  font-size: var(--yt-text-sm);
+}
+
 .yt-disclaimer {
   font-size: var(--yt-text-sm);
   color: var(--yt-text-muted);
@@ -126,6 +132,7 @@
   max-width: 72rem;
   margin: 0 auto;
   padding: var(--yt-space-2) var(--yt-space-4) var(--yt-space-5);
+  overflow-x: clip;   // ตาข่ายกันพลาดเท่านั้น (clip ไม่ใช่ hidden เพื่อไม่ให้ sticky เสีย) — ต้นเหตุต้องแก้ที่ตัวที่ล้น ตรวจด้วย tools/overflow-check.mjs
 
   // มือถือ: เว้นล่าง = ความสูงแถบเมนู + ส่วนที่ปุ่มกล้องยื่นขึ้น + safe-area (--yt-bottom-clearance) เหมือนกันทุกหน้า ปุ่มสุดท้ายจึงไม่ถูกแถบ/ปุ่มสแกนบัง
   // หน้าโฟกัส (ซ่อนแถบเมนู: /scan, /review) ShellComponent ใส่ class .focus ที่ host → ใช้ระยะปกติ
@@ -153,7 +160,11 @@
 // snackbar: บนมือถือต้องลอยเหนือแถบเมนูล่าง
 .yt-snack {
   @media (max-width: 1023.98px) { margin-bottom: calc(var(--yt-bottom-clearance) + var(--yt-space-2)) !important; }
+  .mat-mdc-button { min-height: var(--yt-tap); }   // ปุ่มใน snackbar (อัปเดต/ยกเลิก/ตกลง) แตะง่าย ≥ 56px
 }
+
+// ข้อความข้างปุ่มที่ใช้เน็ตไม่ได้ตอนออฟไลน์ (ต้องมองเห็น ไม่ใช่แค่ปุ่มจาง)
+.yt-offline-hint { margin: var(--yt-space-2) 0 0; color: var(--yt-on-warning-soft); font-weight: 600; font-size: 1rem; line-height: var(--yt-line-height-tight); }
 
 // ปุ่ม Material ที่มีไอคอน + ข้อความ: จัดกึ่งกลางแนวตั้งให้ตรงกัน (ไอคอนไม่ลอยเหนือตัวอักษรไทย)
 .mdc-button__label { display: inline-flex; align-items: center; justify-content: center; gap: 0.5em; line-height: 1; }

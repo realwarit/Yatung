@@ -8,6 +8,8 @@ import { MEAL_LABEL, SLOT_LABEL, SLOT_ORDER, UNIT_LABEL, UNITS, doseText, unitIn
 import { IconComponent, IconName } from '../../icon.component';
 import { SegmentedComponent } from '../segmented/segmented.component';
 import { StepperComponent } from '../stepper/stepper.component';
+import { TtsButtonComponent } from '../tts-button/tts-button.component';
+import { medNameSpeech } from '../../../core/tts/speech-text';
 import { MedDraft, MedField } from './med-draft';
 
 /** ช่องที่ต้องตรวจ: เหตุผล + กด "ถูกต้องแล้ว" ได้หรือไม่ (ค่าว่างต้องเลือกเอง กดผ่านไม่ได้) */
@@ -22,7 +24,7 @@ const SLOT_ICON: Record<Slot, IconName> = { morning: 'sunrise', noon: 'sun', eve
  */
 @Component({
   selector: 'app-med-fields',
-  imports: [NgTemplateOutlet, FormsModule, MatSelect, MatOption, IconComponent, SegmentedComponent, StepperComponent],
+  imports: [NgTemplateOutlet, FormsModule, MatSelect, MatOption, IconComponent, SegmentedComponent, StepperComponent, TtsButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './med-fields.component.html',
   styleUrl: './med-fields.component.scss',
@@ -33,10 +35,15 @@ export class MedFieldsComponent {
   readonly errors = input<Partial<Record<MedField, string>>>({});
   readonly flags = input<Partial<Record<MedField, MedFlag>>>({});
   readonly idPrefix = input('f');
+  /** แสดงช่อง "ชื่อที่ให้อ่านออกเสียง" + ปุ่มทดลองฟัง (หน้าเพิ่ม/แก้ไขยาเท่านั้น ไม่แสดงในหน้า Review) */
+  readonly showTts = input(false);
   /** พับ "ข้อมูลเพิ่มเติม" (two-way) */
   readonly moreOpen = model(false);
   readonly edited = output<MedField>();
   readonly ack = output<MedField>();
+
+  /** ท่อนข้อความทดลองฟัง: ชื่อที่ให้อ่าน (ถ้าว่างใช้ชื่อยา) */
+  protected readonly ttsPreview = (): string[] => { const d = this.draft(); return medNameSpeech(d.ttsName, d.name); };
 
   protected readonly allSlots = SLOT_ORDER;
   protected readonly slotLabel = SLOT_LABEL;

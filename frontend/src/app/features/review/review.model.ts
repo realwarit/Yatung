@@ -37,7 +37,7 @@ export const FLAG_TO_FIELD: Record<string, MedField> = {
 
 export function draftFromParsed(m: ParsedMedication): MedDraft {
   return {
-    name: m.name, strength: m.strength ?? '', dose: m.dose_per_time, unit: m.unit, meal: m.meal_relation,
+    name: m.name, ttsName: '', strength: m.strength ?? '', dose: m.dose_per_time, unit: m.unit, meal: m.meal_relation,
     asNeeded: m.as_needed, slots: [...m.slots], indication: m.indication ?? '', warnings: m.warnings.join('\n'),
     total: m.total_qty,
   };

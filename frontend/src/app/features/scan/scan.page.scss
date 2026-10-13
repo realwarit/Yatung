@@ -63,14 +63,14 @@ ion-title {
   font-size: var(--yt-text-sm);
   font-weight: 500;
   line-height: var(--yt-line-height-tight);
-  white-space: nowrap;
+  min-width: 0;          // ให้ย่อได้ — ที่ 375px/ก+ ป้ายสามขั้นรวมกันกว้างเกินจอ
 
   &:not(:last-child) { flex: 1; }
   // เส้นเชื่อมไปขั้นถัดไป
   &:not(:last-child)::after {
     content: '';
     flex: 1;
-    min-width: var(--yt-space-3);
+    min-width: 0;
     height: 2px;
     margin: 0 var(--yt-space-2);
     background: var(--yt-border-strong);

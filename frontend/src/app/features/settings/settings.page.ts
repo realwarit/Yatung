@@ -1,4 +1,6 @@
+import { ErrTextComponent } from '../../shared/components/err-text/err-text.component';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { InstallCardComponent } from '../../shared/components/install-card/install-card.component';
 import { MatButton } from '@angular/material/button';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { errorText } from '../../core/api/api-error';
@@ -12,14 +14,16 @@ import { IconComponent, IconName } from '../../shared/icon.component';
 import { DemoApi } from '../../core/api/line.api';
 import { CaregiversSectionComponent } from './caregivers-section.component';
 import { DemoSectionComponent } from './demo-section.component';
+import { DevInfoSectionComponent } from './dev-info-section.component';
 import { LineSectionComponent } from './line-section.component';
+import { TtsSectionComponent } from './tts-section.component';
 import { PushSectionComponent } from './push-section.component';
 
 const SLOT_ICON: Record<Slot, IconName> = { morning: 'sunrise', noon: 'sun', evening: 'sunset', bedtime: 'moon' };
 
 @Component({
   selector: 'app-settings-page',
-  imports: [MatButton, IconComponent, TimeRowComponent, FontSizeToggleComponent, LineSectionComponent, PushSectionComponent, CaregiversSectionComponent, DemoSectionComponent],
+  imports: [ErrTextComponent, MatButton, InstallCardComponent, IconComponent, TimeRowComponent, FontSizeToggleComponent, LineSectionComponent, PushSectionComponent, CaregiversSectionComponent, DemoSectionComponent, DevInfoSectionComponent, TtsSectionComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './settings.page.html',
   styleUrl: './settings.page.scss',

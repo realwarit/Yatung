@@ -1,0 +1,49 @@
+<figure class="chart">
+  <figcaption><h3>รายวัน</h3></figcaption>
+
+  <div class="plot">
+    <!-- ภาพกราฟ: role=img + คำอธิบายเป็นประโยค (ผู้ใช้ screen reader ใช้ตารางด้านล่างได้ด้วย) -->
+    <div class="bars" role="img" [attr.aria-label]="summary()" [style.grid-template-columns]="cols()">
+      @for (d of days(); track d.date) {
+        <div class="col" [class.today]="d.is_today">
+          <span class="area">
+            <span class="val num" [class]="'val num ink-' + inkOf(d)">{{ label(d) }}</span>
+            @if (partial(d)) { <span class="bar partial" style="--f: 1"></span> }
+            @else if (d.rate !== null) { <span [class]="'bar tone-' + tone(d.rate)" [style.--f]="frac(d)"></span> }
+            @else { <span class="bar none"></span> }
+          </span>
+          <span class="lbl">
+            <span class="dow">{{ d.is_today ? 'วันนี้' : dow(d) }}</span>
+            <span class="dn num">{{ dayNo(d) }}</span>
+          </span>
+        </div>
+      }
+    </div>
+    <!-- ปุ่มแตะ (ซ้อนทับแท่ง) แยกจากภาพ เพื่อไม่ให้ปุ่มซ้อนอยู่ใน role=img -->
+    <div class="taps" role="group" aria-label="เลือกวันเพื่อดูรายละเอียด" [style.grid-template-columns]="cols()">
+      @for (d of days(); track d.date) {
+        <button type="button" [class.on]="selected()?.date === d.date" [attr.aria-pressed]="selected()?.date === d.date" [attr.aria-label]="pressLabel(d)" (click)="select(d)"></button>
+      }
+    </div>
+  </div>
+
+  <p class="detail" role="status" aria-live="polite">
+    @if (selected(); as s) {
+      <span class="dl">{{ s.label_th }}</span>
+      @for (c of chips(); track c) { <span class="chip">{{ c }}</span> }
+      @if (!chips().length) { <span class="chip chip--none">ไม่มียา</span> }
+    }
+  </p>
+
+  <div class="sr-only">
+    <table>
+      <caption>ตารางอัตราการกินยารายวัน</caption>
+      <thead><tr><th scope="col">วัน</th><th scope="col">กินแล้ว</th><th scope="col">ลืม</th><th scope="col">ยังไม่กิน</th><th scope="col">ยังไม่ถึงเวลา</th><th scope="col">อัตรา</th></tr></thead>
+      <tbody>
+        @for (d of days(); track d.date) {
+          <tr><th scope="row">{{ d.is_today ? 'วันนี้ ' : '' }}{{ d.label_th }}</th><td>{{ d.taken }}</td><td>{{ d.missed }}</td><td>{{ d.pending_due }}</td><td>{{ d.upcoming }}</td><td>{{ d.rate === null ? 'ไม่มียา' : d.rate + '%' }}</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</figure>

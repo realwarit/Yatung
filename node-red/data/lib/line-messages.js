@@ -2,6 +2,7 @@
 // กฎเดียวกับ line-flex.js: น้ำเสียง ค่ะ/นะคะ · อิโมจิ ≤ 1 ตัวต่อบรรทัด วางต้นบรรทัดหรือท้ายบรรทัดเท่านั้น · ตัวอักษร ≥ md · ชื่อมื้อ/วิธีกินใช้ mapping เดียวกับเว็บ (labels-th.js)
 const { SLOT_LABEL, SLOT_EMOJI, CHANNEL_LABEL, unitInDose } = require('./labels-th');
 const F = require('./line-flex');
+const { levelOf } = require('./adherence-level');
 const { text, box, separator, bubble, bodyOf, flexMessage, header, footerOf, uriButton, messageButton, medTitle, progress, badge, COLOR } = F;
 
 const plain = (t) => ({ type: 'text', text: t });
@@ -26,7 +27,7 @@ const TEXT = {
   conflict: () => plain('🔒 LINE นี้เชื่อมไว้แล้วค่ะ\nกับผู้ป่วยอีกคนหนึ่ง\nต้องยกเลิกการเชื่อม\nในแอปของบัญชีเดิมก่อน\nแล้วขอรหัสใหม่นะคะ'),
   alreadyTaken: () => plain('✅ บันทึกไว้แล้วค่ะ\nไม่ต้องกดซ้ำนะคะ'),
   doseNotFound: () => plain('🔍 ไม่พบรายการยานี้แล้วค่ะ\nอาจถูกแก้ไขในแอป\nแตะ "ยาวันนี้"\nเพื่อดูรายการล่าสุดนะคะ'),
-  help: () => plain('😊 น้องยาตรงช่วยได้แบบนี้ค่ะ\n📋 พิมพ์ "วันนี้"\nเพื่อดูยาของวันนี้\n🔗 ส่งรหัส 6 หลัก\nเพื่อเชื่อมบัญชี\nหรือแตะปุ่มด้านล่าง\nได้เลยนะคะ\nไม่ใช่คำแนะนำ\nทางการแพทย์ค่ะ'),
+  help: () => plain('😊 น้องยาตรงช่วยได้แบบนี้ค่ะ\n📋 พิมพ์ "วันนี้"\nเพื่อดูยาของวันนี้\n📊 พิมพ์ "สรุป"\nเพื่อดูผล 7 วัน\n🔗 ส่งรหัส 6 หลัก\nเพื่อเชื่อมบัญชี\nหรือแตะปุ่มด้านล่าง\nได้เลยนะคะ\nไม่ใช่คำแนะนำ\nทางการแพทย์ค่ะ'),
   notLinked: () => plain('🔗 ยังไม่ได้เชื่อมบัญชีค่ะ\nเปิดแอปยาตรง\nไปที่หน้า "ตั้งค่า"\nกด "รับรหัสเชื่อม LINE"\nแล้วส่งเลข 6 หลัก\nมาที่แชทนี้นะคะ'),
   caregiverOnly: (patients) => plain(`💚 คุณเป็นผู้ดูแลของ\n${thaiJoin(patients.map((p) => niceName(p)))}\nน้องยาตรงจะแจ้งที่แชทนี้\nเมื่อผู้ป่วยลืมกินยานะคะ`),
   previewNote: () => plain('นี่คือข้อความตัวอย่างค่ะ\nยังไม่ได้บันทึกนะคะ'),
@@ -268,6 +269,55 @@ function buildLowStock(meds, env) {
   return flexMessage(alt, bubble({ header: header({ pose: 'hello', title: 'ยาใกล้หมดแล้วนะคะ' }, env), body: bodyOf(body), footer: footerOf(open ? [uriButton('เติมยาในแอป', open, 'primary')] : []) }));
 }
 
+// ---------- สรุปการกินยา 7 วัน (คำสั่ง "สรุป") ----------
+// stats = ผลของ statsService.adherence(…, 7).body ; ผู้ดูแลเห็นเฉพาะชื่อผู้ป่วย + อัตรา ไม่มีชื่อยา
+const DAY_MARK = { done: { s: '✓', color: COLOR.success }, miss: { s: '✕', color: COLOR.warning }, none: { s: '–', color: COLOR.muted }, today: { s: '●', color: COLOR.primary } };
+// ✓ ครบ · ✕ ไม่ครบ · – ไม่มียา · ● วันนี้
+function dayKind(d) { return d.is_today ? 'today' : d.due === 0 ? 'none' : d.rate === 100 ? 'done' : 'miss'; }
+function dayDots(days) {
+  return box(days.map((d) => {
+    const k = DAY_MARK[dayKind(d)];
+    return box([
+      text(k.s, { size: 'xl', weight: 'bold', align: 'center', color: k.color }),
+      text(String(d.label_th).split(' ')[0], { size: 'md', align: 'center', color: d.is_today ? COLOR.primary : COLOR.muted, weight: d.is_today ? 'bold' : 'regular' })
+    ], { flex: 1, spacing: 'xs' });
+  }), { layout: 'horizontal', spacing: 'xs', margin: 'md' });
+}
+const rateText = (r) => (r === null || r === undefined ? '–' : `${r}%`);
+const rangeBadge = (range) => `${thaiDate(range.from)} – ${thaiDate(range.to)}`;
+const LEGEND = '✓ ครบ · ✕ ไม่ครบ · – ไม่มียา · ● วันนี้';
+
+function buildAdherence(stats, env) {
+  const { overall, range } = stats;
+  const level = levelOf(overall.rate);
+  const body = [text(rateText(overall.rate), { size: '4xl', weight: 'bold', align: 'center', color: COLOR.primary })];
+  if (overall.due > 0) body.push(text(`กินแล้ว ${overall.taken} จาก ${overall.due} ครั้ง`, { size: 'md', align: 'center', color: COLOR.muted }));
+  if (stats.streak_days > 0) body.push(text(`🌟 กินครบติดกัน ${stats.streak_days} วัน`, { size: 'lg', weight: 'bold', align: 'center' }));
+  body.push(separator(), dayDots(stats.days), text(LEGEND, { size: 'md', color: COLOR.muted, align: 'center', margin: 'md' }), separator(),
+    text(level.text, { size: 'lg', weight: 'bold', align: 'center', color: COLOR.primaryDeep, margin: 'md' }));
+  const url = F.appUrl(env, '/overview');
+  const alt = `📊 สรุปการกินยา 7 วัน: ${overall.rate === null ? 'ยังไม่มีข้อมูล' : overall.rate + '%'}`;
+  return flexMessage(alt, bubble({ header: header({ pose: level.pose, title: 'สรุปการกินยา 7 วัน', badge: rangeBadge(range) }, env), body: bodyOf(body), footer: footerOf(url ? [uriButton('ดูรายละเอียด', url, 'primary')] : []) }));
+}
+
+// list = [{ name, stats }] (ผู้ดูแลหลายผู้ป่วยได้) ; ชื่อคนอยู่บรรทัดของตัวเอง ; ไม่มีชื่อยา
+function buildCaregiverAdherence(list, env) {
+  const rows = [];
+  list.slice(0, MAX_CG_PATIENTS).forEach((p, i) => {
+    if (i > 0) rows.push(separator());
+    const { overall } = p.stats;
+    const items = [text(`คุณ${niceName(p.name, 30)}`, { weight: 'bold', size: 'xl' }),
+      text(overall.rate === null ? 'ยังไม่มีข้อมูลยาใน 7 วัน' : `กินครบ ${overall.rate}% ใน 7 วัน`, { size: 'lg', weight: 'bold', color: COLOR.primary })];
+    if (p.stats.streak_days > 0) items.push(text(`🌟 ติดกัน ${p.stats.streak_days} วัน`, { size: 'md', color: COLOR.muted }));
+    items.push(dayDots(p.stats.days));
+    rows.push(box(items, { spacing: 'sm', margin: i > 0 ? 'md' : undefined }));
+  });
+  if (list.length > MAX_CG_PATIENTS) rows.push(text(`+ อีก ${list.length - MAX_CG_PATIENTS} คน`, { size: 'md', color: COLOR.muted, margin: 'md' }));
+  rows.push(text(LEGEND, { size: 'md', color: COLOR.muted, align: 'center', margin: 'md' }));
+  const range = list[0] ? list[0].stats.range : null;
+  return flexMessage(`📊 สรุปการกินยา 7 วันของผู้ที่คุณดูแล ${list.length} คน`, bubble({ header: header({ pose: 'hello', title: 'สรุปการกินยา 7 วัน', badge: range ? rangeBadge(range) : undefined }, env), body: bodyOf(rows) }));
+}
+
 // ---------- ตัวอย่างทุกแบบ (#ตัวอย่าง n — เฉพาะ DEMO_MODE ; ข้อมูลสร้างในหน่วยความจำ ไม่เขียน DB) ----------
 const SAMPLE_DOSES = [
   { id: 1, name: 'พาราเซตามอล', strength: '500 mg', dose_per_time: 1, unit: 'tablet', meal_relation: 'after' },
@@ -287,6 +337,18 @@ const shapedOf = (slotsIn) => {
 };
 
 // คืนรายการ { id, title, ctx, messages } ; ctx = ประเภท quickReply ที่ใช้กับข้อความนั้น
+// ข้อมูลสมมติของ "สรุป": pairs = [[taken, due] …] ต่อวัน (เก่า→ใหม่ วันสุดท้าย = วันนี้) ; ไม่ใส่ = ไม่มียาเลย
+function sampleStats(pairs, streak = 0) {
+  const labels = ['อ. 6 ต.ค.', 'พ. 7 ต.ค.', 'พฤ. 8 ต.ค.', 'ศ. 9 ต.ค.', 'ส. 10 ต.ค.', 'อา. 11 ต.ค.', 'จ. 12 ต.ค.'];
+  const days = labels.map((label_th, i) => {
+    const [taken, due] = pairs[i] || [0, 0];
+    return { date: `2026-10-${String(6 + i).padStart(2, '0')}`, label_th, is_today: i === 6, taken, missed: due - taken, pending_due: 0, upcoming: 0, due, rate: due ? Math.round((taken * 100) / due) : null };
+  });
+  const taken = days.reduce((n, d) => n + d.taken, 0), due = days.reduce((n, d) => n + d.due, 0);
+  const rate = due ? Math.round((taken * 100) / due) : null;
+  return { range: { from: '2026-10-06', to: '2026-10-12', days: 7 }, overall: { taken, missed: due - taken, pending_due: 0, due, rate }, days, streak_days: streak };
+}
+
 function samples(env) {
   const rem = (slot, time, lateMin, ids) => F.buildReminder({ slot, scheduled_at: `2026-10-09 ${time}:00`, late_min: lateMin, doses: sd(ids) }, env, { preview: true });
   return [
@@ -324,6 +386,12 @@ function samples(env) {
     { id: 'cg-today', title: 'ผู้ดูแล: พิมพ์ "วันนี้"', ctx: 'caregiver', messages: [buildCaregiverToday([
       { name: 'สมชาย ใจดี', shaped: shapedOf([{ slot: 'morning', time: '08:00', doses: [{ id: 1, status: 'taken' }] }, { slot: 'evening', time: '18:00', doses: [{ id: 1, status: 'pending', due: true }] }, { slot: 'bedtime', time: '21:00', doses: [{ id: 6, status: 'pending' }] }]) },
       { name: 'มาลี ใจงาม', shaped: shapedOf([{ slot: 'morning', time: '08:00', doses: [{ id: 3, status: 'taken' }] }]) }], '2026-10-09', env)] },
+    { id: 'summary-good', title: 'สรุป 7 วัน: เก่งมาก', ctx: 'patient', messages: [buildAdherence(sampleStats([[3, 3], [3, 3], [0, 0], [3, 3], [3, 3], [2, 3], [3, 3], [2, 2]], 2), env)] },
+    { id: 'summary-low', title: 'สรุป 7 วัน: ยังไม่ค่อยครบ', ctx: 'patient', messages: [buildAdherence(sampleStats([[1, 3], [2, 3], [0, 3], [1, 3], [2, 3], [1, 3], [0, 1]], 0), env)] },
+    { id: 'summary-none', title: 'สรุป 7 วัน: ยังไม่มีข้อมูล', ctx: 'patient', messages: [buildAdherence(sampleStats([]), env)] },
+    { id: 'cg-summary', title: 'ผู้ดูแล: พิมพ์ "สรุป"', ctx: 'caregiver', messages: [buildCaregiverAdherence([
+      { name: 'สมชาย ใจดี', stats: sampleStats([[3, 3], [3, 3], [0, 0], [3, 3], [2, 3], [3, 3], [2, 2]], 3) },
+      { name: 'มาลี ใจงาม', stats: sampleStats([]) }], env)] },
     { id: 'cg-taken', title: 'ผู้ดูแลกดยืนยัน: บันทึกแล้ว', ctx: 'caregiver', messages: [caregiverTakeResult({ taken: [{ name: 'สมชาย ใจดี', slot: 'evening' }] })] },
     { id: 'cg-already', title: 'ผู้ดูแลกดยืนยัน: ผู้ป่วยกินไปแล้ว', ctx: 'caregiver', messages: [caregiverTakeResult({ already: [{ name: 'สมชาย ใจดี', slot: 'evening', at: '18:12', by: 'self' }] })] },
     { id: 'cg-already-cg', title: 'ผู้ดูแลกดยืนยัน: ญาติคนอื่นยืนยันแล้ว', ctx: 'caregiver', messages: [caregiverTakeResult({ already: [{ name: 'สมชาย ใจดี', slot: 'evening', at: '16:33', by: 'caregiver' }] })] },
@@ -354,6 +422,6 @@ function buildPreviewPage(n, env) {
 module.exports = {
   plain, niceName, thaiDate, thaiJoin, TEXT,
   buildWelcome, buildLinkedPatient, buildLinkedCaregiver, buildToday, buildTaken, slotStatus, timeRows, timeRows,
-  buildEscalation, buildEscalationResolved, buildCaregiverToday, caregiverTakeResult, buildLowStock, firstName, cgTakeData, cgAckData,
+  buildEscalation, buildEscalationResolved, buildCaregiverToday, buildAdherence, buildCaregiverAdherence, dayDots, dayKind, caregiverTakeResult, buildLowStock, firstName, cgTakeData, cgAckData,
   samples, buildPreviewPage, previewPageCount, SAMPLES_PER_PAGE
 };

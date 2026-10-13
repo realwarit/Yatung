@@ -27,6 +27,14 @@ function validateMedication(body) {
     strength = body.strength.trim() || null;
   }
 
+  // ชื่อที่ให้อ่านออกเสียง (ไม่บังคับ): ไม่ส่งมา = undefined (PUT คงค่าเดิม, POST = null) · ส่ง ''/null = ล้างค่า
+  let ttsName;
+  if (body.tts_name !== undefined) {
+    if (body.tts_name !== null && typeof body.tts_name !== 'string') return fail('ชื่อที่ให้อ่านออกเสียง ต้องเป็นข้อความ');
+    ttsName = body.tts_name === null ? null : (body.tts_name.trim() || null);
+    if (ttsName !== null && ttsName.length > 100) return fail('ชื่อที่ให้อ่านออกเสียง ต้องไม่เกิน 100 ตัวอักษร');
+  }
+
   if (!isNum(body.dose_per_time) || body.dose_per_time <= 0 || body.dose_per_time > 20) {
     return fail('ปริมาณต่อครั้ง ต้องเป็นตัวเลขมากกว่า 0 และไม่เกิน 20');
   }
@@ -78,7 +86,7 @@ function validateMedication(body) {
   return {
     ok: true,
     value: {
-      name, strength, dose_per_time: round2(body.dose_per_time), unit: body.unit,
+      name, tts_name: ttsName, strength, dose_per_time: round2(body.dose_per_time), unit: body.unit,
       meal_relation: body.meal_relation, as_needed: asNeeded, slots, indication, warnings,
       total_qty: t.v,
       remaining_qty: r.v,                  // null = ไม่ได้ส่งมา (POST: = total_qty, PUT: คงค่าเดิม)

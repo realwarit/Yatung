@@ -1,0 +1,42 @@
+<div class="yt-page">
+  <header class="head">
+    <h1 class="title">สรุป {{ days }} วัน</h1>
+    @if (data()) { <p class="range">{{ range() }}</p> }
+  </header>
+
+  @if (error(); as err) {
+    <div class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span><app-err-text [text]="err" /></span></div>
+    <button mat-flat-button type="button" (click)="load()">ลองใหม่</button>
+  } @else if (loading()) {
+    <div class="grid" aria-busy="true" aria-label="กำลังโหลดสรุปการกินยา">
+      <div class="yt-skeleton sk-main"></div>
+      <div class="yt-skeleton sk-list"></div>
+    </div>
+  } @else if (data(); as d) {
+    <div class="grid yt-enter">
+      <!-- การ์ด 1: ภาพรวม + รายวัน -->
+      <section class="card yt-card" aria-label="ภาพรวมและรายวัน">
+        <app-adherence-hero [rate]="d.overall.rate" [taken]="d.overall.taken" [due]="d.overall.due" [days]="d.range.days" [streak]="d.streak_days" [linked]="lineLinked()" />
+        <app-tts-button variant="bar" label="อ่านสรุปให้ฟัง" ttsKey="overview" [build]="speak" />
+
+        @if (empty()) {
+          <div class="empty">
+            <p>เมื่อเพิ่มยาและเริ่มกินยา ตัวเลขจะมาแสดงที่นี่ค่ะ</p>
+            <a mat-flat-button routerLink="/medications/new"><app-icon name="plus" /> เพิ่มยา</a>
+          </div>
+        } @else {
+          <hr class="sep" />
+          <app-adherence-chart [days]="d.days" />
+          @if (worst(); as w) {
+            <p class="insight" role="note"><app-icon name="bulb" /> <span>มื้อ{{ w.label_th }}กินครบน้อยที่สุด</span></p>
+          }
+        }
+      </section>
+
+      <!-- การ์ด 2: แยกตามยา (+ ช่องทางที่บันทึก) -->
+      @if (!empty()) { <app-med-breakdown [meds]="d.by_medication" [sources]="d.by_source" /> }
+    </div>
+  }
+
+  <p class="yt-disclaimer">ข้อมูลนี้ไม่ใช่คำแนะนำทางการแพทย์</p>
+</div>

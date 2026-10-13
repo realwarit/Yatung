@@ -15,6 +15,7 @@ BASE="${BASE:-http://localhost:1880}"          # ตรงเข้า Node-RED 
 DEMO_EMAIL="${DEMO_EMAIL:-demo@yatung.app}"
 MODE="${1:-all}"
 cd "$(dirname "$0")/.."
+source scripts/lib/nodered-log.sh   # dump log nodered ก่อน recreate (ดู lib)
 source scripts/lib/demo-password.sh   # อ่าน DEMO_PASSWORD จาก .env เองถ้าไม่ได้ตั้ง (ไม่แสดงค่า)
 source scripts/lib/clock.sh; clock_guard 5 5   # กันรันใกล้เที่ยงคืน (รอบกินยาข้ามวัน) ดู scripts/lib/clock.sh
 RES=scripts/.day4-results
@@ -83,7 +84,7 @@ cleanup() {
   # คืน nodered ให้ใช้ค่าตาม .env (AI_MOCK ตามที่ตั้งใน .env หรือ false)
   docker compose up -d --force-recreate nodered >/dev/null 2>&1
   echo; echo "== ข้อมูลผู้ใช้จริง"
-  real_snapshot_check || echo "  ! ชุดนี้ใช้ LINE จริงและ cron จริงยังทำงาน — ถ้าต่างเฉพาะ reminded_at ของ dose ที่ถึงเวลา = cron เตือนจริงตามปกติ ไม่ใช่ความผิดของเทส"
+  real_snapshot_check || { echo "สรุป: ข้อมูลผู้ใช้จริงเปลี่ยน → ไม่ผ่าน"; exit 1; }
 }
 source scripts/lib/real-snapshot.sh   # snapshot ผู้ใช้จริงก่อน-หลัง (ดู scripts/lib/real-snapshot.sh)
 real_snapshot_take

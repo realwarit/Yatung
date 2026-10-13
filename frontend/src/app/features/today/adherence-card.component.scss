@@ -1,0 +1,19 @@
+:host { display: block; }
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: var(--yt-space-3);
+  min-height: var(--yt-tap);
+  margin-bottom: var(--yt-space-4);
+  padding: 0 var(--yt-space-4);
+  border: 2px solid var(--yt-primary-soft);
+  border-radius: var(--yt-radius-md);
+  background: var(--yt-primary-softer);
+  color: var(--yt-primary-deep);
+  font-weight: 600;
+  text-decoration: none;
+}
+.txt { flex: 1; min-width: 0; }
+.num { font-size: 1.1rem; font-weight: 700; }
+.go { flex: none; }

@@ -147,12 +147,14 @@ function quickReply(ctx, env = process.env) {
   const items = [];
   if (ctx === 'patient') {
     items.push(qrMessage('📋 ยาวันนี้', 'วันนี้'));
+    items.push(qrMessage('📊 สรุป', 'สรุป'));
     const u = appUrl(env, '/today'); if (u) items.push(qrUri('📱 เปิดแอป', u));
     items.push(qrMessage('❓ ช่วยเหลือ', 'ช่วยเหลือ'));
   } else if (ctx === 'unlinked') {
     items.push(qrMessage('🔗 วิธีเชื่อมบัญชี', 'วิธีใช้'));
     const u = appUrl(env, '/settings'); if (u) items.push(qrUri('📱 เปิดแอป', u));
   } else {
+    items.push(qrMessage('📊 สรุป', 'สรุป'));
     items.push(qrMessage('❓ ช่วยเหลือ', 'ช่วยเหลือ'));
   }
   return { items };

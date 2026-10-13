@@ -17,3 +17,11 @@ scripts/.day4-results/
 # ไฟล์ session/สำรองของ Node-RED editor (มี token ห้าม commit)
 node-red/data/.sessions.json
 node-red/data/.*.backup
+
+# ภาพเทียบหน้าจอของวันที่ 8 (ไม่ commit)
+docs/screenshots/day8/
+docs/screenshots/tts/
+test-logs/
+
+# log error ของ Node-RED (errors.log, หมุนไฟล์) — ห้าม commit
+node-red/data/logs/

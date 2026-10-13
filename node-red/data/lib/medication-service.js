@@ -28,7 +28,7 @@ const GENERATE_TODAY_SQL = (byMedication, onlyFuture) =>
 const DT = (col) => "DATE_FORMAT(" + col + ", '%Y-%m-%d %H:%i:%s')";
 const D = (col) => "DATE_FORMAT(" + col + ", '%Y-%m-%d')";
 const MED_SELECT =
-  'SELECT m.id, m.name, m.strength, m.dose_per_time, m.unit, m.meal_relation, m.as_needed, m.indication, ' +
+  'SELECT m.id, m.name, m.tts_name, m.strength, m.dose_per_time, m.unit, m.meal_relation, m.as_needed, m.indication, ' +
   'm.warnings, m.total_qty, m.remaining_qty, m.refill_alert_days, ' + D('m.start_date') + ' AS start_date, ' +
   D('m.end_date') + ' AS end_date, m.is_active, ' + DT('m.created_at') + ' AS created_at, ' + DT('m.updated_at') + ' AS updated_at, ' +
   'v.days_left, (SELECT JSON_ARRAYAGG(s.slot) FROM medication_slots s WHERE s.medication_id = m.id) AS slots ' +
@@ -44,7 +44,7 @@ function shape(row) {
   const slots = parseJson(row.slots, []).slice().sort((a, b) => SLOTS.indexOf(a) - SLOTS.indexOf(b));
   const num = (v) => (v == null ? null : Number(v));
   return {
-    id: row.id, name: row.name, strength: row.strength,
+    id: row.id, name: row.name, tts_name: row.tts_name == null ? null : row.tts_name, strength: row.strength,
     dose_per_time: Number(row.dose_per_time), unit: row.unit, meal_relation: row.meal_relation,
     as_needed: !!row.as_needed, slots, indication: row.indication,
     warnings: parseJson(row.warnings, []),
@@ -104,9 +104,9 @@ async function createInTx(conn, userId, m, prescriptionId) {
   const q = connQ(conn);
   const remaining = m.remaining_qty != null ? m.remaining_qty : m.total_qty;
   const [res] = await conn.query(
-    'INSERT INTO medications (user_id, prescription_id, name, strength, dose_per_time, unit, meal_relation, as_needed, indication, ' +
-    'warnings, total_qty, remaining_qty, start_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, CURDATE()))',
-    [userId, prescriptionId || null, m.name, m.strength, m.dose_per_time, m.unit, m.meal_relation, m.as_needed ? 1 : 0, m.indication,
+    'INSERT INTO medications (user_id, prescription_id, name, tts_name, strength, dose_per_time, unit, meal_relation, as_needed, indication, ' +
+    'warnings, total_qty, remaining_qty, start_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, CURDATE()))',
+    [userId, prescriptionId || null, m.name, m.tts_name === undefined ? null : m.tts_name, m.strength, m.dose_per_time, m.unit, m.meal_relation, m.as_needed ? 1 : 0, m.indication,
       JSON.stringify(m.warnings), m.total_qty, remaining, m.start_date]);
   const id = res.insertId;
   await replaceSlots(conn, id, m.slots);
@@ -135,9 +135,9 @@ async function update(db, userId, rawId, body) {
     // ไม่ส่ง remaining_qty: คงค่าเดิม (ถ้าเดิมไม่มีค่า ใช้ total_qty) — กัน PUT แก้ชื่อแล้วจำนวนยาถูกรีเซ็ต
     const remaining = m.remaining_qty != null ? m.remaining_qty : (cur[0].remaining_qty != null ? cur[0].remaining_qty : m.total_qty);
     await conn.query(
-      'UPDATE medications SET name = ?, strength = ?, dose_per_time = ?, unit = ?, meal_relation = ?, as_needed = ?, ' +
+      'UPDATE medications SET name = ?, tts_name = IF(?, ?, tts_name), strength = ?, dose_per_time = ?, unit = ?, meal_relation = ?, as_needed = ?, ' +
       'indication = ?, warnings = ?, total_qty = ?, remaining_qty = ?, start_date = COALESCE(?, start_date) WHERE id = ?',
-      [m.name, m.strength, m.dose_per_time, m.unit, m.meal_relation, m.as_needed ? 1 : 0, m.indication,
+      [m.name, m.tts_name === undefined ? 0 : 1, m.tts_name === undefined ? null : m.tts_name, m.strength, m.dose_per_time, m.unit, m.meal_relation, m.as_needed ? 1 : 0, m.indication,
         JSON.stringify(m.warnings), m.total_qty, remaining, m.start_date, id]);
     await replaceSlots(conn, id, m.slots);
     await stock.resetRecovered(q, process.env, id);   // แก้จำนวน/มื้อจนพ้นเกณฑ์ = เริ่มรอบแจ้งใหม่

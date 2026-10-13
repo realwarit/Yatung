@@ -26,6 +26,14 @@
   --yt-mint-mid: #9fdccd;        // ตกแต่งพาสเทลสีเขียว (เม็ดยาจิ๋ว)
   --yt-amber: #fbbf24;          // ดาว ประกาย — ตกแต่งเท่านั้น
 
+  // สเกลสีอัตราการกินยา (หน้าสรุป: แท่งรายวัน แถบรายยา วงแหวน) — ≥ 80 teal · 50–79 amber · < 50 coral ; สีเต็ม = ตัวแท่ง/แถบ (≥ 3:1 บนพื้นขาว), -ink = ตัวเลข/ข้อความบนพื้นขาว (≥ 4.5:1)
+  --yt-scale-good: var(--yt-primary);
+  --yt-scale-good-ink: var(--yt-primary-dark);   // 7.7:1
+  --yt-scale-mid: #d97706;                        // 3.2:1
+  --yt-scale-mid-ink: #92400e;                    // 7.3:1
+  --yt-scale-low: #e0553d;                        // 3.8:1
+  --yt-scale-low-ink: #a63a24;                    // 6.5:1
+
   --yt-accent: #f59e0b;          // ใช้น้อย เน้นจุดสำคัญเท่านั้น
   --yt-accent-soft: #fef3c7;
   --yt-on-accent: #12302d;

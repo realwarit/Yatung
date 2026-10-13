@@ -1,3 +1,4 @@
+import { ErrTextComponent } from '../../shared/components/err-text/err-text.component';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatButton } from '@angular/material/button';
@@ -18,7 +19,7 @@ import { RefillDialogComponent } from './refill-dialog.component';
 
 @Component({
   selector: 'app-medications-page',
-  imports: [RouterLink, MatButton, MatMenu, MatMenuContent, MatMenuItem, MatMenuTrigger, IconComponent, MascotComponent, SegmentedComponent,
+  imports: [ErrTextComponent, RouterLink, MatButton, MatMenu, MatMenuContent, MatMenuItem, MatMenuTrigger, IconComponent, MascotComponent, SegmentedComponent,
     DoseQtyPipe, MealLabelPipe, SlotLabelPipe, UnitLabelPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './medications.page.html',
