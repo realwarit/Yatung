@@ -3,6 +3,8 @@
 //        1) dose_logs.reminded_at จากว่าง → มีค่า (ห้ามเปลี่ยนคอลัมน์อื่นของแถวนั้น)
 //        2) notification_logs แถวใหม่ที่ kind = reminder | escalation
 //        3) push_subscriptions.last_success_at เพิ่มขึ้น (ห้ามเปลี่ยน fail_count / notify_both / จำนวนเครื่อง)
+//        4) dose_logs.escalated_at จากว่าง → มีค่า (คอลัมน์เดียวที่เปลี่ยน) — cron แจ้งญาติตั้งตอนส่ง
+//        5) dose_escalations แถวใหม่ที่ sent_at ตรงรอบ cron และยังไม่มี acknowledged/confirmed/resolved (แถวเดิมเปลี่ยนค่าใดๆ = ✘ เพราะรับทราบ/ยืนยัน/ปิดเรื่องต้องเกิดจากคนกด)
 //   ✘ bad  = ทุกอย่างที่เหลือ (status, taken_at, source, escalated_at, followup_at, remaining/ยา, ผู้ใช้, การเชื่อม LINE, notification ชนิดอื่น ฯลฯ)
 // ข้อมูลเข้า = ข้อความ TSV (คอลัมน์คั่นด้วย tab ตามที่ mysql -N -B ให้) จึงทดสอบได้โดยไม่ต้องมี DB
 
@@ -31,6 +33,8 @@ function classifyDoses(before, after, out) {
     const changed = names.filter((_, i) => rb[i] !== ra[i]);
     if (changed.length === 1 && changed[0] === 'reminded_at' && rb[2] === NULL && ra[2] !== NULL && onCronBeat(ra[2])) {
       out.info.dose += 1;
+    } else if (changed.length === 1 && changed[0] === 'escalated_at' && rb[4] === NULL && ra[4] !== NULL && onCronBeat(ra[4])) {
+      out.info.doseEsc += 1;
     } else {
       out.bad.push(`dose ${id}: ${changed.map((n) => `${n} ${rb[names.indexOf(n)]} → ${ra[names.indexOf(n)]}`).join(', ')}`);
     }
@@ -82,21 +86,37 @@ function classifyMeds(before, after, out) {
   }
 }
 
+/** dose_escalations: id, dose_id, caregiver_id, sent_at, status, acknowledged_at, confirmed_at, resolved_notified_at */
+function classifyEsc(before, after, out) {
+  const b = new Map(rows(before).map((r) => [r[0], r]));
+  const a = new Map(rows(after).map((r) => [r[0], r]));
+  for (const [id, rb] of b) {
+    const ra = a.get(id);
+    if (!ra) out.bad.push(`dose_escalations ${id}: หายไป`);
+    else if (rb.join('	') !== ra.join('	')) out.bad.push(`dose_escalations ${id}: ${rb.slice(3).join(',')} → ${ra.slice(3).join(',')}`);
+  }
+  for (const [id, r] of a) {
+    if (b.has(id)) continue;
+    if (onCronBeat(r[3]) && r[5] === NULL && r[6] === NULL && r[7] === NULL) out.info.esc += 1;
+    else out.bad.push(`dose_escalations ใหม่ ${id}: sent_at ${r[3]} status=${r[4]} ack=${r[5]} confirmed=${r[6]} resolved=${r[7]}`);
+  }
+}
+
 /** snap = { doses, notifs, push, meds, esc } (ข้อความ TSV / ตัวเลข) */
 export function classify(before, after) {
-  const out = { info: { dose: 0, notification: 0, push: 0, kinds: {} }, bad: [] };
+  const out = { info: { dose: 0, doseEsc: 0, esc: 0, notification: 0, push: 0, kinds: {} }, bad: [] };
   classifyDoses(before.doses, after.doses, out);
   classifyNotifs(before.notifs, after.notifs, out);
   classifyPush(before.push, after.push, out);
   classifyMeds(before.meds, after.meds, out);
-  if (String(before.esc).trim() !== String(after.esc).trim()) out.bad.push(`dose_escalations ของผู้ใช้จริง: ${String(before.esc).trim()} → ${String(after.esc).trim()}`);
-  out.infoTotal = out.info.dose + out.info.notification + out.info.push;
+  classifyEsc(before.esc, after.esc, out);
+  out.infoTotal = out.info.dose + out.info.doseEsc + out.info.esc + out.info.notification + out.info.push;
   return out;
 }
 
 export function describeInfo(info) {
   const kinds = Object.entries(info.kinds).map(([k, n]) => `${k} ${n}`).join(', ');
-  return `dose_logs.reminded_at ${info.dose} แถว · notification_logs ใหม่ ${info.notification} แถว${kinds ? ` (${kinds})` : ''} · push last_success_at ${info.push} เครื่อง`;
+  return `dose_logs.reminded_at ${info.dose} แถว · notification_logs ใหม่ ${info.notification} แถว${kinds ? ` (${kinds})` : ''} · push last_success_at ${info.push} เครื่อง · escalated_at ${info.doseEsc} แถว · dose_escalations ใหม่ ${info.esc} แถว`;
 }
 
 // CLI: node real-snapshot-classify.mjs <dir>   (ไฟล์ <dir>/{before,after}.{doses,notifs,push,meds,esc}) → exit 0 = ไม่มี ✘ ; 1 = มี ✘
@@ -107,7 +127,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const load = (side) => Object.fromEntries(['doses', 'notifs', 'push', 'meds', 'esc'].map((k) => [k, existsSync(`${dir}/${side}.${k}`) ? readFileSync(`${dir}/${side}.${k}`, 'utf8') : '']));
   const r = classify(load('before'), load('after'));
   const sameDoseCount = rows(load('before').doses).length;
-  if (r.bad.length === 0 && r.infoTotal === 0) console.log(`  ✔ ข้อมูลผู้ใช้จริงไม่เปลี่ยน (dose_logs ${sameDoseCount} แถว, notification_logs ${rows(load('after').notifs).length} แถว, dose_escalations ${String(load('after').esc).trim()} แถว เท่าเดิม)`);
+  if (r.bad.length === 0 && r.infoTotal === 0) console.log(`  ✔ ข้อมูลผู้ใช้จริงไม่เปลี่ยน (dose_logs ${sameDoseCount} แถว, notification_logs ${rows(load('after').notifs).length} แถว, dose_escalations ${rows(load('after').esc).length} แถว เท่าเดิม)`);
   if (r.infoTotal > 0) console.log(`  ⓘ เปลี่ยนจาก cron จริง (ปกติ — ผู้ใช้จริงได้รับเตือนตามเวลา): ${describeInfo(r.info)}`);
   if (r.bad.length > 0) {
     console.log(`  ✘ ข้อมูลผู้ใช้จริงเปลี่ยนโดยไม่ใช่งานของ cron ปกติ ${r.bad.length} รายการ:`);

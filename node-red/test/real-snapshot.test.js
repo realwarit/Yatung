@@ -13,7 +13,7 @@ const snap = (o = {}) => ({
   notifs: tsv(['10', 'reminder', 'line_push', '2026-10-13 08:00:02']),
   push: tsv(['78', '0', '2026-10-13 08:00:03', '5', '1']),
   meds: tsv(['7', '-']),
-  esc: '0',
+  esc: '',
   ...o,
 });
 
@@ -41,6 +41,7 @@ test('✘ status / taken_at / source / escalated_at / followup_at เปลี�
   const cases = [
     tsv(['1', 'taken', '-', '2026-10-13 16:00:01', '-', '-', 'line'], ['2', 'taken', '2026-10-13 08:00:01', '2026-10-13 08:05:00', '-', '-', 'app']),
     tsv(['1', 'pending', '2026-10-13 16:00:01', '-', '2026-10-13 16:30:01', '-', '-'], ['2', 'taken', '2026-10-13 08:00:01', '2026-10-13 08:05:00', '-', '-', 'app']),
+    tsv(['1', 'pending', '-', '-', '2026-10-13 16:30:47', '-', '-'], ['2', 'taken', '2026-10-13 08:00:01', '2026-10-13 08:05:00', '-', '-', 'app']),
     tsv(['1', 'pending', '-', '-', '-', '2026-10-13 16:30:01', '-'], ['2', 'taken', '2026-10-13 08:00:01', '2026-10-13 08:05:00', '-', '-', 'app']),
     tsv(['1', 'pending', '-', '-', '-', '-', '-'], ['2', 'taken', '2026-10-13 08:00:01', '2026-10-13 08:05:00', '-', '-', 'caregiver']),
   ];
@@ -82,7 +83,29 @@ test('ⓘ push last_success_at เพิ่ม (ตรงรอบ cron) แล�
 
 test('✘ ยา (refill_alerted_at) และจำนวน dose_escalations เปลี่ยน', () => {
   assert.equal(mod.classify(snap(), snap({ meds: tsv(['7', '2026-10-13 09:00:01']) })).bad.length, 1);
-  assert.equal(mod.classify(snap(), snap({ esc: '1' })).bad.length, 1);
+});
+
+const E = (...c) => c.join('	');
+const escRow = (o = {}) => E(o.id || '1', '1', '3', o.sent || '2026-10-13 16:30:02', o.status || 'sent', o.ack || '-', o.conf || '-', o.res || '-');
+
+test('ⓘ cron แจ้งญาติ: escalated_at ว่าง→มีค่า + dose_escalations แถวใหม่ตรงรอบ cron', () => {
+  const doses = tsv(['1', 'pending', '-', '-', '2026-10-13 16:30:02', '-', '-'], ['2', 'taken', '2026-10-13 08:00:01', '2026-10-13 08:05:00', '-', '-', 'app']);
+  const r = mod.classify(snap(), snap({ doses, esc: escRow() }));
+  assert.equal(r.info.doseEsc, 1);
+  assert.equal(r.info.esc, 1);
+  assert.deepEqual(r.bad, []);
+  assert.match(mod.describeInfo(r.info), /escalated_at 1 แถว · dose_escalations ใหม่ 1 แถว/);
+});
+
+test('✘ dose_escalations: แถวใหม่ไม่ตรงรอบ / มี ack,confirmed,resolved / แถวเดิมเปลี่ยน / หาย', () => {
+  for (const esc of [escRow({ sent: '2026-10-13 16:30:47' }), escRow({ ack: '2026-10-13 16:31:00' }), escRow({ conf: '2026-10-13 16:31:00' }), escRow({ res: '2026-10-13 16:31:00' })]) {
+    assert.equal(mod.classify(snap(), snap({ esc })).bad.length, 1, esc);
+  }
+  const base = snap({ esc: escRow() });
+  assert.equal(mod.classify(base, snap({ esc: escRow({ ack: '2026-10-13 17:00:00' }) })).bad.length, 1);
+  assert.equal(mod.classify(base, snap({ esc: escRow({ res: '2026-10-13 17:00:00' }) })).bad.length, 1);
+  assert.equal(mod.classify(base, snap({ esc: '' })).bad.length, 1);
+  assert.equal(mod.classify(base, base).bad.length, 0);
 });
 
 test('ปนกัน: นับ ⓘ และ ✘ แยกระดับ', () => {
