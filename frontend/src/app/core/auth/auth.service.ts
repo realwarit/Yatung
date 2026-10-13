@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { ApiError, AuthResponse, AuthUser, RegisterRequest } from './auth.models';
 import { clearSnapshots } from '../offline/snapshot';
+import { clearErrorLog } from '../diagnostics/error-log';
 
 const TOKEN_KEY = 'yatung_token';
 const USER_KEY = 'yatung_user';
@@ -49,6 +50,7 @@ export class AuthService {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
     } catch { /* ใช้งานต่อได้แม้ storage ถูกบล็อก */ }
+    clearErrorLog();    // บันทึก error ของเครื่องนี้ไม่ติดไปให้ผู้ใช้คนถัดไป
     clearSnapshots();   // ข้อมูลที่เก็บไว้ดูออฟไลน์ของผู้ใช้นี้ต้องไม่ติดไปให้คนถัดไป
     this.currentUser.set(null);
     if (redirect) this.router.navigate(['/login']);

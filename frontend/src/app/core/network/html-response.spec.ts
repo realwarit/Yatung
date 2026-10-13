@@ -52,5 +52,5 @@ describe('errorText', () => {
     expect(errorText(e)).toContain('การเชื่อมต่อหมดอายุ');
     expect(errorText(e)).not.toBe('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
   });
-  it('error อื่นไม่เปลี่ยน', () => expect(errorText(new Error('x'))).toBe('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'));
+  it('error อื่นไม่เปลี่ยน', () => expect(errorText(new Error('x'))).toBe('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง (E-JS)'));
 });

@@ -1,3 +1,4 @@
+import { ErrTextComponent } from '../../shared/components/err-text/err-text.component';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -43,7 +44,7 @@ interface SlotVM {
 
 @Component({
   selector: 'app-today-page',
-  imports: [RouterLink, MatButton, IconComponent, MascotComponent, ConfettiComponent,
+  imports: [ErrTextComponent, RouterLink, MatButton, IconComponent, MascotComponent, ConfettiComponent,
     DoseCardComponent, TodayProgressComponent, AdherenceCardComponent, InstallCardComponent, TtsButtonComponent, DoseQtyPipe, MealLabelPipe, SlotLabelPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './today.page.html',

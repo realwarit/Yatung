@@ -53,7 +53,7 @@ describe('PushTakeService.consumeFromUrl', () => {
     const err = new HttpErrorResponse({ status: 401, error: { error: 'INVALID_TOKEN', details: 'ลิงก์นี้หมดอายุแล้ว' } });
     const { svc, snack } = setup({ take: () => throwError(() => err) });
     svc.consumeFromUrl({ search: '', pathname: '/today', hash: '#take=TOK' }, hist());
-    expect(snack.open.mock.calls[0][0]).toBe('ลิงก์นี้หมดอายุแล้ว');
+    expect(snack.open.mock.calls[0][0]).toBe('ลิงก์นี้หมดอายุแล้ว (E-401)');
   });
   it('ไม่มี take → ไม่แตะ URL ไม่ยิง API', () => {
     const take = vi.fn();

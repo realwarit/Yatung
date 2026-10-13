@@ -1,3 +1,4 @@
+import { ErrTextComponent } from '../../shared/components/err-text/err-text.component';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
@@ -22,7 +23,7 @@ const DAYS = 7;
 /** หน้า "สรุป" — อัตราการกินยา 7 วัน (ตัวเลขจาก GET /api/stats/adherence นิยามเดียวกับ LINE "สรุป") */
 @Component({
   selector: 'app-overview-page',
-  imports: [RouterLink, MatButton, IconComponent, AdherenceHeroComponent, AdherenceChartComponent, MedBreakdownComponent, TtsButtonComponent],
+  imports: [ErrTextComponent, RouterLink, MatButton, IconComponent, AdherenceHeroComponent, AdherenceChartComponent, MedBreakdownComponent, TtsButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './overview.page.html',
   styleUrl: './overview.page.scss',

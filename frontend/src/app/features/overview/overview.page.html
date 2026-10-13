@@ -5,7 +5,7 @@
   </header>
 
   @if (error(); as err) {
-    <div class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span>{{ err }}</span></div>
+    <div class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span><app-err-text [text]="err" /></span></div>
     <button mat-flat-button type="button" (click)="load()">ลองใหม่</button>
   } @else if (loading()) {
     <div class="grid" aria-busy="true" aria-label="กำลังโหลดสรุปการกินยา">
