@@ -65,7 +65,7 @@ test('ไม่โหลดอะไรจาก CDN ภายนอก (ฟอ�
   assert.ok(!/(googleapis|gstatic|cdn\.)/i.test(h), 'index.html');
   const ng = read('angular.json');
   assert.ok(!/https?:\/\//.test(ng.replace(/https?:\/\/json\.schemastore\.org\S*/g, '').replace(/"\$schema"[^\n]*/g, '')), 'angular.json');
-  const used = [...ng.matchAll(/@fontsource\/([\w-]+)\/(\d+)\.css/g)].map((m) => `${m[1]}/${m[2]}`);
-  assert.ok(used.length >= 4, 'ฟอนต์ที่ใช้โหลดผ่าน @fontsource');
+  const used = [...ng.matchAll(/@fontsource\/([\w-]+)\/(?:thai-|latin-)?(\d+)\.css/g)].map((m) => `${m[1]}/${m[2]}`);
+  assert.ok(new Set(used).size >= 6, 'ฟอนต์ที่ใช้โหลดผ่าน @fontsource');
   assert.ok(!/mat-icon|material-icons/i.test(read('src/styles.scss')));
 });
