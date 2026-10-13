@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { ApiError, AuthResponse, AuthUser, RegisterRequest } from './auth.models';
+import { clearSnapshots } from '../offline/snapshot';
 
 const TOKEN_KEY = 'yatung_token';
 const USER_KEY = 'yatung_user';
@@ -48,6 +49,7 @@ export class AuthService {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
     } catch { /* ใช้งานต่อได้แม้ storage ถูกบล็อก */ }
+    clearSnapshots();   // ข้อมูลที่เก็บไว้ดูออฟไลน์ของผู้ใช้นี้ต้องไม่ติดไปให้คนถัดไป
     this.currentUser.set(null);
     if (redirect) this.router.navigate(['/login']);
   }

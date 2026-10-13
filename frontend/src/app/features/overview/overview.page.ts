@@ -5,6 +5,10 @@ import { MatButton } from '@angular/material/button';
 import { AdherenceResponse, StatsApi } from '../../core/api/stats.api';
 import { LineApi } from '../../core/api/line.api';
 import { errorText } from '../../core/api/api-error';
+import { HttpErrorResponse } from '@angular/common/http';
+import { OnlineService } from '../../core/offline/online.service';
+import { SnapshotService } from '../../core/offline/snapshot.service';
+import { pickAdherence } from '../../core/offline/snapshot';
 import { IconComponent } from '../../shared/icon.component';
 import { AdherenceChartComponent } from './adherence-chart.component';
 import { AdherenceHeroComponent } from './adherence-hero.component';
@@ -27,6 +31,8 @@ export class OverviewPage {
   private api = inject(StatsApi);
   private lineApi = inject(LineApi);
   private destroyRef = inject(DestroyRef);
+  private online = inject(OnlineService);
+  private snapshots = inject(SnapshotService);
 
   protected readonly data = signal<AdherenceResponse | null>(null);
   protected readonly loading = signal(true);
@@ -44,6 +50,7 @@ export class OverviewPage {
 
   constructor() {
     this.load();
+    this.online.backOnline.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.load());   // กลับมาออนไลน์ → รีเฟรชเอง
     this.lineApi.status().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ next: (s) => this.lineLinked.set(s.linked), error: () => this.lineLinked.set(null) });
   }
 
@@ -51,8 +58,13 @@ export class OverviewPage {
     this.loading.set(true);
     this.error.set(null);
     this.api.adherence(DAYS).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (r) => { this.data.set(r); this.loading.set(false); },
-      error: (e) => { this.error.set(errorText(e)); this.loading.set(false); },
+      next: (r) => { this.data.set(r); this.loading.set(false); this.snapshots.save('adherence', pickAdherence(r)); },
+      error: (e) => {
+        this.loading.set(false);
+        // เชื่อมต่อไม่ได้ → แสดงสรุปล่าสุดที่เก็บไว้ (อ่านอย่างเดียว)
+        const snap = (e instanceof HttpErrorResponse && e.status === 0) || this.online.offline() ? this.snapshots.load('adherence') : null;
+        if (snap) this.data.set(snap.data); else this.error.set(errorText(e));
+      },
     });
   }
 }

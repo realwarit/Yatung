@@ -24,11 +24,12 @@
 </div>
 
 @if (state() !== 'taken') {
-  <button mat-flat-button class="take" type="button" [disabled]="busy()" (click)="take.emit()">
+  <button mat-flat-button class="take" type="button" [disabled]="busy() || offline()" [attr.aria-disabled]="offline() ? true : null" (click)="take.emit()">
     <app-icon name="check" /> กินแล้ว
   </button>
 } @else if (canUndo()) {
-  <button type="button" class="undo" [disabled]="busy()" (click)="undo.emit()">
+  <button type="button" class="undo" [disabled]="busy() || offline()" [attr.aria-disabled]="offline() ? true : null" (click)="undo.emit()">
     <app-icon name="undo" /> กดผิด? ยกเลิก
   </button>
 }
+@if (offline() && (state() !== 'taken' || canUndo())) { <p class="yt-offline-hint" role="note">{{ needsOnline }}</p> }

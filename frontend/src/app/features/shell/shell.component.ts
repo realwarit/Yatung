@@ -6,13 +6,14 @@ import { AuthService } from '../../core/auth/auth.service';
 import { FontSizeToggleComponent } from '../../shared/font-size-toggle.component';
 import { IconComponent, IconName } from '../../shared/icon.component';
 import { LogoComponent } from '../../shared/logo.component';
+import { OfflineBarComponent } from '../../shared/components/offline-bar/offline-bar.component';
 
 interface NavItem { path: string; label: string; icon: IconName; }
 
 /** โครงแอปหลัง login: มือถือ = แถบล่าง 5 ช่อง (ปุ่มสแกนกลาง) · จอ ≥ 1024px = sidebar ซ้าย */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, IconComponent, LogoComponent, FontSizeToggleComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, IconComponent, LogoComponent, FontSizeToggleComponent, OfflineBarComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',

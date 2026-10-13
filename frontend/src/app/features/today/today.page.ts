@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { MatButton } from '@angular/material/button';
@@ -7,6 +8,9 @@ import { filter, forkJoin, fromEvent } from 'rxjs';
 import { DoseApi } from '../../core/api/dose.api';
 import { MedicationApi } from '../../core/api/medication.api';
 import { PushTakeService } from '../../core/push/push-take.service';
+import { OnlineService } from '../../core/offline/online.service';
+import { SnapshotService } from '../../core/offline/snapshot.service';
+import { pickToday } from '../../core/offline/snapshot';
 import { errorCode, errorText } from '../../core/api/api-error';
 import { Dose, DoseActionResult, Medication, Slot, TodayResponse } from '../../core/api/models';
 import { AuthService } from '../../core/auth/auth.service';
@@ -50,6 +54,10 @@ export class TodayPage {
   private auth = inject(AuthService);
   private snack = inject(MatSnackBar);
   private pushTake = inject(PushTakeService);
+  private online = inject(OnlineService);
+  private snapshots = inject(SnapshotService);
+  /** ออฟไลน์ → ปุ่มที่ต้องใช้เน็ตกดไม่ได้ (ดู dose-card) */
+  protected readonly offline = this.online.offline;
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
   private destroyRef = inject(DestroyRef);
 
@@ -165,6 +173,8 @@ export class TodayPage {
     ).subscribe(() => { this.now.set(Date.now()); this.load(true); });
     // กด "✓ กินแล้ว" จากการแจ้งเตือนเสร็จ → ดึงข้อมูลใหม่ให้เห็นผลทันที
     this.pushTake.done.pipe(takeUntilDestroyed()).subscribe(() => this.load(true));
+    // กลับมาออนไลน์ → รีเฟรชเอง (ไม่ต้องกดอะไร)
+    this.online.backOnline.pipe(takeUntilDestroyed()).subscribe(() => this.load(true));
   }
 
   protected load(silent = false): void {
@@ -175,6 +185,7 @@ export class TodayPage {
         this.activeMeds.set(meds.length);
         this.asNeeded.set(meds.filter((m) => m.as_needed));
         this.lowText.set(new Map(meds.filter((m) => m.is_low).map((m) => [m.id, lowStockText(m)])));
+        this.snapshots.save('today', pickToday(today, meds, this.lowText()));
         this.loading.set(false);
         this.loadError.set(null);
         this.now.set(Date.now());
@@ -182,9 +193,24 @@ export class TodayPage {
       },
       error: (e) => {
         this.loading.set(false);
+        if (this.useSnapshot(e)) return;
         if (!silent || !this.data()) this.loadError.set(errorText(e));
       },
     });
+  }
+
+  /** เชื่อมต่อไม่ได้ (status 0 / ออฟไลน์) → แสดงข้อมูลล่าสุดที่เก็บไว้ (อ่านอย่างเดียว) ; คืน true ถ้าใช้ snapshot */
+  private useSnapshot(e: unknown): boolean {
+    if (!(e instanceof HttpErrorResponse && e.status === 0) && !this.online.offline()) return false;
+    const s = this.snapshots.load('today');
+    if (!s) return false;
+    this.data.set(s.data.today);
+    this.activeMeds.set(s.data.activeMeds);
+    this.asNeeded.set(s.data.asNeeded as Medication[]);
+    this.lowText.set(new Map(s.data.low));
+    this.loadError.set(null);
+    this.now.set(Date.now());
+    return true;
   }
 
   protected toggle(slot: Slot): void {
@@ -193,7 +219,7 @@ export class TodayPage {
 
   protected take(vm: DoseVM, slot: Slot): void {
     const d = vm.dose;
-    if (this.busy().has(d.id)) return;
+    if (this.busy().has(d.id) || this.online.offline()) return;
     const wasDone = this.allDone();
     this.setBusy(d.id, true);
     this.touched.update((s) => new Set(s).add(slot));
@@ -220,7 +246,7 @@ export class TodayPage {
   }
 
   protected undo(id: number, slot: Slot): void {
-    if (this.busy().has(id)) return;
+    if (this.busy().has(id) || this.online.offline()) return;
     this.setBusy(id, true);
     this.touched.update((s) => new Set(s).add(slot));
     this.doseApi.undo(id).subscribe({

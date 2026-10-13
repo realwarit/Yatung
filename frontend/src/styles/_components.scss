@@ -154,7 +154,11 @@
 // snackbar: บนมือถือต้องลอยเหนือแถบเมนูล่าง
 .yt-snack {
   @media (max-width: 1023.98px) { margin-bottom: calc(var(--yt-bottom-clearance) + var(--yt-space-2)) !important; }
+  .mat-mdc-button { min-height: var(--yt-tap); }   // ปุ่มใน snackbar (อัปเดต/ยกเลิก/ตกลง) แตะง่าย ≥ 56px
 }
+
+// ข้อความข้างปุ่มที่ใช้เน็ตไม่ได้ตอนออฟไลน์ (ต้องมองเห็น ไม่ใช่แค่ปุ่มจาง)
+.yt-offline-hint { margin: var(--yt-space-2) 0 0; color: var(--yt-on-warning-soft); font-weight: 600; font-size: 1rem; line-height: var(--yt-line-height-tight); }
 
 // ปุ่ม Material ที่มีไอคอน + ข้อความ: จัดกึ่งกลางแนวตั้งให้ตรงกัน (ไอคอนไม่ลอยเหนือตัวอักษรไทย)
 .mdc-button__label { display: inline-flex; align-items: center; justify-content: center; gap: 0.5em; line-height: 1; }

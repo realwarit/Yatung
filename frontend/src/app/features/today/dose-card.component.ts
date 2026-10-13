@@ -4,6 +4,7 @@ import { Dose } from '../../core/api/models';
 import { sourceLabel } from '../../core/i18n/labels';
 import { DoseQtyPipe, MealLabelPipe } from '../../core/i18n/labels.pipe';
 import { IconComponent } from '../../shared/icon.component';
+import { NEEDS_ONLINE_TEXT } from '../../core/offline/offline-text';
 
 export type DoseState = 'waiting' | 'due' | 'overdue' | 'taken';
 
@@ -31,6 +32,9 @@ export class DoseCardComponent {
   readonly lowText = input<string | null>(null);
   readonly canUndo = input(false);
   readonly busy = input(false);
+  /** ออฟไลน์ → ปุ่มกินแล้ว/ยกเลิกกดไม่ได้ + ข้อความที่มองเห็น (ไม่ทำคิวบันทึกออฟไลน์) */
+  readonly offline = input(false);
+  protected readonly needsOnline = NEEDS_ONLINE_TEXT;
   /** เพิ่งกดกิน → เล่น animation เครื่องหมายถูกเด้ง */
   readonly pop = input(false);
 
