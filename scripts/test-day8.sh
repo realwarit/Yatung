@@ -302,7 +302,7 @@ req PUT "/api/medications/$M1" "$TA" "{\"name\":\"TEST-8-ยาหลัก\",\"
 expect "ตั้ง tts_name ให้ยาของ A → 200" "$STATUS" "200"
 req GET /api/doses/today "$TA"
 expect "doses/today: dose ของยานั้นมี tts_name" "$(jget 'o.slots.flatMap(s=>s.doses).filter(d=>d.medication_id==='"$M1"').map(d=>d.tts_name).join(",")')" "ชื่ออ่านพิเศษ,ชื่ออ่านพิเศษ"
-expect "doses/today: dose ของยาที่ไม่ตั้ง tts_name = null" "$(jget 'o.slots.flatMap(s=>s.doses).filter(d=>d.medication_id==='"$M2"').map(d=>d.tts_name).join(",")')" "null"
+expect "doses/today: dose ของยาที่ไม่ตั้ง tts_name = null" "$(jget 'o.slots.flatMap(s=>s.doses).filter(d=>d.medication_id==='"$M2"').map(d=>String(d.tts_name)).join(",")')" "null"
 say "$LA" "วันนี้"
 expect_match "LINE 'วันนี้': ยังแสดงชื่อยาจริง" "$REPLY" 'TEST-8-ยาหลัก'
 expect_nomatch "LINE 'วันนี้': ไม่แสดง tts_name" "$REPLY" 'ชื่ออ่านพิเศษ'
