@@ -421,6 +421,7 @@
 - **ความลับ (บทเรียน 11 ต.ค.):** `.sessions.json` ถูก commit ตั้งแต่ Day 1 และ hash รหัสผ่าน admin จริงเคยถูกฝังในเทส (`admin-config.test.js`) บนรีโป public →
   **ห้ามใช้ค่าจาก `.env` เป็นข้อมูลทดสอบ** (ทั้งฝังในไฟล์และอ่าน `.env` มาเทียบ ; เทสต้องสร้างค่าสุ่มตอนรัน เช่น bcrypt hash ปลอมรูปแบบถูกต้อง) · ไฟล์ session/สำรอง/credentials ต้องอยู่ใน `.gitignore` ตั้งแต่สร้าง ·
   **ก่อน push ทุกครั้งต้องสแกนความลับ**: เปิด hook ด้วย `bash scripts/setup-hooks.sh` (pre-commit + pre-push ใช้ `scripts/check-secrets.mjs`) หรือรัน `node scripts/check-secrets.mjs --log HEAD --not --remotes` เอง ; ถ้าเจอความลับจริง หยุดและบอกผู้ใช้ให้เปลี่ยนค่าที่ต้นทางก่อน ห้ามแค่ลบไฟล์
+- **แก้ `flows.json` ต้อง `docker compose stop nodered` ก่อนเสมอ แม้จะ recreate ทีหลัง** (บทเรียน 13 ต.ค. 8D D2: แก้ตอน container รันอยู่ ; ต้องตรวจ `git diff <commit> -- node-red/data/flows.json` ว่าไม่มี diff ก่อน recreate เพื่อยืนยันว่า Node-RED ไม่ได้เขียนทับ)
 - จบงานแต่ละส่วนต้องทดสอบจริง: API ทดสอบด้วย `curl`, frontend ต้อง `ng build` ผ่าน
 - **migration (บทเรียน 13 ต.ค.):** เพิ่มไฟล์ `db/migrations/NNN_*.sql` แล้วต้องรัน `bash scripts/migrate.sh` กับ DB จริง**ทันที ก่อน** recreate/restart nodered ด้วยโค้ดใหม่ — ไม่งั้นโค้ดอ้างคอลัมน์ที่ยังไม่มี → 500 ทุก endpoint ที่แตะตารางนั้น 
   (8B เพิ่ม `tts_name` แต่ไม่ได้ apply ชุด 3a/5 ของ `test-all.sh` จึงได้ 500 ทั้งชุด จนชุด 6 เรียก migrate.sh กลางทาง ; `test-all.sh` ตอนนี้รัน migrate.sh ก่อนทุกชุด และ `demo-check.sh` หัวข้อ 9 เทียบคอลัมน์ DB จริงกับ `db/init` แล้วชี้คำสั่งแก้ให้)
