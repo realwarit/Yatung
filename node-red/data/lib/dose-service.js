@@ -109,6 +109,29 @@ async function takeMany(db, userId, rawIds, source = 'line', opts = {}) {
   return res;
 }
 
+// ---- POST /api/doses/take-many (ปุ่ม "กินครบมื้อนี้" ในแอป) ----
+const TAKE_MANY_MAX = 50;
+const bad = (details) => err(400, 'VALIDATION', details);
+
+// ตรวจ body { ids } : 1–50 จำนวนเต็มบวก (ซ้ำกันได้ จะ dedupe) ; ผิด = { error: {status, body} } , ถูก = { ids: [...] }
+function parseTakeManyIds(body) {
+  const raw = body && body.ids;
+  if (!Array.isArray(raw) || raw.length === 0) return { error: bad('กรุณาระบุรายการยาที่ต้องการบันทึก (ids) อย่างน้อย 1 รายการ') };
+  if (raw.length > TAKE_MANY_MAX) return { error: bad('บันทึกได้ครั้งละไม่เกิน ' + TAKE_MANY_MAX + ' รายการ') };
+  if (!raw.every((v) => Number.isSafeInteger(v) && v > 0)) return { error: bad('รายการยา (ids) ต้องเป็นจำนวนเต็มบวกเท่านั้น') };
+  return { ids: [...new Set(raw)] };
+}
+
+// กติกาเดียวกับ take() ทุกข้อ (ใช้ takeInTx ตัวเดียวกันใน transaction เดียว) ; id ที่ไม่ใช่ของผู้ใช้ = ข้ามเงียบ ๆ นับ skipped ;
+// ไม่มี id ไหนเป็นของผู้ใช้เลย = 404 (ไม่เผยว่ามี dose นั้นอยู่) ; hook ปิดเรื่องญาติเรียกครั้งเดียวหลัง COMMIT (ใน takeMany)
+async function takeManyForApp(db, userId, body) {
+  const p = parseTakeManyIds(body);
+  if (p.error) return p.error;
+  const r = await takeMany(db, userId, p.ids, 'app');
+  if (!r.taken.length && !r.already.length) return notFound();
+  return { status: 200, body: { taken: r.taken, already: r.already, skipped: r.skipped, at: r.at } };
+}
+
 async function undo(db, userId, rawId) {
   const id = toId(rawId);
   if (!id) return notFound();
@@ -147,4 +170,4 @@ async function closeStaleDoses(db, env = process.env) {
   return { missed: res.affectedRows };
 }
 
-module.exports = { setAfterTaken, closeStaleDoses, todayQuery, shapeToday, take, takeInTx, takeMany, undo, generateToday };
+module.exports = { setAfterTaken, closeStaleDoses, todayQuery, shapeToday, take, takeInTx, takeMany, parseTakeManyIds, takeManyForApp, undo, generateToday };

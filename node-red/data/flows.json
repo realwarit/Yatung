@@ -1808,6 +1808,114 @@
         "h": 175
     },
     {
+        "id": "dose_many_in",
+        "type": "http in",
+        "z": "tab_doses",
+        "name": "POST /api/doses/take-many",
+        "url": "/api/doses/take-many",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 740,
+        "wires": [
+            [
+                "dose_many_jwt"
+            ]
+        ],
+        "g": "dose_many_grp"
+    },
+    {
+        "id": "dose_many_jwt",
+        "type": "subflow:sf_verify_jwt",
+        "z": "tab_doses",
+        "name": "ตรวจ JWT",
+        "x": 430,
+        "y": 740,
+        "wires": [
+            [
+                "dose_many_fn"
+            ]
+        ],
+        "g": "dose_many_grp"
+    },
+    {
+        "id": "dose_many_fn",
+        "type": "function",
+        "z": "tab_doses",
+        "name": "บันทึกกินหลายรายการ (transaction เดียว)",
+        "func": "const db = global.get('db');\nconst svc = global.get('doseService');\nconst r = await svc.takeManyForApp(db, msg.user.id, msg.payload);\nmsg.statusCode = r.status;\nmsg.payload = r.body;\n// สำเร็จ (2xx) ออกช่อง 1 ; ids ผิดรูปแบบ/ไม่ใช่ของผู้ใช้เลย (4xx) ออกช่อง 2 ; ถ้า throw จะไปที่ catch ของ tab (500)\nreturn r.status < 400 ? [msg, null] : [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 740,
+        "wires": [
+            [
+                "dose_many_ok"
+            ],
+            [
+                "dose_many_err"
+            ]
+        ],
+        "outputLabels": [
+            "สำเร็จ",
+            "error 4xx"
+        ],
+        "g": "dose_many_grp"
+    },
+    {
+        "id": "dose_many_ok",
+        "type": "http response",
+        "z": "tab_doses",
+        "name": "ตอบ 200 กินแล้วหลายรายการ",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 740,
+        "wires": [],
+        "g": "dose_many_grp"
+    },
+    {
+        "id": "dose_many_err",
+        "type": "http response",
+        "z": "tab_doses",
+        "name": "ตอบ 400/404 ผิดพลาด",
+        "statusCode": "",
+        "headers": {},
+        "x": 1470,
+        "y": 800,
+        "wires": [],
+        "g": "dose_many_grp"
+    },
+    {
+        "id": "dose_many_grp",
+        "type": "group",
+        "z": "tab_doses",
+        "name": "POST /api/doses/take-many",
+        "style": {
+            "stroke": "#0f766e",
+            "fill": "#e6f4f1",
+            "label": true,
+            "label-position": "nw",
+            "color": "#0f766e"
+        },
+        "nodes": [
+            "dose_many_in",
+            "dose_many_jwt",
+            "dose_many_fn",
+            "dose_many_ok",
+            "dose_many_err"
+        ],
+        "x": 40,
+        "y": 685,
+        "w": 1570,
+        "h": 175
+    },
+    {
         "id": "dose_catch",
         "type": "catch",
         "z": "tab_doses",
@@ -1815,7 +1923,7 @@
         "scope": null,
         "uncaught": false,
         "x": 190,
-        "y": 740,
+        "y": 930,
         "wires": [
             [
                 "dose_err"
@@ -1836,7 +1944,7 @@
         "finalize": "",
         "libs": [],
         "x": 900,
-        "y": 740,
+        "y": 930,
         "wires": [
             [
                 "dose_res"
@@ -1852,7 +1960,7 @@
         "statusCode": "",
         "headers": {},
         "x": 1470,
-        "y": 740,
+        "y": 930,
         "wires": [],
         "g": "dose_grp"
     },
@@ -1874,7 +1982,7 @@
             "dose_res"
         ],
         "x": 40,
-        "y": 685,
+        "y": 875,
         "w": 1570,
         "h": 115
     },
