@@ -1,6 +1,4 @@
-<app-auth-shell [mood]="mood()" [message]="message()" [peek]="showPassword()" [chatty]="chatty()">
-  <h1 class="yt-title">ยินดีต้อนรับ<wbr /><span class="nw">กลับมา <app-wave-hand /></span></h1>
-  <p class="yt-lead">เข้าสู่ระบบเพื่อดูตารางกินยาของคุณ</p>
+<app-auth-shell title="ยินดีต้อนรับกลับมา" lead="ดูตารางกินยาของคุณ" [mood]="mood()" [message]="message()" [peek]="showPassword()" [chatty]="chatty()">
 
   @if (error()) {
     <div class="yt-alert yt-alert--danger" role="alert">
@@ -9,7 +7,7 @@
     </div>
   }
 
-  <form [formGroup]="form" (ngSubmit)="submit()" (focusin)="onFocusIn($event)" (focusout)="onFocusOut($event)" novalidate>
+  <form [formGroup]="form" data-kb-anchor (ngSubmit)="submit()" (focusin)="onFocusIn($event)" (focusout)="onFocusOut($event)" novalidate>
     <div class="yt-field">
       <label class="yt-label" for="email">อีเมล</label>
       <div class="yt-control" [class.is-invalid]="form.controls.email.touched && form.controls.email.invalid">
@@ -24,7 +22,7 @@
       }
     </div>
 
-    <div class="yt-field">
+    <div class="yt-field" data-first-screen="fields">
       <label class="yt-label" for="password">รหัสผ่าน</label>
       <div class="yt-control" [class.is-invalid]="form.controls.password.touched && form.controls.password.invalid">
         <app-icon name="lock" />
@@ -42,7 +40,7 @@
       }
     </div>
 
-    <button mat-flat-button class="yt-submit" type="submit" [attr.aria-busy]="busy()">
+    <button mat-flat-button class="yt-submit" type="submit" data-first-screen="submit" [attr.aria-busy]="busy()">
       @if (busy()) { <mat-spinner diameter="24" /> กำลังเข้าสู่ระบบ… } @else { เข้าสู่ระบบ }
     </button>
   </form>

@@ -3,22 +3,25 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { StatsApi } from '../../core/api/stats.api';
 import { IconComponent } from '../../shared/icon.component';
+import { ListRowComponent } from '../../shared/ui/list-row/list-row.component';
+import { SectionComponent } from '../../shared/ui/section/section.component';
 
-/** การ์ดเล็กบนหน้าวันนี้ "7 วันล่าสุด กินครบ 86% ›" → /overview ; ไม่มีข้อมูล/โหลดไม่ได้ = ซ่อนเงียบ ๆ (ไม่ขัดหน้าหลัก) */
+/** แถวเล็กท้ายหน้าวันนี้ "7 วันล่าสุด กินครบ 86% ›" → /overview ; ไม่มีข้อมูล/โหลดไม่ได้ = ซ่อนเงียบ ๆ (ไม่ขัดหน้าหลัก) */
 @Component({
   selector: 'app-adherence-card',
-  imports: [RouterLink, IconComponent],
+  imports: [RouterLink, IconComponent, ListRowComponent, SectionComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (rate() !== null) {
-      <a class="card" routerLink="/overview" [attr.aria-label]="'7 วันล่าสุด กินครบ ' + rate() + ' เปอร์เซ็นต์ แตะเพื่อดูสรุป'">
-        <app-icon name="chart" />
-        <span class="txt">7 วันล่าสุด กินครบ <span class="num">{{ rate() }}%</span></span>
-        <app-icon name="arrow-right" class="go" />
-      </a>
+      <app-section>
+        <a appListRow routerLink="/overview" [title]="'7 วันล่าสุด กินครบ ' + rate() + '%'" [chevron]="true"
+           [attr.aria-label]="'7 วันล่าสุด กินครบ ' + rate() + ' เปอร์เซ็นต์ แตะเพื่อดูสรุป'">
+          <app-icon lead name="chart" />
+        </a>
+      </app-section>
     }
   `,
-  styleUrl: './adherence-card.component.scss',
+  styles: ':host { display: block; } :host:empty { display: none; }',
 })
 export class AdherenceCardComponent {
   private api = inject(StatsApi);

@@ -3,19 +3,19 @@
 .proc {
   display: grid;
   justify-items: center;
-  gap: var(--yt-space-4);
+  gap: var(--yt-space-3);
   max-width: 34rem;
   margin: 0 auto;
-  padding: var(--yt-space-3) 0;
+  padding: var(--yt-space-2) 0;
   text-align: center;
 }
 
 // รูปที่ถ่ายจางลง 40% + เส้นสแกนเรืองแสงเลื่อนขึ้นลง
 .media {
   position: relative;
-  width: min(100%, 20rem);
+  width: min(100%, 16rem);
   aspect-ratio: 4 / 3;
-  border-radius: 24px;
+  border-radius: var(--yt-radius-md);
   background: var(--yt-primary-soft);
   overflow: hidden;
   img { display: block; width: 100%; height: 100%; object-fit: contain; opacity: 0.4; }
@@ -46,26 +46,9 @@
 }
 @keyframes scan { to { top: calc(100% - 4px); } }
 
-.who { position: relative; padding: 0 var(--yt-space-6); }
-.dots {
-  position: absolute;
-  top: 0;
-  right: 0;
-  display: flex;
-  gap: 5px;
-  i {
-    width: 0.6rem;
-    height: 0.6rem;
-    border-radius: 50%;
-    background: var(--yt-primary);
-    animation: float 1.2s ease-in-out infinite;
-    &:nth-child(2) { animation-delay: 0.2s; }
-    &:nth-child(3) { animation-delay: 0.4s; }
-  }
-}
-@keyframes float { 50% { transform: translateY(-0.5rem); opacity: 0.5; } }
+.who { display: flex; align-items: center; justify-content: center; gap: var(--yt-space-3); }
 
-.title { margin: 0; font-size: var(--yt-text-lg); color: var(--yt-primary-dark); }
+.title { margin: 0; font-size: var(--yt-text-heading); color: var(--yt-primary-dark); }
 
 .steps { display: grid; gap: var(--yt-space-3); width: min(100%, 22rem); margin: 0; padding: 0; list-style: none; text-align: left; }
 .step { display: flex; align-items: center; gap: var(--yt-space-3); font-weight: 500; line-height: var(--yt-line-height-tight); }
@@ -89,5 +72,4 @@
 
 @media (prefers-reduced-motion: reduce) {
   .scan { animation: none; top: 50%; }
-  .dots i { animation: none; }
 }

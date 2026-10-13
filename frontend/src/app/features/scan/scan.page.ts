@@ -1,13 +1,11 @@
 import { Component, HostListener, OnDestroy, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
 import { Observable, Subscription, map } from 'rxjs';
-// หน้านี้ใช้ Ionic (เกณฑ์คะแนน): ion-header/ion-toolbar/ion-title/ion-buttons/ion-button/ion-icon/ion-toast
-// ส่วน ion-segment, ion-textarea, ion-chip, ion-spinner อยู่ใน components ย่อย (ui/)
-import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonToast } from '@ionic/angular';
-import { addIcons } from 'ionicons';
-import { arrowBackOutline } from 'ionicons/icons';
+// หน้านี้ใช้ Ionic (เกณฑ์คะแนน): ion-toast ที่นี่ ; ion-segment, ion-button, ion-icon, ion-textarea, ion-chip, ion-spinner อยู่ใน components ย่อย (ui/)
+// หัวหน้า (← เพิ่มยาใหม่) ใช้ app-page-header ตัวเดียวกับทั้งแอป (8D)
+import { IonToast } from '@ionic/angular';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -18,6 +16,7 @@ import { compressImage } from './image-compress';
 import { assessImageQuality } from './image-quality';
 import { ScanResponse } from '../../core/api/medicine-parse.model';
 import { Mode, Phase } from './scan.types';
+import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
 import { ScanStageComponent } from './ui/scan-stage.component';
 
 const DESKTOP_QUERY = '(min-width: 1024px) and (pointer: fine)';
@@ -28,8 +27,7 @@ const STEP_AT_MS = { photo: [4000, 9000], text: [3000] } as const;   // เว�
   selector: 'app-scan-page',
   standalone: true,
   imports: [
-    RouterLink, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonIcon, IonToast,
-    ScanStageComponent,
+    IonToast, PageHeaderComponent, ScanStageComponent,
   ],
   templateUrl: './scan.page.html',
   styleUrl: './scan.page.scss',
@@ -70,7 +68,6 @@ export class ScanPage implements OnDestroy {
   private readonly onMql = (e: MediaQueryListEvent) => this.desktop.set(e.matches);
 
   constructor() {
-    addIcons({ arrowBackOutline });
     this.mql?.addEventListener('change', this.onMql);
   }
 

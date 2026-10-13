@@ -1,63 +1,24 @@
-:host { display: contents; }
+:host { display: block; }
 
-.progress { display: flex; flex-direction: column; align-items: center; gap: var(--yt-space-3); padding: var(--yt-space-4); }
-.progress__row { display: flex; align-items: center; justify-content: center; gap: var(--yt-space-4); }
-app-progress-ring { width: min(8rem, 44%); }   // ไม่ใช้ 8rem ตายตัว: ที่ 320px ก++ วงแหวน+น้องยาตรงกว้างเกินจอ
-.say {
-  position: relative;
-  align-self: stretch;
-  margin: 0;
-  padding: var(--yt-space-3) var(--yt-space-4);
-  border-radius: var(--yt-radius-md);
-  background: var(--yt-primary-softer);
-  border: 2px solid var(--yt-primary-soft);
-  font: 500 1.05rem / 1.6 var(--yt-font-display);
-  color: var(--yt-primary-deep);
-  text-align: center;
-  text-wrap: balance;
-  // หางกรอบคำพูดชี้ขึ้นไปหาน้องยาตรง (อยู่ขวาของแถว)
-  &::before {
-    content: '';
-    position: absolute;
-    right: 18%;
-    top: -9px;
-    width: 14px;
-    height: 14px;
-    background: var(--yt-primary-softer);
-    border: 2px solid var(--yt-primary-soft);
-    border-right: 0;
-    border-bottom: 0;
-    transform: rotate(45deg);
-  }
+.progress {
+  display: flex; align-items: center; gap: var(--yt-space-3); min-height: 4.75rem;
+  padding: var(--yt-space-3) var(--yt-space-4); border: 1px solid var(--yt-border); border-radius: var(--yt-radius-card); background: var(--yt-surface);
 }
+.mc { flex: none; }
+.mid { flex: 1; min-width: 0; }
+.line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--yt-space-2); margin: 0; }
+.lbl { margin: 0; font-size: var(--yt-text-sm); color: var(--yt-text-muted); line-height: var(--yt-line-height-tight); }
+.none { font-size: var(--yt-text-body); color: var(--yt-text); }
+.cnt { font-size: var(--yt-text-title); line-height: var(--yt-line-height-tight); color: var(--yt-text-muted); .n { color: var(--yt-primary-dark); } }
+.bar {
+  height: 0.375rem; margin-top: var(--yt-space-1); overflow: hidden; border-radius: var(--yt-radius-pill); background: var(--yt-primary-soft);
+  i { display: block; height: 100%; border-radius: inherit; background: var(--yt-primary); transition: width var(--yt-duration); }
+}
+.listen { flex: none; }
 
-.next {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--yt-space-2);
-  padding: var(--yt-space-3) var(--yt-space-4);
-  border-radius: var(--yt-radius-md);
-  background: var(--yt-info-soft);
-  color: var(--yt-on-info-soft);
-  font-weight: 600;
-  p { display: flex; align-items: flex-start; gap: var(--yt-space-3); margin: 0; }
-  app-icon { margin-top: 0.15em; }
-}
-.next--done { background: var(--yt-success-soft); color: var(--yt-on-success-soft); }
-.next__late { color: var(--yt-on-warning-soft); }
-.next--late { background: var(--yt-warning-soft); color: var(--yt-on-warning-soft); }
-.next__go {
-  min-height: var(--yt-tap);
-  padding: 0 var(--yt-space-5);
-  border: 2px solid var(--yt-warning);
-  border-radius: var(--yt-radius-pill);
-  background: var(--yt-surface);
-  color: var(--yt-on-warning-soft);
-  font: 600 1rem / 1.6 var(--yt-font-body);
-  cursor: pointer;
-}
-
-@media (min-width: 1024px) {
-  .progress { padding: var(--yt-space-5); }
-}
+// กินครบทั้งวัน : น้องยาตรง L อยู่กลางการ์ด
+:host(.done) .progress { position: relative; flex-direction: column; padding: var(--yt-space-4); text-align: center; }
+.cheer { display: flex; flex-direction: column; align-items: center; gap: var(--yt-space-2); }
+.big { margin: 0; font: 500 var(--yt-text-heading) / var(--yt-line-height-tight) var(--yt-font-display); color: var(--yt-primary-dark); text-wrap: balance; }
+.sub { margin: 0; font-size: var(--yt-text-sm); color: var(--yt-text-muted); }
+:host(.done) .listen { position: absolute; top: var(--yt-space-3); right: var(--yt-space-3); }

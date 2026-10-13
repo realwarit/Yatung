@@ -5,46 +5,37 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { MatButton } from '@angular/material/button';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { filter, forkJoin, fromEvent } from 'rxjs';
+import { filter, forkJoin, fromEvent, merge } from 'rxjs';
 import { DoseApi } from '../../core/api/dose.api';
 import { MedicationApi } from '../../core/api/medication.api';
 import { PushTakeService } from '../../core/push/push-take.service';
 import { OnlineService } from '../../core/offline/online.service';
+import { NEEDS_ONLINE_TEXT } from '../../core/offline/offline-text';
 import { SnapshotService } from '../../core/offline/snapshot.service';
 import { pickToday } from '../../core/offline/snapshot';
 import { errorCode, errorText } from '../../core/api/api-error';
 import { Dose, DoseActionResult, Medication, Slot, TodayResponse } from '../../core/api/models';
 import { AuthService } from '../../core/auth/auth.service';
-import { SLOT_LABEL } from '../../core/i18n/labels';
-import { DoseQtyPipe, MealLabelPipe, SlotLabelPipe } from '../../core/i18n/labels.pipe';
-import { clockTime, duration, greeting, parseServerTime, thaiDate, toServerTime } from '../../core/time';
+import { startClock } from '../../core/clock';
+import { DoseQtyPipe, MealLabelPipe } from '../../core/i18n/labels.pipe';
+import { thaiDateShort, toServerTime } from '../../core/time';
 import { ConfettiComponent } from '../../shared/components/confetti/confetti.component';
 import { MascotComponent, MascotMood } from '../../shared/components/mascot/mascot.component';
-import { IconComponent, IconName } from '../../shared/icon.component';
-import { TtsButtonComponent } from '../../shared/components/tts-button/tts-button.component';
+import { IconComponent } from '../../shared/icon.component';
+import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
+import { SectionComponent } from '../../shared/ui/section/section.component';
+import { ListRowComponent } from '../../shared/ui/list-row/list-row.component';
+import { SlotFlags, DoseVM, SlotVM, buildSlots, progressOf } from './today-model';
 import { SpeakableSlot, slotSpeech, todaySpeech } from '../../core/tts/speech-text';
-import { DoseCardComponent, DoseState } from './dose-card.component';
+import { SlotGroupComponent } from './slot-group.component';
 import { TodayProgressComponent } from './today-progress.component';
 import { AdherenceCardComponent } from './adherence-card.component';
-import { hasMultipleTimes, slotTimeLabel } from './slot-time';
 import { lowStockText } from './low-stock';
-
-const OVERDUE_AFTER_MIN = 30;           // ตรงกับ is_overdue ของ backend
-const UNDO_WINDOW_MS = 10 * 60 * 1000;  // undo ได้ 10 นาทีหลังกด
-const TICK_MS = 20_000;
-
-const SLOT_ICON: Record<Slot, IconName> = { morning: 'sunrise', noon: 'sun', evening: 'sunset', bedtime: 'moon' };
-
-interface DoseVM { dose: Dose; state: DoseState; lateMin: number; takenClock: string | null; canUndo: boolean; }
-interface SlotVM {
-  slot: Slot; time: string; multiTime: boolean; icon: IconName; doses: DoseVM[];
-  allTaken: boolean; collapsible: boolean; collapsed: boolean;
-}
 
 @Component({
   selector: 'app-today-page',
-  imports: [ErrTextComponent, RouterLink, MatButton, IconComponent, MascotComponent, ConfettiComponent,
-    DoseCardComponent, TodayProgressComponent, AdherenceCardComponent, TtsButtonComponent, DoseQtyPipe, MealLabelPipe, SlotLabelPipe],
+  imports: [ErrTextComponent, RouterLink, MatButton, IconComponent, MascotComponent, ConfettiComponent, PageHeaderComponent, SectionComponent, ListRowComponent,
+    SlotGroupComponent, TodayProgressComponent, AdherenceCardComponent, DoseQtyPipe, MealLabelPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './today.page.html',
   styleUrl: './today.page.scss',
@@ -57,7 +48,7 @@ export class TodayPage {
   private pushTake = inject(PushTakeService);
   private online = inject(OnlineService);
   private snapshots = inject(SnapshotService);
-  /** ออฟไลน์ → ปุ่มที่ต้องใช้เน็ตกดไม่ได้ (ดู dose-card) */
+  /** ออฟไลน์ → ปุ่มที่ต้องใช้เน็ตกดไม่ได้ (ดู slot-group) */
   protected readonly offline = this.online.offline;
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
   private destroyRef = inject(DestroyRef);
@@ -65,55 +56,34 @@ export class TodayPage {
   protected readonly data = signal<TodayResponse | null>(null);
   protected readonly asNeeded = signal<Medication[]>([]);
   protected readonly activeMeds = signal(0);
-  /** ยาที่ใกล้หมด (medication_id → ข้อความสั้น) ใช้แสดงป้ายเหลืองบนการ์ดยา */
+  /** ยาที่ใกล้หมด (medication_id → ข้อความสั้น) ใช้แสดงป้ายเหลืองบนแถวยา */
   protected readonly lowText = signal<ReadonlyMap<number, string>>(new Map());
   protected readonly loading = signal(true);
   protected readonly loadError = signal<string | null>(null);
+  /** นาฬิกาของหน้า : เดินตามเวลาจริงของเครื่องทุก 30 วินาที (ชิดขอบ :00/:30) ทั้งตอนออนไลน์และออฟไลน์ — ห้ามใช้เวลาตอนโหลดข้อมูลหรือเวลาของ snapshot */
   protected readonly now = signal(Date.now());
   protected readonly confetti = signal(false);
   protected readonly popId = signal<number | null>(null);
+  protected readonly takingAll = signal(false);
 
   private readonly busy = signal<ReadonlySet<number>>(new Set());
+  protected readonly busyIds = this.busy;
   private readonly expired = signal<ReadonlySet<number>>(new Set());     // undo เลยเวลาแล้ว (ซ่อนปุ่ม)
   private readonly touched = signal<ReadonlySet<Slot>>(new Set());       // มื้อที่ผู้ใช้เพิ่งกด ไม่ยุบทันที
-  private readonly expanded = signal<ReadonlySet<Slot>>(new Set());      // มื้อที่ผู้ใช้กดขยาย
+  private readonly opened = signal<ReadonlySet<Slot>>(new Set());        // มื้อที่ผู้ใช้กางเอง
   private scrolled = false;
+  private offlineHinted = false;
 
-  protected readonly today = computed(() => thaiDate(this.now()));
-  protected readonly greet = computed(() => greeting(this.now()));
-  protected readonly who = computed(() => {
+  protected readonly dateShort = computed(() => thaiDateShort(this.now()));
+  protected readonly greet = computed(() => {
     const n = this.auth.currentUser()?.display_name?.trim() ?? '';
-    return !n ? '' : n.startsWith('คุณ') ? n : `คุณ${n}`;   // ชื่อที่ขึ้นต้นด้วย "คุณ" อยู่แล้วไม่ต้องเติมซ้ำ
+    return !n ? 'สวัสดี' : `สวัสดี ${n.startsWith('คุณ') ? n : `คุณ${n}`}`;   // ชื่อที่ขึ้นต้นด้วย "คุณ" อยู่แล้วไม่ต้องเติมซ้ำ
   });
 
-  protected readonly slots = computed<SlotVM[]>(() => {
-    const d = this.data();
-    if (!d) return [];
-    const now = this.now();
-    return d.slots.map((s) => {
-      const doses = s.doses.map((dose): DoseVM => {
-        const sched = parseServerTime(dose.scheduled_at);
-        const taken = dose.status === 'taken';
-        const lateMin = Math.floor((now - sched) / 60000);
-        const state: DoseState = taken ? 'taken'
-          : dose.status === 'missed' || lateMin > OVERDUE_AFTER_MIN ? 'overdue'
-          : lateMin >= 0 ? 'due' : 'waiting';
-        const takenMs = taken && dose.taken_at ? parseServerTime(dose.taken_at) : null;
-        return {
-          dose, state, lateMin: Math.max(0, lateMin),
-          takenClock: takenMs ? clockTime(takenMs) : null,
-          canUndo: takenMs !== null && now - takenMs < UNDO_WINDOW_MS && !this.expired().has(dose.id),
-        };
-      });
-      const allTaken = doses.every((x) => x.state === 'taken');
-      const passed = s.doses.every((x) => parseServerTime(x.scheduled_at) <= now);
-      const collapsible = allTaken && passed && !this.touched().has(s.slot);
-      return {
-        slot: s.slot, time: slotTimeLabel(s.doses.map((x) => x.scheduled_at)), multiTime: hasMultipleTimes(s.doses.map((x) => x.scheduled_at)), icon: SLOT_ICON[s.slot], doses, allTaken, collapsible,
-        collapsed: collapsible && !this.expanded().has(s.slot),
-      };
-    });
-  });
+  protected readonly slots = computed<SlotVM[]>(() => buildSlots(this.data(), this.now(), {
+    touched: this.touched(), opened: this.opened(), undoExpired: this.expired(),
+  } satisfies SlotFlags));
+  protected readonly firstOpen = computed(() => this.slots().find((s) => s.mode === 'open')?.slot ?? null);
 
   /** ข้อมูลสำหรับอ่านออกเสียง (ใช้สถานะจากเซิร์ฟเวอร์ ไม่ใช่สถานะที่คำนวณฝั่ง client) */
   private readonly speakable = computed<SpeakableSlot[]>(() => (this.data()?.slots ?? []).map((s) => ({ slot: s.slot, time: s.time, doses: s.doses })));
@@ -129,53 +99,29 @@ export class TodayPage {
     return fn;
   }
 
-  protected readonly total = computed(() => this.slots().reduce((n, s) => n + s.doses.length, 0));
-  protected readonly taken = computed(() =>
-    this.slots().reduce((n, s) => n + s.doses.filter((x) => x.state === 'taken').length, 0));
-  protected readonly allDone = computed(() => this.total() > 0 && this.taken() === this.total());
+  protected readonly progress = computed(() => progressOf(this.slots()));
+  protected readonly total = computed(() => this.progress().total);
+  protected readonly taken = computed(() => this.progress().taken);
+  protected readonly allDone = computed(() => this.progress().allDone);
   /** รอบที่ถึงเวลา/เลยเวลาแล้วแต่ยังไม่ได้กิน */
-  protected readonly notTaken = computed(() =>
-    this.slots().reduce((n, s) => n + s.doses.filter((x) => x.state === 'overdue' || x.state === 'due').length, 0));
+  protected readonly notTaken = computed(() => this.progress().notTaken);
 
-  protected readonly mood = computed<MascotMood>(() =>
-    this.allDone() ? 'celebrate' : this.notTaken() > 0 ? 'reminder' : 'happy');
-
-  /** รอบถัดไป = มื้อที่เวลายังไม่ถึงและยังไม่กินครบ */
-  protected readonly next = computed(() => {
-    const now = this.now();
-    for (const s of this.slots()) {
-      const w = s.doses.find((x) => x.state === 'waiting');   // dose แรกที่ยังรอเวลา (มื้อเดียวอาจมีหลายเวลา)
-      if (w) {
-        const min = Math.max(1, Math.ceil((parseServerTime(w.dose.scheduled_at) - now) / 60000));
-        return { label: SLOT_LABEL[s.slot], time: slotTimeLabel([w.dose.scheduled_at]), remain: duration(min) };
-      }
-    }
-    return null;
-  });
-
-  protected readonly bubble = computed(() => {
-    if (this.total() === 0) return 'วันนี้ไม่มียาที่ต้องกินค่ะ';
-    if (this.allDone()) return 'เก่งมากค่ะ วันนี้กินครบแล้ว!';
-    if (this.notTaken() > 0) return 'ยังมียาที่ยังไม่ได้กินนะคะ';
-    const n = this.next();
-    return n ? `รอบถัดไป ${n.label} ${n.time} ค่ะ` : 'วันนี้ไม่มียาที่ต้องกินค่ะ';
-  });
+  protected readonly mood = computed<MascotMood>(() => (this.allDone() ? 'celebrate' : this.notTaken() > 0 ? 'reminder' : 'happy'));
 
   protected readonly noMeds = computed(() => !this.loading() && !this.loadError() && this.activeMeds() === 0);
 
   constructor() {
     this.load();
-    const timer = setInterval(() => this.now.set(Date.now()), TICK_MS);
-    this.destroyRef.onDestroy(() => clearInterval(timer));
-    // กลับมาที่แท็บ/แอป → ดึงข้อมูลใหม่เงียบๆ (เผื่อกดกินจาก LINE หรืออีกเครื่อง)
-    fromEvent(document, 'visibilitychange').pipe(
-      filter(() => document.visibilityState === 'visible'),
-      takeUntilDestroyed(),
-    ).subscribe(() => { this.now.set(Date.now()); this.load(true); });
+    this.destroyRef.onDestroy(startClock((n) => this.now.set(n)));
+    // กลับมาที่แท็บ/แอป (หรือกลับจากแคช bfcache) → ปรับนาฬิกา + ดึงข้อมูลใหม่เงียบๆ (เผื่อกดกินจาก LINE หรืออีกเครื่อง)
+    merge(
+      fromEvent(document, 'visibilitychange').pipe(filter(() => document.visibilityState === 'visible')),
+      fromEvent(window, 'pageshow'),
+    ).pipe(takeUntilDestroyed()).subscribe(() => { this.now.set(Date.now()); this.load(true); });
     // กด "✓ กินแล้ว" จากการแจ้งเตือนเสร็จ → ดึงข้อมูลใหม่ให้เห็นผลทันที
     this.pushTake.done.pipe(takeUntilDestroyed()).subscribe(() => this.load(true));
-    // กลับมาออนไลน์ → รีเฟรชเอง (ไม่ต้องกดอะไร)
-    this.online.backOnline.pipe(takeUntilDestroyed()).subscribe(() => this.load(true));
+    // กลับมาออนไลน์ → รีเฟรชเอง (ไม่ต้องกดอะไร) และแจ้ง "ต่ออินเทอร์เน็ตก่อน" ได้อีกครั้งถ้าหลุดอีกรอบ
+    this.online.backOnline.pipe(takeUntilDestroyed()).subscribe(() => { this.offlineHinted = false; this.now.set(Date.now()); this.load(true); });
   }
 
   protected load(silent = false): void {
@@ -210,12 +156,25 @@ export class TodayPage {
     this.asNeeded.set(s.data.asNeeded as Medication[]);
     this.lowText.set(new Map(s.data.low));
     this.loadError.set(null);
-    this.now.set(Date.now());
+    this.now.set(Date.now());   // นาฬิกาจริงของเครื่อง ไม่ใช่เวลาที่บันทึก snapshot
     return true;
   }
 
-  protected toggle(slot: Slot): void {
-    this.expanded.update((s) => { const n = new Set(s); n.has(slot) ? n.delete(slot) : n.add(slot); return n; });
+  protected toggle(vm: SlotVM): void {
+    const slot = vm.slot;
+    if (vm.expanded) {
+      this.opened.update((s) => { const n = new Set(s); n.delete(slot); return n; });
+      this.touched.update((s) => { const n = new Set(s); n.delete(slot); return n; });
+    } else {
+      this.opened.update((s) => new Set(s).add(slot));
+    }
+  }
+
+  /** แตะปุ่มที่ต้องใช้เน็ตตอนออฟไลน์ → บอกครั้งเดียว (ไม่มีข้อความใต้ทุกแถว) */
+  protected offlineTap(): void {
+    if (this.offlineHinted) return;
+    this.offlineHinted = true;
+    this.snack.open(NEEDS_ONLINE_TEXT, 'ตกลง', { duration: 5000, panelClass: 'yt-snack' });
   }
 
   protected take(vm: DoseVM, slot: Slot): void {
@@ -246,6 +205,32 @@ export class TodayPage {
     });
   }
 
+  /** "กินครบมื้อนี้" : บันทึกรอบที่ถึงเวลา/เลยเวลาของมื้อนั้นทั้งหมดในคำขอเดียว (atomic) แล้วโหลดข้อมูลใหม่ */
+  protected takeAll(vm: SlotVM): void {
+    const ids = vm.takeAllIds;
+    if (this.takingAll() || this.online.offline() || ids.length < 2) return;
+    const before = new Map<number, Dose>((this.data()?.slots.flatMap((s) => s.doses) ?? []).filter((x) => ids.includes(x.id)).map((x): [number, Dose] => [x.id, x]));
+    const wasDone = this.allDone();
+    this.takingAll.set(true);
+    this.touched.update((s) => new Set(s).add(vm.slot));
+    const at = toServerTime(Date.now());
+    for (const id of ids) this.patch(id, { status: 'taken', taken_at: at });   // optimistic
+    this.doseApi.takeMany(ids).subscribe({
+      next: (r) => {
+        this.takingAll.set(false);
+        if (!wasDone && this.allDone()) this.celebrate();
+        this.snack.open(r.taken.length ? `บันทึก ${r.taken.length} รายการแล้วค่ะ` : 'บันทึกไว้แล้วค่ะ', undefined, { duration: 4000, panelClass: 'yt-snack' });
+        this.load(true);   // ช่องทาง/เวลาจริงและยอดยาคงเหลือมาจากเซิร์ฟเวอร์
+      },
+      error: (e) => {
+        this.takingAll.set(false);
+        for (const [id, x] of before) this.patch(id, { status: x.status, taken_at: x.taken_at });   // ย้อนสถานะ
+        this.snack.open(errorText(e), 'ตกลง', { duration: 8000, panelClass: 'yt-snack' });
+        this.load(true);
+      },
+    });
+  }
+
   protected undo(id: number, slot: Slot): void {
     if (this.busy().has(id) || this.online.offline()) return;
     this.setBusy(id, true);
@@ -272,8 +257,6 @@ export class TodayPage {
     });
   }
 
-  protected isBusy(id: number): boolean { return this.busy().has(id); }
-
   private applyResult(r: DoseActionResult): void {
     this.patch(r.id, { status: r.status, taken_at: r.taken_at, source: r.source });
   }
@@ -295,18 +278,9 @@ export class TodayPage {
     setTimeout(() => this.confetti.set(false), 2200);
   }
 
-  /** ปุ่ม "ดูรายการ": เลื่อนไปมื้อแรกที่ยังมียาถึงเวลาแล้วแต่ยังไม่ได้กิน */
-  protected goFirstNotTaken(): void {
-    const s = this.slots().find((v) => v.doses.some((x) => x.state === 'overdue' || x.state === 'due'));
-    this.host.nativeElement.querySelector<HTMLElement>(`[data-slot="${s?.slot}"]`)
-      ?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-  }
-
-  /** เลื่อนไปมื้อปัจจุบัน (มื้อแรกที่ยังไม่ครบและถึง/เลยเวลาแล้ว ไม่งั้นมื้อถัดไป) ถ้ายังไม่อยู่ในสายตา */
+  /** เลื่อนไปมื้อที่ต้องทำก่อน (มื้อเปิดแรก ไม่งั้นมื้อถัดไป) ถ้ายังไม่อยู่ในสายตา */
   private scrollToCurrent(): void {
-    const list = this.slots();
-    const target = list.find((s) => s.doses.some((x) => x.state === 'due' || x.state === 'overdue'))
-      ?? list.find((s) => !s.allTaken);
+    const target = this.slots().find((s) => s.mode === 'open') ?? this.slots().find((s) => s.isNext);
     if (!target) return;
     const el = this.host.nativeElement.querySelector<HTMLElement>(`[data-slot="${target.slot}"]`);
     if (el && el.getBoundingClientRect().top > window.innerHeight * 0.55) {

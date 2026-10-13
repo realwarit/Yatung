@@ -1,4 +1,4 @@
-<article class="card yt-card" [attr.aria-labelledby]="prefix() + '-title'">
+<article class="card" [attr.aria-labelledby]="prefix() + '-title'">
   <header class="head">
     <div class="head__txt">
       <p class="cap">ยาตัวที่ <span class="num">{{ position() }}</span> จาก <span class="num">{{ total() }}</span></p>
@@ -7,9 +7,9 @@
       </h2>
     </div>
     @if (todo().length) {
-      <span class="badge badge--warn"><app-icon name="alert" /> ตรวจอีก <span class="num">{{ todo().length }}</span> จุด</span>
+      <span class="yt-chip yt-chip--warn"><app-icon name="alert" /> ตรวจอีก <span class="num">{{ todo().length }}</span> จุด</span>
     } @else {
-      <span class="badge badge--ok"><app-icon name="check" /> ตรวจครบแล้ว</span>
+      <span class="yt-chip yt-chip--ok"><app-icon name="check" /> ตรวจครบแล้ว</span>
     }
   </header>
 
@@ -45,7 +45,8 @@
   } @else {
     <app-med-fields [draft]="card().draft" (draftChange)="setDraft($event)"
                     [moreOpen]="card().moreOpen" (moreOpenChange)="setMore($event)"
-                    [times]="times()" [flags]="flags()" [idPrefix]="prefix()" (ack)="ack($event)" />
+                    [times]="times()" [flags]="flags()" [idPrefix]="prefix()" (ack)="ack($event)"
+                    [fold]="fold()" (unfold)="unfolded.set(true)" />
   }
 
   <p class="sum" [attr.aria-label]="'สรุปยาตัวที่ ' + position()"><app-icon name="info" /> <span>{{ summary() }}</span></p>

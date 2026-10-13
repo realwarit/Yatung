@@ -12,7 +12,8 @@ const args = process.argv.slice(2);
 const val = (k, d) => (args.find((a) => a.startsWith(`--${k}=`)) ?? `--${k}=${d}`).split('=')[1];
 const widths = val('widths', '320,360,375,412,1366x768,1920x1080').split(',').map((w) => { const [a, b] = w.split('x').map(Number); return { w: a, h: b ?? 800, desktop: !!b }; });
 const scales = val('scales', '100,112,125').split(',');
-const routes = val('routes', '/today,/overview,/medications,/settings,/scan').split(',');
+const routes = val('routes', '/today,/overview,/medications,/settings,/scan,/review/1,/login,/register').split(',');
+const GUEST = new Set(['/login', '/register']);   // หน้า auth: ล้าง token ก่อนเข้า (ไม่งั้น guestGuard พาไป /today)
 const probe = args.includes('--probe');
 
 const browser = await chromium.launch({ channel: 'msedge' }).catch(() => chromium.launch({ channel: 'chrome' }));
@@ -20,12 +21,16 @@ let bad = 0, total = 0;
 for (const scale of scales) {
   for (const { w, h, desktop } of widths) {
     const ctx = await browser.newContext({ viewport: { width: w, height: h }, locale: 'th-TH', timezoneId: 'Asia/Bangkok', deviceScaleFactor: 1, isMobile: !desktop, hasTouch: !desktop });
-    await ctx.addInitScript(([s, tok]) => {
-      try { localStorage.setItem('yatung_font_scale_v2', s); localStorage.setItem('yatung_font_hint_off', '1'); localStorage.setItem('yatung_token', tok); localStorage.setItem('yatung_user', JSON.stringify({ id: 1, email: 'x@example.test', display_name: 'ผู้ทดสอบ' })); } catch {}
-    }, [scale, FAKE_JWT]);
+    await ctx.addInitScript(([s]) => { try { localStorage.setItem('yatung_font_scale_v2', s); localStorage.setItem('yatung_font_hint_off', '1'); } catch {} }, [scale]);
     const page = await ctx.newPage();
     await mockApi(page);
     for (const r of routes) {
+      await page.addInitScript(([tok, guest]) => {
+        try {
+          if (guest) { localStorage.removeItem('yatung_token'); localStorage.removeItem('yatung_user'); }
+          else { localStorage.setItem('yatung_token', tok); localStorage.setItem('yatung_user', JSON.stringify({ id: 1, email: 'x@example.test', display_name: 'ผู้ทดสอบ' })); }
+        } catch {}
+      }, [FAKE_JWT, GUEST.has(r)]);
       await page.goto(BASE + r);
       await page.waitForLoadState('networkidle').catch(() => {});
       await page.addStyleTag({ content: '*{animation:none!important;transition:none!important}' });

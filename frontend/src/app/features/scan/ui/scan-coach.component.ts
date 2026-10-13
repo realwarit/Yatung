@@ -1,23 +1,22 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { MascotComponent, MascotMood } from '../../../shared/components/mascot/mascot.component';
-import { SpeechBubbleComponent } from '../../../shared/components/speech-bubble/speech-bubble.component';
 
-/** น้องยาตรง + กรอบคำพูด (คอลัมน์ขวาของหน้า Scan) */
+/** ข้อความของน้องยาตรง S ตอนอ่านซองไม่สำเร็จ (worried) — ใช้เฉพาะสถานะ error ; สถานะอื่นไม่มีกล่องคำพูดซ้ำกับคำแนะนำ */
 @Component({
   selector: 'app-scan-coach',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MascotComponent, SpeechBubbleComponent],
+  imports: [MascotComponent],
   template: `
-    <app-mascot class="mascot" [mood]="mood()" [size]="112" />
-    <app-speech-bubble class="bubble" [text]="text()" tail="left" />
+    <app-mascot [mood]="mood()" size="s" />
+    <p role="alert">{{ text() }}</p>
   `,
   styles: `
-    :host { display: flex; align-items: center; gap: var(--yt-space-4); }
-    .mascot { flex: none; }
-    .bubble { flex: 1; min-width: 0; --pad-y: var(--yt-space-3); --pad-x: var(--yt-space-4); }
+    :host { display: flex; align-items: center; gap: var(--yt-space-3); padding: var(--yt-space-3); border-radius: var(--yt-radius-sm); background: var(--yt-danger-soft); color: var(--yt-on-danger-soft); }
+    app-mascot { flex: none; }
+    p { flex: 1; min-width: 0; margin: 0; font-weight: 500; line-height: var(--yt-line-height-tight); }
   `,
 })
 export class ScanCoachComponent {
-  readonly mood = input<MascotMood>('happy');
+  readonly mood = input<MascotMood>('worried');
   readonly text = input.required<string>();
 }

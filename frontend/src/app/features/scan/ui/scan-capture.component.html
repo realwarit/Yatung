@@ -21,41 +21,31 @@
     <p class="yt-alert yt-alert--warning" role="status"><app-icon name="alert" /> <span>{{ w }}</span></p>
   }
 } @else {
-  <!-- กรอบเล็งทั้งกรอบเป็นปุ่ม: Enter/Space ได้ -->
-  <button type="button" class="frame frame--empty" [class.is-drag]="dragging()"
-          [attr.aria-label]="desktop() ? 'เลือกไฟล์รูปซองยา' : 'ถ่ายรูปซองยา'"
-          [disabled]="!interactive()" (click)="onFrame()">
+  <!-- กรอบวางซองยา (เตี้ย) : คำแนะนำ 3 ข้อในกรอบ ; ปุ่มถ่าย/เลือกรูปอยู่ใต้กรอบ (กรอบไม่ใช่ปุ่มแล้ว) -->
+  <div class="frame frame--empty" [class.is-drag]="dragging()" role="group" aria-label="กรอบวางซองยา">
     <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
-    <svg class="art" viewBox="0 0 120 90" fill="none" stroke="currentColor" stroke-width="2.5"
-         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-      <path d="M22 14h76a4 4 0 0 1 4 4v54a4 4 0 0 1-4 4H22a4 4 0 0 1-4-4V18a4 4 0 0 1 4-4z"/>
-      <path d="M18 28h84"/>
-      <path d="M30 42h38M30 52h30M30 62h22"/>
-      <g transform="rotate(-40 86 54)"><rect x="74" y="49" width="24" height="10" rx="5"/><path d="M86 49v10"/></g>
-    </svg>
+    <app-scan-tips />
     @if (dragging()) {
-      <span class="hint hint--drag">ปล่อยรูปตรงนี้ได้เลย</span>
+      <p class="hint hint--drag">ปล่อยรูปตรงนี้ได้เลย</p>
     } @else if (desktop()) {
-      <span class="hint">ลากรูปมาวางตรงนี้ · หรือกดเพื่อเลือกไฟล์ · หรือกด Ctrl+V เพื่อวางรูป</span>
-    } @else {
-      <span class="hint">แตะเพื่อถ่ายรูปซองยา</span>
+      <p class="hint">ลากรูปมาวางตรงนี้ · หรือกด Ctrl+V เพื่อวางรูป</p>
     }
-  </button>
+  </div>
 
   @if (interactive()) {
     <div class="buttons">
       @if (desktop()) {
-        <ion-button class="yt-btn" expand="block" (click)="upload.emit()">
+        <ion-button class="yt-btn" expand="block" data-first-screen="gallery" (click)="upload.emit()">
           <ion-icon slot="start" name="cloud-upload-outline"></ion-icon>อัปโหลดรูปซองยา
         </ion-button>
-        <ion-button class="yt-btn" expand="block" fill="outline" (click)="camera.emit()">
+        <ion-button class="yt-btn" expand="block" fill="outline" data-first-screen="camera" (click)="camera.emit()">
           <ion-icon slot="start" name="camera-outline"></ion-icon>ใช้กล้อง
         </ion-button>
       } @else {
-        <ion-button class="yt-btn" expand="block" (click)="camera.emit()">
+        <ion-button class="yt-btn" expand="block" data-first-screen="camera" (click)="camera.emit()">
           <ion-icon slot="start" name="camera-outline"></ion-icon>ถ่ายรูปซองยา
         </ion-button>
-        <ion-button class="yt-btn" expand="block" fill="outline" (click)="gallery.emit()">
+        <ion-button class="yt-btn" expand="block" fill="outline" data-first-screen="gallery" (click)="gallery.emit()">
           <ion-icon slot="start" name="images-outline"></ion-icon>เลือกรูปจากเครื่อง
         </ion-button>
       }

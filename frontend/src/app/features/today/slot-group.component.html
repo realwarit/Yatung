@@ -1,0 +1,62 @@
+@let slot = s();
+<section class="card" [class.card--done]="slot.mode === 'done'" [attr.aria-labelledby]="'h-' + slot.slot">
+  @if (!slot.expanded) {
+    <!-- พับ : next = บรรทัดสรุป · done = แถวเขียว (แตะเพื่อกาง) -->
+    <button type="button" appListRow class="fold" [title]="slot.mode === 'done' ? name(slot.slot) + ' กินครบแล้ว' : (slot.isNext ? 'มื้อถัดไป · ' : '') + name(slot.slot) + ' ' + slot.time"
+            [sub]="slot.mode === 'done' ? null : slot.summary" [attr.aria-expanded]="false" (click)="toggle.emit()">
+      <span lead class="ic"><app-icon [name]="slot.mode === 'done' ? 'check' : icon(slot.slot)" /></span>
+      <span trail class="rt">
+        @if (slot.mode === 'done') { <span class="num">{{ slot.time }}</span> }
+        @else if (slot.remain) { <span class="yt-chip yt-chip--info">อีก {{ slot.remain }}</span> }
+        <app-icon name="chevron-down" />
+      </span>
+    </button>
+  } @else {
+    <div class="head">
+      <h2 class="h" [id]="'h-' + slot.slot">
+        <app-icon [name]="icon(slot.slot)" />
+        <span>{{ name(slot.slot) }} · <span class="num">{{ slot.time }}</span></span>
+      </h2>
+      @if (slot.chip; as c) {
+        <span class="yt-chip" [class.yt-chip--late]="c.tone === 'late'" [class.yt-chip--info]="c.tone === 'info'">{{ c.text }}</span>
+      } @else if (slot.mode === 'done') {
+        <span class="yt-chip yt-chip--ok"><app-icon name="check" /> กินครบแล้ว</span>
+      }
+      <app-tts-button class="listen" variant="icon" label="ฟังมื้อนี้" [ariaLabel]="'ฟังรายการยามื้อ' + name(slot.slot)" [ttsKey]="'slot-' + slot.slot" [build]="speak()" />
+      @if (slot.mode !== 'open') {
+        <button type="button" class="fold-btn" [attr.aria-label]="'พับมื้อ' + name(slot.slot)" aria-expanded="true" (click)="toggle.emit()"><app-icon name="chevron-down" class="up" /></button>
+      }
+    </div>
+
+    <div class="rows">
+      @for (v of slot.doses; track v.dose.id) {
+        <div appListRow class="dose" [class.dose--taken]="v.state === 'taken'" [title]="title(v)" [sub]="sub(v)">
+          @if (v.state === 'taken') { <span lead class="tick" [class.pop]="popId() === v.dose.id"><app-icon name="check" /></span> }
+          @if (lowText().get(v.dose.medication_id); as low) { <span class="yt-chip yt-chip--warn extra"><app-icon name="alert" /> {{ low }}</span> }
+          @if (v.state === 'taken' && v.canUndo) {
+            <button type="button" class="undo" [attr.aria-disabled]="offline() || busyIds().has(v.dose.id) ? true : null" (click)="onUndo(v)"><app-icon name="undo" /> กดผิด? ยกเลิก</button>
+          }
+          <span trail>
+            @if (v.state === 'taken') {
+              <span class="at num" aria-label="กินเมื่อ {{ v.takenClock }} น.">{{ v.takenClock }}</span>
+            } @else {
+              <button type="button" class="yt-compact yt-compact--primary take" [attr.data-first-screen]="firstOpen() && v.dose.id === slot.takeAllIds[0] ? 'take-first' : null" [attr.aria-label]="'กินแล้ว ' + title(v)"
+                      [attr.aria-disabled]="offline() || busyIds().has(v.dose.id) ? true : null" (click)="onTake(v)">
+                <app-icon name="check" /> กินแล้ว
+              </button>
+            }
+          </span>
+        </div>
+      }
+    </div>
+
+    @if (canTakeAll()) {
+      <div class="all">
+        <button type="button" class="all-btn" [attr.aria-label]="'กินครบมื้อ' + name(slot.slot) + ' ' + slot.takeAllIds.length + ' รายการ'"
+                [attr.aria-disabled]="offline() || taking() ? true : null" (click)="onTakeAll()">
+          <app-icon name="check" /> กินครบมื้อนี้
+        </button>
+      </div>
+    }
+  }
+</section>

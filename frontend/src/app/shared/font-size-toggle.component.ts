@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import { FONT_SCALES, FontScale, FontScaleService } from './font-scale.service';
 
 const LABELS: Record<FontScale, { text: string; aria: string }> = {
@@ -10,6 +10,7 @@ const LABELS: Record<FontScale, { text: string; aria: string }> = {
 @Component({
   selector: 'app-font-size-toggle',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.compact]': 'compact()' },
   template: `
     <div class="group" role="group" aria-label="ขนาดตัวอักษร">
       @for (s of scales; track s) {
@@ -42,10 +43,18 @@ const LABELS: Record<FontScale, { text: string; aria: string }> = {
     }
     button:hover { background: var(--yt-primary-soft); }
     button.active { background: var(--yt-primary); color: var(--yt-on-primary); }
+
+    // กะทัดรัด (หน้า Login/Register บนมือถือ < 1024px): สูงที่มองเห็น 32px · พื้นที่แตะสูง ≥ 48px ด้วย ::before · กว้าง ≥ 48px
+    @media (max-width: 1023.98px) {
+      :host(.compact) button { position: relative; min-height: 2rem; font-size: var(--yt-text-sm); }
+      :host(.compact) button::before { content: ''; position: absolute; inset: -0.5rem 0; }
+    }
   `,
 })
 export class FontSizeToggleComponent {
   protected readonly fs = inject(FontScaleService);
+  /** true = แถบกะทัดรัด สูง 32px */
+  readonly compact = input(false);
   protected readonly scales = FONT_SCALES;
   protected readonly labels = LABELS;
 }

@@ -15,7 +15,7 @@ import { IconComponent } from '../../icon.component';
     @if (back(); as to) {
       <a class="back" [routerLink]="to" [attr.aria-label]="backLabel()"><app-icon name="arrow-left" /></a>
     }
-    <h1 class="yt-page-title">{{ title() }}</h1>
+    <h1 class="yt-page-title" [class.greet]="greet()">{{ title() }}</h1>
     <div class="action"><ng-content select="[action]" /></div>
   `,
   styleUrl: './page-header.component.scss',
@@ -25,4 +25,6 @@ export class PageHeaderComponent {
   /** ลิงก์ย้อนกลับ (ไม่ใส่ = ไม่มีปุ่มย้อน) */
   readonly back = input<string | null>(null);
   readonly backLabel = input('ย้อนกลับ');
+  /** true = ชื่อหน้าขนาดทักทาย 20px (หน้าวันนี้) แทน 24px */
+  readonly greet = input(false);
 }

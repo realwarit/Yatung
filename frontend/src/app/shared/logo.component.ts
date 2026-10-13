@@ -38,10 +38,17 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       :host(.lg) .word { font-size: 1.8rem; }
     }
 
+    // กะทัดรัด (แถวบนของหน้า Login/Register บนมือถือ < 1024px): ไอคอน 28px ตัวอักษร 18px ; จอกว้างใช้ขนาดใหญ่ตามเดิม
+    @media (max-width: 1023.98px) {
+      :host(.sm) { gap: var(--yt-space-2); }
+      :host(.sm) svg { width: 1.75rem; height: 1.75rem; }
+      :host(.sm) .word { font-size: 1.125rem; line-height: 1.5; }
+    }
+
     .badge { fill: var(--yt-accent); }
     .tick { fill: none; stroke: var(--yt-on-accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
   `,
-  host: { '[class.lg]': 'large()', '[class.on-light]': 'tone() === "light"', '[class.on-dark]': 'tone() === "dark"' },
+  host: { '[class.sm]': 'compact()', '[class.lg]': 'large()', '[class.on-light]': 'tone() === "light"', '[class.on-dark]': 'tone() === "dark"' },
 })
 export class LogoComponent {
   /** 'light' = วางบนพื้นอ่อน, 'dark' = วางบนพื้น primary */
@@ -49,4 +56,6 @@ export class LogoComponent {
   readonly iconOnly = input(false);
   /** ขยายเมื่อจอ ≥ 1024px */
   readonly large = input(false);
+  /** true = ขนาดเล็ก 28px (ไม่ขยายตามจอ) */
+  readonly compact = input(false);
 }

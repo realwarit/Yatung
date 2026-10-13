@@ -37,6 +37,20 @@ export class ShellComponent {
     { initialValue: false },
   );
 
+  /** route data `ownHeader: true` = หน้าที่มี page-header ของตัวเอง → มือถือไม่แสดงแถบโลโก้ด้านบนของ shell (ซ้ำ) */
+  protected readonly ownHeader = toSignal(
+    this.router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      startWith(null),
+      map(() => {
+        let r = this.route.snapshot;
+        while (r.firstChild) r = r.firstChild;
+        return r.data['ownHeader'] === true;
+      }),
+    ),
+    { initialValue: false },
+  );
+
   protected readonly left: NavItem[] = [
     { path: '/today', label: 'วันนี้', icon: 'today' },
     { path: '/medications', label: 'ยาของฉัน', icon: 'pill' },

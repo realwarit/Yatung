@@ -2,19 +2,19 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { IonButton, IonIcon, IonLabel, IonSegment, IonSegmentButton } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { cameraOutline, createOutline, refreshOutline, sparklesOutline } from 'ionicons/icons';
-import { MascotMood } from '../../../shared/components/mascot/mascot.component';
 import { Mode, Phase } from '../scan.types';
 import { ScanCaptureComponent } from './scan-capture.component';
 import { ScanCoachComponent } from './scan-coach.component';
 import { ScanProcessingComponent } from './scan-processing.component';
 import { ScanTextInputComponent } from './scan-text-input.component';
-import { ScanTipsComponent } from './scan-tips.component';
+import { ScanNoticeComponent } from './scan-notice.component';
 
 const MIN_TEXT = 5;
 
 /**
  * การ์ดหลักของหน้า Scan — แสดงผลล้วน (รับ state ผ่าน input, ส่ง event ผ่าน output) ให้ /scan และ /dev/scan-states ใช้ร่วมกัน
  * ใช้ Ionic: ion-segment / ion-segment-button / ion-label / ion-button / ion-icon (ส่วนย่อยใช้ ion-textarea, ion-chip, ion-spinner)
+ * 8D: ใต้ขั้นตอนมีแถบแจ้งเรื่อง AI (น้องยาตรง S) · คำแนะนำ 3 ข้ออยู่ในกรอบถ่ายรูป · ไม่มีน้องยาตรงตัวใหญ่/กล่องคำพูด
  * หลักปุ่ม: แต่ละ state มีปุ่มหลัก (สีทึบ) ได้ปุ่มเดียว และไม่แสดงปุ่มหลักแบบ disabled
  */
 @Component({
@@ -22,7 +22,7 @@ const MIN_TEXT = 5;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     IonSegment, IonSegmentButton, IonLabel, IonButton, IonIcon,
-    ScanCaptureComponent, ScanCoachComponent, ScanProcessingComponent, ScanTextInputComponent, ScanTipsComponent,
+    ScanCaptureComponent, ScanCoachComponent, ScanNoticeComponent, ScanProcessingComponent, ScanTextInputComponent,
   ],
   templateUrl: './scan-stage.component.html',
   styleUrl: './scan-stage.component.scss',
@@ -69,15 +69,8 @@ export class ScanStageComponent {
     return this.text().trim().length >= MIN_TEXT ? { primary: 'ให้น้องยาตรงจัดตารางยา', icon: 'sparkles-outline' } : null;
   });
 
-  protected readonly showTips = computed(() => this.mode() === 'photo' && !this.previewUrl() && !this.failed());
-
-  protected readonly coach = computed<{ mood: MascotMood; text: string }>(() => {
-    if (this.failed()) return { mood: 'worried', text: this.errorMessage() ?? 'อ่านไม่สำเร็จ ลองใหม่อีกครั้งนะคะ' };
-    if (this.mode() === 'text') return { mood: 'happy', text: 'พิมพ์ข้อความบนซองยาได้เลย น้องจะช่วยจัดตารางให้ค่ะ' };
-    if (!this.previewUrl()) return { mood: 'happy', text: 'วางซองยาให้อยู่ในกรอบนะคะ' };
-    if (this.warnings().length) return { mood: 'worried', text: 'รูปนี้อาจอ่านยากนิดหน่อย ถ่ายใหม่จะแม่นกว่า แต่ส่งให้น้องอ่านเลยก็ได้ค่ะ' };
-    return { mood: 'happy', text: 'รูปพร้อมแล้ว! ให้น้องอ่านได้เลยค่ะ' };
-  });
+  /** ข้อความของน้องยาตรงตอนอ่านไม่สำเร็จ (สถานะอื่นไม่มีกล่องคำพูด — คำแนะนำอยู่ในกรอบถ่ายรูปแล้ว) */
+  protected readonly coachText = computed(() => (this.failed() ? (this.errorMessage() ?? 'อ่านไม่สำเร็จ ลองใหม่อีกครั้งนะคะ') : null));
 
   constructor() {
     addIcons({ cameraOutline, createOutline, refreshOutline, sparklesOutline });

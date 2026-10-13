@@ -57,5 +57,13 @@ const allRoutes = [...new Set(dirs.flatMap((d) => fs.readdirSync(path.join(OUT, 
 const cell = (d, r, s) => (fs.existsSync(path.join(OUT, d, `${r}__${s.id}.png`)) ? `<figure><img src="${d}/${r}__${s.id}.png" alt="${d} ${r} ${s.label}"><figcaption>${d}</figcaption></figure>` : '');
 const html = `<!doctype html><meta charset="utf-8"><title>8D ก่อน/หลัง</title><style>body{font-family:system-ui;margin:16px;background:#f4f4f4}h2{margin:32px 0 8px}.row{display:flex;gap:16px;align-items:flex-start;margin-bottom:8px;overflow-x:auto}figure{margin:0}img{border:1px solid #bbb;background:#fff;max-height:760px}figcaption{font-size:13px;color:#555;text-align:center}</style>
 <h1>ปรับดีไซน์ 8D — ก่อน / หลัง</h1>${allRoutes.map((r) => `<h2>${r.replace('-', '/')}</h2>${SHOTS.map((s) => `<h3>${s.label}</h3><div class="row">${dirs.map((d) => cell(d, r, s)).join('')}</div>`).join('')}`).join('')}`;
-fs.writeFileSync(path.join(OUT, 'index.html'), html);
+// ภาพน้องยาตรง M 56px ของหน้า Login ทุกท่า (tools/auth-mascot-check.mjs) + ท่า S 36px (ถ้ามี)
+let extra = '';
+const mjson = path.join(OUT, 'auth-mascot', 'index.json');
+if (fs.existsSync(mjson)) {
+  const items = JSON.parse(fs.readFileSync(mjson, 'utf8'));
+  extra += `<h2>น้องยาตรง M 56px — หน้า Login ทุกท่า</h2><div class="row">${items.map((m) => `<figure><img src="auth-mascot/${m.name}.png" style="height:200px" alt="${m.label}"><figcaption>${m.label}</figcaption></figure>`).join('')}</div>`;
+}
+if (fs.existsSync(path.join(OUT, 'mascot-s-check.png'))) extra += '<h2>น้องยาตรง S 36px — ท่าที่อ่านออก</h2><div class="row"><figure><img src="mascot-s-check.png" alt="mascot S"></figure></div>';
+fs.writeFileSync(path.join(OUT, 'index.html'), html + extra);
 console.log(`ถ่ายแล้ว ${tag}: ${routes.length} หน้า × ${SHOTS.length} ขนาด → ${OUT}`);

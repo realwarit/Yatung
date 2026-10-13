@@ -88,4 +88,12 @@ export interface DoseActionResult {
   remaining_qty: number | null;
 }
 
+/** response ของ POST /api/doses/take-many */
+export interface TakeManyResult {
+  taken: number[];
+  already: number[];
+  skipped: number;
+  at: string;   // 'HH:mm'
+}
+
 export type SlotTimes = Record<Slot, string>;   // 'HH:mm'

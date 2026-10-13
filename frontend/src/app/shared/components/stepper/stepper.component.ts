@@ -22,6 +22,8 @@ import { IconComponent } from '../../icon.component';
     :host { display: block; }
     /* [−] ค่า [+] เป็นชุดเดียวในกรอบ pill ใบเดียว */
     .stepper {
+      box-sizing: border-box;
+      max-width: 100%;   /* จอแคบ (320px) + ก++ : ห้ามล้นการ์ด */
       display: inline-flex;
       align-items: center;
       gap: var(--yt-space-1);
@@ -31,7 +33,8 @@ import { IconComponent } from '../../icon.component';
       background: var(--yt-surface);
     }
     output {
-      min-width: 5.5rem;
+      min-width: 0;
+      flex: 1 1 auto;
       padding: 0 var(--yt-space-2);
       text-align: center;
       font-size: 1.4rem;
@@ -43,8 +46,8 @@ import { IconComponent } from '../../icon.component';
       display: grid;
       place-items: center;
       flex: none;
-      width: 3.5rem;
-      height: 3.5rem;
+      width: clamp(2.75rem, 16vw, 3.5rem);   /* จอแคบ: ปุ่มเล็กลงได้ (≥ 44px ที่ ก) */
+      height: clamp(2.75rem, 16vw, 3.5rem);
       border: 0;
       border-radius: 50%;
       background: var(--yt-primary-soft);

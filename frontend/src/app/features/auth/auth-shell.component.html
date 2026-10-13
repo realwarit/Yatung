@@ -16,10 +16,10 @@
   </svg>
 </div>
 
-<!-- หัวหน้าจอ: โลโก้ชิดซ้าย ตัวปรับขนาดตัวอักษรชิดขวา ห่างขอบเท่ากัน (อยู่นอก container) -->
+<!-- แถวบน: โลโก้ชิดซ้าย ตัวปรับขนาดตัวอักษรชิดขวา (มือถือ = กะทัดรัด 28px / 32px · จอกว้าง = ขนาดใหญ่) -->
 <header class="top">
-  <app-logo tone="light" [large]="true" />
-  <app-font-size-toggle />
+  <app-logo tone="light" [large]="true" [compact]="true" />
+  <app-font-size-toggle [compact]="true" />
 </header>
 
 <div class="page">
@@ -27,15 +27,15 @@
     <app-auth-stage class="stage" [mood]="mood()" [message]="message()" [peek]="peek()" [chatty]="chatty()" />
 
     <main class="content">
-      <!-- มือถือ: น้องโผล่หน้าจากหลังการ์ด มือเกาะขอบ -->
-      <div class="peek">
-        <div class="peek__mascot">
-          <app-mascot [mood]="mood()" [peek]="peek()" [grip]="true" [fluid]="true" />
-        </div>
-        <app-speech-bubble class="peek__bubble" tail="left" [text]="message()" />
-      </div>
-
       <div class="card yt-enter">
+        <!-- มือถือ: น้องยาตรง M + ชื่อหน้า + บรรทัดรอง (ไม่มีกล่องคำพูดซ้ำกับหัวเรื่อง) ; จอกว้าง: น้องยาตรงอยู่ที่เวทีซ้ายแล้ว -->
+        <div class="hello">
+          <app-mascot class="mc" [mood]="mood()" [peek]="peek()" size="m" />
+          <div class="hello__t">
+            <h1 class="yt-title">{{ title() }}</h1>
+            <p class="yt-lead">{{ lead() }}</p>
+          </div>
+        </div>
         <ng-content />
       </div>
 

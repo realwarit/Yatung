@@ -8,6 +8,7 @@
 .lead:empty, .trail:empty { display: none; }
 .lead, .trail { display: flex; align-items: center; flex: none; gap: var(--yt-space-2); }
 .body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.t, .s { overflow-wrap: anywhere; }
 .t { font-size: var(--yt-text-body); font-weight: 500; line-height: var(--yt-line-height-tight); }
 .s { font-size: var(--yt-text-sm); color: var(--yt-text-muted); line-height: var(--yt-line-height-tight); }
 .chev { flex: none; color: var(--yt-text-muted); }

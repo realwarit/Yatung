@@ -6,10 +6,32 @@ export const dose = (id, slot, hhmm, name, status) => ({
   id, medication_id: id, name, tts_name: null, strength: '500 mg', dose_per_time: 1, unit: 'tablet', meal_relation: 'after',
   scheduled_at: `${ymd} ${hhmm}:00`, status, taken_at: status === 'taken' ? `${ymd} ${hhmm}:05` : null, source: status === 'taken' ? 'line' : null, is_overdue: false,
 });
-export const TODAY = { summary: { total: 3, taken: 1, pending: 2, missed: 0 }, slots: [
-  { slot: 'morning', time: '08:00', doses: [dose(1, 'morning', '08:00', 'Metformin', 'taken')] },
-  { slot: 'evening', time: '18:00', doses: [dose(2, 'evening', '18:00', 'Amlodipine', 'pending'), dose(3, 'evening', '18:00', 'ซิมวาสแตติน ชื่อยาที่ยาวมากเพื่อทดสอบการตัดบรรทัด', 'pending')] },
-] };
+// เวลาไทยของเครื่องตอนนี้ + offsetMin นาที → 'YYYY-MM-DD HH:mm:00'
+const p2 = (n) => String(n).padStart(2, '0');
+export const bkkAt = (offsetMin = 0, now = Date.now()) => {
+  const d = new Date(now + 7 * 3600_000 + offsetMin * 60_000);
+  return { date: `${d.getUTCFullYear()}-${p2(d.getUTCMonth() + 1)}-${p2(d.getUTCDate())}`, hhmm: `${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}` };
+};
+const mk = (id, slot, offsetMin, name, status, extra = {}) => {
+  const t = bkkAt(offsetMin);
+  return { id, medication_id: id, name, tts_name: null, strength: '500 mg', dose_per_time: 1, unit: 'tablet', meal_relation: 'after',
+    scheduled_at: `${t.date} ${t.hhmm}:00`, status, taken_at: status === 'taken' ? `${t.date} ${t.hhmm}:05` : null, source: status === 'taken' ? 'line' : null, is_overdue: false, _time: t.hhmm, ...extra };
+};
+const slotOf = (slot, doses) => ({ slot, time: doses[0]._time, doses: doses.map(({ _time, ...d }) => d) });
+/** สถานการณ์ของหน้าวันนี้ (เวลาอ้างจากนาฬิกาจริงของเครื่อง) : late = มีมื้อเลยเวลา + มื้อถัดไป · before = ยังไม่ถึงมื้อแรก · done = กินครบทั้งวัน · soon = มื้อถัดไปอีก 5 นาที */
+export const todayFor = (scenario = 'late') => {
+  const slots = {
+    late: [slotOf('morning', [mk(1, 'morning', -600, 'Metformin', 'taken')]),
+      slotOf('noon', [mk(2, 'noon', -120, 'Amlodipine', 'pending'), mk(3, 'noon', -120, 'ซิมวาสแตติน ชื่อยาที่ยาวมากเพื่อทดสอบการตัดบรรทัด', 'pending'), mk(5, 'noon', -120, 'Losartan', 'pending')]),
+      slotOf('evening', [mk(4, 'evening', 180, 'Aspirin', 'pending')])],
+    before: [slotOf('morning', [mk(1, 'morning', 45, 'Metformin', 'pending'), mk(2, 'morning', 45, 'Amlodipine', 'pending')]), slotOf('evening', [mk(3, 'evening', 360, 'Simvastatin', 'pending')])],
+    done: [slotOf('morning', [mk(1, 'morning', -600, 'Metformin', 'taken')]), slotOf('noon', [mk(2, 'noon', -300, 'Amlodipine', 'taken'), mk(3, 'noon', -300, 'Losartan', 'taken')]), slotOf('evening', [mk(4, 'evening', -60, 'Aspirin', 'taken')])],
+    soon: [slotOf('bedtime', [mk(1, 'bedtime', 5, 'Melatonin', 'pending')])],
+  }[scenario];
+  const all = slots.flatMap((x) => x.doses);
+  return { summary: { total: all.length, taken: all.filter((d) => d.status === 'taken').length, pending: all.filter((d) => d.status === 'pending').length, missed: 0 }, slots };
+};
+export const TODAY = todayFor('late');
 export const D = (date, label_th, taken, missed, pending_due, upcoming, is_today = false) => {
   const due = taken + missed + pending_due;
   return { date, label_th, is_today, taken, missed, pending_due, upcoming, due, rate: due ? Math.round((taken * 100) / due) : null };
@@ -30,6 +52,8 @@ export const ADH = {
 export const MED = { id: 1, name: 'Amlodipine', tts_name: null, strength: '5 mg', dose_per_time: 1, unit: 'tablet', meal_relation: 'after', as_needed: false, slots: ['morning', 'evening'],
   indication: 'ลดความดัน', warnings: ['อาจทำให้ง่วง'], total_qty: 30, remaining_qty: 4, days_left: 2, refill_alert_days: 7, is_low: true, start_date: ymd, end_date: null, is_active: true, created_at: '', updated_at: '' };
 
+// ยาเมื่อมีอาการ (หน้าวันนี้แสดงเป็นรายการ "ยาเมื่อมีอาการ" ไม่มีปุ่มกินแล้ว)
+export const MED_PRN = { ...MED, id: 9, name: 'Paracetamol', strength: '500 mg', as_needed: true, slots: [], indication: 'ลดไข้ แก้ปวด', is_low: false, days_left: null, remaining_qty: 10 };
 
 export const REVIEW = { prescription_id: 1, status: 'draft', input_type: 'image', has_image: false, ocr_text: 'Metformin 500 mg 1 tab bid pc', existing_matches: [], review_flags: [{ index: 0, field: 'dose', reason: 'ตรวจขนาดยา' }],
   result: { is_medicine_label: true, medications: [{ name: 'Metformin', strength: '500 mg', dose_per_time: 1, unit: 'tablet', meal_relation: 'after', slots: ['morning', 'evening'], as_needed: false, total_qty: 60, indication: 'เบาหวาน', warnings: [], confidence: { name: 0.9, dose: 0.5 } }], unreadable_parts: [] } };
@@ -43,8 +67,10 @@ export async function mockApi(page, opts = {}) {
     if (opts.htmlMode?.()) return route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>ngrok</title>Visit Site' });
     if (u === '/api/me') return route.fulfill(json({ id: 1, email: 'x@example.test', display_name: 'ผู้ทดสอบ', notify_both: false, push_subscribed: false }));
     if (u === '/api/doses/today' && opts.todayStatus) return route.fulfill({ status: opts.todayStatus(), contentType: 'text/plain', body: '' });
-    if (u === '/api/doses/today') return route.fulfill(json(TODAY));
-    if (u === '/api/medications') return route.fulfill(json([MED]));
+    if (u === '/api/doses/today') return route.fulfill(json(todayFor(opts.today?.() ?? 'late')));
+    if (u === '/api/doses/take-many') { const ids = JSON.parse(route.request().postData() ?? '{}').ids ?? []; opts.onTakeMany?.(ids); return route.fulfill(json({ taken: ids, already: [], skipped: 0, at: '12:00' })); }
+    if (u.startsWith('/api/doses/') && u.endsWith('/take') && /^\d+$/.test(u.split('/')[3])) { const id = Number(u.split('/')[3]); opts.onTake?.(id); return route.fulfill(json({ id, status: 'taken', taken_at: bkkAt(0).date + ' ' + bkkAt(0).hhmm + ':00', source: 'app', remaining_qty: null })); }
+    if (u === '/api/medications') return route.fulfill(json([MED, MED_PRN]));
     if (u === '/api/stats/adherence') return route.fulfill(json(ADH));
     if (u === '/api/settings/slot-times') return route.fulfill(json({ morning: '08:00', noon: '12:00', evening: '18:00', bedtime: '21:00' }));
     if (u === '/api/line/status') return route.fulfill(json({ linked: true, display_name: 'ผู้ทดสอบ' }));
@@ -52,5 +78,15 @@ export async function mockApi(page, opts = {}) {
     if (u === '/api/prescriptions/1') return route.fulfill(json(REVIEW));
     if (u === '/api/config') return route.fulfill(json({ demoMode: opts.demoMode?.() ?? false }));
     return route.fulfill(json({ error: 'NOT_MOCKED', details: u }, 404));
+  });
+}
+
+/** เสียงไทยจำลอง (เบราว์เซอร์ headless ไม่มี speechSynthesis) — ให้ปุ่ม 🔊 แสดงเหมือนมือถือที่มีเสียงไทย ; เรียกกับ context ก่อนเปิดหน้า */
+export async function fakeThaiVoice(ctx) {
+  await ctx.addInitScript(() => {
+    const voices = [{ lang: 'th-TH', name: 'Thai (จำลอง)', voiceURI: 'th-fake', default: true, localService: true }];
+    const synth = { getVoices: () => voices, speak() {}, cancel() {}, addEventListener() {}, removeEventListener() {}, speaking: false, pending: false, paused: false };
+    Object.defineProperty(window, 'speechSynthesis', { value: synth, configurable: true });
+    window.SpeechSynthesisUtterance = function (t) { this.text = t; };
   });
 }

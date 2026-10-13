@@ -45,7 +45,10 @@ const SHY_PEEK: readonly [string, string] = ['M54 124Q62 128 82 112', 'M146 124Q
 const GRIP: readonly [string, string] = ['M56 118Q34 118 36 146', 'M144 118Q166 118 164 146'];
 const GRIP_RIGHT_MOODS: readonly MascotMood[] = ['happy', 'watching', 'sleepy', 'worried'];
 // ตาเหลือบไปทาง (x, y) ในหน่วยพิกัด SVG
-const LOOK: Partial<Record<MascotMood, string>> = { thinking: 'translate(3px, -5px)', watching: 'translate(5px, 2px)' };
+const LOOK: Partial<Record<MascotMood, readonly [number, number]>> = { thinking: [3, -5], watching: [5, 2] };
+// ที่ขนาดเล็ก (≤ 64px) ตาที่เหลือบ 5 หน่วยเหลือแค่ ~1.4px จนดูเหมือน happy → ขยายระยะเหลือบ (ตรวจภาพที่ 56px แล้ว: tools/auth-mascot-check.mjs)
+const SMALL_LOOK_PX = 64;
+const SMALL_LOOK_GAIN = 2.2;
 
 /**
  * น้องยาตรง — มาสคอตแคปซูลตั้งตรง (วาดเองทั้งหมด) เป็น inline SVG ชุดเดียว
@@ -77,7 +80,12 @@ export class MascotComponent {
   protected readonly px = computed(() => { const s = this.size(); return typeof s === 'number' ? s : MASCOT_SIZES[s]; });
   protected readonly height = computed(() => Math.round(this.px() * 1.08));
   protected readonly ariaLabel = computed(() => this.label() ?? MASCOT_LABELS[this.mood()]);
-  protected readonly look = computed(() => LOOK[this.mood()] ?? 'none');
+  protected readonly look = computed(() => {
+    const v = LOOK[this.mood()];
+    if (!v) return 'none';
+    const g = this.px() <= SMALL_LOOK_PX ? SMALL_LOOK_GAIN : 1;
+    return `translate(${v[0] * g}px, ${v[1] * g}px)`;
+  });
   protected readonly showEyes = computed(() => this.mood() !== 'shy' || this.peek());
   protected readonly arms = computed<readonly [string, string]>(() => {
     const m = this.mood();

@@ -1,4 +1,6 @@
 <section class="card" [attr.aria-busy]="busy()">
+  <app-scan-notice />
+
   <!-- Ionic: ion-segment (pill กว้างตามเนื้อหา) — เปลี่ยนโหมดแล้วรูป/ข้อความเดิมยังอยู่ -->
   <ion-segment mode="ios" class="mode" [value]="mode()" [disabled]="busy()"
                aria-label="เลือกวิธีใส่ข้อมูลยา" (ionChange)="onMode($event.detail.value)">
@@ -28,10 +30,7 @@
         }
       </div>
 
-      <div class="side" [class.is-error]="failed()">
-        <app-scan-coach [mood]="coach().mood" [text]="coach().text" />
-        @if (showTips()) { <app-scan-tips /> }
-      </div>
+      @if (coachText(); as t) { <app-scan-coach class="coach" mood="worried" [text]="t" /> }
 
       @if (action(); as a) {
         <div class="act" [class.is-static]="!stickyAction()">
@@ -48,5 +47,5 @@
     </div>
   }
 
-  <p class="yt-disclaimer">ผลจาก AI อาจผิดพลาดได้ คุณจะได้ตรวจก่อนบันทึกทุกครั้ง · ไม่ใช่คำแนะนำทางการแพทย์</p>
+  <p class="yt-disclaimer">ไม่ใช่คำแนะนำทางการแพทย์</p>
 </section>

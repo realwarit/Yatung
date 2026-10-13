@@ -5,6 +5,7 @@ import {
   cameraOutline, cameraReverseOutline, cloudUploadOutline, imagesOutline, reloadOutline, trashOutline,
 } from 'ionicons/icons';
 import { IconComponent } from '../../../shared/icon.component';
+import { ScanTipsComponent } from './scan-tips.component';
 
 /**
  * โหมดถ่ายรูป: กรอบเล็ง (ยังไม่มีรูป) หรือรูปพร้อมแถบเครื่องมือ (มีรูปแล้ว)
@@ -13,7 +14,7 @@ import { IconComponent } from '../../../shared/icon.component';
 @Component({
   selector: 'app-scan-capture',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IonButton, IonIcon, IconComponent],
+  imports: [IonButton, IonIcon, IconComponent, ScanTipsComponent],
   templateUrl: './scan-capture.component.html',
   styleUrl: './scan-capture.component.scss',
 })
@@ -36,7 +37,7 @@ export class ScanCaptureComponent {
     addIcons({ cameraOutline, cameraReverseOutline, cloudUploadOutline, imagesOutline, reloadOutline, trashOutline });
   }
 
-  /** แตะกรอบ: จอคอม = เลือกไฟล์, มือถือ = เปิดกล้อง */
+  /** แตะรูปที่เลือกแล้ว: จอคอม = เลือกไฟล์ใหม่, มือถือ = เปิดกล้อง */
   protected onFrame(): void {
     if (this.desktop()) this.upload.emit(); else this.camera.emit();
   }

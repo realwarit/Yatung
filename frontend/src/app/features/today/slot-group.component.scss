@@ -1,0 +1,60 @@
+:host { display: block; min-width: 0; scroll-margin-top: var(--yt-space-4); }
+
+.card { overflow: hidden; border: 1px solid var(--yt-border); border-radius: var(--yt-radius-card); background: var(--yt-surface); }
+.card--done { border-color: transparent; background: var(--yt-success-soft); }
+:host([data-mode='done']) .fold, :host([data-mode='done']) .h { color: var(--yt-on-success-soft); }
+
+// ---------- พับ ----------
+.fold { font-family: var(--yt-font-body); }
+.ic {
+  display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: 50%;
+  background: var(--yt-primary-soft); color: var(--yt-primary-deep); --icon-optical-offset: 0;
+}
+:host([data-mode='done']) .ic { background: var(--yt-success); color: var(--yt-on-primary); }
+.rt { display: inline-flex; align-items: center; gap: var(--yt-space-2); color: var(--yt-text-muted); }
+
+// ---------- หัวมื้อ ----------
+.head {
+  display: flex; align-items: center; gap: var(--yt-space-2); min-height: var(--yt-row-min);
+  padding: 0 var(--yt-space-1) 0 var(--yt-space-4); border-bottom: 1px solid var(--yt-border);
+}
+.h {
+  display: flex; flex: 1; align-items: center; gap: var(--yt-space-2); min-width: 0; margin: 0;
+  font: 500 var(--yt-text-heading) / var(--yt-line-height-tight) var(--yt-font-display); color: var(--yt-primary-dark);
+  app-icon { flex: none; }
+}
+.listen { flex: none; }
+.fold-btn {
+  display: inline-grid; place-items: center; flex: none; width: var(--yt-tap); height: var(--yt-tap);
+  border: 0; border-radius: var(--yt-radius-pill); background: transparent; color: var(--yt-text-muted); cursor: pointer;
+  &:hover { background: var(--yt-primary-softer); }
+}
+.up { transform: rotate(180deg); }
+
+// ---------- แถวยา ----------
+.dose--taken { color: var(--yt-on-success-soft); }
+.tick {
+  display: grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: 50%;
+  background: var(--yt-success); color: var(--yt-on-primary); font-size: 0.8rem; --icon-optical-offset: 0;
+}
+.pop { animation: pop 280ms var(--yt-ease) both; }
+@keyframes pop { 0% { transform: scale(0.3); } 70% { transform: scale(1.3); } 100% { transform: scale(1); } }
+.at { font-size: var(--yt-text-sm); font-weight: 600; color: var(--yt-on-success-soft); }
+.extra { align-self: flex-start; margin-top: var(--yt-space-1); }
+.undo {
+  position: relative; align-self: flex-start; display: inline-flex; align-items: center; gap: 0.4em;
+  min-height: 1.75rem; margin-top: var(--yt-space-1); padding: 0; border: 0; background: transparent;
+  color: var(--yt-primary-dark); font: 500 var(--yt-text-sm) / 1.4 var(--yt-font-body); text-decoration: underline; cursor: pointer;
+  &::before { content: ''; position: absolute; inset: -0.625rem -0.5rem; }   // พื้นที่แตะ ≥ 48px
+  &[aria-disabled='true'] { opacity: 0.55; }
+}
+
+// ---------- กินครบมื้อนี้ ----------
+.all { padding: var(--yt-space-3) var(--yt-space-4) var(--yt-space-4); border-top: 1px solid var(--yt-border); }
+.all-btn {
+  display: flex; align-items: center; justify-content: center; gap: var(--yt-space-2); width: 100%; min-height: var(--yt-tap);
+  border: 1.5px solid var(--yt-primary); border-radius: var(--yt-radius-pill); background: transparent;
+  color: var(--yt-primary-dark); font: 500 var(--yt-text-body) / 1 var(--yt-font-display); cursor: pointer; --icon-optical-offset: 0.06em;
+  &:hover { background: var(--yt-primary-soft); }
+  &[aria-disabled='true'] { opacity: 0.55; cursor: default; }
+}

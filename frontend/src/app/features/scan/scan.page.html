@@ -1,21 +1,10 @@
 <div class="scan">
-  <!-- Ionic: ion-header / ion-toolbar (พื้นโปร่งใส) / ion-buttons / ion-button / ion-title / ion-icon -->
-  <ion-header class="ion-no-border" mode="md">
-    <ion-toolbar mode="md">
-      <ion-buttons slot="start">
-        <ion-button class="back" routerLink="/today" aria-label="กลับหน้าหลัก">
-          <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
-        </ion-button>
-      </ion-buttons>
-      <ion-title>เพิ่มยาใหม่</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <app-page-header title="เพิ่มยาใหม่" back="/today" backLabel="กลับหน้าหลัก" />
 
-  <ol class="steps" id="scan-steps" aria-label="ขั้นตอนการเพิ่มยา">
-    <li class="s is-current" aria-current="step"><span class="dot num">1</span><span class="t">ถ่ายรูป</span></li>
-    <li class="s"><span class="dot num">2</span><span class="t">ตรวจข้อมูล</span></li>
-    <li class="s"><span class="dot num">3</span><span class="t">บันทึก</span></li>
-  </ol>
+  <!-- ขั้นตอน ① ② ③ : ป้ายสั้นบรรทัดเดียว (ขั้นปัจจุบัน = ตัวหนา สี primary) -->
+  <p class="steps" id="scan-steps" aria-label="ขั้นตอนการเพิ่มยา ขั้นที่ 1 จาก 3 ถ่ายรูป">
+    <span class="is-current" aria-current="step">ถ่าย</span> · <span>ตรวจ</span> · <span>บันทึก</span>
+  </p>
 
   <app-scan-stage
     [mode]="mode()" [phase]="phase()" [desktop]="desktop()" [dragging]="dragging()"

@@ -32,6 +32,7 @@ import { IconComponent } from '../../shared/icon.component';
     </div>
   `,
   styleUrl: './review-bar.component.scss',
+  host: { 'data-first-screen': 'save-bar' },
 })
 export class ReviewBarComponent {
   /** ข้อความเต็ม (อ่านออกเสียง/จอกว้าง) */

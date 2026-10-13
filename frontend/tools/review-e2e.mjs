@@ -45,9 +45,9 @@ try {
   await page.waitForURL('**/review/*', { timeout: 20000 });
   await card(0).waitFor();
   check('หน้า Review ไม่มีป้าย "หน้าทดสอบชั่วคราว"', (await page.getByText('หน้าทดสอบชั่วคราว').count()) === 0);
-  check('ตัวบอกขั้นตอน: ② ตรวจข้อมูล เป็นขั้นปัจจุบัน', (await page.locator('app-flow-steps [aria-current=step]').innerText()).includes('ตรวจข้อมูล'));
+  check('ตัวบอกขั้นตอน: ② ตรวจข้อมูล เป็นขั้นปัจจุบัน', (await page.locator('p.steps b').innerText()).includes('ตรวจข้อมูล'));
   check('แสดงยา Metformin (ฟอร์มเดียวกับหน้าเพิ่มยา)', (await card(0).getByLabel('ชื่อยา').inputValue()) === 'Metformin');
-  check('ตรวจครบแล้ว (mock ไม่มี flag)', (await card(0).locator('.badge').innerText()).includes('ตรวจครบแล้ว'));
+  check('ตรวจครบแล้ว (mock ไม่มี flag)', (await card(0).locator('.yt-chip').innerText()).includes('ตรวจครบแล้ว'));
   check('มีประโยคสรุปท้ายการ์ด', /ทุกวัน เช้า และ เย็น ครั้งละ 1 เม็ด หลังอาหาร/.test(await card(0).locator('.sum').innerText()));
   check('ข้อความจากรูป: มีกล่องพับ "ข้อความที่น้องอ่านได้" และโหมดพิมพ์เอง แสดงข้อความที่พิมพ์แทนรูป',
     (await page.locator('details.ocr').count()) === 1 && (await page.locator('.typed__t').innerText()).includes('Metformin 500 mg'));
@@ -70,9 +70,10 @@ try {
   const idFlags = insertDraft(user, SCENARIOS.flags());
   await open(idFlags);
   check('3 การ์ด', (await page.locator('app-review-card').count()) === 3);
-  check('กรอบคำพูดสรุป: 3 รายการ 4 จุด', (await page.locator('app-speech-bubble .full').innerText()).includes('3 รายการ') && (await page.locator('app-speech-bubble .full').innerText()).includes('4 จุด'));
-  check('แสดง unreadable_parts + overall_note ทุกข้อ (3 ข้อ)', (await page.locator('.alerts li').count()) === 3);
-  check('ป้ายหัวการ์ด: ตรวจอีก 2 จุด', (await card(0).locator('.badge').innerText()).replace(/\s+/g, ' ').includes('ตรวจอีก 2 จุด'));
+  check('กรอบคำพูดสรุป: 3 รายการ 4 จุด', (await page.locator('app-review-banner').innerText()).includes('มี 4 ช่อง'));
+  await page.getByRole('button', { name: /ส่วนที่น้องไม่แน่ใจ/ }).click();
+  check('แสดง unreadable_parts + overall_note ทุกข้อ (3 ข้อ) ในแถบบนสุด', (await page.locator('app-review-banner li').count()) === 3);
+  check('ป้ายหัวการ์ด: ตรวจอีก 2 จุด', (await card(0).locator('.yt-chip').innerText()).replace(/\s+/g, ' ').includes('ตรวจอีก 2 จุด'));
   check('ช่องเหลืองมีไอคอน + เหตุผล (4 จุด)', (await page.locator('.flag').count()) === 4 && (await page.locator('.flag app-icon').count()) >= 4);
   const mealFlagId = await card(0).locator('.yt-field[id$="-meal"]').getAttribute('aria-describedby');
   check('ช่องก่อน/หลังอาหารผูก aria-describedby กับเหตุผล', !!mealFlagId && (await page.locator('#' + mealFlagId.split(' ').pop()).innerText()).includes('ไม่ระบุ'));
@@ -85,13 +86,13 @@ try {
   await card(0).getByRole('radio', { name: 'หลังอาหาร' }).click(); await page.waitForTimeout(150);                                 // แก้ช่องว่างจริง
   check('เลือกก่อน/หลังอาหารแล้ว ช่องหายเหลือง (เหลือ 3 จุด)', (await card(0).locator('.flag').count()) === 1 && (await page.locator('#why').innerText()).includes('ยังเหลือ 3 จุด'));
   await card(0).getByRole('button', { name: 'ถูกต้องแล้ว' }).click(); await page.waitForTimeout(150);                              // dose ของ PARACETAMOL
-  check('กด "ถูกต้องแล้ว" → การ์ดแรกตรวจครบ', (await card(0).locator('.badge').innerText()).includes('ตรวจครบแล้ว'));
+  check('กด "ถูกต้องแล้ว" → การ์ดแรกตรวจครบ', (await card(0).locator('.yt-chip').innerText()).includes('ตรวจครบแล้ว'));
   await card(1).getByRole('button', { name: 'เพิ่มปริมาณต่อครั้ง' }).click(); await page.waitForTimeout(150);                       // แก้ dose ของ AMLODIPINE (0.5 → 1)
   check('แก้ค่าจำนวนต่อครั้ง → ช่องหายเหลือง', (await card(1).locator('.flag').count()) === 0);
   await card(1).getByRole('button', { name: 'ลดปริมาณต่อครั้ง' }).click(); await page.waitForTimeout(150);                          // กลับเป็นค่าเดิม 0.5 → ต้องกลับมาเหลืองอีก (ยังไม่ได้ยืนยัน)
   check('แก้กลับเป็นค่าที่ AI อ่านได้ → กลับมาต้องตรวจ', (await card(1).locator('.flag').count()) === 1);
   await card(1).getByRole('button', { name: 'ถูกต้องแล้ว' }).click(); await page.waitForTimeout(150);                              // ยืนยันว่า ½ เม็ดถูก
-  check('ยืนยัน ½ เม็ด → การ์ด 2 ตรวจครบ', (await card(1).locator('.badge').innerText()).includes('ตรวจครบแล้ว'));
+  check('ยืนยัน ½ เม็ด → การ์ด 2 ตรวจครบ', (await card(1).locator('.yt-chip').innerText()).includes('ตรวจครบแล้ว'));
   check('ยังบันทึกไม่ได้ (การ์ด 3 ไม่มีมื้อ)', await saveBtn().isDisabled() && (await page.locator('#why').innerText()).includes('SIMVASTATIN'));
   await card(2).locator('.tile', { hasText: 'เย็น' }).click(); await page.waitForTimeout(150);
   check('เลือกมื้อ → ตรวจครบทุกจุด ปุ่มบันทึกใช้ได้', await saveBtn().isEnabled() && (await page.locator('#why').count()) === 0);
