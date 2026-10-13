@@ -218,6 +218,17 @@ bash scripts/test-all.sh 6b 7a    # เฉพาะบางชุด
 - อัปเกรดฐานข้อมูลเดิม: `bash scripts/migrate.sh` (migration `006_tts_name.sql` รันซ้ำได้) แล้ว `docker compose restart nodered`
 - ทดสอบ: `cd frontend && npx ng test --watch=false` · `node tools/tts-shots.mjs --scale=125` (เสียงจำลอง) · `bash scripts/test-day8.sh` ; **เสียงจริงต้องลองบนมือถือเอง**
 
+## PWA และออฟไลน์ (วันที่ 8C)
+
+- **service worker ทำงานเฉพาะ HTTPS และ `localhost`** — เปิดผ่านเน็ตในบ้านแบบ `http://192.168.x.x:8080` **ไม่มี service worker** จึงไม่มีออฟไลน์ ไม่มีปุ่มติดตั้ง ไม่มี Web Push (เบราว์เซอร์บล็อก) ; ใช้ ngrok (HTTPS) หรือ `localhost` ตอนทดสอบ/นำเสนอ
+- **ติดตั้งลงหน้าจอ:** Android/Chrome มีการ์ด "ติดตั้งยาตรงไว้บนหน้าจอ" (หน้าวันนี้ครั้งเดียวหลัง login, ปิดแล้วซ่อน 14 วัน ; หน้าตั้งค่าแสดงเสมอจนกว่าจะติดตั้ง) · iPhone Safari การ์ดสอน "แชร์ → เพิ่มไปยังหน้าจอโฮม" พร้อมเหตุผลว่า **ต้องเพิ่มก่อนถึงจะได้รับการแจ้งเตือน** · ซ่อนเมื่อเปิดแบบแอปอยู่แล้วหรือใน Capacitor ; manifest มี shortcut "ยาวันนี้" / "สแกนซองยา"
+- **ออฟไลน์ = อ่านอย่างเดียว:** หน้าวันนี้และสรุป 7 วันเก็บข้อมูลล่าสุดในเครื่อง (`localStorage`, key `yatung_snap:<userId>:…`, เฉพาะฟิลด์ที่หน้าจอใช้ ไม่มี ocr_text/รูป ; **ล้างตอน logout และ 401**) · ไม่มีเน็ต = แถบเหลือง "ออฟไลน์อยู่ · ข้อมูลล่าสุดเมื่อ HH:MM น." และปุ่ม "กินแล้ว" กดไม่ได้ ("ต่ออินเทอร์เน็ตก่อนนะคะ") — **ไม่ทำคิวบันทึกออฟไลน์** ; กลับมาออนไลน์ แอปรีเฟรชเอง
+- **ห้ามแคช `/api`** (`ngsw-config.json` ไม่มี `dataGroups`; cache key ของ service worker คือ URL ไม่แยก JWT → ข้อมูลข้ามผู้ใช้) — มีเทสใน `node-red/test/pwa-files.test.js`, `scripts/test-day8.sh` และ `demo-check.sh` หัวข้อ 11
+- **อัปเดตเวอร์ชัน:** เมื่อ deploy ใหม่ ผู้ใช้เห็น snackbar "มีเวอร์ชันใหม่ แตะเพื่ออัปเดต" (ไม่ reload เอง) ; เครื่องที่ติดตั้งเวอร์ชันเก่าก่อน 8C ไม่มี snackbar ในครั้งแรกที่อัปเดต (ปกติ)
+- **ฟอนต์:** โหลดจาก `@fontsource` (self-host) ผ่าน `angular.json` — Mitr 500/600 และ Noto Sans Thai Looped 400–700 ; ไฟล์ woff2 รวม ≈ 570 kB ใน `media/` (service worker แคชแบบ lazy) · **แอปไม่โหลดอะไรจาก CDN ภายนอก** (ลบ Material Icons ที่ไม่ได้ใช้ออกจาก `index.html` แล้ว)
+- **ngrok ฟรีกับ service worker:** ตรวจ 13 ต.ค. (curl ด้วย User-Agent iPhone ไม่มีคุกกี้) — `/ngsw.json` และ `/api/*` ได้ **หน้าเตือน HTML สถานะ 200** แทนไฟล์/JSON ; ใส่ header `ngrok-skip-browser-warning` ได้ของจริง → แอปใส่ header ให้ทุก `/api` เอง แต่คำขอ `ngsw.json` ที่ service worker ทำเองใส่ header ไม่ได้ จึงมีแถบ "การเชื่อมต่อหมดอายุ" (ดูหัวข้อ "iPhone ค้างที่เวอร์ชันเก่า" ด้านบน)
+- ตรวจ installability: Chrome DevTools → Application → Manifest (ต้องไม่มีคำเตือน) ; รายการทดสอบบนมือถือจริง: `docs/day8-device-checklist.md`
+
 ## AI pipeline (`POST /api/scan`)
 
 ```

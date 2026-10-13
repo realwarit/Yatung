@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ทดสอบ Day 8A: GET /api/stats/adherence (ตัวเลขทุกช่องตรงตัวกับข้อมูลที่ seed ให้รู้คำตอบ) + LINE "สรุป"
-#   + 8B: migration 006 tts_name (รันซ้ำได้, init = live) + API ยารับ/คืน tts_name + ไม่รั่วไป LINE  (8C จะเพิ่ม ngsw.json ไม่มี /api, manifest)
+#   + 8B: migration 006 tts_name (รันซ้ำได้, init = live) + API ยารับ/คืน tts_name + ไม่รั่วไป LINE  + 8C: ngsw.json ไม่มี /api, manifest, ไม่โหลดจาก CDN
 # ใช้ผู้ใช้ทดสอบสุ่มแล้วลบทิ้ง (@example.test) + LINE ปลอม (scripts/fake-line.js) ไม่มี push จริง ไม่กินโควตา ; real-snapshot ตรวจผู้ใช้จริงไม่ถูกแตะ
 #   bash scripts/test-day8.sh
 # ข้อควรระวัง: recreate nodered 2 ครั้ง (ปิด cron จริงชั่วคราว) — อย่ารันใกล้มื้อยา ; ต้องหยุด/เริ่ม nodered หลังแก้ flows.json แล้ว
@@ -310,6 +310,24 @@ expect_nomatch "LINE 'วันนี้': ไม่แสดง tts_name" "$REP
 expect_nomatch "LINE 'วันนี้': ไม่มี tts_name แม้ดูทั้ง JSON" "$(fl_last reply 'JSON.stringify(r.body.messages)')" 'ชื่ออ่านพิเศษ'
 expect "โค้ดที่แตะ tts_name มีเฉพาะ medication/dose/validate (ไม่มี line-*, push, reminder, escalation, stock)" "$(grep -l 'tts_name' node-red/data/lib/*.js | xargs -n1 basename | tr '
 ' ' ')" "dose-service.js medication-service.js validate-medication.js "
+
+# ================= 8C: PWA (ไฟล์ที่ nginx เสิร์ฟ — ต้อง docker compose up -d --build frontend ก่อนถ้าแก้ frontend) =================
+section "8C: ngsw.json ไม่แคช /api · manifest · ไม่โหลดจาก CDN"
+WEB_URL="${WEB:-http://localhost:8080}"
+NGSW="$(curl -s -m 10 -H 'Accept: application/json' "$WEB_URL/ngsw.json")"
+expect "ngsw.json เป็น JSON (ไม่ใช่หน้า HTML)" "$(printf '%s' "$NGSW" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{JSON.parse(s);console.log("json")}catch(e){console.log("not-json")}})')" "json"
+expect "ngsw.json ไม่มี /api เลย (cache key ของ ngsw ไม่แยก JWT → ห้ามแคชข้อมูลผู้ใช้)" "$(printf '%s' "$NGSW" | grep -c '/api')" "0"
+expect "ngsw.json ไม่มี dataGroups" "$(printf '%s' "$NGSW" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log((JSON.parse(s).dataGroups||[]).length)}catch(e){console.log("x")}})')" "0"
+MANI="$(curl -s -m 10 "$WEB_URL/manifest.webmanifest")"
+mget() { printf '%s' "$MANI" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const m=JSON.parse(s);const v=eval(process.argv[1]);console.log(v===undefined?"":typeof v==="object"?JSON.stringify(v):v)}catch(e){console.log("")}})' "$1"; }
+expect "manifest: id" "$(mget 'm.id')" "/"
+expect "manifest: start_url" "$(mget 'm.start_url')" "/today"
+expect "manifest: display" "$(mget 'm.display')" "standalone"
+expect "manifest: shortcuts (ยาวันนี้, สแกนซองยา)" "$(mget 'm.shortcuts.map(x=>x.name+"="+x.url).join(",")')" "ยาวันนี้=/today,สแกนซองยา=/scan"
+expect "manifest: ไอคอน maskable 192 และ 512" "$(mget 'm.icons.filter(i=>i.purpose==="maskable").map(i=>i.sizes).join(",")')" "192x192,512x512"
+expect "manifest: background_color เป็นสี hex (มิ้นต์จาก token)" "$(mget '/^#[0-9a-f]{6}$/i.test(m.background_color)')" "true"
+expect "ไอคอน maskable 512 ดึงได้จริง (200)" "$(curl -s -o /dev/null -m 10 -w '%{http_code}' "$WEB_URL/icons/icon-maskable-512x512.png")" "200"
+expect "index.html ไม่โหลดจาก CDN ภายนอก" "$(curl -s -m 10 "$WEB_URL/" | grep -ciE 'googleapis|gstatic|cdn\.')" "0"
 
 echo
 echo "สรุป: ผ่าน $PASS · ไม่ผ่าน $FAIL"

@@ -298,5 +298,40 @@ else
   fi
 fi
 
+echo "== 10) เวลาฐานข้อมูล (คิวรีเดิมที่ใช้ NOW()/CURDATE() พึ่งค่านี้)"
+# ใช้ pool ของแอป (lib/db.js: SET time_zone = '+07:00') เทียบ NOW() ของ MySQL กับเวลาไทยจาก JS ; ต่างกันเกิน 2 นาที = คิวรีเดิมจะนับผิดวัน
+tzout="$(docker compose exec -T nodered node -e '
+const db = require("/data/lib/db");
+(async () => {
+  const r = (await db.query("SELECT @@global.time_zone AS g, @@session.time_zone AS s, DATE_FORMAT(NOW(), \"%Y-%m-%d %H:%i:%s\") AS n"))[0];
+  const th = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 19).replace("T", " ");
+  const diff = Math.abs(Date.parse(r.n.replace(" ", "T") + "Z") - Date.parse(th.replace(" ", "T") + "Z")) / 1000;
+  console.log([r.g, r.s, r.n, th, Math.round(diff)].join("|"));
+  await db.close();
+})().catch((e) => { console.log("ERR " + (e.code || e.message)); process.exit(0); });
+' 2>/dev/null | tr -d '\r')"
+case "$tzout" in
+  ""|ERR*) warn "อ่านเวลา DB ไม่ได้ (${tzout:-nodered ไม่ตอบ})" ;;
+  *)
+    IFS='|' read -r tz_g tz_s tz_now tz_js tz_diff <<<"$tzout"
+    echo "    global.time_zone=$tz_g · session.time_zone=$tz_s · NOW() ของ MySQL=$tz_now · เวลาไทยจาก JS=$tz_js"
+    if [ "${tz_diff:-9999}" -le 120 ]; then ok "NOW() ของ MySQL ตรงกับเวลาไทย (ต่าง ${tz_diff} วินาที)"
+    else bad "NOW() ของ MySQL ต่างจากเวลาไทย ${tz_diff} วินาที — คิวรีเดิมที่ใช้ NOW()/CURDATE() จะนับผิดวัน (ตรวจ TZ ของ db/nodered และ SET time_zone ใน lib/db.js)"; fi
+    case "$tz_s" in "+07:00"|"Asia/Bangkok") ok "session.time_zone = $tz_s" ;; *) bad "session.time_zone = $tz_s (ควรเป็น +07:00)" ;; esac ;;
+esac
+
+echo "== 11) PWA และ API สรุป"
+c="$(code "$WEB/api/stats/adherence?days=7")"; [ "$c" = "401" ] && ok "GET /api/stats/adherence ไม่มี JWT = 401" || bad "GET /api/stats/adherence ไม่มี JWT ได้ $c (ควร 401)"
+mani="$(curl -s -m 10 "$WEB/manifest.webmanifest")"
+mchk="$(printf '%s' "$mani" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const m=JSON.parse(s);const e=[];
+if(!m.id)e.push("id");if(m.start_url!=="/today")e.push("start_url");if(!(m.shortcuts||[]).length)e.push("shortcuts");if(!/^#[0-9a-f]{6}$/i.test(m.background_color||""))e.push("background_color");
+if(!(m.icons||[]).some(i=>i.purpose==="maskable"&&i.sizes==="512x512"))e.push("maskable512");console.log(e.length?"MISSING "+e.join(","):"OK")}catch(x){console.log("NOTJSON")}})')"
+case "$mchk" in OK) ok "manifest.webmanifest = 200 ครบ (id, start_url /today, shortcuts, พื้นหลัง, maskable 512)" ;; NOTJSON) bad "manifest.webmanifest ไม่ใช่ JSON (docker compose up -d --build frontend ?)" ;; *) bad "manifest.webmanifest ขาด: ${mchk#MISSING } — build frontend ใหม่: docker compose up -d --build frontend" ;; esac
+ngsw="$(curl -s -m 10 -H 'Accept: application/json' "$WEB/ngsw.json")"
+nchk="$(printf '%s' "$ngsw" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const n=JSON.parse(s);console.log(JSON.stringify(n).includes("/api")?"HAS_API":(n.dataGroups&&n.dataGroups.length?"HAS_DATAGROUPS":"OK"))}catch(x){console.log("NOTJSON")}})')"
+case "$nchk" in OK) ok "ngsw.json เป็น JSON ไม่มี /api และไม่มี dataGroups (ไม่แคชข้อมูลข้ามผู้ใช้)" ;; HAS_API|HAS_DATAGROUPS) bad "ngsw.json แคช /api ($nchk) — ห้าม (cache key ไม่แยก JWT)" ;; *) bad "ngsw.json ไม่ใช่ JSON" ;; esac
+idx="$(curl -s -m 10 "$WEB/")"
+printf '%s' "$idx" | grep -qiE 'googleapis|gstatic|cdn\.' && bad "index.html โหลดอะไรจาก CDN ภายนอก (ฟอนต์/ไอคอนต้อง self-host)" || ok "index.html ไม่โหลดอะไรจาก CDN ภายนอก"
+
 echo
 if [ "$FAIL" = 0 ]; then echo "สรุป: ✓ พร้อมนำเสนอ"; else echo "สรุป: ✗ ไม่ผ่าน $FAIL ข้อ — แก้ก่อนนำเสนอ"; exit 1; fi
