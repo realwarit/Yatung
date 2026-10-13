@@ -80,8 +80,17 @@ export function strengthSpoken(s: string | null | undefined): string {
     .replace(/\s*\/\s*/g, ' ต่อ ').replace(/\s+/g, ' ').trim();
 }
 
-/** ชื่อที่ให้อ่าน: tts_name ถ้ามี ไม่งั้นชื่อยา */
-export const spokenName = (ttsName: string | null | undefined, name: string): string => (ttsName?.trim() || name).trim();
+/**
+ * ชื่อยาที่เป็นอักษรละตินตัวพิมพ์ใหญ่ทั้งคำ (≥ 4 ตัว) เช่น METFORMIN → metformin ก่อนส่งให้ TTS
+ * (เสียงอ่านมองคำตัวพิมพ์ใหญ่ล้วนเป็นตัวย่อแล้วสะกดทีละตัว) — ใช้กับ "เสียง" เท่านั้น ชื่อที่แสดงบนจอไม่เปลี่ยน ; คำสั้น ≤ 3 ตัว (ASA, MTX) คงเดิม
+ */
+export const speakableLatin = (s: string): string => s.replace(/(?<![A-Za-z])[A-Z]{4,}(?![A-Za-z])/g, (w) => w.toLowerCase());
+
+/** ชื่อที่ให้อ่าน: tts_name ถ้ามี (ใช้ตามที่ผู้ใช้ตั้ง ไม่แปลง) ไม่งั้นชื่อยา (ตัวพิมพ์ใหญ่ล้วนยาว ≥ 4 → ตัวเล็ก) */
+export const spokenName = (ttsName: string | null | undefined, name: string): string => {
+  const custom = ttsName?.trim();
+  return custom ? custom : speakableLatin(name.trim());
+};
 
 /** ท่อนทดลองฟังชื่อยา (ฟอร์มยา) */
 export function medNameSpeech(ttsName: string, name: string): string[] {

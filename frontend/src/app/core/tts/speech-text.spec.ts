@@ -2,7 +2,7 @@ import { UNITS } from '../i18n/labels';
 import { AdherenceResponse } from '../api/stats.api';
 import {
   ALL_DONE_SPEECH, HOUR_WORDS, MAX_CHUNK, SLOT_SPOKEN, UNIT_SPOKEN, adherenceSpeech, chunkSpeech, doseLine, doseSpoken,
-  mealSpoken, medNameSpeech, slotSpeech, spokenName, strengthSpoken, thaiNumber, timeSpoken, todaySpeech,
+  mealSpoken, medNameSpeech, slotSpeech, speakableLatin, spokenName, strengthSpoken, thaiNumber, timeSpoken, todaySpeech,
 } from './speech-text';
 
 describe('timeSpoken (เวลาเป็นภาษาพูดไทย)', () => {
@@ -147,4 +147,36 @@ describe('adherenceSpeech', () => {
     expect(t).toContain('ยังไม่มีข้อมูล');
     expect(t).not.toContain('เปอร์เซ็นต์');
   });
+});
+
+describe('C5: ชื่อยาตัวพิมพ์ใหญ่ทั้งคำ → ตัวเล็กก่อนส่งให้ TTS', () => {
+  it('METFORMIN (≥ 4 ตัว) → metformin', () => expect(spokenName(null, 'METFORMIN')).toBe('metformin'));
+  it('หลายคำ/มีตัวเลข: เฉพาะคำที่เป็นตัวพิมพ์ใหญ่ล้วนยาว ≥ 4', () => {
+    expect(speakableLatin('METFORMIN 500 mg')).toBe('metformin 500 mg');
+    expect(speakableLatin('AMOXICILLIN-CLAVULANATE')).toBe('amoxicillin-clavulanate');
+  });
+  it('คำสั้น ≤ 3 ตัวคงเดิม (ตัวย่อที่ควรสะกด)', () => {
+    expect(speakableLatin('ASA')).toBe('ASA');
+    expect(speakableLatin('MTX 2.5')).toBe('MTX 2.5');
+  });
+  it('มีตัวพิมพ์เล็กปนอยู่แล้ว/ตัวพิมพ์ใหญ่เฉพาะตัวแรก ไม่แตะ', () => {
+    expect(speakableLatin('Metformin')).toBe('Metformin');
+    expect(speakableLatin('MetFORMIN')).toBe('MetFORMIN');
+    expect(speakableLatin('paracetamol')).toBe('paracetamol');
+  });
+  it('ชื่อไทย/ปนไทย ไม่แตะ', () => {
+    expect(speakableLatin('พาราเซตามอล')).toBe('พาราเซตามอล');
+    expect(speakableLatin('ยา AMLODIPINE')).toBe('ยา amlodipine');
+  });
+  it('มี tts_name = ใช้ตามที่ตั้ง ไม่แปลงตัวพิมพ์ (ผู้ใช้ตั้งใจเขียน)', () => {
+    expect(spokenName('METFORMIN', 'METFORMIN')).toBe('METFORMIN');
+    expect(spokenName('ยาเบาหวาน', 'METFORMIN')).toBe('ยาเบาหวาน');
+  });
+  it('ไม่เปลี่ยนค่าที่ส่งเข้า (ชื่อบนจอไม่ถูกแตะ) และไปถึงประโยคที่อ่านจริง', () => {
+    const d = { name: 'METFORMIN', tts_name: null, dose_per_time: 1, unit: 'tablet', meal_relation: 'after' } as Parameters<typeof doseLine>[0];
+    expect(doseLine(d)).toContain('metformin');
+    expect(doseLine(d)).not.toContain('METFORMIN');
+    expect(d.name).toBe('METFORMIN');
+  });
+  it('ท่อนทดลองฟังชื่อยาในฟอร์ม ใช้กฎเดียวกัน', () => expect(medNameSpeech('', 'METFORMIN')).toEqual(['metformin']));
 });
