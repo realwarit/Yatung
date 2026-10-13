@@ -25,6 +25,7 @@ import { SpeakableSlot, slotSpeech, todaySpeech } from '../../core/tts/speech-te
 import { DoseCardComponent, DoseState } from './dose-card.component';
 import { TodayProgressComponent } from './today-progress.component';
 import { AdherenceCardComponent } from './adherence-card.component';
+import { InstallCardComponent } from '../../shared/components/install-card/install-card.component';
 import { hasMultipleTimes, slotTimeLabel } from './slot-time';
 import { lowStockText } from './low-stock';
 
@@ -43,7 +44,7 @@ interface SlotVM {
 @Component({
   selector: 'app-today-page',
   imports: [RouterLink, MatButton, IconComponent, MascotComponent, ConfettiComponent,
-    DoseCardComponent, TodayProgressComponent, AdherenceCardComponent, TtsButtonComponent, DoseQtyPipe, MealLabelPipe, SlotLabelPipe],
+    DoseCardComponent, TodayProgressComponent, AdherenceCardComponent, InstallCardComponent, TtsButtonComponent, DoseQtyPipe, MealLabelPipe, SlotLabelPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './today.page.html',
   styleUrl: './today.page.scss',

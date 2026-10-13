@@ -5,6 +5,8 @@
     <p class="date">{{ today() }}</p>
   </header>
 
+  <app-install-card placement="today" />
+
   @if (!loadError() && !loading() && !noMeds()) { <app-adherence-card [version]="taken()" /> }
 
   @if (loadError(); as err) {

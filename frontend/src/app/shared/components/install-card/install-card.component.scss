@@ -1,0 +1,10 @@
+:host { display: block; }
+.card { display: flex; flex-direction: column; gap: var(--yt-space-3); margin-bottom: var(--yt-space-4); }
+h2 { display: flex; align-items: center; gap: var(--yt-space-2); margin: 0; font-family: var(--yt-font-display); font-size: 1.3rem; line-height: var(--yt-line-height-tight); }
+p { margin: 0; }
+.actions { display: flex; flex-wrap: wrap; gap: var(--yt-space-3); }
+.go, .later { min-height: var(--yt-tap); }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--yt-space-3); }
+.steps li { display: flex; align-items: flex-start; gap: var(--yt-space-3); }
+.n { flex: none; width: 2.2rem; height: 2.2rem; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--yt-primary); color: #fff; font-size: 1.1rem; }
+.chip { display: inline-flex; align-items: center; gap: 0.3em; padding: 0 0.5em; border-radius: var(--yt-radius-pill); background: var(--yt-field-bg); border: 1px solid var(--yt-border-strong); font-weight: 600; white-space: nowrap; }

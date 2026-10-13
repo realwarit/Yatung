@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { InstallCardComponent } from '../../shared/components/install-card/install-card.component';
 import { MatButton } from '@angular/material/button';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { errorText } from '../../core/api/api-error';
@@ -20,7 +21,7 @@ const SLOT_ICON: Record<Slot, IconName> = { morning: 'sunrise', noon: 'sun', eve
 
 @Component({
   selector: 'app-settings-page',
-  imports: [MatButton, IconComponent, TimeRowComponent, FontSizeToggleComponent, LineSectionComponent, PushSectionComponent, CaregiversSectionComponent, DemoSectionComponent, TtsSectionComponent],
+  imports: [MatButton, InstallCardComponent, IconComponent, TimeRowComponent, FontSizeToggleComponent, LineSectionComponent, PushSectionComponent, CaregiversSectionComponent, DemoSectionComponent, TtsSectionComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './settings.page.html',
   styleUrl: './settings.page.scss',
