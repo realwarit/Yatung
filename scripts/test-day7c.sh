@@ -9,6 +9,7 @@
 
 set -u
 cd "$(dirname "$0")/.."
+source scripts/lib/nodered-log.sh   # dump log nodered ก่อน recreate (ดู lib)
 source scripts/lib/clock.sh; clock_guard 45 5   # กันรันใกล้เที่ยงคืน (รอบกินยาข้ามวัน) ดู scripts/lib/clock.sh
 BASE="${BASE:-http://localhost:1880}"
 WEB="${WEB:-http://localhost:8080}"

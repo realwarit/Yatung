@@ -6,6 +6,7 @@
 # สร้าง nodered ใหม่ด้วย env ชั่วคราว (ไม่แก้ .env) เพื่อให้ prompt/lib ล่าสุดถูกโหลด ; ตอนจบคืนค่าตาม .env ; ผลที่ docs/ai-eval/runs/
 set -u
 cd "$(dirname "$0")/.."
+source scripts/lib/nodered-log.sh   # dump log nodered ก่อน recreate (ดู lib)
 envval() { grep -E "^$1=" .env | head -1 | cut -d= -f2- | sed 's/[[:space:]]*#.*$//' | tr -d '\r'; }
 MODEL="$(envval LLM_MODEL)"
 case "$MODEL" in

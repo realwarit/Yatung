@@ -21,3 +21,4 @@ node-red/data/.*.backup
 # ภาพเทียบหน้าจอของวันที่ 8 (ไม่ commit)
 docs/screenshots/day8/
 docs/screenshots/tts/
+test-logs/

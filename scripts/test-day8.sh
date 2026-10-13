@@ -7,6 +7,7 @@
 
 set -u
 cd "$(dirname "$0")/.."
+source scripts/lib/nodered-log.sh   # dump log nodered ก่อน recreate (ดู lib)
 source scripts/lib/clock.sh; clock_guard 5 5   # seed ใช้รอบเวลา 00:01 / 23:58 ของวันนี้ → ห้ามรันใกล้เที่ยงคืน
 BASE="${BASE:-http://localhost:1880}"
 FAKE_PORT=8798
