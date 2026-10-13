@@ -26,6 +26,7 @@ const stockService = require('./lib/stock-service');
 const statsService = require('./lib/stats-service');
 const pushService = require('./lib/push-service').createPushService();
 const lineEnv = require('./lib/line-env');
+const errorLog = require('./lib/error-log');
 
 const PROMPT_DIR = path.join(__dirname, 'prompts');
 const readPrompt = (file) => fs.readFileSync(path.join(PROMPT_DIR, file), 'utf8');
@@ -90,6 +91,7 @@ module.exports = {
     stockService,                             // แจ้งยาใกล้หมด / is_low / demo (lib/stock-service.js)
     pushService,                              // Web Push: subscribe / ส่ง / action token (lib/push-service.js) ; เลือกช่องทางที่ lib/notify-service.js
     lineEnv,                                  // pick(env.get) → env ที่ lib ฝั่ง LINE ใช้ (lib/line-env.js)
+    errorLog,                                 // log ของ group "ข้อผิดพลาดที่ไม่คาดคิด → 500" ทุก tab: report(node, msg) (lib/error-log.js)
     llmOutput,                                // process / reviewFlags / redactPii (lib/validate-llm-output.js)
     prompts: {
       medicineSystem: readPrompt('medicine-parse.system.txt'),
