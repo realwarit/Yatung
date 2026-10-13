@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ApiError } from '../auth/auth.models';
+import { isInterstitialError } from '../network/html-response';
 
 /** รหัส error ของ API เช่น 'ALREADY_TAKEN', 'UNDO_EXPIRED', 'VALIDATION' (ไม่ใช่ error จาก API = null) */
 export function errorCode(err: unknown): string | null {
@@ -12,6 +13,7 @@ export function errorCode(err: unknown): string | null {
 
 /** ข้อความไทยสำหรับแสดงผู้ใช้ */
 export function errorText(err: unknown): string {
+  if (isInterstitialError(err)) return 'การเชื่อมต่อหมดอายุ กรุณาแตะแถบสีเหลืองด้านบนเพื่อเชื่อมต่อใหม่';
   if (err instanceof HttpErrorResponse) {
     if (err.status === 0) return 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่';
     const b = err.error as Partial<ApiError> | null;
