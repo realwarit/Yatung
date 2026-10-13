@@ -384,5 +384,9 @@
   **ห้ามใช้ค่าจาก `.env` เป็นข้อมูลทดสอบ** (ทั้งฝังในไฟล์และอ่าน `.env` มาเทียบ ; เทสต้องสร้างค่าสุ่มตอนรัน เช่น bcrypt hash ปลอมรูปแบบถูกต้อง) · ไฟล์ session/สำรอง/credentials ต้องอยู่ใน `.gitignore` ตั้งแต่สร้าง ·
   **ก่อน push ทุกครั้งต้องสแกนความลับ**: เปิด hook ด้วย `bash scripts/setup-hooks.sh` (pre-commit + pre-push ใช้ `scripts/check-secrets.mjs`) หรือรัน `node scripts/check-secrets.mjs --log HEAD --not --remotes` เอง ; ถ้าเจอความลับจริง หยุดและบอกผู้ใช้ให้เปลี่ยนค่าที่ต้นทางก่อน ห้ามแค่ลบไฟล์
 - จบงานแต่ละส่วนต้องทดสอบจริง: API ทดสอบด้วย `curl`, frontend ต้อง `ng build` ผ่าน
+- **migration (บทเรียน 13 ต.ค.):** เพิ่มไฟล์ `db/migrations/NNN_*.sql` แล้วต้องรัน `bash scripts/migrate.sh` กับ DB จริง**ทันที ก่อน** recreate/restart nodered ด้วยโค้ดใหม่ — ไม่งั้นโค้ดอ้างคอลัมน์ที่ยังไม่มี → 500 ทุก endpoint ที่แตะตารางนั้น 
+  (8B เพิ่ม `tts_name` แต่ไม่ได้ apply ชุด 3a/5 ของ `test-all.sh` จึงได้ 500 ทั้งชุด จนชุด 6 เรียก migrate.sh กลางทาง ; `test-all.sh` ตอนนี้รัน migrate.sh ก่อนทุกชุด และ `demo-check.sh` หัวข้อ 9 เทียบคอลัมน์ DB จริงกับ `db/init` แล้วชี้คำสั่งแก้ให้)
+- **ห้าม commit งานที่มี migration ก่อนรันเทส docker ของงานนั้น** (อย่างน้อย `test-all.sh` ชุดที่แตะตารางนั้น + `demo-check.sh`) — commit ที่ผ่านเฉพาะ unit/`ng test` แต่ไม่เคยรันกับ DB จริงซ่อนบั๊กแบบข้างบนไว้
+- **log ของ nodered หายเมื่อ recreate:** `scripts/lib/nodered-log.sh` (source ในสคริปต์เทสทุกตัวที่ recreate) dump `docker compose logs nodered` ลง `test-logs/<เวลา>/nodered-<ชุด>.log` ก่อน `up/restart/stop/rm/kill … nodered` และ `down` อัตโนมัติ ; `test-all.sh` ชี้ไฟล์ log ของชุดที่ไม่ผ่านใต้ตารางสรุป ; `test-logs/` อยู่ใน `.gitignore` (ห้าม commit)
 - ห้าม commit `.env` หรือ `flows_cred.json`
 - ห้ามส่ง API key ไป frontend (Gemini/LINE เรียกจาก Node-RED เท่านั้น)
