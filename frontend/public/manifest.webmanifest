@@ -1,12 +1,21 @@
 {
+  "id": "/",
   "name": "ยาตรง",
   "short_name": "ยาตรง",
+  "description": "แปลงรูปซองยาเป็นตารางกินยา เตือนเวลากินยา และแจ้งญาติเมื่อลืม",
   "lang": "th",
+  "dir": "ltr",
   "display": "standalone",
-  "scope": "./",
-  "start_url": "./",
+  "orientation": "portrait",
+  "scope": "/",
+  "start_url": "/today",
   "theme_color": "#0f766e",
-  "background_color": "#0f766e",
+  "background_color": "#e8f7f3",
+  "categories": [
+    "medical",
+    "health",
+    "lifestyle"
+  ],
   "icons": [
     {
       "src": "icons/icon-72x72.png",
@@ -67,6 +76,34 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "ยาวันนี้",
+      "short_name": "ยาวันนี้",
+      "description": "ดูยาที่ต้องกินวันนี้",
+      "url": "/today",
+      "icons": [
+        {
+          "src": "icons/icon-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "สแกนซองยา",
+      "short_name": "สแกนซอง",
+      "description": "ถ่ายรูปซองยาเพื่อเพิ่มเข้าตาราง",
+      "url": "/scan",
+      "icons": [
+        {
+          "src": "icons/icon-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }
