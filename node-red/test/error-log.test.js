@@ -1,4 +1,9 @@
 const test = require('node:test');
+const os = require('node:os');
+const fsx = require('node:fs');
+const pathx = require('node:path');
+// ห้ามเขียนลง node-red/data/logs/errors.log จริงตอนทดสอบ
+process.env.ERROR_LOG_FILE = pathx.join(fsx.mkdtempSync(pathx.join(os.tmpdir(), 'yt-errlog-')), 'errors.log');
 const assert = require('node:assert/strict');
 const { describe, format, report, codeOf, pathOf, MAX_MESSAGE } = require('../data/lib/error-log');
 
@@ -65,4 +70,30 @@ test('report เรียก node.error ด้วยสตริงอย่า�
   assert.equal(calls[0].length, 1);
   assert.equal(calls[0][0], line);
   assert.match(line, /^unexpected_error method=POST path=\/api\/medications code=none/);
+});
+
+test('report เขียนบรรทัดเดียวกันต่อท้ายไฟล์ พร้อมเวลาไทยนำหน้า (ไม่มี body/token)', () => {
+  const lib = require('../data/lib/error-log');
+  const file = process.env.ERROR_LOG_FILE;
+  const line = lib.report({ error: () => {} }, msgOf('boom'));
+  const text = fsx.readFileSync(file, 'utf8');
+  assert.match(text, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} unexpected_error method=POST path=\/api\/medications /);
+  assert.ok(text.includes(line));
+  for (const secret of ['hunter2', 'SECRETTOKEN', 'x=1']) assert.ok(!text.includes(secret), secret);
+});
+
+test('stamp เป็นเวลาไทย (UTC+7) ไม่พึ่ง TZ ของ process', () => {
+  assert.equal(require('../data/lib/error-log').stamp(new Date('2026-10-13T17:30:05Z')), '2026-10-14 00:30:05');
+});
+
+test('หมุนไฟล์เมื่อเกิน 1 MB เก็บ 3 ไฟล์ (errors.log, .1, .2) และเขียนไฟล์ไม่ได้ไม่ทำให้พัง', () => {
+  const lib = require('../data/lib/error-log');
+  const dir = fsx.mkdtempSync(pathx.join(os.tmpdir(), 'yt-rot-'));
+  const file = pathx.join(dir, 'errors.log');
+  const big = 'x'.repeat(lib.MAX_FILE_BYTES);
+  for (let i = 0; i < 4; i++) { fsx.writeFileSync(file, big); assert.equal(lib.appendToFile('บรรทัดใหม่ ' + i, new Date(), file), true); }
+  const names = fsx.readdirSync(dir).sort();
+  assert.deepEqual(names, ['errors.log', 'errors.log.1', 'errors.log.2']);
+  assert.match(fsx.readFileSync(file, 'utf8'), /^\d{4}-.* บรรทัดใหม่ 3\n$/);
+  assert.equal(lib.appendToFile('x', new Date(), pathx.join(file, 'ไม่มีทาง', 'e.log')), false);
 });

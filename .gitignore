@@ -22,3 +22,6 @@ node-red/data/.*.backup
 docs/screenshots/day8/
 docs/screenshots/tts/
 test-logs/
+
+# log error ของ Node-RED (errors.log, หมุนไฟล์) — ห้าม commit
+node-red/data/logs/

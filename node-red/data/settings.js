@@ -42,6 +42,7 @@ const admin = resolveAdmin();
 if (!admin.enabled) console.warn('[yatung] editor/admin API ถูกปิด: ' + admin.reason + ' — ตั้ง NODE_RED_ADMIN_HASH ใน .env แล้ว docker compose up -d --force-recreate nodered');
 else if (admin.sample) console.warn('[yatung] NODE_RED_ADMIN_HASH เป็นค่าตัวอย่าง (รหัส demo1234) — เปลี่ยนก่อนเปิด tunnel');
 const rawBody = createRawBodyMiddleware();
+const { noStoreApi } = require('./lib/api-headers');
 
 // ผู้ป่วยกินยา (ทุกช่องทาง) หลังแจ้งญาติไปแล้ว → บอกญาติ "ปิดเรื่อง" 1 ครั้ง (ล้มเหลวไม่กระทบการบันทึกกินยา)
 doseService.setAfterTaken((ids) => escalationService.notifyResolved(db, lineClient, ids, lineEnv.pick((k) => process.env[k])));
@@ -68,7 +69,7 @@ module.exports = {
   // httpAdminMiddleware: admin app ผูกที่ "/" และมี bodyParser.json ของตัวเองรันก่อน route ของ http-in ทุกตัว (middleware นี้อยู่ก่อน parser นั้น แต่หลัง CORS ; ไม่ข้าม auth เพราะ admin ไม่มี route นี้)
   // httpNodeMiddleware: ใช้ตอน editor/admin ถูกปิด (httpAdminRoot: false → ไม่มี admin app) — ตั้งคู่กันเสมอ ตัวที่สองข้ามเองเมื่อ req._body ถูกตั้งแล้ว
   httpAdminMiddleware: rawBody,
-  httpNodeMiddleware: rawBody,
+  httpNodeMiddleware: [rawBody, noStoreApi],   // noStoreApi: /api/* ห้ามแคช + ไม่ตอบ 304 (lib/api-headers.js)
 
   // ให้ function node ใช้ผ่าน global.get('jwt') เป็นต้น
   functionGlobalContext: {

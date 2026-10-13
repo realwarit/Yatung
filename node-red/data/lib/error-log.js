@@ -2,7 +2,12 @@
 //   function node ใน catch: global.get('errorLog').report(node, msg)
 // log เฉพาะ: err.code · err.message (ปิดข้อมูลส่วนตัว ตัด ≤ 200 ตัวอักษร) · method + path (ไม่รวม query) · id ของ node ต้นเหตุ
 // ห้าม log: body, token, header, userId เต็ม, ค่าจาก .env → ไม่อ่านอะไรจาก msg นอก msg.error / msg.req.method / msg.req.originalUrl
+const fs = require('fs');
+const path = require('path');
+
 const MAX_MESSAGE = 200;
+const MAX_FILE_BYTES = 1024 * 1024;   // หมุนไฟล์เมื่อเกิน 1 MB
+const KEEP_FILES = 3;                 // errors.log, errors.log.1, errors.log.2
 const MAX_PATH = 120;
 
 function clean(text) {
@@ -53,12 +58,40 @@ function format(msg) {
   return `unexpected_error method=${d.method} path=${d.path} code=${d.code} node=${d.node} message="${d.message}"`;
 }
 
+// ไฟล์ log ที่ไม่หายเมื่อ recreate container (โฟลเดอร์ data เป็น bind mount) : /data/logs/errors.log — บรรทัดเดียวกับที่ log ลง Node-RED + เวลาไทยนำหน้า
+function logFile() { return process.env.ERROR_LOG_FILE || path.join(__dirname, '..', 'logs', 'errors.log'); }
+
+function stamp(d = new Date()) {
+  const p = (n) => String(n).padStart(2, '0');
+  const t = new Date(d.getTime() + 7 * 3600 * 1000);   // เวลาไทยโดยไม่พึ่ง TZ ของ process
+  return `${t.getUTCFullYear()}-${p(t.getUTCMonth() + 1)}-${p(t.getUTCDate())} ${p(t.getUTCHours())}:${p(t.getUTCMinutes())}:${p(t.getUTCSeconds())}`;
+}
+
+function rotate(file) {
+  for (let i = KEEP_FILES - 1; i >= 1; i--) {
+    const from = i === 1 ? file : `${file}.${i - 1}`;
+    const to = `${file}.${i}`;
+    try { if (fs.existsSync(from)) fs.renameSync(from, to); } catch { /* ข้ามได้ */ }
+  }
+}
+
+function appendToFile(line, now = new Date(), file = logFile()) {
+  try {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    try { if (fs.statSync(file).size >= MAX_FILE_BYTES) rotate(file); } catch { /* ยังไม่มีไฟล์ */ }
+    fs.appendFileSync(file, `${stamp(now)} ${line}
+`);
+    return true;
+  } catch { return false; }   // เขียนไฟล์ไม่ได้ต้องไม่ทำให้ request ล้ม
+}
+
 // เรียกจาก function node: บันทึกลง log ของ Node-RED (ไม่ส่ง msg เข้า node.error เพื่อไม่ให้ catch วนซ้ำ)
 function report(node, msg) {
   const line = format(msg);
   if (node && typeof node.error === 'function') node.error(line);
   else console.error(line);
+  appendToFile(line);
   return line;
 }
 
-module.exports = { describe, format, report, codeOf, pathOf, clean, MAX_MESSAGE };
+module.exports = { describe, format, report, codeOf, pathOf, clean, MAX_MESSAGE, appendToFile, rotate, stamp, MAX_FILE_BYTES, KEEP_FILES };

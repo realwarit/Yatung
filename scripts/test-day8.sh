@@ -311,6 +311,20 @@ expect_nomatch "LINE 'วันนี้': ไม่มี tts_name แม้ด
 expect "โค้ดที่แตะ tts_name มีเฉพาะ medication/dose/validate (ไม่มี line-*, push, reminder, escalation, stock)" "$(grep -l 'tts_name' node-red/data/lib/*.js | xargs -n1 basename | tr '
 ' ' ')" "dose-service.js medication-service.js validate-medication.js "
 
+section "C6: /api ห้ามแคช + ไม่ตอบ 304 แม้ส่ง If-None-Match มา · apple-touch-icon ที่ root"
+for P in /api/medications /api/doses/today; do
+  H1="$(curl -s -m 10 -D - -o /dev/null -H "Authorization: Bearer $TA" "$BASE$P")"
+  expect "GET $P: Cache-Control private, no-store" "$(printf '%s' "$H1" | tr -d '\r' | grep -i '^cache-control:' | sed 's/^[^:]*: *//')" "private, no-store"
+  ET="$(printf '%s' "$H1" | tr -d '\r' | grep -i '^etag:' | sed 's/^[^:]*: *//')"
+  CODE="$(curl -s -m 10 -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $TA" -H "If-None-Match: ${ET:-W/\"x\"}" -H 'If-Modified-Since: Tue, 13 Oct 2026 00:00:00 GMT' "$BASE$P")"
+  expect "GET $P พร้อม If-None-Match (${ET:+มี ETag}${ET:-ไม่มี ETag}) → 200 ไม่ใช่ 304" "$CODE" "200"
+done
+expect "GET /api/config (สาธารณะ): Cache-Control private, no-store" "$(curl -s -m 10 -D - -o /dev/null "$BASE/api/config" | tr -d '\r' | grep -i '^cache-control:' | sed 's/^[^:]*: *//')" "private, no-store"
+expect "/line/webhook ไม่ถูกเติม Cache-Control (ไม่แตะ path นอก /api/)" "$(curl -s -m 10 -D - -o /dev/null -X POST "$BASE/line/webhook" -H 'Content-Type: application/json' -d '{}' | tr -d '\r' | grep -ci '^cache-control: private, no-store')" "0"
+for F in /apple-touch-icon.png /apple-touch-icon-precomposed.png; do
+  expect "เว็บ $F = 200 image/png" "$(curl -s -o /dev/null -m 10 -w '%{http_code} %{content_type}' "${WEB:-http://localhost:8080}$F")" "200 image/png"
+done
+
 # ================= 8C: PWA (ไฟล์ที่ nginx เสิร์ฟ — ต้อง docker compose up -d --build frontend ก่อนถ้าแก้ frontend) =================
 section "8C: ngsw.json ไม่แคช /api · manifest · ไม่โหลดจาก CDN"
 WEB_URL="${WEB:-http://localhost:8080}"

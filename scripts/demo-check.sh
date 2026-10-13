@@ -67,6 +67,12 @@ wl="$(echo "$logs" | grep -o 'gemini_warmup model=[^ ]* status=[^ ]* ms=[0-9]*' 
 if [ -z "$wl" ]; then warn "ไม่พบ gemini_warmup ใน log (AI_MOCK=true หรือไม่มี LLM_API_KEY?)"
 elif echo "$wl" | grep -q 'status=200'; then ok "Gemini warm-up: $wl"
 else bad "Gemini warm-up ผิดปกติ: $wl (ตรวจ LLM_API_KEY / เครือข่าย)"; fi
+# error ที่ไม่คาดคิด (500) ของวันนี้ — เขียนลง node-red/data/logs/errors.log ไม่หายเมื่อ recreate (หมุนไฟล์ที่ 1 MB เก็บ 3 ไฟล์)
+errf="node-red/data/logs/errors.log"; today_th="$(TZ=Asia/Bangkok date +%F)"
+if [ -f "$errf" ]; then
+  n_err="$(grep -c "^$today_th " "$errf" 2>/dev/null || true)"; n_err="${n_err:-0}"
+  if [ "$n_err" -gt 0 ]; then warn "errors.log: วันนี้มี unexpected_error $n_err บรรทัด (ดู $errf — ไม่แสดงเนื้อหาที่นี่)"; else ok "errors.log: วันนี้ไม่มี unexpected_error"; fi
+else ok "errors.log: ยังไม่มีไฟล์ (ยังไม่เคยเกิด unexpected_error ตั้งแต่เปิดใช้)"; fi
 mock="$(docker compose exec -T nodered printenv AI_MOCK 2>/dev/null | tr -d '\r')"
 [ "$mock" = "true" ] && warn "AI_MOCK=true — สแกนจะตอบผลตัวอย่าง ไม่ได้เรียก Gemini จริง"
 
