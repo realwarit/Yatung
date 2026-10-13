@@ -78,8 +78,9 @@ describe('strengthSpoken', () => {
 describe('ชื่อที่ให้อ่าน (tts_name)', () => {
   it('ใช้ tts_name ถ้ามี ไม่งั้นชื่อยา', () => {
     expect(spokenName('ยาความดัน', 'Amlodipine')).toBe('ยาความดัน');
-    expect(spokenName(null, 'Amlodipine')).toBe('Amlodipine');
-    expect(spokenName('  ', 'Amlodipine')).toBe('Amlodipine');
+    expect(spokenName(null, 'Amlodipine')).toBe('แอมโลดิปีน');
+    expect(spokenName('  ', 'Amlodipine')).toBe('แอมโลดิปีน');
+    expect(spokenName(null, 'Zolpidem')).toBe('Zolpidem');
     expect(medNameSpeech('', '')).toEqual(['ยังไม่ได้กรอกชื่อยาค่ะ']);
   });
   it('doseLine', () => {
@@ -150,7 +151,7 @@ describe('adherenceSpeech', () => {
 });
 
 describe('C5: ชื่อยาตัวพิมพ์ใหญ่ทั้งคำ → ตัวเล็กก่อนส่งให้ TTS', () => {
-  it('METFORMIN (≥ 4 ตัว) → metformin', () => expect(spokenName(null, 'METFORMIN')).toBe('metformin'));
+  it('ZOLPIDEM (ไม่อยู่ในพจนานุกรม, ≥ 4 ตัว) → zolpidem', () => expect(spokenName(null, 'ZOLPIDEM')).toBe('zolpidem'));
   it('หลายคำ/มีตัวเลข: เฉพาะคำที่เป็นตัวพิมพ์ใหญ่ล้วนยาว ≥ 4', () => {
     expect(speakableLatin('METFORMIN 500 mg')).toBe('metformin 500 mg');
     expect(speakableLatin('AMOXICILLIN-CLAVULANATE')).toBe('amoxicillin-clavulanate');
@@ -173,10 +174,10 @@ describe('C5: ชื่อยาตัวพิมพ์ใหญ่ทั้ง
     expect(spokenName('ยาเบาหวาน', 'METFORMIN')).toBe('ยาเบาหวาน');
   });
   it('ไม่เปลี่ยนค่าที่ส่งเข้า (ชื่อบนจอไม่ถูกแตะ) และไปถึงประโยคที่อ่านจริง', () => {
-    const d = { name: 'METFORMIN', tts_name: null, dose_per_time: 1, unit: 'tablet', meal_relation: 'after' } as Parameters<typeof doseLine>[0];
-    expect(doseLine(d)).toContain('metformin');
-    expect(doseLine(d)).not.toContain('METFORMIN');
-    expect(d.name).toBe('METFORMIN');
+    const d = { name: 'ZOLPIDEM', tts_name: null, dose_per_time: 1, unit: 'tablet', meal_relation: 'after' } as Parameters<typeof doseLine>[0];
+    expect(doseLine(d)).toContain('zolpidem');
+    expect(doseLine(d)).not.toContain('ZOLPIDEM');
+    expect(d.name).toBe('ZOLPIDEM');
   });
-  it('ท่อนทดลองฟังชื่อยาในฟอร์ม ใช้กฎเดียวกัน', () => expect(medNameSpeech('', 'METFORMIN')).toEqual(['metformin']));
+  it('ท่อนทดลองฟังชื่อยาในฟอร์ม ใช้กฎเดียวกัน', () => expect(medNameSpeech('', 'ZOLPIDEM')).toEqual(['zolpidem']));
 });

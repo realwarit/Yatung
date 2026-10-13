@@ -11,9 +11,11 @@ import { TRY_PHRASE, TTS_RATES, TtsService } from '../../core/tts/tts.service';
   imports: [SegmentedComponent, TtsButtonComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (tts.hasThai()) {
+    @if (tts.canSpeak()) {
       <p class="hint">ให้แอปอ่านรายการยาออกเสียงให้ฟัง กดปุ่ม <app-icon name="volume" /> ในหน้า "วันนี้" และ "สรุป" (แอปไม่พูดเองโดยอัตโนมัติ)</p>
       <p class="hint">ตั้งค่านี้ใช้เฉพาะเครื่องนี้ เพราะแต่ละเครื่องมีเสียงไม่เหมือนกัน</p>
+
+      <p class="hint voice-now" id="tts-voice-now">เสียงที่ใช้: @if (tts.selectedVoice(); as v) { <strong>{{ v.name }} ({{ v.lang }})</strong> } @else { <strong>เสียงเริ่มต้นของเครื่อง (th-TH)</strong> }</p>
 
       @if (tts.thaiVoices().length > 1) {
         <div class="field">

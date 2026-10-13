@@ -53,6 +53,11 @@ export class TtsService {
   readonly thaiVoices = computed(() => this.voices().filter((v) => isThaiLang(v.lang)));
   /** มีเสียงไทยให้ใช้ = แสดงปุ่ม 🔊 ได้ ; ไม่มี = ซ่อนทุกปุ่ม */
   readonly hasThai = computed(() => this.supported() && this.thaiVoices().length > 0);
+  /**
+   * แสดงปุ่ม 🔊 ได้ไหม: เบราว์เซอร์รองรับ และ (มีเสียงไทย หรือ รายการเสียงยังว่าง)
+   * iOS ส่งรายการเสียงช้า/บางครั้งว่างตลอด → ห้ามซ่อนปุ่มหรือรอก่อนพูด ; รายการมีแล้วแต่ไม่มีเสียงไทยเลย = ซ่อน (พูดไทยไม่ได้จริง)
+   */
+  readonly canSpeak = computed(() => this.supported() && (this.voices().length === 0 || this.thaiVoices().length > 0));
   private readonly prefs = signal<Prefs>(readPrefs());
   readonly rate = computed(() => this.prefs().rate);
   readonly selectedVoice = computed<SpeechSynthesisVoice | null>(() => {
@@ -99,17 +104,17 @@ export class TtsService {
    */
   speak(chunks: string[], key: string | null = null): boolean {
     const synth = this.env.synth;
-    const voice = this.selectedVoice();
+    const voice = this.selectedVoice();   // null = รายการเสียงยังว่าง → พูดด้วย lang อย่างเดียว ไม่รอ
     const parts = chunks.map((c) => c.trim()).filter(Boolean);
-    if (!synth || !voice || !parts.length) return false;
+    if (!synth || !parts.length) return false;
     synth.cancel();
     const mine = ++this.token;
     this.speaking.set(true);
     this.speakingKey.set(key);
     parts.forEach((text, i) => {
       const u = this.env.makeUtterance(text);
-      u.lang = voice.lang.replace('_', '-');
-      u.voice = voice;
+      u.lang = 'th-TH';
+      if (voice) u.voice = voice;
       u.rate = this.rate();
       const done = () => { if (mine === this.token && i === parts.length - 1) this.finish(); };
       u.onend = done;

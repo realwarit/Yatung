@@ -1,3 +1,4 @@
+import { lexiconSpeech } from './tts-lexicon';
 import { DoseUnit, MealRelation, Slot } from '../api/medicine-parse.model';
 import { AdherenceResponse } from '../api/stats.api';
 import { MEAL_LABEL } from '../i18n/labels';
@@ -86,10 +87,10 @@ export function strengthSpoken(s: string | null | undefined): string {
  */
 export const speakableLatin = (s: string): string => s.replace(/(?<![A-Za-z])[A-Z]{4,}(?![A-Za-z])/g, (w) => w.toLowerCase());
 
-/** ชื่อที่ให้อ่าน: tts_name ถ้ามี (ใช้ตามที่ผู้ใช้ตั้ง ไม่แปลง) ไม่งั้นชื่อยา (ตัวพิมพ์ใหญ่ล้วนยาว ≥ 4 → ตัวเล็ก) */
+/** ชื่อที่ให้อ่าน: tts_name (ใช้ตามที่ผู้ใช้ตั้ง ไม่แปลง) → พจนานุกรม `tts-lexicon.ts` → speakableLatin (ตัวพิมพ์ใหญ่ล้วนยาว ≥ 4 → ตัวเล็ก) → ชื่อเดิม */
 export const spokenName = (ttsName: string | null | undefined, name: string): string => {
   const custom = ttsName?.trim();
-  return custom ? custom : speakableLatin(name.trim());
+  return custom ? custom : speakableLatin(lexiconSpeech(name.trim()));
 };
 
 /** ท่อนทดลองฟังชื่อยา (ฟอร์มยา) */

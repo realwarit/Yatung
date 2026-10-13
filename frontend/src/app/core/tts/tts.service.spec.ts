@@ -48,13 +48,29 @@ describe('TtsService', () => {
     for (const l of ['en-US', 'the', '', undefined]) expect(isThaiLang(l as string)).toBe(false);
   });
 
-  it('ไม่มีเสียงไทย → hasThai = false (ซ่อนปุ่ม) และ speak ไม่ทำงาน', () => {
+  it('รายการเสียงมีแต่ไม่มีเสียงไทย → hasThai/canSpeak = false (ซ่อนปุ่ม) ; ถ้าสั่ง speak ก็ใช้ lang th-TH ไม่ตั้ง voice', () => {
     const f = makeEnv([EN]);
     const s = setup(f.env);
     expect(s.supported()).toBe(true);
     expect(s.hasThai()).toBe(false);
-    expect(s.speak(['สวัสดี'])).toBe(false);
-    expect(f.calls.speak).toBe(0);
+    expect(s.canSpeak()).toBe(false);
+    expect(s.speak(['สวัสดี'])).toBe(true);
+    expect(f.spoken[0].lang).toBe('th-TH');
+    expect(f.spoken[0].voice).toBeNull();
+  });
+
+  it('รายการเสียงยังว่าง (iOS ส่งช้า) → canSpeak = true และพูดได้ทันทีด้วย lang th-TH อย่างเดียว ไม่รอ', () => {
+    const f = makeEnv([TH], { delayVoices: true });
+    const s = setup(f.env);
+    expect(s.hasThai()).toBe(false);
+    expect(s.canSpeak()).toBe(true);
+    expect(s.speak(['สวัสดี'])).toBe(true);
+    expect(f.calls.speak).toBe(1);
+    expect(f.spoken[0].lang).toBe('th-TH');
+    expect(f.spoken[0].voice).toBeNull();
+    f.release();
+    s.speak(['อีกครั้ง']);
+    expect((f.spoken[f.spoken.length - 1].voice as { voiceURI: string }).voiceURI).toBe('th1');
   });
 
   it('เบราว์เซอร์ไม่รองรับ → supported = false', () => {
@@ -77,7 +93,7 @@ describe('TtsService', () => {
     expect(s.speak(['ท่อนหนึ่ง', 'ท่อนสอง'], 'k')).toBe(true);
     expect(f.calls.cancel).toBe(1);
     expect(f.spoken.map((u) => u.text)).toEqual(['ท่อนหนึ่ง', 'ท่อนสอง']);
-    expect(f.spoken[0].lang).toBe('tha-THA');
+    expect(f.spoken[0].lang).toBe('th-TH');   // ตั้ง th-TH เสมอ ไม่ว่าเสียงที่เลือกจะรายงาน lang แบบไหน
     expect(f.spoken[0].rate).toBe(0.8);
     expect(s.speaking()).toBe(true);
     expect(s.speakingKey()).toBe('k');

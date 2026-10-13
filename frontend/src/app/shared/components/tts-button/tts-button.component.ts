@@ -14,7 +14,7 @@ import { IconComponent } from '../../icon.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.big]': 'variant() === "big"', '[class.small]': 'variant() === "small"', '[class.inline]': 'variant() === "inline"', '[class.bar]': 'variant() === "bar"' },
   template: `
-    @if (tts.hasThai()) {
+    @if (tts.canSpeak()) {
       <button type="button" class="btn" [class.on]="active()" [attr.aria-pressed]="active()" [attr.aria-label]="aria()" (click)="press()">
         <app-icon [name]="active() ? 'stop' : 'volume'" />
         <span>{{ active() ? 'หยุดอ่าน' : label() }}</span>
