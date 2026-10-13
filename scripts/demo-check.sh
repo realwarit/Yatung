@@ -269,5 +269,34 @@ if [ -n "${pub:-}" ]; then
   case "$first" in text/html*) warn "ngrok ฟรี: เปิดครั้งแรกด้วยเบราว์เซอร์จะเจอหน้า \"Visit Site\" — กดครั้งเดียวต่ออุปกรณ์ ; iPhone ที่เปิดจากไอคอนหน้าจอโฮม cookie แยกจาก Safari ต้องกดอีกครั้งในแอป (ดู docs/web-push-test.md)" ;; esac
 else warn "ข้ามเช็ก service worker ผ่าน tunnel (tunnel ไม่ได้รัน)"; fi
 
+echo "== 9) schema (DB จริงต้องมีคอลัมน์ครบตาม db/init/01_schema.sql)"
+# อ่านอย่างเดียวกับ DB จริง: สร้าง DB ชั่วคราว yt_schema_check จาก db/init แล้วเทียบ information_schema (ไม่เรียก migrate.sh ; ลบ DB ชั่วคราวทิ้งตอนจบ)
+# สาเหตุที่ต้องมี: เพิ่ม migration แล้วลืม apply กับ DB จริง → nodered โค้ดใหม่อ้างคอลัมน์ที่ไม่มี → 500 ทุก endpoint ที่แตะตารางนั้น (13 ต.ค. tts_name)
+rootsql9() { docker compose exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" --default-character-set=utf8mb4' 2>/dev/null <<<"$1"; }
+cols9() { # cols9 DB → table.column|type|null|default (เรียง)
+  docker compose exec -T db sh -c "mysql -uroot -p\"\$MYSQL_ROOT_PASSWORD\" -N -B -e \"SELECT CONCAT(TABLE_NAME,'.',COLUMN_NAME,'|',COLUMN_TYPE,'|',IS_NULLABLE,'|',IFNULL(COLUMN_DEFAULT,'NULL')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='$1' AND TABLE_NAME IN (SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA='$1' AND TABLE_TYPE='BASE TABLE') ORDER BY 1\"" 2>/dev/null | tr -d '\r' | sort
+}
+live9="$(docker compose exec -T db sh -c 'echo $MYSQL_DATABASE' 2>/dev/null | tr -d '\r')"
+if [ -z "$live9" ]; then warn "ข้ามเช็ก schema (db ไม่ตอบ)"
+else
+  rootsql9 "DROP DATABASE IF EXISTS yt_schema_check; CREATE DATABASE yt_schema_check;" >/dev/null
+  docker compose exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" --default-character-set=utf8mb4 yt_schema_check' < db/init/01_schema.sql 2>/dev/null
+  want9="$(cols9 yt_schema_check)"; have9="$(cols9 "$live9")"
+  rootsql9 "DROP DATABASE IF EXISTS yt_schema_check;" >/dev/null
+  if [ -z "$want9" ]; then warn "ข้ามเช็ก schema (อ่าน db/init ไม่ได้)"
+  else
+    name9() { sed 's/|.*//'; }
+    miss9="$(comm -23 <(printf '%s\n' "$want9" | name9 | sort -u) <(printf '%s\n' "$have9" | name9 | sort -u))"
+    extra9="$(comm -13 <(printf '%s\n' "$want9" | name9 | sort -u) <(printf '%s\n' "$have9" | name9 | sort -u))"
+    diff9="$(comm -3 <(printf '%s\n' "$want9") <(printf '%s\n' "$have9") | sed 's/^\t*//' | name9 | sort -u | grep -vxFf <(printf '%s\n%s\n' "$miss9" "$extra9") | grep -v '^$')"
+    if [ -n "$miss9" ]; then
+      bad "DB จริงขาดคอลัมน์: $(printf '%s' "$miss9" | tr '\n' ' ')"
+      echo "    → รัน: bash scripts/migrate.sh   (แล้ว docker compose restart nodered ถ้า nodered เริ่มก่อน migrate)"
+    else ok "คอลัมน์ทุกตัวใน db/init มีใน DB จริงครบ ($(printf '%s\n' "$want9" | wc -l | tr -d ' ') คอลัมน์)"; fi
+    [ -n "$diff9" ] && warn "คอลัมน์ที่นิยามต่างจาก db/init (ชนิด/NULL/ค่าเริ่มต้น): $(printf '%s' "$diff9" | tr '\n' ' ')"
+    [ -n "$extra9" ] && warn "DB จริงมีคอลัมน์ที่ db/init ไม่มี: $(printf '%s' "$extra9" | tr '\n' ' ') (แก้ db/init/01_schema.sql ให้ตรง)"
+  fi
+fi
+
 echo
 if [ "$FAIL" = 0 ]; then echo "สรุป: ✓ พร้อมนำเสนอ"; else echo "สรุป: ✗ ไม่ผ่าน $FAIL ข้อ — แก้ก่อนนำเสนอ"; exit 1; fi
