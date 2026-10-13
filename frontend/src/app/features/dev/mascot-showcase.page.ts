@@ -25,6 +25,20 @@ const USAGE: Record<MascotMood, string> = {
       <app-font-size-toggle />
     </header>
 
+    <section class="card sizes" id="s-check">
+      <h2>8D: ขนาด S 36 / M 56 <span>ท่าที่ใช้ S ได้: happy worried thinking reminder celebrate sleepy</span></h2>
+      <table>
+        @for (m of moods; track m) {
+          <tr>
+            <th>{{ m }}</th>
+            <td><app-mascot [mood]="m" size="s" /></td>
+            <td><app-mascot [mood]="m" size="m" /></td>
+            <td class="dark"><app-mascot [mood]="m" size="s" /></td>
+          </tr>
+        }
+      </table>
+    </section>
+
     <div class="grid">
       @for (m of moods; track m) {
         <section class="card">
@@ -56,6 +70,10 @@ const USAGE: Record<MascotMood, string> = {
     h2 span { display: block; font-family: var(--yt-font-body); font-size: var(--yt-text-sm); font-weight: 400; color: var(--yt-text-muted); }
     .band { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--yt-space-4); padding: var(--yt-space-3); margin-top: var(--yt-space-2);
       border: 1px solid var(--yt-border); border-radius: var(--yt-radius-sm); background: var(--yt-surface); }
+    .sizes { margin-bottom: var(--yt-space-4); }
+    .sizes table { border-spacing: var(--yt-space-3); }
+    .sizes th { text-align: left; font-weight: 500; }
+    .sizes td.dark { background: var(--yt-primary); border-radius: var(--yt-radius-sm); text-align: center; }
     .band--dark { background: var(--yt-primary); border-color: var(--yt-primary); }
   `,
 })

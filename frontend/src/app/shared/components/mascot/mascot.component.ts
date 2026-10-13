@@ -20,6 +20,13 @@ export const MASCOT_LABELS: Record<MascotMood, string> = {
 };
 
 // แขนซ้าย/ขวา (เส้นโค้งจากไหล่) — ที่เหลือใช้ร่างกายชุดเดียวกัน
+/** ขนาดมาตรฐาน 8D (px): S = ผู้พูดในแถบ/หัวการ์ด · M = Login/Register/การ์ดหลักสรุป · L = ช่วงพิเศษเท่านั้น (กินครบวัน, หน้าว่าง, บันทึกสำเร็จ) */
+export const MASCOT_SIZES = { s: 36, m: 56, l: 112 } as const;
+export type MascotSize = keyof typeof MASCOT_SIZES;
+
+/** ท่าที่อ่านออกที่ 36px (ตรวจภาพแล้ว: มีของประกอบ/สีหน้าต่างชัด) — wave/watching/shy แยกจาก happy ไม่ออก ใช้ที่ M ขึ้นไปเท่านั้น */
+export const MASCOT_S_MOODS: readonly MascotMood[] = ['happy', 'worried', 'thinking', 'reminder', 'celebrate', 'sleepy'];
+
 const ARM_DOWN = ['M56 120Q42 130 44 148', 'M144 120Q158 130 156 148'];
 const ARMS: Record<MascotMood, readonly [string, string]> = {
   wave: [ARM_DOWN[0], 'M144 118Q168 110 166 82'],
@@ -54,8 +61,8 @@ const LOOK: Partial<Record<MascotMood, string>> = { thinking: 'translate(3px, -5
 })
 export class MascotComponent {
   readonly mood = input<MascotMood>('happy');
-  /** ความกว้างเป็นพิกเซล (ความสูง = 1.08 เท่า) */
-  readonly size = input(160);
+  /** ความกว้างเป็นพิกเซล (ความสูง = 1.08 เท่า) หรือขนาดมาตรฐาน 's' | 'm' | 'l' (36/56/112) */
+  readonly size = input<number | MascotSize>(160);
   /** true = ขยายเต็มความกว้างของกล่องที่ครอบ (ใช้ขนาดจาก CSS แทน size) */
   readonly fluid = input(false);
   /** mood shy: true = แง้มนิ้วแอบมอง */
@@ -67,7 +74,8 @@ export class MascotComponent {
   /** ข้อความแทนค่าเริ่มต้นของ mood เมื่อ decorative = false */
   readonly label = input<string | null>(null);
 
-  protected readonly height = computed(() => Math.round(this.size() * 1.08));
+  protected readonly px = computed(() => { const s = this.size(); return typeof s === 'number' ? s : MASCOT_SIZES[s]; });
+  protected readonly height = computed(() => Math.round(this.px() * 1.08));
   protected readonly ariaLabel = computed(() => this.label() ?? MASCOT_LABELS[this.mood()]);
   protected readonly look = computed(() => LOOK[this.mood()] ?? 'none');
   protected readonly showEyes = computed(() => this.mood() !== 'shy' || this.peek());

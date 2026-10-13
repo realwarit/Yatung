@@ -171,7 +171,7 @@
 .mat-mdc-button-base { --mat-button-filled-icon-spacing: 0; --mat-button-outlined-icon-spacing: 0; --mat-button-text-icon-spacing: 0; }
 
 // รายการในเมนู ⋮ และตัวเลือกของ select (overlay นอก component) สูง ≥ 48px
-.mat-mdc-menu-item, .mat-mdc-option { min-height: max(48px, 2.7rem); }
+.mat-mdc-menu-item, .mat-mdc-option { min-height: 3rem; }
 .mat-mdc-menu-item .mdc-list-item__primary-text { display: inline-flex; align-items: center; gap: var(--yt-space-2); }
 
 // ---------- ไอคอนข้างข้อความ (ทุกปุ่ม/chip/สถานะ/แถบแจ้งเตือน) ----------
@@ -183,19 +183,64 @@
   gap: 0.5em;
   line-height: 1;
 }
-// chip / ป้ายสถานะ / ข้อความที่มีไอคอนนำ
+// chip / ป้ายสถานะ (8D): สูง 24px (1.5rem) 13px/500 ; tone ด้วย modifier --warn | --ok | --info | --late (ใช้ chip เล็กในแถว ไม่ใช่กล่องเตือนใหญ่)
 .yt-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.5em;
-  padding: 0.15em 0.8em;
+  gap: 0.35em;
+  min-height: 1.5rem;
+  padding: 0 0.625rem;
   border-radius: var(--yt-radius-pill);
   background: var(--yt-primary-soft);
   color: var(--yt-primary-deep);
-  font-size: var(--yt-text-sm);
-  font-weight: 600;
-  line-height: 1.6;
+  font-size: var(--yt-text-xs);
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+  app-icon { font-size: 1em; }
+  &--warn { background: var(--yt-warning-soft); color: var(--yt-on-warning-soft); }
+  &--late { background: var(--yt-danger-soft); color: var(--yt-on-danger-soft); }
+  &--ok { background: var(--yt-success-soft); color: var(--yt-on-success-soft); }
+  &--info { background: var(--yt-info-soft); color: var(--yt-on-info-soft); }
 }
+
+// ปุ่มกะทัดรัดในแถว (8D): สูงที่มองเห็น 36px (--yt-compact) แต่พื้นที่แตะ ≥ 48px ด้วย ::before ; หลัก = เติมสี, ค่าเริ่มต้น = เส้นขอบ
+.yt-compact {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  min-height: var(--yt-compact);
+  padding: 0 0.875rem;
+  border: 1.5px solid var(--yt-primary);
+  border-radius: var(--yt-radius-pill);
+  background: transparent;
+  color: var(--yt-primary-dark);
+  font: 500 var(--yt-text-sm) / 1 var(--yt-font-display);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  --icon-optical-offset: 0.06em;
+  &::before { content: ''; position: absolute; inset: calc((var(--yt-tap) - var(--yt-compact)) / -2 - 1.5px) calc(-0.375rem - 1.5px); }   // พื้นที่แตะ ≥ 48px (ชดเชยเส้นขอบ 1.5px เพราะ inset วัดจาก padding box)
+  &:hover { background: var(--yt-primary-soft); }
+  &--primary { background: var(--yt-primary); color: var(--yt-on-primary); &:hover { background: var(--yt-primary-dark); } }
+  &--danger { border-color: var(--yt-danger); color: var(--yt-danger); &:hover { background: var(--yt-danger-soft); } }
+  &:disabled, &[aria-disabled='true'] { opacity: 0.55; cursor: default; }
+}
+
+// yt-sheet: แผ่นล่าง (มือถือ) และแผงขวา (จอ ≥ 1024px) — โครงอยู่ที่ app-sheet-frame
+.yt-sheet-bottom.mat-bottom-sheet-container {
+  padding: var(--yt-space-3) var(--yt-space-4) calc(var(--yt-space-4) + env(safe-area-inset-bottom, 0px));
+  border-radius: 1.25rem 1.25rem 0 0;
+  background: var(--yt-surface);
+  box-shadow: var(--yt-shadow-lg);
+}
+.yt-sheet-bottom.mat-bottom-sheet-container::before { content: ''; display: block; width: 2.25rem; height: 4px; margin: 0 auto var(--yt-space-3); border-radius: 2px; background: var(--yt-border-strong); }
+.yt-sheet-side .mat-mdc-dialog-surface { padding: var(--yt-space-4); border-radius: var(--yt-radius-card) 0 0 var(--yt-radius-card); box-shadow: var(--yt-shadow-lg); }
+
+// ซ่อนแถบเมนูล่างขณะคีย์บอร์ดเปิด (interactive-widget=resizes-content ทำให้แถบลอยขึ้นมาบนคีย์บอร์ด) — class ตั้งโดย KeyboardService
+html.kb-open nav.bottom { display: none; }
 // ไอคอนล้วน (ไม่มีข้อความ) ไม่ต้องขยับ
 .yt-icon-only { --icon-optical-offset: 0; }
 

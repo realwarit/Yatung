@@ -2,7 +2,7 @@
 
 // หน้านี้มี 2 การ์ด (ภาพรวม+รายวัน / แยกตามยา) — ที่ 375px ก ยาวไม่เกินประมาณ 1.5 จอ
 .head { margin-bottom: var(--yt-space-3); }
-.title { margin: 0; font: 600 1.45rem / var(--yt-line-height-tight) var(--yt-font-display); color: var(--yt-text); }   // 26px
+.title { margin: 0; font: 500 1.45rem / var(--yt-line-height-tight) var(--yt-font-display); color: var(--yt-text); }   // 26px
 .range { margin: 0; font-size: 0.9rem; color: var(--yt-text-muted); }                                              // 16px
 
 .grid { display: grid; gap: var(--yt-space-3); grid-template-columns: minmax(0, 1fr); max-width: 40rem; margin: 0 auto; }

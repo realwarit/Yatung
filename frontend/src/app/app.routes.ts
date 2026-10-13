@@ -48,6 +48,7 @@ export const routes: Routes = [
     { path: 'dev/mascot', loadComponent: () => import('./features/dev/mascot-showcase.page').then(m => m.MascotShowcasePage) },
     { path: 'dev/scan-states', loadComponent: () => import('./features/dev/scan-states.page').then(m => m.ScanStatesPage) },
     { path: 'dev/buttons', loadComponent: () => import('./features/dev/buttons-showcase.page').then(m => m.ButtonsShowcasePage) },
+    { path: 'dev/ui', loadComponent: () => import('./features/dev/ui-showcase.page').then(m => m.UiShowcasePage) },
     { path: 'dev/push-states', loadComponent: () => import('./features/dev/push-states.page').then(m => m.PushStatesPage) },
   ] : []),
   { path: '**', redirectTo: 'today' },

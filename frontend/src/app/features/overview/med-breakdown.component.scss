@@ -8,7 +8,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .meds li { position: relative; display: flex; flex-direction: column; gap: 6px; padding: var(--yt-space-2) 0; }
 .meds li + li { border-top: 1px solid var(--yt-border); }
 .row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--yt-space-3); }
-.name { min-width: 0; margin: 0; font: 600 1rem / var(--yt-line-height-tight) var(--yt-font-display); }   // 18px
+.name { min-width: 0; margin: 0; font: 500 1rem / var(--yt-line-height-tight) var(--yt-font-display); }   // 18px
 .muted { font: 500 1rem var(--yt-font-body); color: var(--yt-text-muted); }
 .cnt {
   flex: none;

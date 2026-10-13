@@ -179,7 +179,7 @@
 - **PWA / ออฟไลน์ / ngrok (วันที่ 8C; checklist มือถือ `docs/day8-device-checklist.md`)**
   - **C0 iPhone ค้างเพราะหน้าเตือน ngrok (ตรวจด้วย curl 13 ต.ค.):** ngrok ฟรีตอบ `/api/*` และ `/ngsw.json` เป็น **HTML สถานะ 200** ให้คำขอที่ไม่มีคุกกี้ (ใส่ `ngrok-skip-browser-warning` ได้ JSON) · แอปบนหน้าจอโฮม iOS คุกกี้แยกจาก Safari + SW เสิร์ฟหน้าจากแคช → ผู้ใช้ไม่เคยเห็นหน้าให้กด
     `core/network/`: `ngrok.interceptor` (header ให้ทุก `/api`) · `html-guard.interceptor` (API 2xx เป็น HTML → `ConnectionService.markApiHtml`) · `ConnectionService` (probe `/ngsw.json` ด้วย `ngsw-bypass` **ไม่ผ่าน interceptor ไม่ใส่ header ข้ามหน้าเตือน** เพื่อให้เห็นแบบเดียวกับ SW; ข้ามเมื่อไม่มี SW/`ng serve`) ·
-    `shared/components/connection-banner` ที่ App root (ทำงานได้แม้ API พังหมด): แตะ → `/today?ngsw-bypass=true` (SW ไม่ดักจับ) → Visit Site → กลับ `/today` แล้ว `watch()` ลบ `?ngsw-bypass` ออกผ่าน router `replaceUrl` · `errorText()` ได้ HTML → ข้อความให้แตะแถบสีเหลือง · 502 ของ nginx (HTML แต่ไม่ใช่ 2xx) ไม่นับเป็นหน้าเตือน
+    (8D: connection-banner/offline-bar ถูกแทนด้วย `shared/ui/banner/banner-host` — ดูหัวข้อ 8D) แถบที่ App root (ทำงานได้แม้ API พังหมด): แตะ → `/today?ngsw-bypass=true` (SW ไม่ดักจับ) → Visit Site → กลับ `/today` แล้ว `watch()` ลบ `?ngsw-bypass` ออกผ่าน router `replaceUrl` · `errorText()` ได้ HTML → ข้อความให้แตะแถบสีเหลือง · 502 ของ nginx (HTML แต่ไม่ใช่ 2xx) ไม่นับเป็นหน้าเตือน
     **เครื่องที่ค้างอยู่ก่อนเวอร์ชันนี้ต้องกู้ด้วยมือ** (ลบไอคอนหน้าจอโฮม → Safari กด Visit Site → เพิ่มใหม่) ดู README "iPhone ค้างที่เวอร์ชันเก่า"
   - **manifest (C1):** `id /`, `start_url /today`, `scope /`, `background_color #e8f7f3` (= `--yt-bg-mint`), shortcuts ยาวันนี้/สแกนซองยา, ไอคอน any+maskable 192/512 (ตรวจภาพแล้วอยู่ใน safe zone) ; `index.html` มี meta iOS (`apple-mobile-web-app-*`) ; **ลบ Material Icons CDN แล้ว — แอปห้ามโหลดอะไรจาก CDN ภายนอก** (ฟอนต์ self-host ผ่าน `@fontsource` ใน `angular.json`)
   - **ออฟไลน์อ่านอย่างเดียว (C2):** `core/offline/`: `snapshot.ts` (ฟังก์ชันล้วน whitelist `pickToday/pickAdherence` — **เพิ่มฟิลด์ใหม่ต้องเพิ่มในฟังก์ชัน pick เอง** กัน ocr_text/รูป/warnings หลุด ; key `yatung_snap:<userId>:today|adherence` ; `clearSnapshots()` เรียกใน `AuthService.logout` ซึ่ง 401 เรียกอยู่แล้ว) · `SnapshotService` · `OnlineService` (navigator.onLine + คำขอ status 0 ; `backOnline` → หน้าวันนี้/สรุปรีเฟรชเอง) ·
@@ -318,7 +318,8 @@
 - ทดสอบ Day 5: `bash scripts/test-day5.sh` (AI_MOCK=true สร้าง user A/B เอง: 401/404/409/400+item_index, ยาซ้ำ, ดูรูป, confirm ล้มกลางทาง rollback, confirm พร้อมกัน 2 คำขอ, รูปถูกลบหลัง confirm/discard) · เรียก Gemini จริงกับซองทดสอบ: `AI_MOCK=false GEMINI_NO_RETRY=true docker compose up -d --force-recreate nodered; cd frontend && node tools/review-real-scan.mjs <ไฟล์ใน docs/sample-images>…` (≤ 4 ไฟล์, หยุดเมื่อไม่ใช่ 200, ผลลง `docs/ai-real-review/`)
 
 ## UI (ผู้ใช้หลักคือผู้สูงอายุ)
-- ตัวหนังสือ ≥ 18px, ปุ่มสูง ≥ 56px, ข้อความภาษาไทยทั้งหมด
+- **ขนาดตามปุ่ม ก/ก+/ก++ (8D):** ก = ตัวอักษร 16px ปุ่ม/ช่องกรอก 48px (ค่าเริ่มต้น ทันสมัย) · ก+ = 18px/54px · ก++ = 20px/60px (โหมดอ่านง่าย) — เลย์เอาต์เดียวกันขยายตามสัดส่วน ; ข้อความภาษาไทยทั้งหมด ; พื้นที่แตะของปุ่มกะทัดรัด (สูงที่เห็น 36px) ต้อง ≥ 48px ด้วย ::before (`.yt-compact`)
+- **ช่องกรอกทุกช่อง font-size ≥ 1rem ทุกขนาด** (ห้ามใช้ `--yt-text-sm`; iOS ซูมหน้าเองเมื่อ < 16px) — `first-screen-check.mjs` ตรวจ
 - สี primary `#0f766e`
 - ต้องมี disclaimer "ไม่ใช่คำแนะนำทางการแพทย์"
 
@@ -332,11 +333,11 @@
 - หัวข้อ ปุ่ม ตัวเลขเด่น: `var(--yt-font-display)` = Mitr 500/600 · เนื้อความ ฟอร์ม: `var(--yt-font-body)` = Noto Sans Thai Looped 400/500/600
 - ข้อความ "ก / ก+ / ก++" ในปุ่มปรับขนาดใช้ฟอนต์เนื้อความ (ก ของ Mitr หน้าตาคล้าย n)
 - line-height ภาษาไทย ≥ 1.6 (`--yt-line-height` 1.7, `--yt-line-height-tight` 1.6) ห้ามต่ำกว่านี้
-- ขนาดใช้ `rem` เท่านั้น (html = 18px × `--yt-font-scale`) → ขยาย 125% แล้วทั้งหน้าขยายตาม; หัวข้อหน้า `--yt-text-title` (32–40px)
+- ขนาดใช้ `rem` เท่านั้น (html = 16px × `--yt-font-scale` = 1 / 1.125 / 1.25) → ก+/ก++ แล้วทั้งหน้าขยายตาม ; typography ที่ ก: หัวหน้า `--yt-text-title` 24 · หัวส่วน `--yt-text-heading` 18 · เนื้อหา `--yt-text-body` 16 · รอง `--yt-text-sm` 14 · ป้ายกลุ่ม/ต่ำสุด `--yt-text-label/xs` 13 · disclaimer `--yt-text-fine` 12 ; **Mitr ใช้น้ำหนัก 500 เท่านั้น** (import 600 ถอดแล้ว ; ตัวเลขเน้นใช้ `.num` = Noto 700) ; ระยะ `--yt-space-*` เป็น rem
 
 **Token:** สี `--yt-primary(-dark/-deep/-soft)`, `--yt-accent` (ใช้น้อย เฉพาะจุดสำคัญ), `--yt-bg/surface/text/text-muted`,
 `--yt-success/warning/danger` (+ `-soft` และ `--yt-on-*-soft`) · รัศมี `--yt-radius-sm 12 / field 16 / md 20 / lg 28 / pill` ·
-เงา `--yt-shadow-sm/md/lg` (เขียวอมเทา ห้ามเงาดำ) · ระยะ `--yt-space-1..7` = 4/8/12/16/24/32/48 · ความสูงปุ่ม/ช่อง `--yt-tap` (≥ 56px)
+เงา `--yt-shadow-sm/md/lg` (เขียวอมเทา ห้ามเงาดำ) · ระยะ `--yt-space-1..7` = 4/8/12/16/24/32/48 (rem) · ความสูงปุ่ม/ช่อง `--yt-tap` (3rem = 48px ที่ ก) · ปุ่มกะทัดรัด `--yt-compact` (36px) · แถว `--yt-row-min` (56px) · การ์ด `--yt-radius-card` 16px เส้น 1px ไม่มีเงา
 - **ห้าม hardcode สี/ขนาดใน scss ของหน้า** ใช้ `var(--yt-*)`; ต้องการสีใหม่ → เพิ่มใน `_tokens.scss` (เช็ก contrast ก่อน)
 - Material override ผ่าน `mat.theme` / `mat.theme-overrides` / `mat.*-overrides` ใน `_material-theme.scss` ห้ามไล่แก้ด้วย `::ng-deep`
 - Ionic (หน้า Scan) ใช้ `--ion-*` จาก `_ionic.scss` ชุดเดียวกับ token; ถ้าเพิ่มสีใน Ionic ต้องมีค่า `-rgb` คู่กัน
@@ -345,12 +346,12 @@
 - ระวัง: selector `.parent > *` ใน component scss มี specificity สูงกว่า `.child` เพราะ Angular ใส่ attribute ให้ `*` → ใช้ `> :not(.x)`
 
 **การเข้าถึง (ห้ามทำเสียเพื่อความสวย)**
-- ข้อความทุกคู่สี contrast ≥ 4.5:1; ปุ่ม/ช่องกรอกสูง ≥ 56px; ขอบช่องกรอก ≥ 3:1 (`--yt-border-strong`)
+- ข้อความทุกคู่สี contrast ≥ 4.5:1; ปุ่ม/ช่องกรอกสูง ≥ 48px ที่ ก (`--yt-tap`, ขยายตาม ก+/ก++); ขอบช่องกรอก ≥ 3:1 (`--yt-border-strong`)
 - label อยู่เหนือช่องกรอกเสมอ (`.yt-label` + `.yt-control`) ห้าม floating label / placeholder แทน label
 - focus ring: `outline: 3px solid var(--yt-primary)` + offset (ตั้งไว้ใน `_base.scss` แล้ว ห้ามปิด `outline` โดยไม่ทดแทน)
 - error = ไอคอน + ข้อความ (`.yt-error-text`, `.yt-alert`) ไม่ใช้สีอย่างเดียว; ผูก `aria-invalid` / `aria-describedby`
 - ปุ่มแสดงรหัสผ่านต้องมีข้อความ ("แสดงรหัส"/"ซ่อนรหัส") ไม่ใช่ไอคอนอย่างเดียว
-- ปุ่ม ก / ก+ / ก++ (`FontScaleService`, key `yatung_font_scale` = 100/112/125) ต้องมีทุกหน้า (มุมบนขวา) และทุกหน้าต้องไม่ล้น/ซ้อนที่ 125% ที่ความกว้าง 375 / 768 / 1440
+- ปุ่ม ก / ก+ / ก++ (`FontScaleService`, `shared/font-scale.ts` ฟังก์ชันล้วน, key **`yatung_font_scale_v2`** = 100/112/125 ↔ 16/18/20px) ต้องมีทุกหน้า (มุมบนขวา) และทุกหน้าต้องไม่ล้น/ซ้อนที่ ก++ ที่ความกว้าง 360 / 375 / 768 / 1366 / 1920 ; **ย้ายค่าจาก key เดิม `yatung_font_scale` ครั้งเดียว** (ไม่ลบ key เดิม): เดิม 100 (18px) → v2 112 (ก+ 18px) · 112 → 125 · 125 → 125 (20px เล็กลง 11% ที่ยอมรับแล้ว) · ไม่มี key = ก ; `index.html` inline script ต้องให้ผลตรง `resolveScale()` (spec บังคับ)
 - animation ≤ 300ms, ใช้ `.yt-enter`; `prefers-reduced-motion` ปิด animation อัตโนมัติ (อย่าใส่ animation ที่ขัดกับกฎนี้)
 - ไอคอนใหม่ → เพิ่มใน `shared/icon.component.ts` (ไม่พึ่ง CDN) ; ภาพประกอบวาดเอง ห้ามใช้ตัวการ์ตูน/โลโก้ที่มีลิขสิทธิ์
 
@@ -396,6 +397,15 @@
 - ตรวจด้วยภาพ: `cd frontend && node tools/shots.mjs [หน้า…] [--sizes=390x844,1440x900] [--scale=125]` (Playwright ใช้ Edge/Chrome ในเครื่อง ไม่ต้องโหลด chromium; ต้องมี `ng serve` และ `DEMO_PASSWORD` ใน env หรือ `.env`) → `docs/screenshots/day3/`; ซูมดูรายละเอียด `node tools/crop.mjs <png> x y w h`; หน้า `/dev/buttons` (เฉพาะ ng serve) แสดงปุ่มทุกแบบพร้อมเส้นกึ่งกลาง
 - เนื้อไฟล์ใน repo เป็น CRLF → สคริปต์แก้ไฟล์ที่ match ข้อความหลายบรรทัดต้อง normalize `
 ` ก่อน
+
+## ปรับดีไซน์ทั้งแอป (วันที่ 8D; แผน + คำตัดสิน `docs/day8d-plan.md` — ส่วนที่ 3 ชนะส่วนที่ 2 และ 1)
+- **D1 (ฐาน) เสร็จแล้ว:** token/ขนาดตัวอักษรตามด้านบน · `shared/ui/`: `page-header`, `list-row` (attribute `appListRow` บน button/a/div), `section`, `sheet` (`SheetService.open(component)`: มือถือ = MatBottomSheet, ≥ 1024px = แผงขวา ; รากของเนื้อหาใช้ `app-sheet-frame`) · class กลาง `.yt-chip(--warn|--late|--ok|--info)`, `.yt-compact(--primary|--danger)` ใน `_components.scss`
+- **กฎ sheet:** ห้ามเปิด dialog ซ้อนบน sheet — ปิด sheet ก่อน (await ผลของ `open()`) แล้วค่อยเปิด dialog ; ปิดด้วยปุ่ม "ปิด"/ปัดลง/พื้นหลัง/Esc/closeOnNavigation (ไม่ push history)
+- **yt-banner ครั้งละ 1 แถบ:** `core/banner/banner.ts` `pickBanner()` (ฟังก์ชันล้วน) ลำดับ **เชื่อมต่อหมดอายุ > ออฟไลน์ > เวอร์ชันใหม่ > ชวนติดตั้ง > แจ้งขนาดตัวอักษร** ; `BannerService` รวมแหล่ง (ConnectionService, OnlineService, UpdateService.state, InstallService, FontScaleService.chosen) ; `app-banner-host` อยู่ที่ App root (fixed บน) เผยความสูงเป็น `--yt-banner-h` บน `<html>` → Shell/auth-shell ขยับลง ; ออฟไลน์ = `--yt-offline-bg` พื้นเทา-น้ำเงินเข้ม + ไอคอนเมฆขีดฆ่า + ข้อความ ; แจ้งขนาดตัวอักษร: เฉพาะใต้ Shell ไม่เคยเลือกขนาด หายถาวรเมื่อกดปิด/แตะลิงก์/เลือกขนาด (`yatung_font_hint_off`) ; ชวนติดตั้งเฉพาะ `/today` ; `UpdateService` ไม่ใช้ snackbar แล้ว (`state` + `apply()`)
+- **คีย์บอร์ด:** meta viewport `interactive-widget=resizes-content` (Android) ; `KeyboardService` ใส่ class `kb-open` ที่ `<html>` ขณะโฟกัสช่องกรอก → CSS ซ่อน `nav.bottom` ; iOS: element ที่มี `data-kb-anchor` (ช่อง + ปุ่มยืนยัน) ถูก `scrollIntoView` หลังโฟกัส — **พฤติกรรมจริงต้องทดสอบบนเครื่อง** (`docs/day8d-device-checklist.md`)
+- **มาสคอต 3 ขนาด:** `<app-mascot size="s|m|l">` = 36/56/112px (ยังรับตัวเลข px) ; **ท่าที่อ่านออกที่ S (ตรวจภาพแล้ว):** `happy worried thinking reminder celebrate sleepy` (`MASCOT_S_MOODS`) — `wave watching shy` ใช้ M ขึ้นไป ; L เฉพาะ กินครบวัน/หน้าว่าง/บันทึกสำเร็จ ; ตรวจดูที่ `/dev/mascot`
+- **เครื่องมือตรวจ (ต้องมี `ng serve`):** `node tools/first-screen-check.mjs [--strict] [--routes=…]` (ป้าย `data-first-screen="<ชื่อ>"` ต้องอยู่เหนือแถบเมนูล่าง −8px ที่ 375×667 และ 360×640 ก/ก+ ; ก++ รายงานอย่างเดียว ; ไม่ถูกปุ่มสแกนบัง ; ช่องกรอก ≥ 16px ; Mitr ≤ 500 ; ไม่ล้นแนวนอน) · `overflow-check.mjs` (ไม่มีข้อยกเว้นแถบเลื่อนแนวนอน + 1366×768/1920×1080 + `data-equal-row="กลุ่ม"` ต้องสูงเท่ากัน ≤ 2px) · `state-check.mjs` (ทุกสถานะ + ไม่เกิน banner 1 แถบ) · `day8d-shots.mjs --tag=before|after` → `docs/screenshots/day8d/` (+ `index.html` เทียบก่อน/หลัง ; git-ignored)
+- **ข้อจำกัดที่รู้:** บั๊ก bash heredoc ยาวที่มีอักขระพิเศษบางชนิดล้มเหลวแบบเงียบ — เขียนไฟล์ใหญ่ด้วยเครื่องมือ Write
 
 ## วิธีทำงาน
 - **ความลับ (บทเรียน 11 ต.ค.):** `.sessions.json` ถูก commit ตั้งแต่ Day 1 และ hash รหัสผ่าน admin จริงเคยถูกฝังในเทส (`admin-config.test.js`) บนรีโป public →

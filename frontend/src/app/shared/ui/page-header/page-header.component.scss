@@ -1,0 +1,8 @@
+:host { display: flex; align-items: center; gap: var(--yt-space-2); min-height: 3.5rem; }
+.yt-page-title { flex: 1; min-width: 0; margin: 0; font-size: var(--yt-text-title); font-weight: 500; line-height: var(--yt-line-height-tight); color: var(--yt-text); }
+.back {
+  display: inline-grid; place-items: center; flex: none; width: var(--yt-tap); height: var(--yt-tap);
+  margin-left: calc(var(--yt-space-3) * -1); border-radius: var(--yt-radius-pill); color: var(--yt-primary-dark);
+  &:hover { background: var(--yt-primary-soft); }
+}
+.action { flex: none; display: flex; align-items: center; &:empty { display: none; } }

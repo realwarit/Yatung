@@ -31,6 +31,9 @@ export const MED = { id: 1, name: 'Amlodipine', tts_name: null, strength: '5 mg'
   indication: 'ลดความดัน', warnings: ['อาจทำให้ง่วง'], total_qty: 30, remaining_qty: 4, days_left: 2, refill_alert_days: 7, is_low: true, start_date: ymd, end_date: null, is_active: true, created_at: '', updated_at: '' };
 
 
+export const REVIEW = { prescription_id: 1, status: 'draft', input_type: 'image', has_image: false, ocr_text: 'Metformin 500 mg 1 tab bid pc', existing_matches: [], review_flags: [{ index: 0, field: 'dose', reason: 'ตรวจขนาดยา' }],
+  result: { is_medicine_label: true, medications: [{ name: 'Metformin', strength: '500 mg', dose_per_time: 1, unit: 'tablet', meal_relation: 'after', slots: ['morning', 'evening'], as_needed: false, total_qty: 60, indication: 'เบาหวาน', warnings: [], confidence: { name: 0.9, dose: 0.5 } }], unreadable_parts: [] } };
+
 export const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) });
 
 /** ผูก API จำลองทั้งหมด ; opts.htmlMode() true = ตอบ HTML 200 (เหมือนหน้าเตือนของ ngrok) */
@@ -46,6 +49,7 @@ export async function mockApi(page, opts = {}) {
     if (u === '/api/settings/slot-times') return route.fulfill(json({ morning: '08:00', noon: '12:00', evening: '18:00', bedtime: '21:00' }));
     if (u === '/api/line/status') return route.fulfill(json({ linked: true, display_name: 'ผู้ทดสอบ' }));
     if (u === '/api/caregivers') return route.fulfill(json({ caregivers: [] }));
+    if (u === '/api/prescriptions/1') return route.fulfill(json(REVIEW));
     if (u === '/api/config') return route.fulfill(json({ demoMode: opts.demoMode?.() ?? false }));
     return route.fulfill(json({ error: 'NOT_MOCKED', details: u }, 404));
   });

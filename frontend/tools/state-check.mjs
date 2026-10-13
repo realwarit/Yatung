@@ -1,5 +1,5 @@
 // ตรวจ "ล้นแนวนอน" ของสถานะที่เกิดทีหลังโหลดหน้า (8C) + ถ่ายภาพ ก (100%) ที่ 360px → docs/screenshots/day8/state-<ชื่อ>.png
-//   สถานะ: offline-bar · offline-dose-card · conn-expired · install-android · install-ios
+//   สถานะ: offline-bar · offline-dose-card · conn-expired · install-android · install-ios · font-hint (8D: ข้อความด้านบนเป็น yt-banner ครั้งละ 1 แถบ ตรวจทุกสถานะ)
 //   node tools/state-check.mjs [--widths=320,360,375,412] [--scales=100,112,125] [--only=install-ios,…]   (ต้องมี ng serve 4200 ; ไม่ต้อง login/docker)
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
@@ -25,6 +25,8 @@ const STATES = [
   { name: 'install-android', run: async (p) => { await p.evaluate(fakePrompt); }, expect: 'ติดตั้ง' },
   { name: 'today-error-ref', route: '/today', st: { todayStatus: 502 }, expect: '[(]E-502[)]' },
   { name: 'settings-dev', route: '/settings', st: { demo: true }, seedLog: true, expect: 'ข้อมูลสำหรับผู้พัฒนา[\\s\\S]*E-304', shot: 'app-dev-info-section' },
+  { name: 'font-hint', noFont: true, expect: 'ปรับขนาดตัวอักษรให้ใหญ่ขึ้นได้ที่ ตั้งค่า' },
+  { name: 'banner-one-at-a-time', run: async (p, c) => { await c.ctx.setOffline(true); await p.evaluate(() => window.dispatchEvent(new Event('offline'))); await p.evaluate(fakePrompt); }, noFont: true, expect: 'ออฟไลน์', only1: true },
   { name: 'install-ios', ctxOpts: { userAgent: IOS_UA }, expect: 'หน้าจอโฮม|เพิ่ม' },
 ];
 
@@ -34,9 +36,9 @@ for (const st of STATES.filter((s) => !only.length || only.includes(s.name))) {
   for (const scale of scales) {
     for (const w of widths) {
       const ctx = await browser.newContext({ viewport: { width: w, height: 800 }, locale: 'th-TH', timezoneId: 'Asia/Bangkok', deviceScaleFactor: 2, isMobile: true, hasTouch: true, ...(st.ctxOpts ?? {}) });
-      await ctx.addInitScript(([s, tok]) => {
-        try { localStorage.setItem('yatung_font_scale', s); localStorage.setItem('yatung_token', tok); localStorage.setItem('yatung_user', JSON.stringify({ id: 1, email: 'x@example.test', display_name: 'ผู้ทดสอบ' })); } catch {}
-      }, [scale, FAKE_JWT]);
+      await ctx.addInitScript(([s, tok, noFont]) => {
+        try { if (!noFont) { localStorage.setItem('yatung_font_scale_v2', s); localStorage.setItem('yatung_font_hint_off', '1'); } localStorage.setItem('yatung_token', tok); localStorage.setItem('yatung_user', JSON.stringify({ id: 1, email: 'x@example.test', display_name: 'ผู้ทดสอบ' })); } catch {}
+      }, [scale, FAKE_JWT, !!st.noFont]);
       const page = await ctx.newPage();
       const html = { on: false };
       await mockApi(page, { htmlMode: () => html.on, todayStatus: st.st?.todayStatus ? () => st.st.todayStatus : undefined, demoMode: () => !!st.st?.demo });
@@ -48,17 +50,18 @@ for (const st of STATES.filter((s) => !only.length || only.includes(s.name))) {
       await page.addStyleTag({ content: '*{animation:none!important;transition:none!important}' });
       await page.waitForTimeout(900);
       const m = await page.evaluate((expect) => {
+        const banners = document.querySelectorAll('[data-banner]').length;
         const bodyText = document.body.innerText;
         const scrollers = [document.documentElement, document.body, ...document.querySelectorAll('.main, .yt-page')]
           .filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => `${e.tagName.toLowerCase()}.${[...e.classList].join('.')} scrollWidth ${e.scrollWidth} > ${e.clientWidth}`);
         const cw = document.documentElement.clientWidth;
         const over = [...document.querySelectorAll('body *')].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && (b.right > cw + 0.5 || b.left < -0.5) && getComputedStyle(e).position !== 'fixed'; })
           .slice(0, 8).map((e) => `${e.tagName.toLowerCase()}.${[...e.classList].slice(0, 2).join('.')} right=${Math.round(e.getBoundingClientRect().right)}`);
-        const small = [...document.querySelectorAll('button, a[href], [role=button]')].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && getComputedStyle(e).visibility !== 'hidden' && b.height < 47.5 && /ติดตั้ง|ปิด|แตะ|กด|รับ|เพิ่ม/.test(e.innerText || '') && e.closest('app-install-card, app-connection-banner, app-offline-bar'); }).map((e) => `${(e.innerText || '').trim().slice(0, 20)} สูง ${Math.round(e.getBoundingClientRect().height)}`);
-        return { seen: new RegExp(expect).test(bodyText), scrollers, over, small };
+        const small = [...document.querySelectorAll('button, a[href], [role=button]')].filter((e) => { const b = e.getBoundingClientRect(); const touch = e.classList.contains('yt-compact') ? parseFloat(getComputedStyle(e, '::before').height) : b.height; return b.width > 0 && getComputedStyle(e).visibility !== 'hidden' && touch < 47.5 && /ติดตั้ง|ปิด|แตะ|กด|รับ|เพิ่ม|อัปเดต|เชื่อมต่อ|ตั้งค่า/.test(e.innerText || e.getAttribute('aria-label') || '') && e.closest('app-install-card, app-banner-host'); }).map((e) => `${(e.innerText || '').trim().slice(0, 20)} สูง ${Math.round(e.getBoundingClientRect().height)}`);
+        return { seen: new RegExp(expect).test(bodyText), scrollers, over, small, banners };
       }, st.expect);
       total++;
-      const issues = [...(m.seen ? [] : [`ไม่พบข้อความ /${st.expect}/`]), ...m.scrollers, ...m.over, ...m.small.map((x) => `ปุ่มเตี้ย ${x}`)];
+      const issues = [...(m.seen ? [] : [`ไม่พบข้อความ /${st.expect}/`]), ...(m.banners > 1 ? [`แสดง banner ${m.banners} แถบพร้อมกัน (ต้อง ≤ 1)`] : []), ...(st.only1 && m.banners !== 1 ? ['ต้องมี banner 1 แถบพอดี'] : []), ...m.scrollers, ...m.over, ...m.small.map((x) => `ปุ่มเตี้ย ${x}`)];
       if (issues.length) bad++;
       console.log(`${issues.length ? '✘' : '✓'} ${st.name} @${w}px ก${scale === '100' ? '' : scale === '112' ? '+' : '++'}${issues.length ? '\n    ' + issues.join('\n    ') : ''}`);
       if (w === 360 && scale === '100') {

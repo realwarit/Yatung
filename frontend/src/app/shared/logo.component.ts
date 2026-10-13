@@ -19,7 +19,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   styles: `
     :host { display: inline-flex; align-items: center; gap: var(--yt-space-3); }
     svg { width: 2.4rem; height: 2.4rem; flex: none; }
-    .word { font-family: var(--yt-font-display); font-weight: 600; font-size: 1.6rem; line-height: 1.6; }
+    .word { font-family: var(--yt-font-display); font-weight: 500; font-size: 1.6rem; line-height: 1.6; }
 
     // บนพื้นอ่อน
     :host(.on-light) { color: var(--yt-primary-dark); }

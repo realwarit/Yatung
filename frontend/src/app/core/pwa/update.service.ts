@@ -1,36 +1,35 @@
-import { DestroyRef, Injectable, inject } from '@angular/core';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { SwUpdate } from '@angular/service-worker';
 
-export const UPDATE_READY_TEXT = 'มีเวอร์ชันใหม่ แตะเพื่ออัปเดต';
-export const UPDATE_BROKEN_TEXT = 'แอปต้องโหลดใหม่เพื่อให้ใช้งานต่อได้';
+export { UPDATE_BROKEN_TEXT, UPDATE_READY_TEXT } from '../banner/banner';
 
 /**
- * เวอร์ชันใหม่พร้อม (VERSION_READY) → snackbar "แตะเพื่ออัปเดต" → activateUpdate + reload (ไม่ reload เอง กันเสียฟอร์มที่กรอกค้าง)
- * service worker พัง/แคชไม่ตรง (unrecoverable) → snackbar ให้โหลดใหม่ ; ไม่มี SW (dev, http) = ไม่ทำอะไร
+ * เวอร์ชันใหม่พร้อม (VERSION_READY) → state 'ready' → yt-banner "แตะเพื่ออัปเดต" → apply() = activateUpdate + reload (ไม่ reload เอง กันเสียฟอร์มที่กรอกค้าง)
+ * service worker พัง/แคชไม่ตรง (unrecoverable) → state 'broken' → banner ให้โหลดใหม่ ; ไม่มี SW (dev, http) = ไม่ทำอะไร
+ * (8D: เปลี่ยนจาก snackbar เป็น banner เพราะ snackbar บังปุ่มของหน้า — การแสดงอยู่ที่ BannerService)
  */
 @Injectable({ providedIn: 'root' })
 export class UpdateService {
   private readonly sw = inject(SwUpdate, { optional: true });
-  private readonly snack = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
 
+  readonly state = signal<'none' | 'ready' | 'broken'>('none');
   reload: () => void = () => location.reload();
 
   watch(): void {
     const sw = this.sw;
     if (!sw?.isEnabled) return;
     const subs = [
-      sw.versionUpdates.subscribe((e) => {
-        if (e.type !== 'VERSION_READY') return;
-        this.snack.open(UPDATE_READY_TEXT, 'อัปเดต', { duration: undefined, panelClass: 'yt-snack' }).onAction().subscribe(() => {
-          sw.activateUpdate().catch(() => undefined).finally(() => this.reload());
-        });
-      }),
-      sw.unrecoverable.subscribe(() => {
-        this.snack.open(UPDATE_BROKEN_TEXT, 'โหลดใหม่', { duration: undefined, panelClass: 'yt-snack' }).onAction().subscribe(() => this.reload());
-      }),
+      sw.versionUpdates.subscribe((e) => { if (e.type === 'VERSION_READY') this.state.set('ready'); }),
+      sw.unrecoverable.subscribe(() => this.state.set('broken')),
     ];
     this.destroyRef.onDestroy(() => subs.forEach((s) => s.unsubscribe()));
+  }
+
+  /** กดปุ่มบน banner */
+  apply(): void {
+    const sw = this.sw;
+    if (this.state() === 'ready' && sw) sw.activateUpdate().catch(() => undefined).finally(() => this.reload());
+    else this.reload();
   }
 }

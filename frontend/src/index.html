@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <title>ยาตรง</title>
     <base href="/" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" sizes="any" />
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
@@ -17,10 +17,14 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="application-name" content="ยาตรง" />
     <script>
-      // ตั้งขนาดตัวอักษรที่จำไว้ก่อนหน้า render ไม่ให้หน้ากระตุก
+      // ตั้งขนาดตัวอักษรที่จำไว้ก่อน render ไม่ให้หน้ากระตุก — ต้องให้ผลเหมือน resolveScale() ใน app/shared/font-scale.ts
+      // ใหม่ (v2): 100/112/125 = ก/ก+/ก++ (16/18/20px) ; key เดิม: 100→ก+ · 112→ก++ · 125→ก++ ; ไม่มีทั้งคู่ = ก
       try {
-        var fs = Number(localStorage.getItem('yatung_font_scale'));
-        if (fs === 112 || fs === 125) document.documentElement.style.setProperty('--yt-font-scale', String(fs / 100));
+        var F = { 100: 1, 112: 1.125, 125: 1.25 }, M = { 100: 112, 112: 125, 125: 125 };
+        var v = localStorage.getItem('yatung_font_scale_v2');
+        var k = v !== null && F[Number(v)] ? Number(v) : null;
+        if (k === null) { var o = localStorage.getItem('yatung_font_scale'); if (o !== null && M[Number(o)]) k = M[Number(o)]; }
+        if (k !== null) document.documentElement.style.setProperty('--yt-font-scale', String(F[k]));
       } catch (e) {}
     </script>
   </head>

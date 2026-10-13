@@ -66,6 +66,6 @@ test('ไม่โหลดอะไรจาก CDN ภายนอก (ฟอ�
   const ng = read('angular.json');
   assert.ok(!/https?:\/\//.test(ng.replace(/https?:\/\/json\.schemastore\.org\S*/g, '').replace(/"\$schema"[^\n]*/g, '')), 'angular.json');
   const used = [...ng.matchAll(/@fontsource\/([\w-]+)\/(?:thai-|latin-)?(\d+)\.css/g)].map((m) => `${m[1]}/${m[2]}`);
-  assert.ok(new Set(used).size >= 6, 'ฟอนต์ที่ใช้โหลดผ่าน @fontsource');
+  assert.ok(new Set(used).size >= 5, 'ฟอนต์ที่ใช้โหลดผ่าน @fontsource');   // 8D: ถอด Mitr 600 (ใช้ 500 เท่านั้น) จาก 6 เหลือ 5
   assert.ok(!/mat-icon|material-icons/i.test(read('src/styles.scss')));
 });

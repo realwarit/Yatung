@@ -1,14 +1,16 @@
 import { Injectable, signal } from '@angular/core';
+import { FONT_KEY, FONT_SCALES, FontScale, LEGACY_FONT_KEY, SCALE_FACTOR, resolveScale } from './font-scale';
 
-export type FontScale = 100 | 112 | 125;
-export const FONT_SCALES: readonly FontScale[] = [100, 112, 125];
+export { FONT_SCALES };
+export type { FontScale };
 
-const KEY = 'yatung_font_scale';
-
-/** ขนาดตัวอักษรทั้งแอป (ก / ก+ / ก++) — ตั้งค่า --yt-font-scale บน <html> และจำไว้ใน localStorage */
+/** ขนาดตัวอักษรทั้งแอป (ก / ก+ / ก++) — ตั้ง --yt-font-scale บน <html> (root 16px × ตัวคูณ) และจำไว้ใน localStorage */
 @Injectable({ providedIn: 'root' })
 export class FontScaleService {
-  readonly scale = signal<FontScale>(this.load());
+  private readonly init = this.load();
+  readonly scale = signal<FontScale>(this.init.scale);
+  /** ผู้ใช้เคยเลือกขนาดเอง (เดิมหรือใหม่) */
+  readonly chosen = signal(this.init.chosen);
 
   constructor() {
     this.apply(this.scale());
@@ -16,20 +18,23 @@ export class FontScaleService {
 
   set(scale: FontScale): void {
     this.scale.set(scale);
+    this.chosen.set(true);
     this.apply(scale);
-    try { localStorage.setItem(KEY, String(scale)); } catch { /* storage ถูกบล็อก ใช้ต่อได้ */ }
+    this.write(scale);
   }
 
   private apply(scale: FontScale): void {
-    document.documentElement.style.setProperty('--yt-font-scale', String(scale / 100));
+    document.documentElement.style.setProperty('--yt-font-scale', String(SCALE_FACTOR[scale]));
   }
 
-  private load(): FontScale {
-    try {
-      const v = Number(localStorage.getItem(KEY));
-      return (FONT_SCALES as readonly number[]).includes(v) ? (v as FontScale) : 100;
-    } catch {
-      return 100;
-    }
+  private write(scale: FontScale): void {
+    try { localStorage.setItem(FONT_KEY, String(scale)); } catch { /* storage ถูกบล็อก ใช้ต่อได้ */ }
+  }
+
+  private load() {
+    let r = resolveScale(null, null);
+    try { r = resolveScale(localStorage.getItem(FONT_KEY), localStorage.getItem(LEGACY_FONT_KEY)); } catch { /* ใช้ค่าเริ่มต้น */ }
+    if (r.migrated) this.write(r.scale);
+    return r;
   }
 }

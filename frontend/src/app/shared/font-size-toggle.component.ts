@@ -29,8 +29,8 @@ const LABELS: Record<FontScale, { text: string; aria: string }> = {
       box-shadow: var(--yt-shadow-sm);
     }
     button {
-      min-width: 48px;   // กว้าง 48 / สูง 56 เพื่อให้พอดีแถบบนมือถือ
-      min-height: 56px;
+      min-width: 3rem;
+      min-height: var(--yt-tap);
       padding: 0 var(--yt-space-2);
       border: 0;
       border-radius: var(--yt-radius-pill);

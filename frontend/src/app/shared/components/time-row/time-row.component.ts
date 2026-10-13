@@ -42,8 +42,8 @@ const pad = (n: number) => String(n).padStart(2, '0');
       display: grid;
       place-items: center;
       flex: none;
-      width: 56px;
-      height: 56px;
+      width: 3.5rem;
+      height: 3.5rem;
       font-size: 1.5rem;
       border: 2px solid var(--yt-primary);
       border-radius: 50%;
@@ -57,7 +57,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
     }
     .time {
       flex: 1;
-      min-height: 56px;
+      min-height: 3.5rem;
       border: 2px dashed transparent;
       border-radius: var(--yt-radius-field);
       background: transparent;

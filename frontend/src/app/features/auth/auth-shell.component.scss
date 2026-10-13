@@ -4,7 +4,7 @@
 :host {
   --bar-h: 6.5rem;   // ความสูงหัวหน้าจอบนจอกว้าง (โลโก้ 56px + ระยะบนล่างขอบละ ~30px)
   position: fixed;
-  inset: 0;
+  inset: var(--yt-banner-h, 0px) 0 0 0;
   overflow-x: hidden;
   overflow-y: auto;
   background: linear-gradient(160deg, var(--yt-bg-mint) 0%, var(--yt-bg-cream) 100%);
