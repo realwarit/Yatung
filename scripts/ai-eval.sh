@@ -19,7 +19,7 @@ source scripts/lib/real-snapshot.sh   # snapshot ผู้ใช้จริง�
 real_snapshot_take
 restore() {
   docker compose up -d --force-recreate nodered >/dev/null 2>&1
-  echo "== ข้อมูลผู้ใช้จริง"; real_snapshot_check || echo "  ! ถ้าต่างเฉพาะ reminded_at = cron เตือนจริงทำงานตามปกติระหว่างรัน"
+  echo "== ข้อมูลผู้ใช้จริง"; real_snapshot_check || { echo "สรุป: ข้อมูลผู้ใช้จริงเปลี่ยน → ไม่ผ่าน"; exit 1; }
 }
 trap restore EXIT
 
