@@ -115,6 +115,12 @@
   box-shadow: var(--yt-shadow-md);
 }
 
+.yt-hint {
+  margin: var(--yt-space-1) 0 var(--yt-space-2);
+  color: var(--yt-text-muted);
+  font-size: var(--yt-text-sm);
+}
+
 .yt-disclaimer {
   font-size: var(--yt-text-sm);
   color: var(--yt-text-muted);

@@ -78,8 +78,8 @@ describe('strengthSpoken', () => {
 describe('ชื่อที่ให้อ่าน (tts_name)', () => {
   it('ใช้ tts_name ถ้ามี ไม่งั้นชื่อยา', () => {
     expect(spokenName('ยาความดัน', 'Amlodipine')).toBe('ยาความดัน');
-    expect(spokenName(null, 'Amlodipine')).toBe('แอมโลดิปีน');
-    expect(spokenName('  ', 'Amlodipine')).toBe('แอมโลดิปีน');
+    expect(spokenName(null, 'Amlodipine')).toBe('แอม โล ดิ ปีน');
+    expect(spokenName('  ', 'Amlodipine')).toBe('แอม โล ดิ ปีน');
     expect(spokenName(null, 'Zolpidem')).toBe('Zolpidem');
     expect(medNameSpeech('', '')).toEqual(['ยังไม่ได้กรอกชื่อยาค่ะ']);
   });

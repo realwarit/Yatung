@@ -38,9 +38,9 @@ describe('tts_name ตั้งแต่ API ถึงเสียง', () => {
     TestBed.inject(TtsService).speak(todaySpeech(snap.slots));
     expect(spoken.join(' ')).toContain('วิตามินดี');
   });
-  it('ไม่มี tts_name → ใช้พจนานุกรม "วิตามิน ดี" (ไม่ใช่ Vitamin D)', () => {
+  it('ไม่มี tts_name → ใช้พจนานุกรม "วิ ตา มิน ดี" (ไม่ใช่ Vitamin D)', () => {
     const slots = API_TODAY.slots.map((s) => ({ ...s, doses: s.doses.map((d) => ({ ...d, tts_name: null })) }));
     TestBed.inject(TtsService).speak(todaySpeech(slots));
-    expect(spoken.join(' ')).toContain('วิตามิน ดี');
+    expect(spoken.join(' ')).toContain('วิ ตา มิน ดี');
   });
 });

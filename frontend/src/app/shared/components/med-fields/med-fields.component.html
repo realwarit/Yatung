@@ -105,9 +105,10 @@
       <div class="yt-control" [class.is-invalid]="errors().tts">
         <input [id]="id('tts')" type="text" maxlength="100" autocomplete="off" placeholder="เช่น ยาความดัน"
                [ngModel]="draft().ttsName" (ngModelChange)="set('ttsName', $event, 'tts')" [ngModelOptions]="{ standalone: true }"
-               [attr.aria-invalid]="errors().tts ? 'true' : null" [attr.aria-describedby]="describedBy('tts')" />
+               [attr.aria-invalid]="errors().tts ? 'true' : null" [attr.aria-describedby]="describedBy('tts') ?? id('tts-hint')" />
       </div>
       <ng-container *ngTemplateOutlet="errTpl; context: { f: 'tts' }" />
+      <p class="yt-hint" [id]="id('tts-hint')">ถ้าเครื่องอ่านผิด ลองเว้นวรรคระหว่างพยางค์ เช่น วิ ตา มิน</p>
       <app-tts-button variant="inline" label="ทดลองฟัง" ttsKey="med-form-preview" [build]="ttsPreview" />
     </div>
   }
