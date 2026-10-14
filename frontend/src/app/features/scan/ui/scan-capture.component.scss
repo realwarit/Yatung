@@ -31,11 +31,11 @@
 
 // ---------- รูปที่เลือก ----------
 .frame--image { aspect-ratio: 4 / 3; max-height: 22rem; img { display: block; width: 100%; height: 100%; object-fit: contain; } }
-.tools { position: absolute; top: var(--yt-space-2); right: var(--yt-space-2); display: flex; gap: var(--yt-space-2); }
+.tools { position: absolute; top: var(--yt-space-2); right: var(--yt-space-2); display: flex; gap: var(--yt-space-1); max-width: calc(100% - var(--yt-space-4)); }   // ปุ่มคงที่ 48 ไม่โตตาม ก ; ที่ไม่พอลดช่องไฟ ไม่ล้นกรอบภาพ
 .tool {
-  width: var(--yt-tap); height: var(--yt-tap); margin: 0; --padding-start: 0; --padding-end: 0; --border-radius: 50%;
+  flex: none; width: 48px; height: 48px; min-height: 0; margin: 0; --padding-start: 0; --padding-end: 0; --border-radius: 50%;
   --background: var(--yt-surface); --color: var(--yt-primary-deep); --box-shadow: var(--yt-shadow-md); font-size: 1.4rem;
-  &::part(native) { min-height: var(--yt-tap); }
+  &::part(native) { min-height: 48px; }
   &--danger { --color: var(--yt-danger); }
 }
 .info { margin: var(--yt-space-2) 0 0; text-align: right; font-size: var(--yt-text-sm); color: var(--yt-text-muted); }

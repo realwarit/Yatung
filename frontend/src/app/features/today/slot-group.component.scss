@@ -30,9 +30,9 @@
 .fch { flex: none; margin-left: auto; }
 .fold .chip { margin-left: auto; }
 .fold .chip + .fch { margin-left: 0; }
-.sub { order: 5; flex: 1 0 100%; display: flex; align-items: center; gap: var(--yt-space-2); min-width: 0; padding-left: 2.5rem; }
+.sub { order: 5; flex: 1 0 100%; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: var(--yt-space-2); min-width: 0; padding-left: 2.5rem; }
 .fold .sub .chip { margin-left: 0; }
-.fs { flex: 1; min-width: 0; font-size: var(--yt-text-sm); line-height: var(--yt-line-height-tight); opacity: 0.9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fs { flex: 1 1 6rem; min-width: 0; font-size: var(--yt-text-sm); line-height: var(--yt-line-height-tight); opacity: 0.9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 // มื้อกินครบ: แถวเดียว [✓] ชื่อ | เวลา | ˅ ; ที่แคบ (ก++) ซ่อน chip เวลา
 .fold--done { flex-wrap: nowrap; }
 .fold--done .ft { flex: 1 1 0; min-width: 0; white-space: normal; }

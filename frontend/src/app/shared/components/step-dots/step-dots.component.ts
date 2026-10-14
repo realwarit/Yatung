@@ -43,6 +43,8 @@ export const ADD_MED_STEPS = ['ถ่ายรูป', 'ตรวจ', 'บั�
     @container steps (max-width: 19rem) {
       .s:not([data-state='now']) .t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
       .s:not([data-state='now']) { gap: 0; }
+      /* ตัวอักษรระบบ 130% + ก++ : เส้นเหลือสั้นสุดตามกติกา G6 (≥ 12px ห่างวง ≥ 6px) ไม่ให้แถวล้น */
+      .line { min-width: max(0.5rem, 12px); margin: 0 max(var(--yt-space-1), 6px); }
     }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   `,

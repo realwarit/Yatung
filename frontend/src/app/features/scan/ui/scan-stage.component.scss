@@ -66,5 +66,6 @@ ion-segment-button {
 }
 
 // ปุ่มบรรทัดเดียว : พ่อ (.act) และปุ่มกันล้นที่ต้นเหตุ ; ป้ายสั้น/ซ่อนไอคอน/ลดขนาด ตัดสินโดย fitLabel (วัดจริง ไม่ใช้ breakpoint)
+@media (max-width: 340px) { .yt-disclaimer .yt-nowrap { white-space: normal; } }   // 320px + ตัวอักษรใหญ่ : วลีไม่พอดีกรอบ ยอมตัดบรรทัดดีกว่าล้น
 .act > ion-button, .mode ion-segment-button { max-width: 100%; min-width: 0; box-sizing: border-box; }
 .act, .mode { min-width: 0; box-sizing: border-box; }   // (.act ห้ามตั้ง max-width: 100% — มันชิดขอบการ์ดด้วย margin ติดลบ)
