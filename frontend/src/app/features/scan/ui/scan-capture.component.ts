@@ -6,7 +6,7 @@ import {
   cameraOutline, cameraReverseOutline, cloudUploadOutline, imagesOutline, reloadOutline, trashOutline,
 } from 'ionicons/icons';
 import { IconComponent } from '../../../shared/icon.component';
-import { ScanTipsComponent } from './scan-tips.component';
+import { ScanTipsComponent, TIPS_FULL_TEXT } from './scan-tips.component';
 
 /**
  * โหมดถ่ายรูป: กรอบเล็ง (ยังไม่มีรูป) หรือรูปพร้อมแถบเครื่องมือ (มีรูปแล้ว)
@@ -19,10 +19,11 @@ import { ScanTipsComponent } from './scan-tips.component';
   templateUrl: './scan-capture.component.html',
   styleUrl: './scan-capture.component.scss',
   // ก+/ก++ บนจอเตี้ย: ตัดวงกลมกล้องในช่องมองให้ปุ่มทั้งสองอยู่ในจอแรก (media query วัดเป็น rem ตามขนาดตัวอักษรไม่ได้)
-  host: { '[class.big-text]': 'fontScale.scale() >= 112' },
+  host: { '[class.big-text]': 'fontScale.scale() >= 112', '[class.is-empty]': '!previewUrl()' },
 })
 export class ScanCaptureComponent {
   protected readonly fontScale = inject(FontScaleService);
+  protected readonly tipsFull = TIPS_FULL_TEXT;
   readonly previewUrl = input<string | null>(null);
   readonly info = input('');
   readonly warnings = input<string[]>([]);

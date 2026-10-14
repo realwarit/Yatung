@@ -1,8 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { IonButton } from '@ionic/angular';
 import { IconComponent } from '../../../shared/icon.component';
-import { MascotComponent } from '../../../shared/components/mascot/mascot.component';
-import { SpeechBubbleComponent } from '../../../shared/components/speech-bubble/speech-bubble.component';
 import { Mode, READING_STEPS } from '../scan.types';
 
 /**
@@ -13,7 +11,7 @@ import { Mode, READING_STEPS } from '../scan.types';
 @Component({
   selector: 'app-scan-processing',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IonButton, IconComponent, MascotComponent, SpeechBubbleComponent],
+  imports: [IonButton, IconComponent],
   templateUrl: './scan-processing.component.html',
   styleUrl: './scan-processing.component.scss',
 })

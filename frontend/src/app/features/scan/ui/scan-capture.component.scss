@@ -1,34 +1,36 @@
+// ผู้ปกครอง = การ์ดของ scan-stage (flex column) ; host ยืดกินที่ว่างให้ช่องมองกล้องสูงตามจอ
 :host { display: flex; flex: 1; flex-direction: column; justify-content: center; gap: var(--yt-space-2); }
 
 .frame { position: relative; display: block; width: 100%; border-radius: var(--yt-radius-md); background: var(--yt-primary-soft); overflow: hidden; }
 
-// ---------- ช่องมองกล้อง (ยังไม่มีรูป) : ยืดตามที่ว่าง 220–380px (จอกว้าง ≥ 320px) ----------
+// ---------- ช่องมองกล้อง (ยังไม่มีรูป) : พื้นเขียว primary-soft ยืดตามที่ว่าง (ต่ำสุด 200) ทั้งกรอบแตะได้ ----------
 .frame--empty {
-  display: flex; flex: 1 1 auto; flex-direction: column; align-items: center; justify-content: center; gap: var(--yt-space-2);
-  min-height: 210px; max-height: 380px; padding: var(--yt-space-2) var(--yt-space-3); box-sizing: border-box;
-  border: 3px solid transparent; background: var(--yt-primary-softer);
+  display: flex; flex: 1 1 auto; flex-direction: column; align-items: center; justify-content: center; gap: var(--yt-space-3);
+  min-height: 200px; max-height: 380px; padding: var(--yt-space-3); box-sizing: border-box;
+  border: 3px solid transparent; color: var(--yt-primary); font: inherit; cursor: pointer;
   transition: background var(--yt-duration), border-color var(--yt-duration);
+  &:hover { background: var(--yt-primary-soft-strong); }
+  &:disabled { cursor: default; }
   &.is-drag { border: 3px dashed var(--yt-primary); background: var(--yt-primary-soft-strong); }
 }
-// วงกลมขาว 64 + ไอคอนกล้อง 32
-.cam { display: grid; flex: none; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: var(--yt-surface); color: var(--yt-primary-dark); box-shadow: var(--yt-shadow-sm); --icon-optical-offset: 0; font-size: 32px; }
-.cam app-icon { width: 32px; height: 32px; }
+.art { width: min(7.5rem, 38%); opacity: 0.5; }
 
-// มุมทั้ง 4 = วงเล็บมุม primary 24×24 หนา 3
+// มุมทั้ง 4 = วงเล็บมุม primary
 .corner {
-  position: absolute; width: 24px; height: 24px; border: 0 solid var(--yt-primary); pointer-events: none;
-  &.tl { top: 10px; left: 10px; border-width: 3px 0 0 3px; border-top-left-radius: 10px; }
-  &.tr { top: 10px; right: 10px; border-width: 3px 3px 0 0; border-top-right-radius: 10px; }
-  &.bl { bottom: 10px; left: 10px; border-width: 0 0 3px 3px; border-bottom-left-radius: 10px; }
-  &.br { bottom: 10px; right: 10px; border-width: 0 3px 3px 0; border-bottom-right-radius: 10px; }
+  position: absolute; width: 1.75rem; height: 1.75rem; border: 0 solid var(--yt-primary); pointer-events: none;
+  &.tl { top: 12px; left: 12px; border-width: 4px 0 0 4px; border-top-left-radius: 12px; }
+  &.tr { top: 12px; right: 12px; border-width: 4px 4px 0 0; border-top-right-radius: 12px; }
+  &.bl { bottom: 12px; left: 12px; border-width: 0 0 4px 4px; border-bottom-left-radius: 12px; }
+  &.br { bottom: 12px; right: 12px; border-width: 0 4px 4px 0; border-bottom-right-radius: 12px; }
 }
 
-.hint { margin: 0; font-size: var(--yt-text-sm); line-height: var(--yt-line-height-tight); color: var(--yt-primary-deep); }
-.hint--drag { font-family: var(--yt-font-display); font-weight: 500; font-size: var(--yt-text-body); }
+.hint {
+  max-width: 24ch; color: var(--yt-primary-deep); font-family: var(--yt-font-display); font-size: var(--yt-text-body);
+  font-weight: 500; line-height: var(--yt-line-height-tight); text-align: center; text-wrap: balance;
+}
 
 // ---------- รูปที่เลือก ----------
 .frame--image { aspect-ratio: 4 / 3; max-height: 22rem; img { display: block; width: 100%; height: 100%; object-fit: contain; } }
-
 .tools { position: absolute; top: var(--yt-space-2); right: var(--yt-space-2); display: flex; gap: var(--yt-space-2); }
 .tool {
   width: var(--yt-tap); height: var(--yt-tap); margin: 0; --padding-start: 0; --padding-end: 0; --border-radius: 50%;
@@ -36,18 +38,32 @@
   &::part(native) { min-height: var(--yt-tap); }
   &--danger { --color: var(--yt-danger); }
 }
-
 .info { margin: var(--yt-space-2) 0 0; text-align: right; font-size: var(--yt-text-sm); color: var(--yt-text-muted); }
 .yt-alert { margin: var(--yt-space-3) 0 0; }
 
-.buttons { display: grid; gap: var(--yt-space-2); margin-top: var(--yt-space-2); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.buttons { display: grid; gap: var(--yt-space-2); }
+.tips-list { display: none; }
 
-@container scan (min-width: 720px) { .frame--empty { min-height: 320px; } }
+// ---------- จอกว้าง : ซ้าย = ช่องมองกล้อง (สูงต่ำสุด 320) · ขวา = คำแนะนำเต็ม + ปุ่ม 2 ปุ่ม ----------
+@container scan (min-width: 720px) {
+  :host(.is-empty) {
+    display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); grid-template-rows: auto auto 1fr; gap: var(--yt-space-4) var(--yt-space-6);
+    align-items: start; flex: none;
+  }
+  :host(.is-empty) .frame--empty { grid-column: 1; grid-row: 1 / span 3; min-height: 320px; max-height: none; height: 100%; }
+  :host(.is-empty) .tips-line { display: none; }
+  :host(.is-empty) .tips-list { display: block; grid-column: 2; grid-row: 1; align-self: end; }
+  :host(.is-empty) .buttons { grid-column: 2; grid-row: 2; }
+}
 
 @media (prefers-reduced-motion: reduce) { .frame--empty { transition: none; } }
 
-// ก+/ก++ บนจอเตี้ย : ตัดวงกลมกล้อง ลดความสูงต่ำสุด
+// ก+/ก++ บนจอเตี้ย : ลดความสูงต่ำสุดของกรอบ (ห้ามเอาน้องยาตรงออก) ให้ปุ่มสองปุ่มอยู่ในจอแรก
 @media (max-height: 700px) {
-  :host(.big-text) .cam { display: none; }
-  :host(.big-text) .frame--empty { min-height: 150px; }
+  :host(.big-text) .frame--empty { min-height: 140px; }
+  :host(.big-text) .art { width: 4.5rem; }
 }
+
+// จอเตี้ย (≤ 700px) ทุกขนาดตัวอักษร: กรอบเตี้ยลงก่อน เพื่อให้ปุ่ม "เลือกรูปจากเครื่อง" อยู่ในจอแรกแม้มี banner
+@media (max-height: 700px) { .frame--empty { min-height: 168px; } }

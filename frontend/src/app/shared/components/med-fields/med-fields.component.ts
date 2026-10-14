@@ -59,10 +59,10 @@ export class MedFieldsComponent {
   protected readonly foldSummary = computed(() => {
     const d = this.draft(), f = this.fold();
     const parts: string[] = [];
-    if (f.has('dose') && d.dose !== null) parts.push(`${doseText(d.dose)} ${unitInDose(d.unit)}`);
+    if (f.has('dose') && d.dose !== null) parts.push(`${doseText(d.dose)} ${unitInDose(d.unit)}`);
     if (f.has('meal') && MEAL_LABEL[d.meal]) parts.push(MEAL_LABEL[d.meal]);
     if (f.has('schedule')) parts.push(d.asNeeded ? 'เมื่อมีอาการ' : SLOT_ORDER.filter((s) => d.slots.includes(s)).map((s) => SLOT_LABEL[s]).join(' '));
-    if (f.has('more') && d.total !== null) parts.push(`${doseText(d.total)} ${unitInDose(d.unit)}`);
+    if (f.has('more') && d.total !== null) parts.push(`${doseText(d.total)} ${unitInDose(d.unit)}`);
     const extra: string[] = [];
     if (f.has('more')) {
       if (d.indication.trim()) extra.push(`ข้อบ่งใช้: ${d.indication.trim()}`);

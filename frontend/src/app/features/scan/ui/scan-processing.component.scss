@@ -46,8 +46,6 @@
 }
 @keyframes scan { to { top: calc(100% - 4px); } }
 
-.who { display: flex; align-items: center; justify-content: center; gap: var(--yt-space-3); width: 100%; max-width: 22rem; text-align: left; }
-.say { flex: 1; min-width: 0; }
 
 .steps { display: grid; gap: var(--yt-space-3); width: min(100%, 22rem); margin: 0; padding: 0; list-style: none; text-align: left; }
 .step { display: flex; align-items: center; gap: var(--yt-space-3); font-weight: 500; line-height: var(--yt-line-height-tight); }

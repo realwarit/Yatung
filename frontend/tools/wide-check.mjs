@@ -74,15 +74,16 @@ for (const [w, h] of sizes) {
   console.log(`/scan @${w}x${h}`);
   page = await open('/scan');
   const s = await page.evaluate(() => {
-    const n = document.querySelector('app-scan-notice').getBoundingClientRect();
-    const p = document.querySelector('app-scan-stage .panel').getBoundingClientRect();
-    const l = [...document.querySelectorAll('app-scan-notice app-mascot.l')].find((e) => e.getBoundingClientRect().width > 0)?.getBoundingClientRect();
-    return { dy: Math.abs(n.top + n.height / 2 - (p.top + p.height / 2)), mascot: l && Math.round(l.width), wide: n.left < p.left };
+    const pe = document.querySelector('app-scan-perch').getBoundingClientRect();
+    const m = document.querySelector('app-scan-perch app-mascot').getBoundingClientRect();
+    const c = document.querySelector('app-scan-stage .card').getBoundingClientRect();
+    return { mascot: Math.round(m.width), left: Math.abs(pe.left - c.left), cardW: Math.round(c.width), wide: c.width >= 880 };
   });
-  if (s.wide && s.mascot) {
-    check(s.dy <= 24, `คอลัมน์ซ้ายกึ่งกลางแนวตั้งตรงกับการ์ดขวา (คลาด ${Math.round(s.dy)}px)`);
+  if (s.wide) {
+    check(s.cardW <= 960, `การ์ดกว้าง ${s.cardW}px ≤ 960`);
+    check(s.left <= 4, `น้องยาตรงเกาะขอบบนซ้ายของการ์ด (คลาด ${Math.round(s.left)}px)`);
     check(s.mascot >= 112 && s.mascot <= 140, `น้องยาตรง L ${s.mascot}px`);
-  } else console.log('   – container < 720px (ยังเป็นคอลัมน์เดียว ตามเดิม) ข้าม');
+  } else console.log('   – container < 720px (คอลัมน์เดียว น้องยาตรง 80px ตามที่ตกลง) ข้าม');
   await page.close();
   await ctx.close();
 }

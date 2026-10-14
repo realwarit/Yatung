@@ -1,9 +1,9 @@
-<section class="card" [attr.aria-busy]="busy()">
-  <app-scan-notice class="notice" [mood]="busy() ? 'thinking' : 'happy'" />
+<section class="stage" [attr.aria-busy]="busy()">
+  <!-- น้องยาตรงเกาะขอบบนของการ์ด + กล่องคำพูด info (ไม่เกิน 2 บรรทัด) ; อ่านอยู่ = thinking, ผิดพลาด = worried -->
+  <app-scan-perch class="perch" [mood]="perchMood()" [text]="perchText()" [short]="perchShort()" />
 
-  <!-- panel: มือถือ = display: contents (ลูกเป็น flex item ของ .card ให้กรอบถ่ายรูปยืดได้) · กว้าง = การ์ดขาวคอลัมน์ขวา -->
-  <div class="panel">
-    <!-- Ionic: ion-segment (pill กว้างตามเนื้อหา) — เปลี่ยนโหมดแล้วรูป/ข้อความเดิมยังอยู่ -->
+  <div class="card">
+    <!-- Ionic: ion-segment (pill) — เปลี่ยนโหมดแล้วรูป/ข้อความเดิมยังอยู่ -->
     <ion-segment mode="ios" class="mode" [value]="mode()" [disabled]="busy()"
                  aria-label="เลือกวิธีใส่ข้อมูลยา" (ionChange)="onMode($event.detail.value)">
       <ion-segment-button value="photo" layout="icon-start">
@@ -41,7 +41,7 @@
             </ion-button>
             @if (a.secondary) {
               <ion-button class="yt-btn" expand="block" fill="outline" (click)="onSecondary()">
-                <ion-icon slot="start" [name]="mode() === 'photo' ? 'create-outline' : 'create-outline'"></ion-icon>{{ a.secondary }}
+                <ion-icon slot="start" name="create-outline"></ion-icon>{{ a.secondary }}
               </ion-button>
             }
           </div>
@@ -49,6 +49,7 @@
       </div>
     }
 
-    <p class="yt-disclaimer">ไม่ใช่คำแนะนำทางการแพทย์</p>
+    <!-- คำเตือน AI ฉบับเต็มอยู่ตรงนี้ (กล่องคำพูดด้านบนย่อไว้) -->
+    <p class="yt-disclaimer">น้องยาตรงอ่านซองให้ได้ แต่อาจผิดพลาด ตรวจทุกช่องก่อนบันทึกนะคะ · ไม่ใช่คำแนะนำทางการแพทย์</p>
   </div>
 </section>

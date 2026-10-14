@@ -17,6 +17,7 @@ import { assessImageQuality } from './image-quality';
 import { ScanResponse } from '../../core/api/medicine-parse.model';
 import { Mode, Phase } from './scan.types';
 import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
+import { StepDotsComponent } from '../../shared/components/step-dots/step-dots.component';
 import { ScanStageComponent } from './ui/scan-stage.component';
 
 const DESKTOP_QUERY = '(min-width: 1024px) and (pointer: fine)';
@@ -27,7 +28,7 @@ const STEP_AT_MS = { photo: [4000, 9000], text: [3000] } as const;   // เว�
   selector: 'app-scan-page',
   standalone: true,
   imports: [
-    IonToast, PageHeaderComponent, ScanStageComponent,
+    IonToast, PageHeaderComponent, StepDotsComponent, ScanStageComponent,
   ],
   templateUrl: './scan.page.html',
   styleUrl: './scan.page.scss',

@@ -2,7 +2,7 @@
   <app-page-header title="ตรวจข้อมูลยา" back="/scan" backLabel="ย้อนกลับไปหน้าสแกน">
     <span action class="stepno num" aria-label="ขั้นที่ {{ stepNow() + 1 }} จาก 3">{{ stepNow() + 1 }} / 3</span>
   </app-page-header>
-  <p class="steps" aria-hidden="true">ถ่าย · <b>ตรวจ</b> · บันทึก</p>
+  <app-step-dots class="steps" [current]="stepNow()" />
 
   @switch (view()) {
     @case ('loading') {

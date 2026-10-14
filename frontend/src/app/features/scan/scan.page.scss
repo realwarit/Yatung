@@ -19,11 +19,4 @@
   @media (min-width: 1024px) { max-width: 68.75rem; padding: var(--yt-space-4) var(--yt-space-5) var(--yt-space-6); }
 }
 
-// ขั้นตอน "ถ่าย · ตรวจ · บันทึก" บรรทัดเดียว
-.steps {
-  margin: 0 0 var(--yt-space-2);
-  font-size: var(--yt-text-sm);
-  line-height: var(--yt-line-height-tight);
-  color: var(--yt-text-muted);
-}
-.is-current { color: var(--yt-primary-deep); font-weight: 600; }
+.steps { margin: 0 0 var(--yt-space-3); }

@@ -89,6 +89,26 @@ const STATES = [
         for (const x of await wide()) c.issues.push(`หลังกด ${label}: ${x}`);
       }
     } })),
+  { name: 'scan-frame-tap', route: '/scan', expect: 'แตะเพื่อถ่ายรูปซองยา', run: async (p, c) => {
+      // G2: ทั้งกรอบเป็นปุ่ม (role=button) ทำงานเหมือนปุ่ม "ถ่ายรูปซองยา" — เปิดตัวเลือกไฟล์/กล้อง (บนเว็บ Capacitor ใช้ file input)
+      const frame = p.getByRole('button', { name: 'ถ่ายรูปซองยา' }).first();
+      const box = await frame.boundingBox();
+      if (!box || box.width < 200 || box.height < 160) c.issues.push(`กรอบแตะได้เล็กเกินไป ${JSON.stringify(box)}`);
+      const desc = await frame.getAttribute('aria-describedby');
+      if (!desc || !(await p.locator('#' + desc).innerText()).includes('เฉพาะซองที่พิมพ์ด้วยเครื่อง')) c.issues.push('aria-describedby ต้องชี้ข้อความคำแนะนำเต็ม');
+      // บนเว็บ Capacitor เปิด pwa-camera-modal (กล้อง) หรือ file input — อย่างใดอย่างหนึ่งนับว่าเปิดแล้ว ; ทำซ้ำหลัง reload (โมดัลบังหน้า)
+      const opened = () => p.evaluate(() => !!document.querySelector('pwa-camera-modal-instance, pwa-action-sheet'));
+      const tryOpen = async (how, act) => {
+        const fc = p.waitForEvent('filechooser', { timeout: 1500 }).then(() => true, () => false);
+        await act(); const ok = (await fc) || (await opened());
+        if (!ok) c.issues.push(`${how} แล้วไม่เปิดกล้อง/ตัวเลือกไฟล์`);
+      };
+      await tryOpen('แตะกรอบ', () => frame.click());
+      await p.reload(); await p.waitForTimeout(800);
+      const frame2 = p.getByRole('button', { name: 'ถ่ายรูปซองยา' }).first();
+      await frame2.focus();
+      await tryOpen('กด Enter ที่กรอบ', () => p.keyboard.press('Enter'));
+    } },
   { name: 'install-ios', ctxOpts: { userAgent: IOS_UA }, expect: 'หน้าจอโฮม|เพิ่ม' },
 ];
 

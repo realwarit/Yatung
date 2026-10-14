@@ -1,7 +1,7 @@
 :host { display: block; container: rv / inline-size; }
 .yt-page { max-width: 72rem; margin-inline: auto; }   // E1: Review 2 คอลัมน์ กว้างสูงสุด 72rem (บันทึกสำเร็จยัง 760 ที่ .state--done)
 .stepno { font-size: var(--yt-text-sm); color: var(--yt-text-muted); }
-.steps { margin: 0 0 var(--yt-space-3); font-size: var(--yt-text-sm); color: var(--yt-text-muted); b { color: var(--yt-primary-deep); } }
+.steps { margin: 0 0 var(--yt-space-3); }
 .sk { height: 22rem; margin-top: 1rem; }
 
 // มือถือ = เรียงลงมา ; container ≥ 56rem = 2 คอลัมน์

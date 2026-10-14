@@ -7,13 +7,7 @@
     }
     <span class="scan"></span>
   </div>
-
-  <div class="who">
-    <app-mascot mood="thinking" size="m" />
-    <p class="sr-only" aria-live="polite" role="status">{{ announce() }}</p>
-    <app-speech-bubble class="say" tail="left" [typing]="false" [text]="preparing() ? 'กำลังเตรียมรูป…' : 'กำลังอ่านซองยาอยู่นะคะ...'" />
-  </div>
-
+  <p class="sr-only" aria-live="polite" role="status">{{ announce() }}</p>
   <ol class="steps">
     @for (l of labels; track l; let i = $index) {
       <li class="step" [attr.data-state]="state(i)">

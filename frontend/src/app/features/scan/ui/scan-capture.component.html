@@ -21,17 +21,29 @@
     <p class="yt-alert yt-alert--warning" role="status"><app-icon name="alert" /> <span>{{ w }}</span></p>
   }
 } @else {
-  <!-- ช่องมองกล้อง : พื้น primary-softer + มุม 4 ด้าน + วงกลมกล้อง + คำแนะนำ 3 ข้อ ; ยืดตามที่ว่างของจอ (สูง 220–380) ; ปุ่มถ่าย/เลือกรูปอยู่ใต้กรอบ (กรอบไม่ใช่ปุ่ม) -->
-  <div class="frame frame--empty" [class.is-drag]="dragging()" role="group" aria-label="กรอบวางซองยา">
+  <!-- ช่องมองกล้อง : พื้นเขียว + มุม 4 ด้าน + ภาพซองยา ; ทั้งกรอบเป็นปุ่ม (Enter/Space ได้) เหมือนปุ่มถ่ายรูป ; ยืดตามที่ว่างของจอ -->
+  <button type="button" class="frame frame--empty" [class.is-drag]="dragging()" data-first-screen="frame"
+          [attr.aria-label]="desktop() ? 'เลือกไฟล์รูปซองยา' : 'ถ่ายรูปซองยา'" aria-describedby="scan-tips-full"
+          [disabled]="!interactive()" (click)="onFrame()">
     <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
-    <span class="cam" aria-hidden="true"><app-icon name="camera" /></span>
-    <app-scan-tips />
+    <svg class="art" viewBox="0 0 120 90" fill="none" stroke="currentColor" stroke-width="2.5"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <path d="M22 14h76a4 4 0 0 1 4 4v54a4 4 0 0 1-4 4H22a4 4 0 0 1-4-4V18a4 4 0 0 1 4-4z"/>
+      <path d="M18 28h84"/>
+      <path d="M30 42h38M30 52h30M30 62h22"/>
+      <g transform="rotate(-40 86 54)"><rect x="74" y="49" width="24" height="10" rx="5"/><path d="M86 49v10"/></g>
+    </svg>
     @if (dragging()) {
-      <p class="hint hint--drag">ปล่อยรูปตรงนี้ได้เลย</p>
+      <span class="hint hint--drag">ปล่อยรูปตรงนี้ได้เลย</span>
     } @else if (desktop()) {
-      <p class="hint">ลากรูปมาวางตรงนี้ · หรือกด Ctrl+V เพื่อวางรูป</p>
+      <span class="hint">ลากรูปมาวางตรงนี้ · หรือกดเพื่อเลือกไฟล์ · หรือกด Ctrl+V เพื่อวางรูป</span>
+    } @else {
+      <span class="hint">แตะเพื่อถ่ายรูปซองยา</span>
     }
-  </div>
+  </button>
+  <span id="scan-tips-full" class="sr-only">{{ tipsFull }}</span>
+  <app-scan-tips class="tips-line" variant="line" />
+  <app-scan-tips class="tips-list" variant="list" />
 
   @if (interactive()) {
     <div class="buttons">
