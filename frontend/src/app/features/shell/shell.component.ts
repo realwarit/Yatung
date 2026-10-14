@@ -1,3 +1,4 @@
+import { FitLabelDirective } from '../../shared/fit-label.directive';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -12,7 +13,7 @@ interface NavItem { path: string; label: string; icon: IconName; }
 /** โครงแอปหลัง login: มือถือ = แถบล่าง 5 ช่อง (ปุ่มสแกนกลาง) · จอ ≥ 1024px = sidebar ซ้าย */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, IconComponent, LogoComponent, FontSizeToggleComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, IconComponent, LogoComponent, FontSizeToggleComponent, FitLabelDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',

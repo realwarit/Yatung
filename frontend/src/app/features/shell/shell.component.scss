@@ -148,8 +148,8 @@ main:focus { outline: none; }
     transform: translateX(-50%);
     display: grid;
     place-items: center;
-    width: 3.25rem;
-    height: 3.25rem;
+    width: min(3.25rem, calc(100% - 4px));   // ตัวอักษรระบบ 130% ทำให้ rem โต : ไม่กว้างเกินช่องกลาง (ป้าย "สแกน" ไม่ถูกดันล้น)
+    aspect-ratio: 1;
     border: 3px solid var(--yt-surface);
     border-radius: 50%;
     background: linear-gradient(135deg, var(--yt-primary), var(--yt-primary-light));
