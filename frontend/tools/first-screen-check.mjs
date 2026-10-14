@@ -47,7 +47,7 @@ const PAGES = [
     await page.waitForSelector('.state--done', { timeout: 5000 });
     await page.waitForTimeout(500);
   } },
-  { route: '/medications', names: ['add', 'rows-3'], d3: true },
+  { route: '/medications', names: ['add', 'say'] },   // D3 ช่วง 1
   { route: '/medications/new', names: ['save'], d3: true },
   { route: '/settings', names: ['slot-times'], d3: true },
   { route: '/overview', names: [], d3: true },
