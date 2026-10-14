@@ -26,10 +26,17 @@ const STATES = [
       if (await hint() !== 0) c.issues.push('ข้อความ "ต่ออินเทอร์เน็ตก่อนนะคะ" แสดงก่อนผู้ใช้แตะปุ่ม (ต้องไม่มีใต้ทุกแถว)');
       const btns = p.locator('button.take[aria-disabled="true"]');
       if (await btns.count() < 2) { c.issues.push('ไม่พบปุ่ม "กินแล้ว" ที่ aria-disabled อย่างน้อย 2 ปุ่ม'); return; }
-      await btns.nth(0).click({ force: true }); await p.waitForTimeout(500);
-      if (await hint() !== 1) c.issues.push('แตะปุ่มครั้งแรกแล้วต้องเห็นข้อความ 1 ครั้ง (พบ ' + await hint() + ')');
-      await btns.nth(1).click({ force: true }); await p.waitForTimeout(500);
-      if (await hint() > 1) c.issues.push('แตะครั้งที่สองแล้วข้อความต้องไม่เพิ่ม (พบ ' + await hint() + ')');   // snackbar หายเองได้ภายใน 5 วินาที (เครื่องช้า) จึงเช็กแค่ "ไม่เกิน 1"
+      // แตะครั้งแรก → ต้องเห็นข้อความภายใน 1 วินาที (poll ทันที ไม่รอจน snackbar หาย)
+      await btns.nth(0).click({ force: true });
+      const t0 = Date.now(); let n = 0;
+      while (Date.now() - t0 < 1000 && (n = await hint()) < 1) await p.waitForTimeout(50);
+      if (n < 1) c.issues.push('แตะปุ่มครั้งแรกแล้วไม่เห็นข้อความ "ต่ออินเทอร์เน็ตก่อนนะคะ" ภายใน 1 วินาที');
+      // แตะซ้ำขณะข้อความยังอยู่ → ต้องเหลือ 1 (ไม่ซ้อน) ; ยืนยันก่อนว่าข้อความยังอยู่จริง ไม่ให้ผ่านเพราะหายไปแล้ว
+      if (n >= 1) {
+        await btns.nth(1).click({ force: true }); await p.waitForTimeout(200);
+        const after = await hint();
+        if (after !== 1) c.issues.push('แตะซ้ำขณะข้อความยังอยู่ ต้องมีข้อความ 1 ข้อความพอดี (พบ ' + after + ')');
+      }
       if (await p.locator('button.take[aria-disabled="true"]').count() < 2) c.issues.push('ปุ่มหายหลังแตะ');
     }, expect: '.' },   // ข้อความถูกตรวจใน run แล้ว (snackbar หายเองใน 5 วินาที จึงไม่เช็กซ้ำตอนท้าย)
   { name: 'conn-expired', run: async (p, c) => { c.html.on = true; await p.reload(); }, expect: 'หมดอายุ' },
@@ -69,6 +76,19 @@ const STATES = [
       await p.locator('input[type=text]').first().click(); await p.waitForTimeout(250);
       if (await p.evaluate(() => document.documentElement.classList.contains('kb-open'))) c.issues.push('จอ ≥ 1024px ต้องไม่ใส่ kb-open');
     } },
+  ...['/login', '/register'].map((route) => ({ name: 'font-toggle' + route.replace('/', '-'), route, guest: true, noFont: true, height: 640, widths: [360], expect: 'รหัสผ่าน', run: async (p, c) => {
+      // จำลองผู้ใช้จริง: เปิดที่ ก → กด ก++ → วัด → กด ก → วัด (ล้นขวาหลังสลับขนาด)
+      const wide = () => p.evaluate(() => {
+        const cw = document.documentElement.clientWidth;
+        const sc = [document.documentElement, document.body, ...document.querySelectorAll('app-auth-shell, .main, .yt-page')].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => `${e.tagName.toLowerCase()} scrollWidth ${e.scrollWidth} > ${e.clientWidth}`);
+        const ov = [...document.querySelectorAll('body *')].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && b.right > cw + 0.5 && getComputedStyle(e).position !== 'fixed' && !e.closest('.bg, .cdk-visually-hidden, .cdk-live-announcer-element'); }).slice(0, 5).map((e) => `${e.tagName.toLowerCase()}.${[...e.classList].slice(0, 2).join('.')} right=${Math.round(e.getBoundingClientRect().right)}`);
+        return [...sc, ...ov];
+      });
+      for (const [label, name] of [['ก++', 'ตัวอักษรขนาดใหญ่มาก'], ['ก+', 'ตัวอักษรขนาดใหญ่'], ['ก', 'ตัวอักษรขนาดปกติ'], ['ก++', 'ตัวอักษรขนาดใหญ่มาก'], ['ก', 'ตัวอักษรขนาดปกติ']]) {
+        await p.getByRole('button', { name, exact: true }).click(); await p.waitForTimeout(400);
+        for (const x of await wide()) c.issues.push(`หลังกด ${label}: ${x}`);
+      }
+    } })),
   { name: 'install-ios', ctxOpts: { userAgent: IOS_UA }, expect: 'หน้าจอโฮม|เพิ่ม' },
 ];
 
@@ -78,7 +98,7 @@ for (const st of STATES.filter((s) => !only.length || only.includes(s.name))) {
   for (const scale of scales) {
     for (const w of st.widths ?? widths) {
       if (st.widths && scale !== '100') continue;   // สถานะกว้างเฉพาะ (จอคอม) ตรวจที่ ก ครั้งเดียว
-      const ctx = await browser.newContext({ viewport: { width: w, height: 800 }, locale: 'th-TH', timezoneId: 'Asia/Bangkok', deviceScaleFactor: 2, isMobile: true, hasTouch: true, ...(st.ctxOpts ?? {}) });
+      const ctx = await browser.newContext({ viewport: { width: w, height: st.height ?? 800 }, locale: 'th-TH', timezoneId: 'Asia/Bangkok', deviceScaleFactor: 2, isMobile: true, hasTouch: true, ...(st.ctxOpts ?? {}) });
       await ctx.addInitScript(([s, tok, noFont, guest]) => {
         try { if (!noFont) { localStorage.setItem('yatung_font_scale_v2', s); localStorage.setItem('yatung_font_hint_off', '1'); } if (!guest) { localStorage.setItem('yatung_token', tok); localStorage.setItem('yatung_user', JSON.stringify({ id: 1, email: 'x@example.test', display_name: 'ผู้ทดสอบ' })); } } catch {}
       }, [scale, FAKE_JWT, !!st.noFont, !!st.guest]);
