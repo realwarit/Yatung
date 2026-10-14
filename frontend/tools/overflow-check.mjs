@@ -6,25 +6,34 @@
 // ตั้งแต่ 8B: ทุกงาน UI ต้องวัดที่ 360px ด้วย (ไม่ใช่แค่ 375px) — ดู CLAUDE.md
 import { chromium } from 'playwright';
 import { FAKE_JWT, mockApi } from './lib/mock-app.mjs';
+import { applyTextZoom, childOverflowProbe, loadScanImage } from './lib/child-overflow.mjs';
+import { resolve } from 'node:path';
 
 const BASE = process.env.BASE ?? 'http://localhost:4200';
 const args = process.argv.slice(2);
 const val = (k, d) => (args.find((a) => a.startsWith(`--${k}=`)) ?? `--${k}=${d}`).split('=')[1];
-const widths = val('widths', '320,360,375,412,1366x768,1920x1080').split(',').map((w) => { const [a, b] = w.split('x').map(Number); return { w: a, h: b ?? 800, desktop: !!b }; });
+const widths = val('widths', '320,360,375,384,412,1366x768,1920x1080').split(',').map((w) => { const [a, b] = w.split('x').map(Number); return { w: a, h: b ?? 800, desktop: !!b }; });
 const scales = val('scales', '100,112,125').split(',');
-const routes = val('routes', '/today,/overview,/medications,/settings,/scan,/review/1,/login,/register').split(',');
+// 8D-FIX 4-5: โหมดขยายตัวอักษรระบบ (คูณ root font-size) — ค่าเริ่มต้น 100 และ 130 ; ใส่ --textzoom=100 เพื่อข้าม
+const zooms = val('textzoom', '100,130').split(',');
+const NOCARD = args.includes('--no-card');   // ปิดการตรวจลูกล้นพ่อ (เปรียบเทียบกับเกณฑ์เดิม)
+const SAMPLE = resolve(process.env.SCAN_SAMPLE ?? '../docs/sample-images/yatung-test-envelope-1.png');
+const routes = val('routes', '/today,/overview,/medications,/settings,/scan,/scan+image,/review/1,/login,/register').split(',');   // /scan+image = หน้าสแกนสถานะ "มีภาพแล้ว"
 const GUEST = new Set(['/login', '/register']);   // หน้า auth: ล้าง token ก่อนเข้า (ไม่งั้น guestGuard พาไป /today)
 const probe = args.includes('--probe');
 
 const browser = await chromium.launch({ channel: 'msedge' }).catch(() => chromium.launch({ channel: 'chrome' }));
 let bad = 0, total = 0;
-for (const scale of scales) {
+for (const zoom of zooms) for (const scale of scales) {
   for (const { w, h, desktop } of widths) {
+    if (zoom !== '100' && desktop) continue;   // โหมดขยายตัวอักษรระบบวัดเฉพาะมือถือ
     const ctx = await browser.newContext({ viewport: { width: w, height: h }, locale: 'th-TH', timezoneId: 'Asia/Bangkok', deviceScaleFactor: 1, isMobile: !desktop, hasTouch: !desktop });
     await ctx.addInitScript(([s]) => { try { localStorage.setItem('yatung_font_scale_v2', s); localStorage.setItem('yatung_font_hint_off', '1'); } catch {} }, [scale]);
+    await applyTextZoom(ctx, zoom);
     const page = await ctx.newPage();
     await mockApi(page);
-    for (const r of routes) {
+    for (const route of routes) {
+      const r = route.split('+')[0];
       await page.addInitScript(([tok, guest]) => {
         try {
           if (guest) { localStorage.removeItem('yatung_token'); localStorage.removeItem('yatung_user'); }
@@ -32,6 +41,7 @@ for (const scale of scales) {
         } catch {}
       }, [FAKE_JWT, GUEST.has(r)]);
       await page.goto(BASE + r);
+      if (route.endsWith('+image')) await loadScanImage(page, SAMPLE);
       await page.waitForLoadState('networkidle').catch(() => {});
       await page.addStyleTag({ content: '*{animation:none!important;transition:none!important}' });
       if (probe) await page.addStyleTag({ content: '*{overflow-x:visible!important}html,body{overflow-x:visible!important}' });
@@ -65,10 +75,11 @@ for (const scale of scales) {
         const uneven = Object.entries(groups).filter(([, hs]) => Math.max(...hs) - Math.min(...hs) > 2).map(([g, hs]) => `การ์ดกลุ่ม ${g} สูงไม่เท่ากัน: ${hs.join('/')}`);
         return { scrollers: [...scrollers, ...uneven], over, pageH: pg ? Math.round(pg.getBoundingClientRect().height) : 0 };
       });
+      const kids = NOCARD || desktop ? [] : await page.evaluate(childOverflowProbe);
       total++;
-      const fail = m.scrollers.length > 0 || (probe && m.over.length > 0);
+      const fail = m.scrollers.length > 0 || kids.length > 0 || (probe && m.over.length > 0);
       if (fail) bad++;
-      console.log(`${fail ? '✘' : '✓'} ${r} @${w}px ก${scale === '100' ? '' : scale === '112' ? '+' : '++'}${r === '/overview' ? ' [สูง ' + m.pageH + 'px]' : ''}${fail ? '\n    ' + [...m.scrollers, ...m.over].join('\n    ') : ''}`);
+      console.log(`${fail ? '✘' : '✓'} ${route} @${w}px ก${scale === '100' ? '' : scale === '112' ? '+' : '++'}${zoom !== '100' ? ' ระบบ' + zoom + '%' : ''}${r === '/overview' ? ' [สูง ' + m.pageH + 'px]' : ''}${fail ? '\n    ' + [...m.scrollers, ...kids, ...(probe ? m.over : [])].join('\n    ') : ''}`);
     }
     await ctx.close();
   }
