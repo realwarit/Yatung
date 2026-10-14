@@ -281,6 +281,11 @@
 - **PUT /api/settings/slot-times:** ต้อง HH:MM เรียง เช้า < กลางวัน < เย็น < ก่อนนอน ; ใน transaction เดียว (`moveTodayDoses` + `planSlotMoves` ฟังก์ชันล้วน): ย้ายแถว dose ของ**วันนี้**ที่ `status='pending'` (เตือนแล้วหรือยังก็ตาม) ไปเวลาใหม่ **ห้ามสร้างแถวใหม่** ;
   เวลาใหม่ > now → ล้าง `reminded_at`+`followup_at` (เตือนใหม่ที่เวลาใหม่) · เวลาใหม่ ≤ now → คง `reminded_at` (ไม่เตือนซ้ำ) · เวลาไม่เปลี่ยน = ไม่แตะ · `escalated_at`/`dose_escalations` คงเดิม (id dose เดิม + UNIQUE = ไม่แจ้งญาติซ้ำ ; ประวัติแจ้งญาติในหน้า Settings จะแสดงเวลามื้อ**ใหม่**ของ dose นั้น ส่วน sent_at คงเดิม) ;
   taken/missed ไม่ย้าย ; มื้อที่มี taken/missed หรือแถวซ้ำอยู่แล้ว (ข้อมูลเก่า) ไม่แตะรอบอื่นของมื้อนั้น ; ชน UNIQUE(medication_id, scheduled_at) ของยาตัวเดียวกัน = 409 `SLOT_CONFLICT` ; ไม่สร้างรอบใหม่ให้มื้อที่เคยถูกข้าม
+- **ensureToday / catch-up (14 ต.ค.: พีซีหลับ 22:39–09:01 พลาด cron 00:05 รอบยาวันนี้เป็น 0 แถวทุกคน; migration `007_dose_catchup.sql`):** `doseService.ensureToday(db)` รันตอน Node-RED start (inject once หน่วง 10 วินาที) และ cron ทุกชั่วโมงนาที :07 (tab 6, `REMINDER_CRON=off` ปิดเฉพาะทดสอบ) ·
+  ทำงานเฉพาะเมื่อ**วันนี้ยังไม่มี marker** ใน `daily_generation` (cron 00:05 `generateToday` และ ensureToday เขียน marker ; จองด้วย INSERT ก่อน) — ไม่ใช้ "ไม่มีแถว" เป็นเกณฑ์ เพราะการเพิ่ม/แก้ยากลางวันข้ามมื้อที่ผ่านไปแล้วโดยตั้งใจ (`skipped_slots_today`) ·
+  ใช้ `GENERATE_TODAY_SQL(false,false,true)`: เฉพาะยาที่ `created_at < CURDATE()` ; แถวที่เวลานัด ≤ NOW() ถูกติด `dose_logs.catchup=1` + `reminded_at=NOW()` (สถานะ pending ผู้ใช้กินย้อนหลังได้ ; นับในสถิติปกติ) ;
+  **เตือนปกติ / เตือนซ้ำ / แจ้งญาติ ข้าม `catchup=1` เสมอ** (ปุ่มเดโมไม่ข้าม) ; `moveTodayDoses` ที่ย้ายมื้อไปอนาคตล้าง catchup ด้วย · เลือกคอลัมน์ `catchup` แทนเทียบ `created_at` เพราะเทส/ข้อมูลที่ `UPDATE scheduled_at` ย้อนหลังจะถูกข้ามเงียบๆ ·
+  เทส: `node --test` (`ensure-today.test.js`) + `bash scripts/test-catchup.sh` (ผู้ใช้ @example.test + ตัวดัก LINE ปลอมใน container ; ไม่ recreate)
 - งาน reminder (วัน 5–6) ต้องตั้ง `reminded_at` ตอนส่งเตือน เพราะกฎ slot-times พึ่งคอลัมน์นี้
 
 ## Frontend (`frontend/`)

@@ -142,6 +142,7 @@ CREATE TABLE dose_logs (
   reminded_at    DATETIME NULL,
   followup_at    DATETIME NULL,                         -- เตือนซ้ำผู้ป่วย (REMINDER_FOLLOWUP_MIN) จองก่อนส่ง
   escalated_at   DATETIME NULL,
+  catchup        TINYINT(1) NOT NULL DEFAULT 0,          -- 1 = สร้างหลังเวลานัด (ensureToday) ไม่ส่งเตือน/แจ้งญาติ ดู migration 007
   created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   scheduled_date DATE GENERATED ALWAYS AS (DATE(scheduled_at)) STORED NOT NULL,   -- DATETIME เก็บเวลา Asia/Bangkok อยู่แล้ว (session +07:00) จึงได้วันตามไทย ไม่มีโค้ดใส่ค่าเอง ;   -- กฎ: ยา 1 ตัวมีได้ไม่เกิน 1 dose ต่อ (มื้อ, วัน) ดู migration 005
   PRIMARY KEY (id),
@@ -154,6 +155,18 @@ CREATE TABLE dose_logs (
   CONSTRAINT chk_taken_consistency CHECK (
     (status = 'taken' AND taken_at IS NOT NULL) OR (status <> 'taken')
   )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- daily_generation : marker "วันนี้สร้างรอบยาแล้ว" (cron 00:05 / ensureToday) ดู migration 007
+-- ---------------------------------------------------------------------
+CREATE TABLE daily_generation (
+  gen_date     DATE         NOT NULL,
+  generated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  source       VARCHAR(16)  NOT NULL,
+  inserted     INT UNSIGNED NOT NULL DEFAULT 0,
+  catchup      INT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (gen_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------

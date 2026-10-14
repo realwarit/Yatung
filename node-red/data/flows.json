@@ -6829,5 +6829,126 @@
         "y": 340,
         "wires": [],
         "g": "dash_err_grp"
+    },
+    {
+        "id": "sch_ens_grp",
+        "type": "group",
+        "z": "tab_sched",
+        "name": "ensure-today: สร้างรอบวันนี้ย้อนหลังเมื่อพลาด cron 00:05 (ตอนเริ่ม + ทุกชั่วโมง :07)",
+        "style": {
+            "stroke": "#b45309",
+            "fill": "#fdf3e3",
+            "label": true,
+            "label-position": "nw",
+            "color": "#b45309"
+        },
+        "nodes": [
+            "sch_ens_start",
+            "sch_ens_cron",
+            "sch_ens_fn",
+            "sch_ens_dbg"
+        ],
+        "x": 41,
+        "y": 850,
+        "w": 1200,
+        "h": 170
+    },
+    {
+        "id": "sch_ens_start",
+        "type": "inject",
+        "z": "tab_sched",
+        "g": "sch_ens_grp",
+        "name": "เมื่อ Node-RED เริ่ม (รอ 10 วินาที ให้ DB พร้อม)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 10,
+        "topic": "ensure-dose-logs",
+        "payload": "",
+        "payloadType": "date",
+        "x": 230,
+        "y": 900,
+        "wires": [
+            [
+                "sch_ens_fn"
+            ]
+        ]
+    },
+    {
+        "id": "sch_ens_cron",
+        "type": "cronplus",
+        "z": "tab_sched",
+        "g": "sch_ens_grp",
+        "name": "ทุกชั่วโมง นาทีที่ 7 (เวลาไทย)",
+        "outputField": "payload",
+        "timeZone": "Asia/Bangkok",
+        "persistDynamic": false,
+        "commandResponseMsgOutput": "output1",
+        "outputs": 1,
+        "options": [
+            {
+                "name": "hourly-07",
+                "topic": "ensure-dose-logs",
+                "payloadType": "default",
+                "payload": "",
+                "expressionType": "cron",
+                "expression": "0 7 * * * * *",
+                "location": "",
+                "offset": "0",
+                "solarType": "all",
+                "solarEvents": "sunrise,sunset"
+            }
+        ],
+        "x": 230,
+        "y": 960,
+        "wires": [
+            [
+                "sch_ens_fn"
+            ]
+        ]
+    },
+    {
+        "id": "sch_ens_fn",
+        "type": "function",
+        "z": "tab_sched",
+        "g": "sch_ens_grp",
+        "name": "ตรวจรอบของวันนี้ ถ้ายังไม่สร้างให้สร้างแบบ catch-up (ไม่เตือนย้อนหลัง)",
+        "func": "// REMINDER_CRON=off ปิดเฉพาะ cron อัตโนมัติ (เฉพาะทดสอบ)\nif (env.get('REMINDER_CRON') === 'off') { msg.payload = { skipped: true, inserted: 0 }; return msg; }\nconst r = await global.get('doseService').ensureToday(global.get('db'));\nif (!r.skipped) node.log('ensure_today inserted=' + r.inserted + ' catchup=' + r.catchup);\nmsg.payload = r;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 700,
+        "y": 930,
+        "wires": [
+            [
+                "sch_ens_dbg"
+            ]
+        ]
+    },
+    {
+        "id": "sch_ens_dbg",
+        "type": "debug",
+        "z": "tab_sched",
+        "g": "sch_ens_grp",
+        "name": "ผลตรวจรอบของวันนี้",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.inserted",
+        "statusType": "auto",
+        "x": 1040,
+        "y": 930,
+        "wires": []
     }
 ]
