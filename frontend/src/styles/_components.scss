@@ -72,6 +72,9 @@
   &:hover { background: var(--yt-primary-soft); }
 }
 
+// ปุ่มไอคอนล้วน (แสดง/ซ่อนรหัสผ่าน) อยู่ในช่องกรอกเป็นสี่เหลี่ยมคงที่ ไม่โตตามขนาด ก (ชื่อปุ่มบอกด้วย aria-label)
+.yt-control__action--icon { display: grid; place-items: center; height: 48px; min-height: 0; aspect-ratio: 1; padding: 0; --icon-optical-offset: 0; font-size: 1.25rem; }
+
 .yt-hint {
   margin: var(--yt-space-2) 0 0;
   font-size: var(--yt-text-sm);

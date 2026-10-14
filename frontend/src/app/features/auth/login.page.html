@@ -30,9 +30,10 @@
                autocomplete="current-password"
                [attr.aria-invalid]="form.controls.password.touched && form.controls.password.invalid"
                aria-describedby="password-error" />
-        <button type="button" id="toggle-password" class="yt-control__action" (click)="showPassword.set(!showPassword())"
-                [attr.aria-pressed]="showPassword()">
-          {{ showPassword() ? 'ซ่อนรหัส' : 'แสดงรหัส' }}
+        <button type="button" id="toggle-password" class="yt-control__action yt-control__action--icon" (click)="showPassword.set(!showPassword())"
+                [attr.aria-pressed]="showPassword()" [attr.aria-label]="showPassword() ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'"
+                [title]="showPassword() ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'">
+          <app-icon [name]="showPassword() ? 'eye-off' : 'eye'" />
         </button>
       </div>
       @if (form.controls.password.touched && form.controls.password.invalid) {
