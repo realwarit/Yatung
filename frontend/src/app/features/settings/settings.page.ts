@@ -1,98 +1,102 @@
-import { ErrTextComponent } from '../../shared/components/err-text/err-text.component';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { InstallCardComponent } from '../../shared/components/install-card/install-card.component';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatButton } from '@angular/material/button';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { errorText } from '../../core/api/api-error';
+import { DemoApi, LineApi } from '../../core/api/line.api';
 import { SettingsApi } from '../../core/api/settings.api';
-import { Slot, SlotTimes } from '../../core/api/models';
+import { SlotTimes } from '../../core/api/models';
 import { AuthService } from '../../core/auth/auth.service';
-import { SLOT_LABEL, SLOT_ORDER } from '../../core/i18n/labels';
-import { TimeRowComponent } from '../../shared/components/time-row/time-row.component';
-import { FontSizeToggleComponent } from '../../shared/font-size-toggle.component';
-import { IconComponent, IconName } from '../../shared/icon.component';
-import { DemoApi } from '../../core/api/line.api';
-import { CaregiversSectionComponent } from './caregivers-section.component';
-import { DemoSectionComponent } from './demo-section.component';
-import { DevInfoSectionComponent } from './dev-info-section.component';
-import { LineSectionComponent } from './line-section.component';
-import { TtsSectionComponent } from './tts-section.component';
-import { PushSectionComponent } from './push-section.component';
+import { SLOT_ORDER } from '../../core/i18n/labels';
+import { PushService } from '../../core/push/push.service';
+import { InstallService } from '../../core/pwa/install.service';
+import { MascotComponent, MascotMood } from '../../shared/components/mascot/mascot.component';
+import { BubbleTone, SpeechBubbleComponent } from '../../shared/components/speech-bubble/speech-bubble.component';
+import { FitLabelDirective } from '../../shared/fit-label.directive';
+import { IconComponent } from '../../shared/icon.component';
+import { ListRowComponent } from '../../shared/ui/list-row/list-row.component';
+import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
+import { SectionComponent } from '../../shared/ui/section/section.component';
+import { SheetService } from '../../shared/ui/sheet/sheet.service';
+import { DemoSheetComponent, DisplaySheetComponent, InstallSheetComponent, PushSheetComponent, TtsSheetComponent } from './settings-sheets';
+import { TimesSheetComponent } from './times-sheet.component';
 
-const SLOT_ICON: Record<Slot, IconName> = { morning: 'sunrise', noon: 'sun', evening: 'sunset', bedtime: 'moon' };
+export type SettingsSheet = 'times' | 'push' | 'tts' | 'display' | 'install' | 'demo';
+const OPEN_KEYS: readonly string[] = ['times', 'push', 'tts', 'display', 'install', 'demo'];
+const NL = String.fromCharCode(10);
 
+/**
+ * หน้ารวมตั้งค่า (D3 ช่วง 3) : กล่องคำพูดเดียว + รายการ appListRow พร้อมสถานะท้ายแถว
+ * sheet = เวลา/แจ้งเตือนเครื่องนี้/เสียงอ่าน/การแสดงผล/ติดตั้ง/ทดลองเตือน · หน้าย่อย = /settings/line, /settings/caregivers, /settings/developer
+ * `?open=install|display|…` เปิด sheet ให้ (banner) แล้วลบออกจาก URL ทันที
+ */
 @Component({
   selector: 'app-settings-page',
-  imports: [ErrTextComponent, MatButton, InstallCardComponent, IconComponent, TimeRowComponent, FontSizeToggleComponent, LineSectionComponent, PushSectionComponent, CaregiversSectionComponent, DemoSectionComponent, DevInfoSectionComponent, TtsSectionComponent],
+  imports: [RouterLink, MatButton, IconComponent, MascotComponent, SpeechBubbleComponent, FitLabelDirective, ListRowComponent, PageHeaderComponent, SectionComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './settings.page.html',
   styleUrl: './settings.page.scss',
 })
 export class SettingsPage {
   private api = inject(SettingsApi);
-  private snack = inject(MatSnackBar);
-  private auth = inject(AuthService);
+  private line = inject(LineApi);
   private demo = inject(DemoApi);
-
-  protected readonly slots = SLOT_ORDER;
-  protected readonly label = SLOT_LABEL;
-  protected readonly icon = SLOT_ICON;
+  private auth = inject(AuthService);
+  private sheet = inject(SheetService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private install = inject(InstallService);
+  protected readonly push = inject(PushService);
 
   protected readonly times = signal<SlotTimes | null>(null);
-  protected readonly loadError = signal<string | null>(null);
-  protected readonly saving = signal(false);
-  protected readonly saveError = signal<string | null>(null);
-  /** GET /api/config (สาธารณะ) → true = แสดงปุ่มทดลองส่งเตือน; เรียกไม่ได้ = ซ่อน */
+  protected readonly lineLinked = signal<boolean | null>(null);
+  protected readonly caregiverCount = signal<number | null>(null);
+  /** GET /api/config (สาธารณะ) → true = แสดงแถวเดโม ; เรียกไม่ได้ = ซ่อน */
   protected readonly demoMode = signal(false);
-  private original = '';
+  protected readonly leaving = signal(false);
+  protected readonly installMode = this.install.settingsMode;
+
+  protected readonly timesSummary = computed(() => {
+    const t = this.times();
+    return t ? SLOT_ORDER.map((s) => t[s]).join(' · ') : 'กำลังโหลด…';
+  });
+  protected readonly pushLabel = computed(() => ({
+    enabled: 'เปิดอยู่', off: 'ปิดอยู่', blocked: 'ถูกบล็อก', 'needs-install': 'ต้องติดตั้งก่อน', unsupported: 'ไม่รองรับ',
+  }[this.push.state()]));
+  protected readonly say = computed<{ tone: BubbleTone; mood: MascotMood; text: string }>(() =>
+    this.lineLinked() === false
+      ? { tone: 'info', mood: 'happy', text: 'ยังไม่ได้เชื่อม LINE ค่ะ' + NL + 'แตะ "เชื่อม LINE" ได้เลยนะคะ' }
+      : { tone: 'neutral', mood: 'happy', text: 'ตั้งค่าให้เหมาะกับคุณนะคะ' });
 
   constructor() {
-    this.load();
+    this.api.slotTimes().subscribe({ next: (t) => this.times.set(t), error: () => this.times.set(null) });
+    this.line.status().subscribe({ next: (s) => this.lineLinked.set(s.linked), error: () => this.lineLinked.set(null) });
+    this.line.caregivers().subscribe({ next: (r) => this.caregiverCount.set(r.caregivers.length), error: () => this.caregiverCount.set(null) });
     this.demo.config().subscribe({ next: (c) => this.demoMode.set(c.demoMode === true), error: () => this.demoMode.set(false) });
-  }
+    void this.push.refresh();
 
-  protected load(): void {
-    this.loadError.set(null);
-    this.api.slotTimes().subscribe({
-      next: (t) => { this.times.set(t); this.original = JSON.stringify(t); },
-      error: (e) => this.loadError.set(errorText(e)),
+    // ?open=… (จาก banner) : เปิด sheet แล้วลบ query ออกทันที ; ฟังต่อเพราะ banner อาจแตะตอนอยู่หน้านี้อยู่แล้ว
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((q) => {
+      const want = q.get('open');
+      if (!want) return;
+      void this.router.navigate([], { relativeTo: this.route, queryParams: { open: null }, queryParamsHandling: 'merge', replaceUrl: true });
+      if (OPEN_KEYS.includes(want)) setTimeout(() => void this.openSheet(want as SettingsSheet));
     });
   }
 
-  protected setTime(slot: Slot, value: string): void {
-    this.times.update((t) => t && { ...t, [slot]: value });
-    this.saveError.set(null);
-  }
-
-  protected get dirty(): boolean { return JSON.stringify(this.times()) !== this.original; }
-
-  /** ข้อความเตือนของแต่ละมื้อที่เวลาไม่เรียง (เช้า < กลางวัน < เย็น < ก่อนนอน) */
-  protected readonly orderErrors = computed<Partial<Record<Slot, string>>>(() => {
-    const t = this.times();
-    const out: Partial<Record<Slot, string>> = {};
-    if (!t) return out;
-    for (let i = 1; i < SLOT_ORDER.length; i++) {
-      const cur = SLOT_ORDER[i], prev = SLOT_ORDER[i - 1];
-      if (t[cur] <= t[prev]) out[cur] = `เวลามื้อ${SLOT_LABEL[cur]}ต้องหลังมื้อ${SLOT_LABEL[prev]} (${t[prev]})`;
+  /** เปิด sheet ; เวลามื้อส่งค่าเดิมเข้าไปและรับค่าล่าสุดกลับ */
+  protected async openSheet(kind: SettingsSheet): Promise<void> {
+    switch (kind) {
+      case 'times': {
+        const r = await this.sheet.open<TimesSheetComponent, SlotTimes | null, SlotTimes | null>(TimesSheetComponent, this.times());
+        if (r) this.times.set(r);
+        break;
+      }
+      case 'push': await this.sheet.open(PushSheetComponent); break;
+      case 'tts': await this.sheet.open(TtsSheetComponent); break;
+      case 'display': await this.sheet.open(DisplaySheetComponent); break;
+      case 'install': await this.sheet.open(InstallSheetComponent); break;
+      case 'demo': await this.sheet.open(DemoSheetComponent); break;
     }
-    return out;
-  });
-  protected readonly hasOrderError = computed(() => Object.keys(this.orderErrors()).length > 0);
-
-  protected save(): void {
-    const t = this.times();
-    if (!t || this.hasOrderError()) return;   // ปุ่มถูกปิดอยู่แล้ว; backend ตรวจซ้ำอีกชั้น
-    this.saving.set(true);
-    this.saveError.set(null);
-    this.api.saveSlotTimes(t).subscribe({
-      next: (saved) => {
-        this.saving.set(false);
-        this.times.set(saved);
-        this.original = JSON.stringify(saved);
-        this.snack.open('บันทึกเวลามื้อยาแล้ว', undefined, { duration: 5000, panelClass: 'yt-snack' });
-      },
-      error: (e) => { this.saving.set(false); this.saveError.set(errorText(e)); },
-    });
   }
 
   protected logout(): void { this.auth.logout(); }

@@ -40,7 +40,16 @@ export const routes: Routes = [
         loadComponent: () => import('./features/review/review.page').then(m => m.ReviewPage),
       },
       { path: 'overview', loadComponent: () => import('./features/overview/overview.page').then(m => m.OverviewPage) },
-      { path: 'settings', loadComponent: () => import('./features/settings/settings.page').then(m => m.SettingsPage) },
+      {
+        // หน้ารวม + หน้าย่อย 3 หน้า (LINE / ญาติ / ผู้พัฒนา) ; แถบเมนูล่างยังอยู่ ; developer ซ่อนเมื่อไม่ได้ demoMode (เด้งกลับหน้ารวม)
+        path: 'settings',
+        children: [
+          { path: '', pathMatch: 'full', loadComponent: () => import('./features/settings/settings.page').then(m => m.SettingsPage) },
+          { path: 'line', loadComponent: () => import('./features/settings/settings-sub.pages').then(m => m.SettingsLinePage) },
+          { path: 'caregivers', loadComponent: () => import('./features/settings/settings-sub.pages').then(m => m.SettingsCaregiversPage) },
+          { path: 'developer', loadComponent: () => import('./features/settings/settings-sub.pages').then(m => m.SettingsDeveloperPage) },
+        ],
+      },
     ],
   },
   // หน้าตรวจมาสคอต: เปิดเฉพาะ dev (ng serve) ไม่มีใน production build

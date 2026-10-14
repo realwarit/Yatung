@@ -1,10 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MatButton } from '@angular/material/button';
-import { MatDialog } from '@angular/material/dialog';
 import { errorCode, errorText } from '../../core/api/api-error';
 import { DemoApi } from '../../core/api/line.api';
-import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { FitLabelDirective } from '../../shared/fit-label.directive';
 import { IconComponent } from '../../shared/icon.component';
 
@@ -26,6 +24,16 @@ import { IconComponent } from '../../shared/icon.component';
     <button mat-stroked-button type="button" class="full" [disabled]="busyLow()" fitLabel="ทดลองแจ้งยาใกล้หมดตอนนี้" fitShort="ทดลองแจ้ง" (click)="lowStock(false)">
       <app-icon class="fit-icon" name="pill" /> <span class="fl-full">{{ busyLow() ? 'กำลังส่ง…' : 'ทดลองแจ้งยาใกล้หมดตอนนี้' }}</span><span class="fl-short" aria-hidden="true">{{ busyLow() ? 'กำลังส่ง…' : 'ทดลองแจ้ง' }}</span>
     </button>
+    @if (resend(); as q) {
+      <div class="ask" role="group" aria-label="ยืนยันส่งซ้ำ">
+        <p class="ask__t">{{ q.title }}</p>
+        <p class="ask__m">{{ q.message }}</p>
+        <div class="yt-fitrow">
+          <button mat-stroked-button type="button" fitGroup="demo-ask" fitLabel="ไม่ส่ง" (click)="resend.set(null)">ไม่ส่ง</button>
+          <button mat-flat-button type="button" fitGroup="demo-ask" fitLabel="ส่งซ้ำ" (click)="doResend(q.kind)">ส่งซ้ำ</button>
+        </div>
+      </div>
+    }
     @if (result(); as r) { <p class="yt-alert" role="status"><app-icon name="check" /> <span>{{ r }}</span></p> }
     @if (error(); as e) { <p class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span>{{ e }}</span></p> }
   `,
@@ -35,11 +43,16 @@ import { IconComponent } from '../../shared/icon.component';
     .hint--gap { margin-top: var(--yt-space-4); }
     .full { width: 100%; }
     .yt-alert { margin-top: var(--yt-space-3); }
+    .ask { margin-top: var(--yt-space-3); padding: var(--yt-space-4); border: 1px solid var(--yt-border-strong); border-radius: var(--yt-radius-md); background: var(--yt-field-bg); }
+    .ask p { margin: 0 0 var(--yt-space-1); }
+    .ask__t { font-weight: 700; }
+    .ask__m { margin-bottom: var(--yt-space-3) !important; color: var(--yt-text-muted); }
   `,
 })
 export class DemoSectionComponent {
   private api = inject(DemoApi);
-  private dialog = inject(MatDialog);
+  /** ถามส่งซ้ำแบบ inline (ห้ามเปิด dialog ซ้อนบน sheet) */
+  protected readonly resend = signal<{ kind: 'esc' | 'low'; title: string; message: string } | null>(null);
   protected readonly busy = signal(false);
   protected readonly busyEsc = signal(false);
   protected readonly busyLow = signal(false);
@@ -92,16 +105,17 @@ export class DemoSectionComponent {
   private askResendLow(e: HttpErrorResponse): void {
     const left = Number((e.error as { quota_left?: number } | null)?.quota_left);
     const quota = Number.isFinite(left) ? ` (เหลือโควตาสำรอง ${left} ข้อความ)` : '';
-    this.dialog.open(ConfirmDialogComponent, {
-      data: { title: 'แจ้งยาใกล้หมดไปแล้ว ส่งซ้ำไหม?', message: `ใช้โควตาสำรองของ LINE เพิ่ม${quota}`, confirmLabel: 'ส่งซ้ำ', cancelLabel: 'ไม่ส่ง' },
-    }).afterClosed().subscribe((yes) => { if (yes === true) this.lowStock(true); });
+    this.resend.set({ kind: 'low', title: 'แจ้งยาใกล้หมดไปแล้ว ส่งซ้ำไหม?', message: `ใช้โควตาสำรองของ LINE เพิ่ม${quota}` });
   }
 
   private askResend(e: HttpErrorResponse): void {
     const left = Number((e.error as { quota_left?: number } | null)?.quota_left);
     const quota = Number.isFinite(left) ? ` (เหลือโควตาสำรอง ${left} ข้อความ)` : '';
-    this.dialog.open(ConfirmDialogComponent, {
-      data: { title: 'แจ้งญาติไปแล้ว ส่งซ้ำไหม?', message: `ใช้โควตาสำรองของ LINE เพิ่ม${quota}`, confirmLabel: 'ส่งซ้ำ', cancelLabel: 'ไม่ส่ง' },
-    }).afterClosed().subscribe((yes) => { if (yes === true) this.escalate(true); });
+    this.resend.set({ kind: 'esc', title: 'แจ้งญาติไปแล้ว ส่งซ้ำไหม?', message: `ใช้โควตาสำรองของ LINE เพิ่ม${quota}` });
+  }
+
+  protected doResend(kind: 'esc' | 'low'): void {
+    this.resend.set(null);
+    if (kind === 'esc') this.escalate(true); else this.lowStock(true);
   }
 }

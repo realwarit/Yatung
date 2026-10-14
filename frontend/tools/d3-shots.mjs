@@ -31,6 +31,9 @@ const SHOTS = [
   ['med-form', '/medications/new', {}],
   ['med-form-edit', '/medications/1/edit', {}],
   ['settings', '/settings', {}],
+  ['settings-times', '/settings', { click: 'เวลากินยาแต่ละมื้อ', h: 900 }],
+  ['settings-line', '/settings/line', {}],
+  ['settings-caregivers', '/settings/caregivers', {}],
   ['overview', '/overview', {}],
   ['today-empty', '/today', { empty: true }],
 ];

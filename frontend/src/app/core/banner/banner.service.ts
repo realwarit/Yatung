@@ -66,9 +66,9 @@ export class BannerService {
       case 'update': this.update.apply(); break;
       case 'install':
         if (this.inputs().install === 'native') await this.install.install();
-        else void this.router.navigateByUrl('/settings');   // iPhone: ขั้นตอนเต็มอยู่ในหน้าตั้งค่า
+        else void this.router.navigateByUrl('/settings?open=install');   // iPhone: ขั้นตอนเต็มอยู่ใน sheet ติดตั้งแอป
         break;
-      case 'font': this.hideFontHint(); void this.router.navigateByUrl('/settings'); break;
+      case 'font': this.hideFontHint(); void this.router.navigateByUrl('/settings?open=display'); break;
       case 'offline': break;
     }
   }

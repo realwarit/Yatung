@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, model } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, model, signal } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { HoldRepeatDirective } from '../../directives/hold-repeat.directive';
 import { IconComponent, IconName } from '../../icon.component';
@@ -22,9 +22,14 @@ const pad = (n: number) => String(n).padStart(2, '0');
       <button type="button" class="step" (appHoldRepeat)="bump(-1)" [attr.aria-label]="'ลดเวลามื้อ' + label() + ' 15 นาที'">
         <app-icon name="minus" />
       </button>
-      <button type="button" class="time num" [class.bad]="error()" (click)="edit()" [attr.aria-label]="'เวลามื้อ' + label() + ' ' + value() + ' กดเพื่อพิมพ์เวลาเอง'">
-        {{ value() }}
-      </button>
+      @if (typing()) {
+        <input #ti type="time" class="time num typed" step="60" [value]="value()" [attr.aria-label]="'พิมพ์เวลามื้อ' + label()"
+               (change)="typed($any($event.target).value)" (blur)="typing.set(false)" (keydown.enter)="typing.set(false)" />
+      } @else {
+        <button type="button" class="time num" [class.bad]="error()" (click)="edit()" [attr.aria-label]="'เวลามื้อ' + label() + ' ' + value() + ' กดเพื่อพิมพ์เวลาเอง'">
+          {{ value() }}
+        </button>
+      }
       <button type="button" class="step" (appHoldRepeat)="bump(1)" [attr.aria-label]="'เพิ่มเวลามื้อ' + label() + ' 15 นาที'">
         <app-icon name="plus" />
       </button>
@@ -34,7 +39,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
     }
   `,
   styles: `
-    :host { display: block; }
+    :host { display: block; container-type: inline-size; }
     .name { display: flex; align-items: center; gap: var(--yt-space-2); margin: 0 0 var(--yt-space-2); font-weight: 600; color: var(--yt-primary-dark); }
     .ctl { display: flex; align-items: center; gap: var(--yt-space-3); }
     .step {
@@ -42,8 +47,8 @@ const pad = (n: number) => String(n).padStart(2, '0');
       display: grid;
       place-items: center;
       flex: none;
-      width: 3.5rem;
-      height: 3.5rem;
+      width: var(--yt-tap);   // ปุ่ม − + = ขนาดแตะมาตรฐาน คงที่ (ไม่ย่อ) ; การ์ดแคบ = จัดเป็น 2 แถวแทน
+      height: var(--yt-tap);
       font-size: 1.5rem;
       border: 2px solid var(--yt-primary);
       border-radius: 50%;
@@ -57,6 +62,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
     }
     .time {
       flex: 1;
+      min-width: 0;
       min-height: 3.5rem;
       border: 2px dashed transparent;
       border-radius: var(--yt-radius-field);
@@ -68,6 +74,13 @@ const pad = (n: number) => String(n).padStart(2, '0');
       cursor: pointer;
       &:hover { border-color: var(--yt-border-strong); }
       &.bad { color: var(--yt-danger); border-color: var(--yt-danger); }
+      &.typed { border: 2px solid var(--yt-border-strong); font-family: inherit; }
+    }
+    // การ์ดแคบ (< ~17rem): เวลาอยู่แถวบนเต็มความกว้าง ปุ่ม − + อยู่แถวล่างคู่กัน
+    @container (max-width: 17rem) {
+      .ctl { flex-wrap: wrap; }
+      .time { order: -1; flex: 1 0 100%; }
+      .step { flex: 1 1 0; width: auto; border-radius: var(--yt-radius-pill); }
     }
   `,
 })
@@ -76,6 +89,9 @@ export class TimeRowComponent {
   readonly label = input.required<string>();
   readonly icon = input.required<IconName>();
   readonly error = input<string | null>(null);
+  /** true = พิมพ์เวลาในแถวเอง (ใช้ใน sheet : ห้ามเปิด dialog ซ้อนบน sheet) ; false = dialog เดิม */
+  readonly inline = input(false);
+  protected readonly typing = signal(false);
 
   private dialog = inject(MatDialog);
   protected readonly minutes = computed(() => Number(this.value().slice(0, 2)) * 60 + Number(this.value().slice(3, 5)));
@@ -88,7 +104,10 @@ export class TimeRowComponent {
     this.value.set(`${pad(Math.floor(next / 60))}:${pad(next % 60)}`);
   }
 
+  protected typed(v: string): void { if (/^\d{2}:\d{2}$/.test(v)) this.value.set(v); }
+
   protected edit(): void {
+    if (this.inline()) { this.typing.set(true); setTimeout(() => document.querySelector<HTMLInputElement>('input.typed')?.focus()); return; }
     this.dialog.open<TimeInputDialogComponent, { title: string; value: string }, string>(TimeInputDialogComponent, {
       width: '24rem', maxWidth: '92vw', autoFocus: 'input',
       data: { title: `เวลามื้อ${this.label()}`, value: this.value() },
