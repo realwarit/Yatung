@@ -42,7 +42,7 @@ const STATES = [
   { name: 'conn-expired', run: async (p, c) => { c.html.on = true; await p.reload(); }, expect: 'หมดอายุ' },
   { name: 'install-android', run: async (p) => { await p.evaluate(fakePrompt); }, expect: 'ติดตั้ง' },
   { name: 'today-error-ref', route: '/today', st: { todayStatus: 502 }, expect: '[(]E-502[)]' },
-  { name: 'settings-dev', route: '/settings', st: { demo: true }, seedLog: true, expect: 'ข้อมูลสำหรับผู้พัฒนา[\\s\\S]*E-304', shot: 'app-dev-info-section' },
+  { name: 'settings-dev', route: '/settings/developer', st: { demo: true }, seedLog: true, expect: 'ข้อมูลผู้พัฒนา[\\s\\S]*E-304', shot: 'app-dev-info-section' },
   { name: 'font-hint', noFont: true, expect: 'ปรับขนาดตัวอักษรให้ใหญ่ขึ้นได้ที่ ตั้งค่า' },
   { name: 'banner-one-at-a-time', run: async (p, c) => { await c.ctx.setOffline(true); await p.evaluate(() => window.dispatchEvent(new Event('offline'))); await p.evaluate(fakePrompt); }, noFont: true, expect: 'ออฟไลน์', only1: true },
   { name: 'kb-login', route: '/login', guest: true, expect: 'เข้าสู่ระบบ', run: async (p, c) => {

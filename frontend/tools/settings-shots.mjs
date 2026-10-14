@@ -1,6 +1,7 @@
 // ตรวจหน้า Settings ด้วยข้อมูลจำลอง (ไม่ต้อง login จริง ไม่แตะ backend): node tools/settings-shots.mjs [--scale=125] [--sizes=390x844] [state…]
 // clearance < 0 = ปุ่มสุดท้ายถูกปุ่มสแกน/แถบเมนูบัง
-// states: linked, cards, unlinked, code, caregivers, demo   → docs/screenshots/settings/<state>-<WxH>[-s125].png
+// D3: หน้ารวม /settings (hub) + หน้าย่อย /settings/line · /settings/caregivers · /settings/developer + sheet (กดแถวในหน้ารวม)
+// states: hub, hub-demo, line-linked(=linked), cards, unlinked, code, caregivers, sheet-demo, developer   → docs/screenshots/settings/<state>-<WxH>[-s125].png
 // ต้องมี ng serve (4200) ; ใช้ Edge/Chrome ในเครื่อง ; พิมพ์ผลวัด: ฟอนต์จริงของชื่อ LINE (CDP), ชนระหว่างเนื้อหา/แถบเมนู/ปุ่มสแกน, ✓ อยู่บรรทัดเดียวกับหัวข้อ, ล้นแนวนอน
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
@@ -24,12 +25,15 @@ const CG = [
   { id: 3, name: 'คุณป้า', relation: null, escalate_after_min: 120, line_linked: true, line_display_name: 'สมหญิง ใจดี' },
 ];
 const STATES = {
-  linked: { status: { linked: true, display_name: NAME_LATIN }, caregivers: CG, demo: false, focus: '.ok' },
-  cards: { status: { linked: true, display_name: NAME_LATIN }, caregivers: CG, demo: false, focus: '.cgs' },
-  unlinked: { status: { linked: false, display_name: null }, caregivers: [], demo: false },
-  code: { status: { linked: false, display_name: null }, caregivers: CG, demo: false, click: 'รับรหัสเชื่อม LINE' },
-  caregivers: { status: { linked: true, display_name: NAME_LATIN }, caregivers: CG, demo: false, scrollEnd: true },
-  demo: { status: { linked: true, display_name: NAME_LATIN }, caregivers: CG, demo: true, scrollEnd: true },
+  hub: { route: '/settings', status: { linked: true, display_name: NAME_LATIN }, caregivers: CG, demo: false },
+  'hub-demo': { route: '/settings', status: { linked: true, display_name: NAME_LATIN }, caregivers: CG, demo: true },
+  linked: { route: '/settings/line', status: { linked: true, display_name: NAME_LATIN }, caregivers: CG, demo: false, focus: '.ok' },
+  cards: { route: '/settings/caregivers', status: { linked: true, display_name: NAME_LATIN }, caregivers: CG, demo: false, focus: '.cgs' },
+  unlinked: { route: '/settings/line', status: { linked: false, display_name: null }, caregivers: [], demo: false },
+  code: { route: '/settings/line', status: { linked: false, display_name: null }, caregivers: CG, demo: false, click: 'รับรหัสเชื่อม LINE' },
+  caregivers: { route: '/settings/caregivers', status: { linked: true, display_name: NAME_LATIN }, caregivers: CG, demo: false, scrollEnd: true },
+  'sheet-demo': { route: '/settings', status: { linked: true, display_name: NAME_LATIN }, caregivers: CG, demo: true, click: 'ทดลองส่งเตือน', sheet: true },
+  developer: { route: '/settings/developer', status: { linked: true, display_name: NAME_LATIN }, caregivers: CG, demo: true },
 };
 
 const browser = await chromium.launch({ channel: 'msedge' }).catch(() => chromium.launch({ channel: 'chrome' }));
@@ -38,7 +42,7 @@ for (const [w, h] of sizes) {
     if (only.length && !only.includes(name)) continue;
     const ctx = await browser.newContext({ viewport: { width: w, height: h }, locale: 'th-TH', timezoneId: 'Asia/Bangkok', deviceScaleFactor: 2 });
     await ctx.addInitScript(([s, tok]) => {
-      try { localStorage.setItem('yatung_font_scale', s); localStorage.setItem('yatung_token', tok); localStorage.setItem('yatung_user', JSON.stringify({ id: 1, email: 'x@example.test', display_name: 'ผู้ทดสอบ' })); } catch {}
+      try { localStorage.setItem('yatung_font_scale_v2', s); localStorage.setItem('yatung_font_hint_off', '1'); localStorage.setItem('yatung_token', tok); localStorage.setItem('yatung_user', JSON.stringify({ id: 1, email: 'x@example.test', display_name: 'ผู้ทดสอบ' })); } catch {}
     }, [scale, FAKE_JWT]);
     const page = await ctx.newPage();
     const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) });
@@ -53,10 +57,10 @@ for (const [w, h] of sizes) {
       if (u === '/api/demo/remind-now') return route.fulfill(json({ sent: 1, doses: 2, slot: 'morning', time: '08:00', resent: false }));
       return route.fulfill(json({ error: 'NOT_MOCKED', details: u }, 404));
     });
-    await page.goto(BASE + '/settings');
+    await page.goto(BASE + st.route);
     await page.waitForLoadState('networkidle').catch(() => {});
     await page.waitForTimeout(800);
-    if (st.click) { await page.getByRole('button', { name: st.click }).click(); await page.waitForTimeout(900); }
+    if (st.click) { await page.getByRole(st.sheet ? 'button' : 'button', { name: st.click }).first().click(); await page.waitForTimeout(900); }
     if (st.focus) { await page.evaluate((sel) => { const el = document.querySelector(sel); const main = document.querySelector('.main'); if (el && main) main.scrollTop += el.getBoundingClientRect().top - 60; }, st.focus); await page.waitForTimeout(300); }
     if (st.scrollEnd) {
       await page.evaluate(() => { const el = document.querySelector('.main'); if (el) el.scrollTop = el.scrollHeight; });

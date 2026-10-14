@@ -56,7 +56,7 @@ for (const [w, h] of sizes) {
     return json({});
   });
   await page.goto(BASE + '/today');
-  await page.waitForSelector('app-dose-card');
+  await page.waitForSelector('app-slot-group');
   await page.addStyleTag({ content: '*{animation:none!important;transition:none!important}' });
   await page.waitForTimeout(500);
   if (mode === 'card') { const t = await page.evaluate(() => { const a = document.querySelector('app-adherence-card a'); const r = a?.getBoundingClientRect(); return a ? `${a.textContent.trim()} ${Math.round(r.width)}x${Math.round(r.height)} href=${a.getAttribute('href')}` : 'ไม่พบการ์ด'; }); console.log('การ์ด 7 วัน:', t); }

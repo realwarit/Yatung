@@ -2,7 +2,6 @@
 // server ส่งเวลาเป็นสตริง 'YYYY-MM-DD HH:mm:ss' (เวลาไทยอยู่แล้ว)
 const OFFSET_MS = 7 * 60 * 60 * 1000;
 
-const DAYS = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
 const MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
   'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 
@@ -24,12 +23,6 @@ export function toServerTime(ms: number): string {
 export function clockTime(ms: number): string {
   const d = new Date(ms + OFFSET_MS);
   return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
-}
-
-/** 'วันอาทิตย์ที่ 4 ตุลาคม 2569' */
-export function thaiDate(ms: number): string {
-  const d = new Date(ms + OFFSET_MS);
-  return `วัน${DAYS[d.getUTCDay()]}ที่ ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear() + 543}`;
 }
 
 /** 'YYYY-MM-DD' → '4 ตุลาคม 2569' */
