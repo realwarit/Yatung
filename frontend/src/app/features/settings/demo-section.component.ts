@@ -5,12 +5,13 @@ import { MatDialog } from '@angular/material/dialog';
 import { errorCode, errorText } from '../../core/api/api-error';
 import { DemoApi } from '../../core/api/line.api';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { FitLabelDirective } from '../../shared/fit-label.directive';
 import { IconComponent } from '../../shared/icon.component';
 
 /** ปุ่มเดโม (แสดงเฉพาะเมื่อ GET /api/config ตอบ demoMode = true) : "ทดลองส่งเตือนตอนนี้" และ "ทดลองแจ้งญาติตอนนี้" */
 @Component({
   selector: 'app-demo-section',
-  imports: [MatButton, IconComponent],
+  imports: [MatButton, IconComponent, FitLabelDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <p class="hint">สำหรับนำเสนอ: ส่งข้อความเตือนของรอบกินยาที่ใกล้เวลาปัจจุบันที่สุดของวันนี้ (ก่อนหรือหลังเวลาก็ได้) เข้า LINE ทันที — หัวข้อข้อความเปลี่ยนตามช่วงเวลา (ไม่สร้างรอบยาปลอม)</p>
@@ -22,8 +23,8 @@ import { IconComponent } from '../../shared/icon.component';
       <app-icon name="alert" /> {{ busyEsc() ? 'กำลังแจ้ง…' : 'ทดลองแจ้งญาติตอนนี้' }}
     </button>
     <p class="hint hint--gap">ส่งข้อความ "ยาใกล้หมด" ของยาที่ใกล้หมดตอนนี้เข้า LINE ทันที โดยไม่ต้องรอเวลา 09:00</p>
-    <button mat-stroked-button type="button" class="full" [disabled]="busyLow()" (click)="lowStock(false)">
-      <app-icon name="pill" /> {{ busyLow() ? 'กำลังส่ง…' : 'ทดลองแจ้งยาใกล้หมดตอนนี้' }}
+    <button mat-stroked-button type="button" class="full" [disabled]="busyLow()" fitLabel="ทดลองแจ้งยาใกล้หมดตอนนี้" fitShort="ทดลองแจ้ง" (click)="lowStock(false)">
+      <app-icon class="fit-icon" name="pill" /> <span class="fl-full">{{ busyLow() ? 'กำลังส่ง…' : 'ทดลองแจ้งยาใกล้หมดตอนนี้' }}</span><span class="fl-short" aria-hidden="true">{{ busyLow() ? 'กำลังส่ง…' : 'ทดลองแจ้ง' }}</span>
     </button>
     @if (result(); as r) { <p class="yt-alert" role="status"><app-icon name="check" /> <span>{{ r }}</span></p> }
     @if (error(); as e) { <p class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span>{{ e }}</span></p> }

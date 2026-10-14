@@ -1,7 +1,10 @@
 import { AfterViewInit, Directive, ElementRef, OnDestroy, effect, inject, input } from '@angular/core';
-import { FIT_MIN_PX, FitState, solveFit } from './fit-label';
+import { FIT_MIN_PX, FitState, solveFit, worstFit } from './fit-label';
 
 type FontsDoc = Document & { fonts?: FontFaceSet };
+
+/** กลุ่มปุ่มที่ต้องย่อขั้นเดียวกัน (key = ค่า fitGroup) */
+const GROUPS = new Map<string, Set<FitLabelDirective>>();
 
 /**
  * ปุ่มบรรทัดเดียวที่ป้ายต้องพอดีเสมอ ไม่ว่าจอแคบ ขนาด ก/ก+/ก++ หรือการขยายตัวอักษรของระบบ (8D-FIX 4-5)
@@ -9,6 +12,7 @@ type FontsDoc = Document & { fonts?: FontFaceSet };
  * วัดใหม่เมื่อ : ความกว้างพ่อ/ปุ่มเปลี่ยน (ResizeObserver) · ขนาด ก เปลี่ยน (style ของ <html>) · ฟอนต์โหลดเสร็จ · ป้ายเปลี่ยน
  *
  * โครง template : <button fitLabel="ป้ายเต็ม" fitShort="ป้ายสั้น"> <icon class="fit-icon"/> <span class="fl-full">ป้ายเต็ม</span><span class="fl-short" aria-hidden="true">ป้ายสั้น</span> </button>
+ * fitGroup="ชื่อ" : ปุ่มในกลุ่มเดียวกันใช้ขั้นเดียวกัน ยึดตามปุ่มที่ต้องย่อมากที่สุด · fitMinPx : พื้นของการลดตัวอักษร (ค่าเริ่มต้น 16)
  * (ไม่มี fitShort = ไม่ต้องมี .fl-short) · aria-label ตั้งเป็นป้ายเต็มให้เสมอ · CSS ของคลาส fit-short / fit-noicon อยู่ใน styles/_components.scss
  */
 @Directive({
@@ -20,6 +24,10 @@ export class FitLabelDirective implements AfterViewInit, OnDestroy {
   readonly fitLabel = input('');
   /** ป้ายสั้น ('' = ไม่มี) */
   readonly fitShort = input('');
+  /** กลุ่มที่ใช้ขั้นเดียวกัน ('' = ไม่จัดกลุ่ม) */
+  readonly fitGroup = input('');
+  /** font-size ต่ำสุดที่ยอมลดได้ (px) */
+  readonly fitMinPx = input(FIT_MIN_PX);
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   private ro?: ResizeObserver;
@@ -27,6 +35,8 @@ export class FitLabelDirective implements AfterViewInit, OnDestroy {
   private raf = 0;
   private sig = '';
   private ready = false;
+  private best: FitState | null = null;
+  private groupKey = '';
   private readonly onFonts = () => this.schedule(true);
 
   constructor() {
@@ -35,6 +45,8 @@ export class FitLabelDirective implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.ready = true;
+    this.groupKey = this.fitGroup();
+    if (this.groupKey) { let g = GROUPS.get(this.groupKey); if (!g) GROUPS.set(this.groupKey, g = new Set()); g.add(this); }
     const st = this.host.style;
     st.whiteSpace = 'nowrap'; st.maxWidth = '100%'; st.minWidth = '0'; st.boxSizing = 'border-box';   // กันล้นที่ต้นเหตุ : ปุ่มไม่กว้างเกินพ่อ
     if (typeof ResizeObserver !== 'undefined') {
@@ -57,6 +69,14 @@ export class FitLabelDirective implements AfterViewInit, OnDestroy {
     this.mo?.disconnect();
     (document as FontsDoc).fonts?.removeEventListener?.('loadingdone', this.onFonts);
     if (this.raf) cancelAnimationFrame(this.raf);
+    if (this.groupKey) { const g = GROUPS.get(this.groupKey); g?.delete(this); if (g && !g.size) GROUPS.delete(this.groupKey); }
+  }
+
+  /** ใช้ขั้นที่ได้จากกลุ่มกับปุ่มนี้ (เรียกจากสมาชิกอื่น) */
+  private adopt(s: FitState): void {
+    const hasShort = !!this.fitShort() && !!this.host.querySelector('.fl-short');
+    this.apply(s, hasShort);
+    this.sig = this.signature();
   }
 
   private schedule(force: boolean): void {
@@ -81,15 +101,19 @@ export class FitLabelDirective implements AfterViewInit, OnDestroy {
 
   private run(): void {
     const h = this.host;
-    if (!h.isConnected || h.getBoundingClientRect().width === 0) return;      // ซ่อนอยู่ (display:none) — วัดไม่ได้
+    if (!h.isConnected || h.getBoundingClientRect().width === 0) { this.best = null; return; }      // ซ่อนอยู่ (display:none) — วัดไม่ได้
     const sig = this.signature();
     if (sig === this.sig && h.dataset['fit'] !== undefined) return;
     const hasShort = !!this.fitShort() && !!h.querySelector('.fl-short');
     this.apply({ step: 0, px: null }, hasShort);
     const basePx = parseFloat(getComputedStyle(h).fontSize) || 16;
-    const best = solveFit({ hasShort, basePx, minPx: FIT_MIN_PX, fits: (s) => { this.apply(s, hasShort); return fitsOneLine(h); } });
-    this.apply(best, hasShort);
+    const best = solveFit({ hasShort, basePx, minPx: this.fitMinPx(), fits: (s) => { this.apply(s, hasShort); return fitsOneLine(h); } });
+    this.best = best;
+    const group = this.groupKey ? GROUPS.get(this.groupKey) : undefined;
+    const final = (group && worstFit([...group].map((d) => d.best))) || best;
+    this.apply(final, hasShort);
     this.sig = sig;
+    if (group) for (const d of group) if (d !== this && d.best && d.host.isConnected) d.adopt(final);
   }
 }
 

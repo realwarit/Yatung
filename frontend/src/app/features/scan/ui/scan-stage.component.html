@@ -6,11 +6,11 @@
     <!-- Ionic: ion-segment (pill) — เปลี่ยนโหมดแล้วรูป/ข้อความเดิมยังอยู่ -->
     <ion-segment mode="ios" class="mode" [value]="mode()" [disabled]="busy()"
                  aria-label="เลือกวิธีใส่ข้อมูลยา" (ionChange)="onMode($event.detail.value)">
-      <ion-segment-button value="photo" layout="icon-start" fitLabel="ถ่ายรูปซองยา" fitShort="ถ่ายรูป">
+      <ion-segment-button value="photo" layout="icon-start" fitLabel="ถ่ายรูปซองยา" fitShort="ถ่ายรูป" fitGroup="scan-mode">
         <ion-icon class="fit-icon" name="camera-outline"></ion-icon>
         <ion-label><span class="fl-full">ถ่ายรูปซองยา</span><span class="fl-short" aria-hidden="true">ถ่ายรูป</span></ion-label>
       </ion-segment-button>
-      <ion-segment-button value="text" layout="icon-start" fitLabel="พิมพ์เอง">
+      <ion-segment-button value="text" layout="icon-start" fitLabel="พิมพ์เอง" fitGroup="scan-mode">
         <ion-icon class="fit-icon" name="create-outline"></ion-icon>
         <ion-label><span class="fl-full">พิมพ์เอง</span></ion-label>
       </ion-segment-button>
@@ -36,12 +36,12 @@
 
         @if (action(); as a) {
           <div class="act" [class.is-static]="!stickyAction()">
-            <ion-button class="yt-btn" expand="block" [fitLabel]="a.primary" [fitShort]="a.short ?? ''" (click)="onPrimary()">
+            <ion-button class="yt-btn" expand="block" [fitLabel]="a.primary" [fitShort]="a.short ?? ''" fitGroup="scan-act" (click)="onPrimary()">
               <ion-icon slot="start" class="fit-icon" [name]="a.icon"></ion-icon>
               <span class="fl-full">{{ a.primary }}</span>@if (a.short) { <span class="fl-short" aria-hidden="true">{{ a.short }}</span> }
             </ion-button>
             @if (a.secondary) {
-              <ion-button class="yt-btn" expand="block" fill="outline" [fitLabel]="a.secondary" (click)="onSecondary()">
+              <ion-button class="yt-btn" expand="block" fill="outline" [fitLabel]="a.secondary" fitGroup="scan-act" (click)="onSecondary()">
                 <ion-icon slot="start" class="fit-icon" name="create-outline"></ion-icon><span class="fl-full">{{ a.secondary }}</span>
               </ion-button>
             }

@@ -9,6 +9,16 @@ export interface FitState { step: FitStep; /** font-size ที่บังค�
 
 export const FIT_MIN_PX = 16;
 
+/** ความ "ย่อ" ของสถานะ (มาก = ย่อมาก) — ใช้หาขั้นที่แคบสุดของกลุ่มปุ่ม (8D-D3 ช่วง 0.1) */
+export function fitSeverity(s: FitState): number { return s.step * 1000 + (s.px ? 500 - s.px : 0); }
+
+/** ขั้นที่ทุกปุ่มในกลุ่มต้องใช้ร่วมกัน = ขั้นของปุ่มที่ต้องย่อมากที่สุด ; กลุ่มว่าง = null */
+export function worstFit(states: (FitState | null | undefined)[]): FitState | null {
+  let worst: FitState | null = null;
+  for (const s of states) if (s && (!worst || fitSeverity(s) > fitSeverity(worst))) worst = s;
+  return worst;
+}
+
 export interface FitInput {
   hasShort: boolean;
   /** font-size ปัจจุบันของปุ่มที่ขั้น 0 (px) */

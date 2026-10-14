@@ -56,9 +56,9 @@
 
     @if (canTakeAll()) {
       <div class="yt-all">
-        <button type="button" class="yt-all-btn" [fitLabel]="'กินครบมื้อ' + name(slot.slot) + ' ' + slot.takeAllIds.length + ' รายการ'"
+        <button type="button" class="yt-all-btn" [fitLabel]="'กินครบมื้อ' + name(slot.slot) + ' ' + slot.takeAllIds.length + ' รายการ'" fitShort="กินครบ"
                 [attr.aria-disabled]="offline() || taking() ? true : null" (click)="onTakeAll()">
-          <app-icon class="fit-icon" name="check" /> <span class="fl-full">กินครบมื้อนี้</span>
+          <app-icon class="fit-icon" name="check" /> <span class="fl-full">กินครบมื้อนี้</span><span class="fl-short" aria-hidden="true">กินครบ</span>
         </button>
       </div>
     }

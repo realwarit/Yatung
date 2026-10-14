@@ -19,16 +19,16 @@ import { FitLabelDirective } from '../../shared/fit-label.directive';
           <span class="why__s" aria-hidden="true">{{ short() }}</span>
           <span class="why__l">{{ blocker() }}</span>
           @if (remaining() > 0 && count() > 0) {
-            <button type="button" class="bar__next" (click)="next.emit()">ไปจุดถัดไป <app-icon name="arrow-right" /></button>
+            <button type="button" class="bar__next" aria-label="ไปจุดถัดไป" (click)="next.emit()">ถัดไป <app-icon name="arrow-right" /></button>
           }
         </p>
       }
       <div class="bar__btns">
-        <button mat-stroked-button type="button" class="bar__drop" (click)="discard.emit()" [disabled]="leaving()" fitLabel="ทิ้งผลสแกนนี้" fitShort="ทิ้ง">
+        <button mat-stroked-button type="button" class="bar__drop" (click)="discard.emit()" [disabled]="leaving()" fitLabel="ทิ้งผลสแกนนี้" fitShort="ทิ้ง" fitGroup="review-bar">
           <span class="fl-full" aria-hidden="true">ทิ้งผลสแกนนี้</span><span class="fl-short" aria-hidden="true">ทิ้ง</span>
         </button>
         <button mat-flat-button type="button" class="bar__save" (click)="save.emit()" [disabled]="!canSave()"
-                [attr.aria-describedby]="blocker() ? 'why' : null" [fitLabel]="saving() ? '' : 'บันทึก ' + count() + ' รายการเข้าตารางยา'" [fitShort]="saving() ? '' : 'บันทึก (' + count() + ')'">
+                [attr.aria-describedby]="blocker() ? 'why' : null" fitGroup="review-bar" [fitLabel]="saving() ? '' : 'บันทึก ' + count() + ' รายการเข้าตารางยา'" [fitShort]="saving() ? '' : 'บันทึก (' + count() + ')'">
           @if (saving()) { กำลังบันทึก… } @else { <span class="fl-full" aria-hidden="true">บันทึก&nbsp;{{ count() }}&nbsp;รายการ<span class="more">เข้าตารางยา</span></span><span class="fl-short" aria-hidden="true">บันทึก&nbsp;({{ count() }})</span> }
         </button>
       </div>

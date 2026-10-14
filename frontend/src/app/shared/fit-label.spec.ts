@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { FIT_MIN_PX, FitState, fitCandidates, solveFit } from './fit-label';
+import { FIT_MIN_PX, FitState, fitCandidates, fitSeverity, solveFit, worstFit } from './fit-label';
 import { FitLabelDirective } from './fit-label.directive';
 
 /** fits จำลอง : ป้ายต้องการความกว้าง need[ขั้น] (px) ; ขั้น 3 กว้างตามสัดส่วน font-size */
@@ -63,5 +63,26 @@ describe('fitLabel directive', () => {
     expect(b.getAttribute('aria-label')).toBe('ให้น้องยาตรงอ่านซองยา');
     expect(b.querySelector('.fl-short')?.getAttribute('aria-hidden')).toBe('true');
     expect(b.style.whiteSpace).toBe('nowrap');
+  });
+});
+
+describe('fitLabel: กลุ่มใช้ขั้นเดียวกัน (D3 0.1)', () => {
+  it('ยึดปุ่มที่ต้องย่อมากที่สุด', () => {
+    const a: FitState = { step: 0, px: null }, b: FitState = { step: 1, px: null }, c: FitState = { step: 3, px: 18 }, d: FitState = { step: 3, px: 16 };
+    expect(worstFit([a, b])).toEqual(b);
+    expect(worstFit([b, c, a])).toEqual(c);
+    expect(worstFit([c, d])).toEqual(d);                // font เล็กกว่า = ย่อมากกว่า
+  });
+  it('ไม่มีสมาชิก/ยังไม่วัด = null', () => {
+    expect(worstFit([])).toBeNull();
+    expect(worstFit([null, undefined])).toBeNull();
+  });
+  it('ความย่อเรียงตามขั้นแล้วตาม font-size', () => {
+    expect(fitSeverity({ step: 2, px: null })).toBeGreaterThan(fitSeverity({ step: 1, px: null }));
+    expect(fitSeverity({ step: 3, px: 15 })).toBeGreaterThan(fitSeverity({ step: 3, px: 17 }));
+  });
+  it('nav: พื้นลด font ที่ 14px (ไม่ใช่ 16)', () => {
+    const last = fitCandidates(false, 17, 14).at(-1);
+    expect(last).toEqual({ step: 3, px: 14 });
   });
 });
