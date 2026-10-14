@@ -28,14 +28,10 @@
     </div>
   } @else if (isEmpty()) {
     <!-- หน้าว่าง (ยังไม่มียา / มีแต่ยาที่หยุดแล้ว): จัดกลางพื้นที่ระหว่างหัวหน้ากับแถบเมนู -->
-    <section class="empty yt-enter" data-first-screen="say">
-      <span class="empty__mascot"><app-mascot mood="wave" [fluid]="true" /></span>
-      <app-speech-bubble class="empty__say" tail="up" [typing]="false" [live]="true" tone="info" [text]="say().text" />
-      <div class="yt-fitrow empty__btns">
-        <a mat-flat-button routerLink="/scan" fitGroup="med-empty" fitLabel="สแกนซองยา"><app-icon class="fit-icon" name="camera" /> สแกนซองยา</a>
-        <a mat-stroked-button routerLink="/medications/new" fitGroup="med-empty" fitLabel="พิมพ์เอง"><app-icon class="fit-icon" name="edit" /> พิมพ์เอง</a>
-      </div>
-    </section>
+    <app-empty-state data-first-screen="say" [text]="say().text">
+      <a mat-flat-button routerLink="/scan" fitGroup="med-empty" fitLabel="สแกนซองยา"><app-icon class="fit-icon" name="camera" /> สแกนซองยา</a>
+      <a mat-stroked-button routerLink="/medications/new" fitGroup="med-empty" fitLabel="พิมพ์เอง"><app-icon class="fit-icon" name="edit" /> พิมพ์เอง</a>
+    </app-empty-state>
   } @else if (shown().length) {
     <ul class="grid yt-enter">
       @for (m of shown(); track m.id) {

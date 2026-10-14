@@ -17,9 +17,9 @@ export function lowMeds(meds: Medication[]): Medication[] {
 /** ข้อความในกล่องคำพูดเดียวของหน้า ("
 " = ขั้นประโยค ; กล่องคำพูดไม่ตัดกลางประโยค) "ยาของฉัน" (D3 ช่วง 1) */
 export function medsSay(tab: 'active' | 'stopped', meds: Medication[]): MedsSay {
-  if (!meds.length) return { tone: 'info', mood: 'happy', text: 'ยังไม่มียาเลยค่ะ ลองสแกนซองยาดูนะคะ', scan: true };
+  if (!meds.length) return { tone: 'info', mood: 'happy', text: 'ยังไม่มียาเลยค่ะ\nลองสแกนซองยาดูนะคะ', scan: true };
   if (tab === 'stopped') return { tone: 'neutral', mood: 'happy', text: 'ยาที่หยุดแล้ว กดกลับมาใช้ได้นะคะ', scan: false };
-  if (!meds.some((m) => m.is_active)) return { tone: 'info', mood: 'happy', text: 'ตอนนี้ไม่มียาที่ใช้อยู่ค่ะ ลองสแกนซองยาดูนะคะ', scan: true };
+  if (!meds.some((m) => m.is_active)) return { tone: 'info', mood: 'happy', text: 'ตอนนี้ไม่มียาที่ใช้อยู่ค่ะ\nลองสแกนซองยาดูนะคะ', scan: true };
   const low = lowMeds(meds);
   if (!low.length) return { tone: 'success', mood: 'happy', text: 'ยาทุกตัวพอใช้ค่ะ เก่งมากเลยนะคะ', scan: false };
   const m = low[0];

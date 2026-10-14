@@ -13,17 +13,6 @@
 .perch app-mascot { flex: none; }
 .perch .b { flex: 1; min-width: 0; }
 
-// หน้าว่าง : กลางพื้นที่ระหว่างหัวหน้ากับแถบเมนู ; น้องยาตรง L → M เมื่อจอเตี้ย
-.empty {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--yt-space-4);
-  min-height: calc(100dvh - var(--yt-bottom-clearance) - 11rem); padding-bottom: var(--yt-space-4);
-}
-.empty__mascot { width: 112px; flex: none; }
-.empty__say { width: 100%; max-width: 22rem; }
-.empty__btns { width: 100%; max-width: 22rem; }
-@media (max-height: 739.98px) { .empty__mascot { width: 56px; } }
-@media (min-width: 1024px) { .empty { min-height: 60dvh; } }
-
 .grid {
   display: grid;
   gap: var(--yt-space-3);

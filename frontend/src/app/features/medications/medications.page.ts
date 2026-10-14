@@ -15,6 +15,7 @@ import { MascotComponent } from '../../shared/components/mascot/mascot.component
 import { SegmentedComponent } from '../../shared/components/segmented/segmented.component';
 import { SpeechBubbleComponent } from '../../shared/components/speech-bubble/speech-bubble.component';
 import { IconComponent } from '../../shared/icon.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
 import { SheetService } from '../../shared/ui/sheet/sheet.service';
 import { MedDetailSheetComponent, MedSheetResult } from './med-detail-sheet.component';
 import { medsSay } from './meds-say';
@@ -22,7 +23,7 @@ import { RefillDialogComponent } from './refill-dialog.component';
 
 @Component({
   selector: 'app-medications-page',
-  imports: [ErrTextComponent, RouterLink, MatButton, IconComponent, MascotComponent, SegmentedComponent, SpeechBubbleComponent,
+  imports: [ErrTextComponent, RouterLink, MatButton, IconComponent, MascotComponent, SegmentedComponent, SpeechBubbleComponent, EmptyStateComponent,
     DoseQtyPipe, MealLabelPipe, NbNumPipe, SlotLabelPipe, UnitLabelPipe, FitLabelDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './medications.page.html',

@@ -13,7 +13,7 @@ const plain = (t: string): string => t.replace(/⁠/g, '');
 describe('medsSay: กล่องคำพูดหน้ายาของฉัน', () => {
   it('ยังไม่มียาเลย = info + ชวนสแกน', () => {
     const s = medsSay('active', []);
-    expect(s).toEqual({ tone: 'info', mood: 'happy', text: 'ยังไม่มียาเลยค่ะ ลองสแกนซองยาดูนะคะ', scan: true });
+    expect(s).toEqual({ tone: 'info', mood: 'happy', text: 'ยังไม่มียาเลยค่ะ\nลองสแกนซองยาดูนะคะ', scan: true });
   });
   it('แท็บหยุดแล้ว = neutral', () => {
     const s = medsSay('stopped', [med({ is_active: false })]);
