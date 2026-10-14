@@ -43,10 +43,11 @@ form { margin-top: 0; }
 }
 
 // ความแข็งแรงของรหัสผ่านอยู่แถวเดียวกับป้ายชื่อ (ขวา) — สูงคงที่ ไม่กระโดดตอนเริ่มพิมพ์ ; ไม่ใช้สีอย่างเดียว (จำนวนแท่ง + ข้อความ)
-.lbl-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--yt-space-2); margin-bottom: var(--yt-space-1); .yt-label { margin: 0; } }
+.lbl-row { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 var(--yt-space-2); margin-bottom: var(--yt-space-1); .yt-label { flex: none; margin: 0; white-space: nowrap; } }
 .strength {
   display: flex; align-items: center; gap: var(--yt-space-2); min-height: 1.5rem;
-  &__label { font-size: var(--yt-text-sm); font-weight: 600; }
+  &__label { font-size: var(--yt-text-sm); font-weight: 600; white-space: nowrap; }
+  &--0 &__bars { display: none; }   // ยังไม่พิมพ์ = มีแค่คำใบ้ "8 ตัวอักษรขึ้นไป" (ข้อความเต็มของ placeholder)
   &__bars { display: grid; grid-template-columns: repeat(4, 1.1rem); gap: var(--yt-space-1); }
   &__bar { height: 8px; border-radius: var(--yt-radius-pill); background: var(--yt-border); transition: background var(--yt-duration); }
   &--1 &__bar:nth-child(-n + 1) { background: var(--yt-danger); }

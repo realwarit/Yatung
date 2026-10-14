@@ -10,6 +10,15 @@ export function greetingFor(date = new Date()): string {
   return 'ก่อนนอนอย่าลืมยานะคะ';
 }
 
+/** คำทักทายสั้น 1 บรรทัด สำหรับกล่องคำพูดบนมือถือ */
+export function greetingShort(date = new Date()): string {
+  const h = date.getHours();
+  if (h >= 5 && h < 12) return 'สวัสดีตอนเช้าค่ะ';
+  if (h >= 12 && h < 17) return 'สวัสดีตอนบ่ายค่ะ';
+  if (h >= 17 && h < 21) return 'สวัสดีตอนเย็นค่ะ';
+  return 'สวัสดีตอนค่ำค่ะ';
+}
+
 export type AuthFocus = 'email' | 'secret' | 'other' | null;
 
 /** จาก event focusin ของฟอร์ม → ช่องที่กำลังโฟกัส (secret = ช่องรหัสผ่านทุกช่อง) */

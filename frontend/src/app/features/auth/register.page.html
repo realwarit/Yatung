@@ -1,4 +1,4 @@
-<app-auth-shell title="มาเริ่มดูแลการกินยาด้วยกันนะคะ" lead="สร้างบัญชีใช้เวลาไม่ถึงนาที" [mood]="mood()" [message]="message()" [peek]="showPassword()" [chatty]="chatty()">
+<app-auth-shell title="สมัครสมาชิก" lead="สร้างบัญชีใช้เวลาไม่ถึงนาที" [mood]="mood()" [message]="message()" [bubble]="bubble()" [bubbleShort]="bubbleShort()" [peek]="showPassword()" [chatty]="chatty()">
 
   @if (error()) {
     <div class="yt-alert yt-alert--danger" role="alert">
@@ -26,7 +26,7 @@
       <div class="yt-control" [class.is-invalid]="form.controls.email.touched && form.controls.email.invalid">
         <app-icon name="mail" />
         <input id="email" type="email" formControlName="email" autocomplete="username" inputmode="email"
-               placeholder="name&#64;example.com"
+               placeholder="name&#64;mail.com"
                [attr.aria-invalid]="form.controls.email.touched && form.controls.email.invalid"
                aria-describedby="email-error" />
       </div>
@@ -42,7 +42,7 @@
       <div class="lbl-row">
         <label class="yt-label" for="password">รหัสผ่าน</label>
         <div class="strength strength--{{ st?.level ?? 0 }}" id="password-hint" role="status">
-          <span class="strength__label">{{ st ? st.label : '' }}<span class="sr-only">{{ st ? ' · ' : '' }}ยาวอย่างน้อย 8 ตัวอักษร</span></span>
+          <span class="strength__label">{{ st ? st.label : '8 ตัวอักษรขึ้นไป' }}<span class="sr-only">{{ st ? ' · ' : '' }}ยาวอย่างน้อย 8 ตัวอักษร</span></span>
           <span class="strength__bars" aria-hidden="true">
             <span class="strength__bar"></span><span class="strength__bar"></span>
             <span class="strength__bar"></span><span class="strength__bar"></span>
@@ -52,7 +52,7 @@
       <div class="yt-control" [class.is-invalid]="form.controls.password.touched && form.controls.password.invalid">
         <app-icon name="lock" />
         <input id="password" [type]="showPassword() ? 'text' : 'password'" formControlName="password"
-               autocomplete="new-password" placeholder="8 ตัวอักษรขึ้นไป"
+               autocomplete="new-password" placeholder="8 ตัวขึ้นไป"
                [attr.aria-invalid]="form.controls.password.touched && form.controls.password.invalid"
                aria-describedby="password-hint password-error" />
         <button type="button" id="toggle-password" class="yt-control__action" (click)="showPassword.set(!showPassword())"

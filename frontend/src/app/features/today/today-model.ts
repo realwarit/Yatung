@@ -105,7 +105,7 @@ export function bubbleOf(slots: readonly SlotVM[], nowMs: number): TodayBubble {
   if (p.total === 0) return { text: 'วันนี้ไม่มียาที่ต้องกินค่ะ', tone: 'neutral' };
   if (p.allDone) return { text: 'วันนี้กินครบแล้ว เก่งมากเลยค่ะ', tone: 'success' };
   const overdue = slots.flatMap((s) => s.doses).filter((d) => d.state === 'overdue').length;
-  if (overdue > 0) return { text: `มียาเลยเวลา ${overdue} รายการ กินเลยนะคะ`, tone: 'warning' };
+  if (overdue > 0) return { text: `เลยเวลาแล้ว ${overdue} รายการ กินเลยนะคะ`, tone: 'warning' };
   const open = slots.find((s) => s.mode === 'open');
   if (open) return { text: `ถึงเวลากินยามื้อ${SLOT_LABEL[open.slot]}แล้วนะคะ`, tone: 'neutral' };
   const next = slots.find((s) => s.isNext);

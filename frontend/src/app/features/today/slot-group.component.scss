@@ -1,4 +1,4 @@
-// สีประจำมื้อ : --m-bg (หัวมื้อ) · --m-accent (ขอบ/วงกลมไอคอน) · --m-fg (ตัวอักษรบน bg) — ค่าจาก token --yt-meal-* (contrast ≥ 4.5:1)
+// สีประจำมื้อ: --m-bg หัว · --m-accent ขอบ/ไอคอน · --m-fg ตัวอักษร (token --yt-meal-*)
 :host { display: block; min-width: 0; scroll-margin-top: var(--yt-space-4); }
 :host([data-slot='morning']) { --m-bg: var(--yt-meal-morning-bg); --m-accent: var(--yt-meal-morning-accent); --m-fg: var(--yt-meal-morning-fg); }
 :host([data-slot='noon']) { --m-bg: var(--yt-meal-noon-bg); --m-accent: var(--yt-meal-noon-accent); --m-fg: var(--yt-meal-noon-fg); }
@@ -10,7 +10,7 @@
 .card--done { border-color: transparent; background: var(--yt-success-soft); }
 :host([data-mode='done']) { --m-bg: var(--yt-success-soft); --m-accent: var(--yt-success); --m-fg: var(--yt-on-success-soft); }
 
-// วงกลมไอคอนมื้อ 32px
+
 .ic {
   display: grid; flex: none; place-items: center; width: 2rem; height: 2rem; border-radius: 50%;
   background: var(--m-accent); color: var(--m-fg); --icon-optical-offset: 0;
@@ -21,7 +21,7 @@
   background: var(--yt-surface); color: var(--m-fg); font-size: 0.75rem; font-weight: 500; line-height: 1.5; white-space: nowrap;
 }
 
-// ---------- พับ : [วงกลมไอคอน] ชื่อมื้อ+เวลา (ไม่ตัดบรรทัด) · chip (ลงบรรทัดใต้ถ้าที่ไม่พอ) · ˅ / ชื่อยาที่ยังไม่กิน ----------
+// ---------- พับ : [ไอคอน] มื้อ · เวลา · chip · ˅ / [มื้อถัดไป] ชื่อยา ----------
 .fold {
   display: flex; flex-wrap: wrap; align-items: center; gap: var(--yt-space-1) var(--yt-space-2); width: 100%; min-height: 3.5rem; box-sizing: border-box;
   padding: var(--yt-space-2) var(--yt-space-3); border: 0; background: var(--m-bg); color: var(--m-fg); font: inherit; text-align: left; cursor: pointer;
@@ -30,16 +30,23 @@
 .fch { flex: none; margin-left: auto; }
 .fold .chip { margin-left: auto; }
 .fold .chip + .fch { margin-left: 0; }
-.fs { order: 5; flex: 1 0 100%; padding-left: 2.5rem; font-size: var(--yt-text-sm); line-height: var(--yt-line-height-tight); opacity: 0.9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sub { order: 5; flex: 1 0 100%; display: flex; align-items: center; gap: var(--yt-space-2); min-width: 0; padding-left: 2.5rem; }
+.fold .sub .chip { margin-left: 0; }
+.fs { flex: 1; min-width: 0; font-size: var(--yt-text-sm); line-height: var(--yt-line-height-tight); opacity: 0.9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+// มื้อกินครบ: แถวเดียว [✓] ชื่อ | เวลา | ˅ ; ที่แคบ (ก++) ซ่อน chip เวลา
+.fold--done { flex-wrap: nowrap; }
+.fold--done .ft { flex: 1 1 0; min-width: 0; white-space: normal; }
+.fold--done .chip, .fold--done .fch { flex: none; margin-left: 0; }
+:host { container-type: inline-size; }
+@container (max-width: 18rem) { .fold--done .chip { display: none; } }
 
-// ---------- หัวมื้อ (สูง ≥ 48px พื้น bg ของมื้อ) ----------
-.head {
-  display: flex; flex-wrap: wrap; align-items: center; gap: var(--yt-space-1) var(--yt-space-2); min-height: 3rem;
-  padding: 0.25rem var(--yt-space-1) 0.25rem var(--yt-space-3); background: var(--m-bg); color: var(--m-fg);
-}
-// ชื่อมื้อ + เวลา ห้ามตัดบรรทัด ; ถ้าที่ไม่พอ chip ลงบรรทัดใต้ (ไม่ตัดชื่อมื้อกับเวลาแยกกัน)
-.h { flex: 0 0 auto; margin: 0; font: 500 1rem / var(--yt-line-height-tight) var(--yt-font-display); color: var(--m-fg); white-space: nowrap; }
-.listen { flex: none; margin-left: auto; }
+// ---------- หัวมื้อ : บรรทัด 1 = ไอคอน + "มื้อ · เวลา" + 🔊 · บรรทัด 2 = chip ชิดซ้ายตรงข้อความ ----------
+.head { display: flex; align-items: flex-start; gap: var(--yt-space-2); padding: 0.25rem var(--yt-space-1) 0.25rem var(--yt-space-3); background: var(--m-bg); color: var(--m-fg); }
+.head .ic { margin-top: 0.5rem; }
+.htxt { display: flex; flex: 1; flex-wrap: wrap; align-items: center; column-gap: var(--yt-space-2); min-width: 0; }
+.htxt .chip { margin-bottom: 0.25rem; }
+.h { margin: 0; font: 500 1rem / 2.5rem var(--yt-font-display); color: var(--m-fg); white-space: nowrap; }
+.listen { flex: none; }
 .listen ::ng-deep .btn { color: var(--m-fg); }
 .fold-btn {
   display: inline-grid; place-items: center; flex: none; width: var(--yt-tap); height: var(--yt-tap);
@@ -59,11 +66,4 @@
 @keyframes pop { 0% { transform: scale(0.3); } 70% { transform: scale(1.3); } 100% { transform: scale(1); } }
 .at { font-size: var(--yt-text-sm); font-weight: 600; color: var(--yt-on-success-soft); }
 .extra { align-self: flex-start; margin-top: var(--yt-space-1); }
-.undo {
-  position: relative; align-self: flex-start; display: inline-flex; align-items: center; gap: 0.4em;
-  min-height: 1.75rem; margin-top: var(--yt-space-1); padding: 0; border: 0; background: transparent;
-  color: var(--yt-text-muted); font: 400 var(--yt-text-label) / 1.4 var(--yt-font-body); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; cursor: pointer;
-  &::before { content: ''; position: absolute; inset: -0.625rem -0.5rem; }   // พื้นที่แตะ ≥ 48px
-  &[aria-disabled='true'] { opacity: 0.55; }
-}
-// ปุ่ม "กินครบมื้อนี้" (.yt-all / .yt-all-btn) อยู่ใน styles/_components.scss เพื่อไม่ให้ไฟล์นี้เกินงบ 4 kB
+// ปุ่ม "กินครบมื้อนี้" (.yt-all / .yt-all-btn) และปุ่ม "กดผิด? ยกเลิก" (.yt-undo) อยู่ใน styles/_components.scss เพื่อไม่ให้ไฟล์นี้เกินงบ 4 kB

@@ -24,6 +24,7 @@ const SCENES = {
     { id: 'login', route: '/login', guest: true, before: 'login' },
     { id: 'register', route: '/register', guest: true, before: 'register' },
     { id: 'register-focus-pw', route: '/register', guest: true, focus: '#password' },
+    { id: 'login', suffix: 'focus-pw', route: '/login', guest: true, focus: '#password', before: 'login' },   // ท่า shy ที่ขอบการ์ด
   ],
   phase2: [
     { id: 'today-late', route: '/today', today: 'late', before: 'today' },
@@ -32,6 +33,8 @@ const SCENES = {
     { id: 'login', route: '/login', guest: true, before: 'login' },
   ],
 };
+/** ชื่อไฟล์ : <id>__<ขนาด>[-<suffix>].png */
+const fname = (sc, sid) => `${sc.id}__${sid}${sc.suffix ? '-' + sc.suffix : ''}.png`;
 const SIZES = set === 'phase2'
   ? [{ id: '360-a', w: 360, h: 640, scale: '100' }, { id: '360-aaa', w: 360, h: 640, scale: '125' }, { id: '1366', w: 1366, h: 768, scale: '100' }]
   : [{ id: '360-a', w: 360, h: 640, scale: '100' }, { id: '360-aaa', w: 360, h: 640, scale: '125' }];
@@ -56,7 +59,7 @@ for (const s of SIZES) {
     await page.waitForTimeout(sc.guest ? 4200 : 700);   // หน้า auth: รอท่าโบกมือเริ่มต้นจบ
     if (sc.focus) { await page.locator(sc.focus).click(); await page.waitForTimeout(500); }
     await page.evaluate(() => { document.querySelectorAll('*').forEach((e) => { if (e.scrollTop) e.scrollTop = 0; }); });
-    await page.screenshot({ path: path.join(DIR, `${sc.id}__${s.id}.png`) });
+    await page.screenshot({ path: path.join(DIR, fname(sc, s.id)) });
     await ctx.close();
   }
 }
@@ -66,7 +69,7 @@ await browser.close();
 const idx = path.join(OUT, 'index.html');
 let html = fs.existsSync(idx) ? fs.readFileSync(idx, 'utf8') : '<!doctype html><meta charset="utf-8"><title>8D</title>';
 const tags = [['d2', 'D2'], ['d25', 'D2.5']].filter(([t]) => fs.existsSync(path.join(OUT, 'd25', t)));
-const scenes = SCENES.phase2.concat(SCENES.phase1).filter((x, i, a) => a.findIndex((y) => y.id === x.id) === i);
+const scenes = SCENES.phase2.concat(SCENES.phase1).filter((x, i, a) => a.findIndex((y) => fname(y, '') === fname(x, '')) === i);
 const fig = (src, cap) => (fs.existsSync(path.join(OUT, src)) ? `<figure><img src="${src}" style="height:640px" alt="${cap}"><figcaption>${cap}</figcaption></figure>` : '');
 const block = `<!--d25--><h1>D2.5 — เทียบ ก่อน 8D / D2 / D2.5 (360×640)</h1><style>figure{display:inline-block;margin:0 12px 12px 0;vertical-align:top}</style>` +
   ['360-a:ขนาด ก', '360-aaa:ขนาด ก++', '1366:จอกว้าง 1366×768'].map((z) => {
@@ -75,8 +78,8 @@ const block = `<!--d25--><h1>D2.5 — เทียบ ก่อน 8D / D2 / D2.
       const cells = [];
       if (sc.before && zid !== '360-aaa') cells.push(fig(`before/${sc.before}__${zid === '1366' ? 'd-a' : 'm-a'}.png`, 'ก่อน 8D (375×667)'));
       if (sc.before && zid === '360-aaa') cells.push(fig(`before/${sc.before}__m-aaa.png`, 'ก่อน 8D ก++ (375×667)'));
-      for (const [t, l] of tags) cells.push(fig(`d25/${t}/${sc.id}__${zid}.png`, l));
-      return cells.join('') ? `<h3>${sc.id}</h3><div>${cells.join('')}</div>` : '';
+      for (const [t, l] of tags) cells.push(fig(`d25/${t}/${fname(sc, zid)}`, l));
+      return cells.join('') ? `<h3>${sc.id}${sc.suffix ? ' · ' + sc.suffix : ''}</h3><div>${cells.join('')}</div>` : '';
     }).join('');
     return rows ? `<h2>${zl}</h2>${rows}` : '';
   }).join('') + '<!--/d25-->';

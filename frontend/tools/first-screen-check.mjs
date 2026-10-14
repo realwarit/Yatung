@@ -8,6 +8,8 @@
 // 8D ข้อ 11: ทุกหน้าตรวจ 2 แบบ — ไม่มี banner ด้านบน และมี banner 1 แถบ (ออฟไลน์ = ข้อความยาวที่สุดที่เกิดได้ทั้งในและนอก Shell ; ขยับทุกอย่างลงตาม --yt-banner-h) ; ทั้งสองแบบต้องผ่านที่ ก และ ก+
 //   หน้าวันนี้ตรวจ 3 สถานะ : late (มีมื้อเลยเวลา) · before (ยังไม่ถึงมื้อแรก ต้องเห็นมื้อถัดไป) · done (กินครบ ต้องเห็นมาสคอต L)
 // D2.5: หน้าที่เนื้อหาน้อย (fill) ต้องไม่มีพื้นที่ว่างใต้เนื้อหาเกิน 20% ของความสูงจอ ที่ขนาด ก (ไม่นับหน้าที่เนื้อหายาวจนเลื่อน)
+// C6.3 (หน้า auth บนมือถือ): ขนาดน้องยาตรงที่ AuthShell เลือก (data-size l/m/s) ต้องเท่ากับ "ใหญ่สุดที่การ์ดฟอร์มทั้งใบพอดีจอ" ที่คำนวณซ้ำด้วยการบังคับทีละขนาด ·
+//   Login ที่ ก และ ก+ ต้องได้ L หรือ M · กล่องคำพูดต้องพอดี 1 บรรทัด · placeholder ของช่องกรอกทุกช่องต้องไม่ถูกตัด (ทุกหน้า ทุกขนาดตัวอักษร)
 // ตรวจเพิ่มทุกหน้า (ที่ ก ทุกขนาดจอ): ช่องกรอกทุกช่อง font-size ≥ 16px (iOS ซูมหน้าเองถ้าเล็กกว่า) · Mitr ไม่หนาเกิน 500 (ยกเว้น .num) · ไม่ล้นแนวนอน
 import { chromium } from 'playwright';
 import { FAKE_JWT, fakeThaiVoice, mockApi } from './lib/mock-app.mjs';
@@ -93,10 +95,32 @@ for (const [w, h] of sizes) {
               const scrolls = host && host.scrollHeight > host.clientHeight + 1;
               free = el && !scrolls ? Math.round(((H - el.getBoundingClientRect().bottom) / H) * 100) : (scrolls ? 'scroll' : null);
             }
-            return { items, inputs, mitr, scrollers, free, bannerH: Math.round(bannerH), bannerCount: document.querySelectorAll('[data-banner]').length };
+            const vis = (e) => e.getBoundingClientRect().width > 0;
+            const cv = document.createElement('canvas').getContext('2d');
+            const placeholders = [...document.querySelectorAll('input[placeholder]')].filter(vis).map((e) => {
+              const cs = getComputedStyle(e);
+              cv.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+              return { s: e.id || e.name, w: Math.round(cv.measureText(e.placeholder).width), avail: Math.round(e.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)) };
+            });
+            let auth = null;
+            const shell = document.querySelector('app-auth-shell');
+            if (shell && getComputedStyle(shell.querySelector('.peek')).display !== 'none') {
+              const c = shell.querySelector('.content');
+              const cur = c.dataset.size;
+              const fits = {};
+              for (const z of ['l', 'm', 's']) { c.dataset.size = z; fits[z] = shell.querySelector('.card').getBoundingClientRect().bottom - shell.getBoundingClientRect().top <= shell.clientHeight - 4; }
+              c.dataset.size = cur;
+              const expected = ['l', 'm', 's'].find((z) => fits[z]) ?? 's';
+              const bub = [...c.querySelectorAll('.peek__bubble')].find((e) => getComputedStyle(e).display !== 'none');
+              const t = bub?.querySelector('.t');
+              const lines = t ? Math.round(t.getBoundingClientRect().height / parseFloat(getComputedStyle(t).lineHeight)) : null;
+              auth = { cur, expected, fits, lines, text: t?.textContent?.trim() };
+            }
+            return { items, inputs, mitr, placeholders, auth, scrollers, free, bannerH: Math.round(bannerH), bannerCount: document.querySelectorAll('[data-banner]').length };
           }, [sc.names, p.fill ?? null]);
           const tag = `${p.route}${sc.id ? ' [' + sc.id + ']' : ''}${banner === 'offline' ? ' +banner' : ''} @${w}x${h} ${SCALE_NAME[scale]}`;
-          const hard = scale !== '125';
+          // Register: ก+ และ ก++ ยอมให้เลื่อน (ฟอร์ม 4 ช่อง ; ตามที่ D2 ตัดสิน) — รายงานอย่างเดียว
+          const hard = scale !== '125' && !(p.route === '/register' && scale === '112');
           const lines = [];
           if (banner === 'offline' && r.bannerCount !== 1) { fail++; lines.push(`✘ ต้องมี banner 1 แถบพอดี (พบ ${r.bannerCount})`); }
           if (banner === 'offline' && r.bannerCount === 1) lines.push(`ⓘ banner สูง ${r.bannerH}px`);
@@ -121,6 +145,16 @@ for (const [w, h] of sizes) {
             const small = r.inputs.filter((x) => x.fs < 16);
             if (small.length) { fail++; lines.push(`✘ ช่องกรอกเล็กกว่า 16px: ${small.map((x) => `${x.s}=${x.fs}`).join(', ')}`); }
             if (r.mitr.length) { fail++; lines.push(`✘ Mitr หนาเกิน 500: ${r.mitr.join(', ')}`); }
+          }
+          for (const x of r.placeholders) {
+            if (x.w > x.avail + 0.5) { fail++; lines.push(`✘ placeholder ถูกตัด ${x.s}: ต้องการ ${x.w}px มี ${x.avail}px`); }
+          }
+          if (r.auth) {
+            const a = r.auth;
+            if (a.cur !== a.expected) { fail++; lines.push(`✘ ขนาดน้องยาตรง ${a.cur.toUpperCase()} ≠ ที่ควรได้ ${a.expected.toUpperCase()} (พอดีจอ: ${JSON.stringify(a.fits)})`); }
+            else { ok++; lines.push(`✓ ขนาดน้องยาตรง ${a.cur.toUpperCase()} (ใหญ่สุดที่พอดีจอ: ${JSON.stringify(a.fits)})`); }
+            if (p.route === '/login' && scale !== '125' && a.cur === 's' && a.fits.s) { fail++; lines.push('✘ Login ก/ก+ ต้องได้ L หรือ M'); }
+            if (a.lines !== 1) { fail++; lines.push(`✘ กล่องคำพูด ${a.lines} บรรทัด (ต้อง 1): ${a.text}`); }
           }
           if (r.scrollers) { fail++; lines.push(`✘ ล้นแนวนอน ${r.scrollers} ตัว`); }
           console.log(`${tag}\n   ${lines.join('\n   ') || '(ไม่มีป้าย)'}`);

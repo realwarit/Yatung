@@ -1,4 +1,4 @@
-<app-auth-shell title="ยินดีต้อนรับกลับมาค่ะ" lead="ดูตารางกินยาของคุณ" [mood]="mood()" [message]="message()" [peek]="showPassword()" [chatty]="chatty()">
+<app-auth-shell title="ยินดีต้อนรับกลับมา" [wave]="true" lead="ดูตารางกินยาของคุณ" [mood]="mood()" [message]="message()" [bubble]="bubble()" [bubbleShort]="bubbleShort()" [peek]="showPassword()" [chatty]="chatty()">
 
   @if (error()) {
     <div class="yt-alert yt-alert--danger" role="alert">
@@ -13,7 +13,7 @@
       <div class="yt-control" [class.is-invalid]="form.controls.email.touched && form.controls.email.invalid">
         <app-icon name="mail" />
         <input id="email" type="email" formControlName="email" autocomplete="username" inputmode="email"
-               placeholder="name&#64;example.com"
+               placeholder="name&#64;mail.com"
                [attr.aria-invalid]="form.controls.email.touched && form.controls.email.invalid"
                aria-describedby="email-error" />
       </div>

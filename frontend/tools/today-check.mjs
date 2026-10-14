@@ -37,7 +37,17 @@ const text = (page) => page.evaluate(() => document.body.innerText);
   check('มื้อที่เปิด: ปุ่ม "กินแล้ว" 3 ปุ่ม', (await noonTakeBtns.count()) === 3);
   check('มื้อที่เปิด: มีปุ่ม "กินครบมื้อนี้"', (await page.locator('app-slot-group[data-slot=noon] .yt-all-btn').count()) === 1);
   check('มื้อถัดไปที่พับ: ไม่มีปุ่ม "กินแล้ว" และไม่มี "กินครบมื้อนี้"', (await page.locator('app-slot-group[data-slot=evening] button.take, app-slot-group[data-slot=evening] .yt-all-btn').count()) === 0);
-  check('มื้อถัดไป: ขึ้นต้น "มื้อถัดไป ·" + ชื่อยา + "อีก … ชม."', /มื้อถัดไป · เย็น/.test(await page.locator('app-slot-group[data-slot=evening]').innerText()) && /อีก \d+ ชม/.test(await page.locator('app-slot-group[data-slot=evening]').innerText()));
+  check('มื้อถัดไป (พับ): หัวรูปแบบเดียวกับมื้อที่กาง "เย็น · HH:MM" + chip "มื้อถัดไป" + ชื่อยา + "อีก … ชม."', await page.evaluate(() => {
+    const t = document.querySelector('app-slot-group[data-slot=evening]')?.innerText ?? '';
+    return /เย็น · \d\d:\d\d/.test(t) && /อีก \d+ ชม/.test(t) && /มื้อถัดไป/.test(t) && !/มื้อถัดไป · /.test(t);
+  }));
+  check('มื้อที่กินครบ (พับ): แถวเดียว [✓] ชื่อ | เวลา | ˅ (˅ ไม่ลงบรรทัดใหม่)', await page.evaluate(() => {
+    const f = document.querySelector('app-slot-group[data-slot=morning] .fold--done');
+    if (!f) return false;
+    const mid = (e) => { const b = e.getBoundingClientRect(); return b.top + b.height / 2; };
+    const ic = f.querySelector('.ic'), ch = f.querySelector('.fch');
+    return Math.abs(mid(ic) - mid(ch)) < 6 && ch.getBoundingClientRect().right <= f.getBoundingClientRect().right;
+  }));
   check('มื้อที่เลยเวลา: chip "เลยเวลา 2 ชม."', /เลยเวลา 2 ชม\./.test(await page.locator('app-slot-group[data-slot=noon]').innerText()));
   check('ยาที่ยาวมาก: ตัดบรรทัดไม่ล้น (ไม่เลื่อนแนวนอน)', await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth));
 

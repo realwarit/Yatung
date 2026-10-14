@@ -10,17 +10,20 @@ import { StatsApi } from '../../core/api/stats.api';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (rate() !== null) {
-      <a routerLink="/overview" [attr.aria-label]="'7 วันล่าสุด กินครบ ' + rate() + ' เปอร์เซ็นต์ แตะเพื่อดูสรุป'">7 วันล่าสุด <span class="num">{{ rate() }}%</span> ›</a>
+      <a routerLink="/overview" [attr.aria-label]="'7 วันล่าสุด กินครบ ' + rate() + ' เปอร์เซ็นต์ แตะเพื่อดูสรุป'"><span class="long">7 วันล่าสุด </span><span class="short">7 วัน </span><span class="num">{{ rate() }}%</span> ›</a>
     }
   `,
   styles: `
     :host { display: inline-block; }
     a {
-      position: relative; display: inline-block; font-size: var(--yt-text-label); line-height: var(--yt-line-height-tight);
+      position: relative; display: inline-block; white-space: nowrap; font-size: var(--yt-text-label); line-height: var(--yt-line-height-tight);
       color: var(--yt-primary-dark); text-decoration: none; font-weight: 500;
     }
     a::before { content: ''; position: absolute; inset: -0.9rem -0.5rem; }   /* พื้นที่แตะ ≥ 48px */
     a:hover { text-decoration: underline; }
+    .short { display: none; }
+    /* ที่แคบ (ก++ บนจอ 360px) ย่อเป็น "7 วัน n% ›" ให้ ›  ไม่ตกบรรทัดเดียวโดด ๆ ; .txt ของ today-progress เป็น container */
+    @container (max-width: 8.5rem) { .long { display: none; } .short { display: inline; } }
   `,
 })
 export class AdherenceCardComponent {

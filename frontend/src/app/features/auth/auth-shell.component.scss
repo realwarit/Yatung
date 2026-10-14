@@ -32,11 +32,13 @@
 .bg__dots { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.07; fill: var(--yt-primary-dark); }
 @media (prefers-reduced-motion: reduce) { .bg__blob { animation: none; } }
 
-// ---------- แถวบน (มือถือ: กะทัดรัด) ----------
+// ---------- แถวบน (มือถือ: กะทัดรัด ; ตัวปรับขนาดไม่หด ; โลโก้ไม่ตัดบรรทัด) ----------
 .top {
   position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: var(--yt-space-3);
   min-height: 2.5rem; padding: var(--yt-space-1) var(--yt-gutter);
 }
+app-font-size-toggle { flex: none; }
+app-logo { flex: 0 1 auto; min-width: 0; white-space: nowrap; }
 
 // ---------- โครง : เต็มความสูงจอ จัดกลางแนวตั้ง (เนื้อหาสูงกว่าจอ = margin-block auto ไม่ติดลบ จึงเริ่มจากบนและเลื่อนได้ ไม่ถูกตัด) ----------
 :host { display: flex; flex-direction: column; }
@@ -45,32 +47,32 @@
   padding: 0 var(--yt-gutter); box-sizing: border-box;
 }
 .shell { flex: 1 0 auto; display: flex; flex-direction: column; }
-.content { width: 100%; max-width: 26.25rem; margin: auto; padding-bottom: var(--yt-space-4); box-sizing: border-box; }   // 420px
+.content { width: 100%; max-width: 26.25rem; margin: auto; padding: var(--yt-space-3) 0 var(--yt-space-4); box-sizing: border-box; }   // 420px ; บนห่างแถวบน ≥ 12px
 
-// กล่องคำพูด + น้องยาตรง จัดกลาง
-.intro { display: flex; flex-direction: column; align-items: center; gap: var(--yt-space-3); margin-bottom: var(--yt-space-3); }
-.b-down { align-self: stretch; text-align: center; }
-.b-left { display: none; }
-.mc { flex: none; }
-@media (max-height: 699px) {
-  // จอเตี้ย: น้องยาตรง M ซ้าย + กล่องคำพูด (หางซ้าย) แถวเดียว — ให้ช่องกรอกและปุ่มยืนยันอยู่ในจอแรก
-  .intro { flex-direction: row-reverse; align-items: center; gap: var(--yt-space-3); margin-bottom: var(--yt-space-2); }
-  .b-down { display: none; }
-  .b-left { display: block; flex: 1; min-width: 0; --bubble-fs: 0.875rem; --pad-y: 0.375rem; }
-  .intro { margin-bottom: var(--yt-space-1); }
-  .mc { margin-block: -0.25rem; }   // ตัวน้องยาตรงมีที่ว่างโปร่งใสบน/ล่าง
-  .card { padding: var(--yt-space-3); }
-  .top { min-height: 2.25rem; }
-}
+// ---------- มือถือ: น้องยาตรงโผล่หน้าจากหลังการ์ด มือเกาะขอบบน + กล่องคำพูดขวาบน ----------
+// ขนาดน้อง (ความกว้าง) ตั้งโดย AuthShellComponent.fit() ผ่าน data-size : L 130 → M 96 → S 72 (ซ่อนบรรทัดรอง)
+.content { --m: 130px; }   // px (ภาพประกอบไม่ขยายตามตัวอักษร)
+.content[data-size='m'] { --m: 96px; }
+.content[data-size='s'] { --m: 72px; }
+.content[data-size='s'] .yt-lead { display: none; }
+.peek { position: relative; z-index: 0; display: flex; align-items: flex-start; gap: var(--yt-space-3); }
+.peek__mascot { flex: none; width: var(--m); height: calc(var(--m) * 0.82); margin-bottom: -0.4rem; overflow: hidden; }   // ขอบการ์ดทับปลายมือเล็กน้อย → ดูเหมือนเกาะอยู่ด้านหลัง (ส่วนที่ยื่นลงไปเป็น z-index ใต้การ์ด)   // ตัดภาพที่ขอบการ์ด (ส่วนล่างของตัวอยู่หลังการ์ด ; มือเกาะอยู่เหนือขอบ)
+.peek__bubble { flex: 0 1 auto; min-width: 0; margin-top: calc(var(--m) * 0.12); }
+.b-short { display: none; }
+.content[data-short='1'] .b-long { display: none; }
+.content[data-short='1'] .b-short { display: block; }
 
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-// ---------- การ์ดฟอร์ม : ขาว radius 20 padding 20 เงาเบา ----------
+// ---------- การ์ดฟอร์ม : ขาว radius 20 padding 16 เงาเบา ----------
 .card {
-  position: relative; z-index: 1; padding: var(--yt-space-4) var(--yt-space-4); background: var(--yt-surface);
+  position: relative; z-index: 1; padding: var(--yt-space-4); background: var(--yt-surface);
   border-radius: var(--yt-radius-md); box-shadow: var(--yt-shadow-soft);
 }
-.hello { display: none; }
+.yt-title { margin: 0; font-size: var(--yt-text-title); font-family: var(--yt-font-display); font-weight: 500; line-height: var(--yt-line-height-tight); color: var(--yt-primary-dark); }
+.yt-lead { margin: 0 0 var(--yt-space-3); font-size: var(--yt-text-sm); color: var(--yt-text-muted); }
+.content[data-size='s'] .yt-title { margin-bottom: var(--yt-space-1); }
+.content[data-size='s'] .card { padding-top: var(--yt-space-3); }
 
 .tagline {
   display: flex; align-items: center; justify-content: center; gap: var(--yt-space-2); margin: var(--yt-space-3) 0 0;
@@ -89,11 +91,10 @@
 
   // เวทีเลื่อนติดจอเมื่อการ์ดสูงกว่าจอ; เนื้อหาในเวทีอยู่กึ่งกลางทั้งแนวตั้งและแนวนอน
   .stage { display: flex; position: sticky; top: 0; align-self: start; min-height: calc(100dvh - var(--bar-h)); }
-  .intro, .tagline { display: none; }
+  .peek, .tagline { display: none; }
 
-  .content { width: min(100%, 520px); max-width: none; justify-self: center; align-self: center; margin: 0; padding-bottom: var(--yt-space-4); }
+  .content { width: min(100%, 520px); max-width: none; justify-self: center; align-self: center; margin: 0; padding: 0 0 var(--yt-space-4); }
   .card { padding: var(--yt-space-5) var(--yt-space-6); border-radius: var(--yt-radius-lg); box-shadow: var(--yt-shadow-md); }
-  .hello { display: block; }
-  .yt-title { margin: 0; font-size: var(--yt-text-title); font-family: var(--yt-font-display); font-weight: 500; line-height: var(--yt-line-height-tight); color: var(--yt-primary-dark); }
-  .yt-lead { margin: var(--yt-space-1) 0 var(--yt-space-4); font-size: var(--yt-text-body); color: var(--yt-text-muted); }
+  .yt-lead { margin-bottom: var(--yt-space-4); font-size: var(--yt-text-body); }
+  .content[data-size='s'] .yt-lead { display: block; }
 }

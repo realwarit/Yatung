@@ -24,6 +24,6 @@
 .trk { fill: none; stroke: var(--yt-primary-soft); stroke-width: 6; }
 .val { fill: none; stroke: var(--yt-primary); stroke-width: 6; stroke-linecap: round; transition: stroke-dasharray var(--yt-duration); }
 .ring text { fill: var(--yt-primary-deep); font-family: var(--yt-font-body); font-weight: 700; }
-.txt { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 0.125rem; }
+.txt { container-type: inline-size; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 0.125rem; }
 .lbl { margin: 0; font-size: var(--yt-text-sm); line-height: var(--yt-line-height-tight); color: var(--yt-text); }
 .listen { flex: none; }
