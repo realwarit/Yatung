@@ -27,14 +27,19 @@
     <app-auth-stage class="stage" [mood]="mood()" [message]="message()" [peek]="peek()" [chatty]="chatty()" />
 
     <main class="content">
+      <!-- มือถือ: กล่องคำพูด + น้องยาตรง (ข้อความเรื่องเดียวของหน้า) ; จอกว้างอยู่ที่เวทีซ้าย -->
+      <h1 class="sr-only">{{ title() }}</h1>
+      <div class="intro">
+        <app-speech-bubble class="b-down" tail="down" [typing]="false" [text]="title()" [sub]="lead()" />
+        <app-speech-bubble class="b-left" tail="left" [typing]="false" [text]="title()" />
+        <app-mascot class="mc" [mood]="mood()" [peek]="peek()" [size]="big() ? 'l' : 'm'" />
+      </div>
+
       <div class="card yt-enter">
-        <!-- มือถือ: น้องยาตรง M + ชื่อหน้า + บรรทัดรอง (ไม่มีกล่องคำพูดซ้ำกับหัวเรื่อง) ; จอกว้าง: น้องยาตรงอยู่ที่เวทีซ้ายแล้ว -->
+        <!-- จอกว้าง: หัวการ์ดเป็นข้อความ (น้องยาตรงอยู่ที่เวที) -->
         <div class="hello">
-          <app-mascot class="mc" [mood]="mood()" [peek]="peek()" size="m" />
-          <div class="hello__t">
-            <h1 class="yt-title">{{ title() }}</h1>
-            <p class="yt-lead">{{ lead() }}</p>
-          </div>
+          <p class="yt-title">{{ title() }}</p>
+          <p class="yt-lead">{{ lead() }}</p>
         </div>
         <ng-content />
       </div>

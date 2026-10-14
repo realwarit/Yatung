@@ -22,20 +22,18 @@ import { thaiDateShort, toServerTime } from '../../core/time';
 import { ConfettiComponent } from '../../shared/components/confetti/confetti.component';
 import { MascotComponent, MascotMood } from '../../shared/components/mascot/mascot.component';
 import { IconComponent } from '../../shared/icon.component';
-import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
 import { SectionComponent } from '../../shared/ui/section/section.component';
 import { ListRowComponent } from '../../shared/ui/list-row/list-row.component';
-import { SlotFlags, DoseVM, SlotVM, buildSlots, progressOf } from './today-model';
+import { SlotFlags, DoseVM, SlotVM, bubbleOf, buildSlots, progressOf } from './today-model';
 import { SpeakableSlot, slotSpeech, todaySpeech } from '../../core/tts/speech-text';
 import { SlotGroupComponent } from './slot-group.component';
 import { TodayProgressComponent } from './today-progress.component';
-import { AdherenceCardComponent } from './adherence-card.component';
 import { lowStockText } from './low-stock';
 
 @Component({
   selector: 'app-today-page',
-  imports: [ErrTextComponent, RouterLink, MatButton, IconComponent, MascotComponent, ConfettiComponent, PageHeaderComponent, SectionComponent, ListRowComponent,
-    SlotGroupComponent, TodayProgressComponent, AdherenceCardComponent, DoseQtyPipe, MealLabelPipe],
+  imports: [ErrTextComponent, RouterLink, MatButton, IconComponent, MascotComponent, ConfettiComponent, SectionComponent, ListRowComponent,
+    SlotGroupComponent, TodayProgressComponent, DoseQtyPipe, MealLabelPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './today.page.html',
   styleUrl: './today.page.scss',
@@ -100,6 +98,8 @@ export class TodayPage {
   }
 
   protected readonly progress = computed(() => progressOf(this.slots()));
+  /** กล่องคำพูดของน้องยาตรง (เรื่องเดียวที่สำคัญที่สุดตอนนี้ ตามนาฬิกาของหน้า) */
+  protected readonly bubble = computed(() => bubbleOf(this.slots(), this.now()));
   protected readonly total = computed(() => this.progress().total);
   protected readonly taken = computed(() => this.progress().taken);
   protected readonly allDone = computed(() => this.progress().allDone);

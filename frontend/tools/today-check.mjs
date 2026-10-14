@@ -35,8 +35,8 @@ const text = (page) => page.evaluate(() => document.body.innerText);
   check('ไม่เล่นเสียงเอง ตอนเปิดหน้า', (await page.evaluate(() => window.__spoke || 0)) === 0);
   const noonTakeBtns = page.locator('app-slot-group[data-slot=noon] button.take');
   check('มื้อที่เปิด: ปุ่ม "กินแล้ว" 3 ปุ่ม', (await noonTakeBtns.count()) === 3);
-  check('มื้อที่เปิด: มีปุ่ม "กินครบมื้อนี้"', (await page.locator('app-slot-group[data-slot=noon] .all-btn').count()) === 1);
-  check('มื้อถัดไปที่พับ: ไม่มีปุ่ม "กินแล้ว" และไม่มี "กินครบมื้อนี้"', (await page.locator('app-slot-group[data-slot=evening] button.take, app-slot-group[data-slot=evening] .all-btn').count()) === 0);
+  check('มื้อที่เปิด: มีปุ่ม "กินครบมื้อนี้"', (await page.locator('app-slot-group[data-slot=noon] .yt-all-btn').count()) === 1);
+  check('มื้อถัดไปที่พับ: ไม่มีปุ่ม "กินแล้ว" และไม่มี "กินครบมื้อนี้"', (await page.locator('app-slot-group[data-slot=evening] button.take, app-slot-group[data-slot=evening] .yt-all-btn').count()) === 0);
   check('มื้อถัดไป: ขึ้นต้น "มื้อถัดไป ·" + ชื่อยา + "อีก … ชม."', /มื้อถัดไป · เย็น/.test(await page.locator('app-slot-group[data-slot=evening]').innerText()) && /อีก \d+ ชม/.test(await page.locator('app-slot-group[data-slot=evening]').innerText()));
   check('มื้อที่เลยเวลา: chip "เลยเวลา 2 ชม."', /เลยเวลา 2 ชม\./.test(await page.locator('app-slot-group[data-slot=noon]').innerText()));
   check('ยาที่ยาวมาก: ตัดบรรทัดไม่ล้น (ไม่เลื่อนแนวนอน)', await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth));
@@ -45,7 +45,7 @@ const text = (page) => page.evaluate(() => document.body.innerText);
   await page.locator('app-slot-group[data-slot=evening] button.fold').click();
   await page.waitForTimeout(250);
   check('กางมื้อถัดไป: มีปุ่ม "กินแล้ว" ของยา (พฤติกรรมเดิม)', (await page.locator('app-slot-group[data-slot=evening] button.take').count()) === 1);
-  check('กางมื้อถัดไป: ไม่มี "กินครบมื้อนี้"', (await page.locator('app-slot-group[data-slot=evening] .all-btn').count()) === 0);
+  check('กางมื้อถัดไป: ไม่มี "กินครบมื้อนี้"', (await page.locator('app-slot-group[data-slot=evening] .yt-all-btn').count()) === 0);
   await page.locator('app-slot-group[data-slot=evening] .fold-btn').click();
   await page.waitForTimeout(200);
   check('พับกลับได้', (await page.locator('app-slot-group[data-slot=evening] button.take').count()) === 0);
@@ -56,8 +56,8 @@ const text = (page) => page.evaluate(() => document.body.innerText);
   check('กดกินแล้วทีละตัว → POST /take ของยาตัวแรก (id 2)', calls.take.length === 1 && calls.take[0] === 2, JSON.stringify(calls.take));
 
   // กินครบมื้อนี้ (เหลือ 2 ตัว: id 3, 5)
-  check('หลังกิน 1 ตัว ยังมี "กินครบมื้อนี้" (เหลือ 2 ตัว)', (await page.locator('app-slot-group[data-slot=noon] .all-btn').count()) === 1);
-  await page.locator('app-slot-group[data-slot=noon] .all-btn').click();
+  check('หลังกิน 1 ตัว ยังมี "กินครบมื้อนี้" (เหลือ 2 ตัว)', (await page.locator('app-slot-group[data-slot=noon] .yt-all-btn').count()) === 1);
+  await page.locator('app-slot-group[data-slot=noon] .yt-all-btn').click();
   await page.waitForTimeout(500);
   check('กินครบมื้อนี้ → คำขอเดียว ส่งเฉพาะ id ที่ยังไม่กิน (3, 5)', calls.many.length === 1 && [...calls.many[0]].sort().join() === '3,5', JSON.stringify(calls.many));
   check('แจ้ง "บันทึก 2 รายการแล้วค่ะ"', /บันทึก 2 รายการแล้วค่ะ/.test(await text(page)));
@@ -68,7 +68,7 @@ const text = (page) => page.evaluate(() => document.body.innerText);
 {
   const { ctx, page, calls } = await open('late');
   await ctx.setOffline(true); await page.evaluate(() => window.dispatchEvent(new Event('offline'))); await page.waitForTimeout(400);
-  await page.locator('app-slot-group[data-slot=noon] .all-btn').click({ force: true }); await page.waitForTimeout(300);
+  await page.locator('app-slot-group[data-slot=noon] .yt-all-btn').click({ force: true }); await page.waitForTimeout(300);
   check('ออฟไลน์: แตะ "กินครบมื้อนี้" ไม่ส่งคำขอ', calls.many.length === 0);
   check('ออฟไลน์: แจ้ง "ต่ออินเทอร์เน็ตก่อนนะคะ" ครั้งเดียว', ((await text(page)).match(/ต่ออินเทอร์เน็ตก่อนนะคะ/g) ?? []).length === 1);
   await ctx.close();
@@ -94,7 +94,7 @@ const text = (page) => page.evaluate(() => document.body.innerText);
   const { ctx, page } = await open('done');
   const cheer = await page.locator('[data-first-screen=cheer]').boundingBox();
   check('กินครบทั้งวัน: น้องยาตรง L (กว้าง ≥ 100px) + ข้อความ', !!cheer && /วันนี้กินครบแล้ว เก่งมากเลยค่ะ/.test(await text(page)) && (await page.locator('[data-first-screen=cheer] app-mascot').boundingBox()).width >= 100);
-  check('กินครบทั้งวัน: ไม่มีปุ่ม "กินครบมื้อนี้"', (await page.locator('.all-btn').count()) === 0);
+  check('กินครบทั้งวัน: ไม่มีปุ่ม "กินครบมื้อนี้"', (await page.locator('.yt-all-btn').count()) === 0);
   await ctx.close();
 }
 

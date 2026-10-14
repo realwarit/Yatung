@@ -1,8 +1,9 @@
 <div class="yt-page">
-  <app-page-header [title]="greet()" [greet]="true">
-    <span action class="date num" data-today-date>{{ dateShort() }}</span>
-  </app-page-header>
-
+  @if (!loadError() && !loading() && !noMeds()) {
+    <app-today-progress class="yt-enter" [greet]="greet()" [date]="dateShort()" [taken]="taken()" [total]="total()" [mood]="mood()" [allDone]="allDone()" [bubble]="bubble()" [speak]="speakAll" />
+  } @else {
+    <h1 class="head-plain">{{ greet() }}</h1>
+  }
   @if (loadError(); as err) {
     <div class="yt-alert yt-alert--danger" role="alert">
       <app-icon name="alert" /> <span><app-err-text [text]="err" /></span>
@@ -26,8 +27,6 @@
     </section>
   } @else {
     <div class="body yt-enter">
-      <app-today-progress [taken]="taken()" [total]="total()" [mood]="mood()" [allDone]="allDone()" [speak]="speakAll" />
-
       <div class="slots">
         @for (s of slots(); track s.slot) {
           <app-slot-group [s]="s" [offline]="offline()" [busyIds]="busyIds()" [popId]="popId()" [lowText]="lowText()" [taking]="takingAll()"
@@ -48,8 +47,6 @@
           <p class="prn-note">กินเฉพาะเมื่อมีอาการเท่านั้น ไม่ต้องกดบันทึก</p>
         </app-section>
       }
-
-      <app-adherence-card [version]="taken()" />
 
       <p class="yt-disclaimer">ไม่ใช่คำแนะนำทางการแพทย์ · ปรึกษาแพทย์หรือเภสัชกรเมื่อมีข้อสงสัย</p>
     </div>

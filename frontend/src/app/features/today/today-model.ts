@@ -95,3 +95,26 @@ export function progressOf(slots: readonly SlotVM[]): Progress {
     allDone: all.length > 0 && taken === all.length,
   };
 }
+
+// ---------- ข้อความกล่องคำพูดของน้องยาตรงบนหน้าวันนี้ (D2.5) : 1 กล่อง = เรื่องเดียวที่สำคัญที่สุดตอนนี้ ----------
+export interface TodayBubble { text: string; tone: 'neutral' | 'warning' | 'success'; }
+
+/** เลือกข้อความตามลำดับ: ไม่มียา → กินครบ → มียาเลยเวลา → ถึงเวลา → มื้อถัดไป (นับถอยหลังจากนาฬิกา ปัดขึ้น) */
+export function bubbleOf(slots: readonly SlotVM[], nowMs: number): TodayBubble {
+  const p = progressOf(slots);
+  if (p.total === 0) return { text: 'วันนี้ไม่มียาที่ต้องกินค่ะ', tone: 'neutral' };
+  if (p.allDone) return { text: 'วันนี้กินครบแล้ว เก่งมากเลยค่ะ', tone: 'success' };
+  const overdue = slots.flatMap((s) => s.doses).filter((d) => d.state === 'overdue').length;
+  if (overdue > 0) return { text: `มียาเลยเวลา ${overdue} รายการ กินเลยนะคะ`, tone: 'warning' };
+  const open = slots.find((s) => s.mode === 'open');
+  if (open) return { text: `ถึงเวลากินยามื้อ${SLOT_LABEL[open.slot]}แล้วนะคะ`, tone: 'neutral' };
+  const next = slots.find((s) => s.isNext);
+  if (next) {
+    const waiting = next.doses.filter((d) => d.state === 'waiting').map((d) => parseServerTime(d.dose.scheduled_at));
+    if (waiting.length) {
+      const at = Math.min(...waiting);
+      return { text: `มื้อถัดไป ${SLOT_LABEL[next.slot]} ${clockTime(at)} อีก ${duration(remainMinutes(at, nowMs))}ค่ะ`, tone: 'neutral' };
+    }
+  }
+  return { text: 'วันนี้ไม่มียาที่ต้องกินค่ะ', tone: 'neutral' };
+}

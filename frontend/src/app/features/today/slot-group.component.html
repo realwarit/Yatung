@@ -2,25 +2,22 @@
 <section class="card" [class.card--done]="slot.mode === 'done'" [attr.aria-labelledby]="'h-' + slot.slot">
   @if (!slot.expanded) {
     <!-- พับ : next = บรรทัดสรุป · done = แถวเขียว (แตะเพื่อกาง) -->
-    <button type="button" appListRow class="fold" [title]="slot.mode === 'done' ? name(slot.slot) + ' กินครบแล้ว' : (slot.isNext ? 'มื้อถัดไป · ' : '') + name(slot.slot) + ' ' + slot.time"
-            [sub]="slot.mode === 'done' ? null : slot.summary" [attr.aria-expanded]="false" (click)="toggle.emit()">
-      <span lead class="ic"><app-icon [name]="slot.mode === 'done' ? 'check' : icon(slot.slot)" /></span>
-      <span trail class="rt">
-        @if (slot.mode === 'done') { <span class="num">{{ slot.time }}</span> }
-        @else if (slot.remain) { <span class="yt-chip yt-chip--info">อีก {{ slot.remain }}</span> }
-        <app-icon name="chevron-down" />
-      </span>
+    <button type="button" class="fold" [attr.aria-expanded]="false" (click)="toggle.emit()">
+      <span class="ic" aria-hidden="true"><app-icon [name]="slot.mode === 'done' ? 'check' : icon(slot.slot)" /></span>
+      <span class="ft">{{ slot.mode === 'done' ? name(slot.slot) + ' กินครบแล้ว' : (slot.isNext ? 'มื้อถัดไป · ' : '') + name(slot.slot) + ' ' + slot.time }}</span>
+      @if (slot.mode === 'done') { <span class="chip num">{{ slot.time }}</span> }
+      @else if (slot.remain) { <span class="chip">อีก {{ slot.remain }}</span> }
+      <app-icon class="fch" name="chevron-down" />
+      @if (slot.mode !== 'done') { <span class="fs">{{ slot.summary }}</span> }
     </button>
   } @else {
     <div class="head">
-      <h2 class="h" [id]="'h-' + slot.slot">
-        <app-icon [name]="icon(slot.slot)" />
-        <span>{{ name(slot.slot) }} · <span class="num">{{ slot.time }}</span></span>
-      </h2>
+      <span class="ic" aria-hidden="true"><app-icon [name]="slot.mode === 'done' ? 'check' : icon(slot.slot)" /></span>
+      <h2 class="h" [id]="'h-' + slot.slot">{{ name(slot.slot) }} · <span class="num">{{ slot.time }}</span></h2>
       @if (slot.chip; as c) {
-        <span class="yt-chip" [class.yt-chip--late]="c.tone === 'late'" [class.yt-chip--info]="c.tone === 'info'">{{ c.text }}</span>
+        <span class="chip">{{ c.text }}</span>
       } @else if (slot.mode === 'done') {
-        <span class="yt-chip yt-chip--ok"><app-icon name="check" /> กินครบแล้ว</span>
+        <span class="chip"><app-icon name="check" /> กินครบแล้ว</span>
       }
       <app-tts-button class="listen" variant="icon" label="ฟังมื้อนี้" [ariaLabel]="'ฟังรายการยามื้อ' + name(slot.slot)" [ttsKey]="'slot-' + slot.slot" [build]="speak()" />
       @if (slot.mode !== 'open') {
@@ -51,8 +48,8 @@
     </div>
 
     @if (canTakeAll()) {
-      <div class="all">
-        <button type="button" class="all-btn" [attr.aria-label]="'กินครบมื้อ' + name(slot.slot) + ' ' + slot.takeAllIds.length + ' รายการ'"
+      <div class="yt-all">
+        <button type="button" class="yt-all-btn" [attr.aria-label]="'กินครบมื้อ' + name(slot.slot) + ' ' + slot.takeAllIds.length + ' รายการ'"
                 [attr.aria-disabled]="offline() || taking() ? true : null" (click)="onTakeAll()">
           <app-icon name="check" /> กินครบมื้อนี้
         </button>

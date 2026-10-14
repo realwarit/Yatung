@@ -1,35 +1,53 @@
+// สีประจำมื้อ : --m-bg (หัวมื้อ) · --m-accent (ขอบ/วงกลมไอคอน) · --m-fg (ตัวอักษรบน bg) — ค่าจาก token --yt-meal-* (contrast ≥ 4.5:1)
 :host { display: block; min-width: 0; scroll-margin-top: var(--yt-space-4); }
+:host([data-slot='morning']) { --m-bg: var(--yt-meal-morning-bg); --m-accent: var(--yt-meal-morning-accent); --m-fg: var(--yt-meal-morning-fg); }
+:host([data-slot='noon']) { --m-bg: var(--yt-meal-noon-bg); --m-accent: var(--yt-meal-noon-accent); --m-fg: var(--yt-meal-noon-fg); }
+:host([data-slot='evening']) { --m-bg: var(--yt-meal-evening-bg); --m-accent: var(--yt-meal-evening-accent); --m-fg: var(--yt-meal-evening-fg); }
+:host([data-slot='bedtime']) { --m-bg: var(--yt-meal-bedtime-bg); --m-accent: var(--yt-meal-bedtime-accent); --m-fg: var(--yt-meal-bedtime-fg); }
 
-.card { overflow: hidden; border: 1px solid var(--yt-border); border-radius: var(--yt-radius-card); background: var(--yt-surface); }
+.card { display: flex; flex-direction: column; height: 100%; overflow: hidden; border: 1px solid var(--m-accent); border-radius: var(--yt-radius-md); background: var(--yt-surface); }
+// มื้อกินครบ = แถวเขียวเดิม
 .card--done { border-color: transparent; background: var(--yt-success-soft); }
-:host([data-mode='done']) .fold, :host([data-mode='done']) .h { color: var(--yt-on-success-soft); }
+:host([data-mode='done']) { --m-bg: var(--yt-success-soft); --m-accent: var(--yt-success); --m-fg: var(--yt-on-success-soft); }
 
-// ---------- พับ ----------
-.fold { font-family: var(--yt-font-body); }
+// วงกลมไอคอนมื้อ 32px
 .ic {
-  display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: 50%;
-  background: var(--yt-primary-soft); color: var(--yt-primary-deep); --icon-optical-offset: 0;
+  display: grid; flex: none; place-items: center; width: 2rem; height: 2rem; border-radius: 50%;
+  background: var(--m-accent); color: var(--m-fg); --icon-optical-offset: 0;
 }
-:host([data-mode='done']) .ic { background: var(--yt-success); color: var(--yt-on-primary); }
-.rt { display: inline-flex; align-items: center; gap: var(--yt-space-2); color: var(--yt-text-muted); }
+:host([data-mode='done']) .ic { color: var(--yt-on-primary); }
+.chip {
+  display: inline-flex; flex: none; align-items: center; gap: 0.3em; min-height: 1.5rem; padding: 0 0.625rem; border-radius: var(--yt-radius-pill);
+  background: var(--yt-surface); color: var(--m-fg); font-size: 0.75rem; font-weight: 500; line-height: 1.5; white-space: nowrap;
+}
 
-// ---------- หัวมื้อ ----------
+// ---------- พับ : [วงกลมไอคอน] ชื่อมื้อ+เวลา (ไม่ตัดบรรทัด) · chip (ลงบรรทัดใต้ถ้าที่ไม่พอ) · ˅ / ชื่อยาที่ยังไม่กิน ----------
+.fold {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--yt-space-1) var(--yt-space-2); width: 100%; min-height: 3.5rem; box-sizing: border-box;
+  padding: var(--yt-space-2) var(--yt-space-3); border: 0; background: var(--m-bg); color: var(--m-fg); font: inherit; text-align: left; cursor: pointer;
+}
+.ft { flex: 0 0 auto; font: 500 1rem / var(--yt-line-height-tight) var(--yt-font-display); white-space: nowrap; }
+.fch { flex: none; margin-left: auto; }
+.fold .chip { margin-left: auto; }
+.fold .chip + .fch { margin-left: 0; }
+.fs { order: 5; flex: 1 0 100%; padding-left: 2.5rem; font-size: var(--yt-text-sm); line-height: var(--yt-line-height-tight); opacity: 0.9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+// ---------- หัวมื้อ (สูง ≥ 48px พื้น bg ของมื้อ) ----------
 .head {
-  display: flex; align-items: center; gap: var(--yt-space-2); min-height: var(--yt-row-min);
-  padding: 0 var(--yt-space-1) 0 var(--yt-space-4); border-bottom: 1px solid var(--yt-border);
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--yt-space-1) var(--yt-space-2); min-height: 3rem;
+  padding: 0.25rem var(--yt-space-1) 0.25rem var(--yt-space-3); background: var(--m-bg); color: var(--m-fg);
 }
-.h {
-  display: flex; flex: 1; align-items: center; gap: var(--yt-space-2); min-width: 0; margin: 0;
-  font: 500 var(--yt-text-heading) / var(--yt-line-height-tight) var(--yt-font-display); color: var(--yt-primary-dark);
-  app-icon { flex: none; }
-}
-.listen { flex: none; }
+// ชื่อมื้อ + เวลา ห้ามตัดบรรทัด ; ถ้าที่ไม่พอ chip ลงบรรทัดใต้ (ไม่ตัดชื่อมื้อกับเวลาแยกกัน)
+.h { flex: 0 0 auto; margin: 0; font: 500 1rem / var(--yt-line-height-tight) var(--yt-font-display); color: var(--m-fg); white-space: nowrap; }
+.listen { flex: none; margin-left: auto; }
+.listen ::ng-deep .btn { color: var(--m-fg); }
 .fold-btn {
   display: inline-grid; place-items: center; flex: none; width: var(--yt-tap); height: var(--yt-tap);
-  border: 0; border-radius: var(--yt-radius-pill); background: transparent; color: var(--yt-text-muted); cursor: pointer;
-  &:hover { background: var(--yt-primary-softer); }
+  border: 0; border-radius: var(--yt-radius-pill); background: transparent; color: var(--m-fg); cursor: pointer;
+  &:hover { background: var(--yt-surface); }
 }
 .up { transform: rotate(180deg); }
+.rows { flex: 1; }
 
 // ---------- แถวยา ----------
 .dose--taken { color: var(--yt-on-success-soft); }
@@ -44,17 +62,8 @@
 .undo {
   position: relative; align-self: flex-start; display: inline-flex; align-items: center; gap: 0.4em;
   min-height: 1.75rem; margin-top: var(--yt-space-1); padding: 0; border: 0; background: transparent;
-  color: var(--yt-primary-dark); font: 500 var(--yt-text-sm) / 1.4 var(--yt-font-body); text-decoration: underline; cursor: pointer;
+  color: var(--yt-text-muted); font: 400 var(--yt-text-label) / 1.4 var(--yt-font-body); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; cursor: pointer;
   &::before { content: ''; position: absolute; inset: -0.625rem -0.5rem; }   // พื้นที่แตะ ≥ 48px
   &[aria-disabled='true'] { opacity: 0.55; }
 }
-
-// ---------- กินครบมื้อนี้ ----------
-.all { padding: var(--yt-space-3) var(--yt-space-4) var(--yt-space-4); border-top: 1px solid var(--yt-border); }
-.all-btn {
-  display: flex; align-items: center; justify-content: center; gap: var(--yt-space-2); width: 100%; min-height: var(--yt-tap);
-  border: 1.5px solid var(--yt-primary); border-radius: var(--yt-radius-pill); background: transparent;
-  color: var(--yt-primary-dark); font: 500 var(--yt-text-body) / 1 var(--yt-font-display); cursor: pointer; --icon-optical-offset: 0.06em;
-  &:hover { background: var(--yt-primary-soft); }
-  &[aria-disabled='true'] { opacity: 0.55; cursor: default; }
-}
+// ปุ่ม "กินครบมื้อนี้" (.yt-all / .yt-all-btn) อยู่ใน styles/_components.scss เพื่อไม่ให้ไฟล์นี้เกินงบ 4 kB

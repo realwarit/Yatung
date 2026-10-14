@@ -1,5 +1,5 @@
 import { Dose, Slot, TodayResponse } from '../../core/api/models';
-import { buildSlots, lateChipText, progressOf, SlotFlags } from './today-model';
+import { bubbleOf, buildSlots, lateChipText, progressOf, SlotFlags } from './today-model';
 
 const bkk = (hms: string) => Date.parse(`2026-10-13T${hms}+07:00`);
 const none: SlotFlags = { touched: new Set(), opened: new Set(), undoExpired: new Set() };
@@ -92,5 +92,35 @@ describe('progressOf / lateChipText', () => {
     expect(lateChipText(45)).toBe('เลยเวลา 45 นาที');
     expect(lateChipText(60)).toBe('เลยเวลา 1 ชม.');
     expect(lateChipText(7 * 60 + 40)).toBe('เลยเวลา 7 ชม.');
+  });
+});
+
+describe('bubbleOf: ข้อความกล่องคำพูดหน้าวันนี้ทุกสถานะ', () => {
+  const msg = (d: TodayResponse, hms: string) => bubbleOf(buildSlots(d, bkk(hms), none), bkk(hms));
+  it('ไม่มียาวันนี้', () => expect(msg(day(), '10:00:00')).toEqual({ text: 'วันนี้ไม่มียาที่ต้องกินค่ะ', tone: 'neutral' }));
+  it('กินครบแล้ว = success', () => expect(msg(day(['morning', '08:00', [dose('08:00', 'taken')]]), '09:00:00')).toEqual({ text: 'วันนี้กินครบแล้ว เก่งมากเลยค่ะ', tone: 'success' }));
+  it('มียาเลยเวลา n รายการ (นับเฉพาะที่เลยเวลา ไม่นับที่เพิ่งถึง) = warning', () => {
+    const d = day(['morning', '08:00', [dose('08:00'), dose('08:00')]], ['noon', '12:00', [dose('12:00')]]);
+    expect(msg(d, '12:10:00')).toEqual({ text: 'มียาเลยเวลา 2 รายการ กินเลยนะคะ', tone: 'warning' });
+  });
+  it('เลยเวลาเพราะ missed ก็นับ', () => expect(msg(day(['morning', '08:00', [dose('08:00', 'missed')]]), '08:00:00').text).toBe('มียาเลยเวลา 1 รายการ กินเลยนะคะ'));
+  it('ถึงเวลา (ยังไม่เลย 30 นาที) บอกมื้อ', () => expect(msg(day(['evening', '18:00', [dose('18:00')]]), '18:10:00')).toEqual({ text: 'ถึงเวลากินยามื้อเย็นแล้วนะคะ', tone: 'neutral' }));
+  it('เลยเวลาชนะถึงเวลา เมื่อมีทั้งสอง', () => {
+    const d = day(['morning', '08:00', [dose('08:00')]], ['noon', '12:00', [dose('12:00')]]);
+    expect(msg(d, '12:05:00').text).toBe('มียาเลยเวลา 1 รายการ กินเลยนะคะ');
+  });
+  it('รอมื้อถัดไป: ชื่อมื้อ + เวลา + อีก n (ปัดขึ้นตามนาฬิกา)', () => {
+    const d = day(['bedtime', '21:18', [dose('21:18')]]);
+    expect(msg(d, '21:13:00').text).toBe('มื้อถัดไป ก่อนนอน 21:18 อีก 5 นาทีค่ะ');
+    expect(msg(d, '21:17:30').text).toBe('มื้อถัดไป ก่อนนอน 21:18 อีก 1 นาทีค่ะ');
+    expect(msg(d, '09:00:00').text).toBe('มื้อถัดไป ก่อนนอน 21:18 อีก 12 ชม. 18 นาทีค่ะ');
+  });
+  it('มื้อถัดไปที่มีหลายเวลาใช้เวลาที่ใกล้ที่สุด', () => {
+    const d = day(['evening', '16:30', [dose('18:00'), dose('16:30')]]);
+    expect(msg(d, '10:00:00').text).toBe('มื้อถัดไป เย็น 16:30 อีก 6 ชม. 30 นาทีค่ะ');
+  });
+  it('กินมื้อแรกแล้ว มื้อที่สองยังรอ → ชี้มื้อที่สอง', () => {
+    const d = day(['morning', '08:00', [dose('08:00', 'taken')]], ['evening', '18:00', [dose('18:00')]]);
+    expect(msg(d, '09:00:00').text).toBe('มื้อถัดไป เย็น 18:00 อีก 9 ชม.ค่ะ');
   });
 });

@@ -7,6 +7,7 @@
 //   ป้ายที่ยังไม่มีในหน้า = ข้าม (SKIP) ; ใส่ --strict ให้ถือเป็นไม่ผ่าน ; หน้าของช่วง D2 (--stage=d2 ค่าเริ่มต้น) ห้ามมีรายการ "ข้าม" — พบ = ไม่ผ่านเสมอ
 // 8D ข้อ 11: ทุกหน้าตรวจ 2 แบบ — ไม่มี banner ด้านบน และมี banner 1 แถบ (ออฟไลน์ = ข้อความยาวที่สุดที่เกิดได้ทั้งในและนอก Shell ; ขยับทุกอย่างลงตาม --yt-banner-h) ; ทั้งสองแบบต้องผ่านที่ ก และ ก+
 //   หน้าวันนี้ตรวจ 3 สถานะ : late (มีมื้อเลยเวลา) · before (ยังไม่ถึงมื้อแรก ต้องเห็นมื้อถัดไป) · done (กินครบ ต้องเห็นมาสคอต L)
+// D2.5: หน้าที่เนื้อหาน้อย (fill) ต้องไม่มีพื้นที่ว่างใต้เนื้อหาเกิน 20% ของความสูงจอ ที่ขนาด ก (ไม่นับหน้าที่เนื้อหายาวจนเลื่อน)
 // ตรวจเพิ่มทุกหน้า (ที่ ก ทุกขนาดจอ): ช่องกรอกทุกช่อง font-size ≥ 16px (iOS ซูมหน้าเองถ้าเล็กกว่า) · Mitr ไม่หนาเกิน 500 (ยกเว้น .num) · ไม่ล้นแนวนอน
 import { chromium } from 'playwright';
 import { FAKE_JWT, fakeThaiVoice, mockApi } from './lib/mock-app.mjs';
@@ -28,8 +29,8 @@ const PAGES = [
     { id: 'before', names: ['progress', 'listen', 'next-slot'] },
     { id: 'done', names: ['progress', 'listen', 'cheer'] },
   ] },
-  { route: '/login', auth: false, names: ['fields', 'submit'] },
-  { route: '/register', auth: false, names: ['fields', 'submit'] },
+  { route: '/login', auth: false, names: ['fields', 'submit'], fill: '.content .yt-disclaimer' },
+  { route: '/register', auth: false, names: ['fields', 'submit'], fill: '.content .yt-disclaimer' },
   { route: '/scan', names: ['ai-notice', 'tips', 'camera', 'gallery'] },
   { route: '/review/1', names: ['banner', 'save-bar'] },
   { route: '/medications', names: ['add', 'rows-3'], d3: true },
@@ -61,7 +62,7 @@ for (const [w, h] of sizes) {
           await page.waitForTimeout(500);
           if (banner === 'offline') { await ctx.setOffline(true); await page.evaluate(() => window.dispatchEvent(new Event('offline'))); await page.waitForTimeout(700); }
           await page.evaluate(() => { document.querySelectorAll('*').forEach((e) => { if (e.scrollTop) e.scrollTop = 0; }); });
-          const r = await page.evaluate((names) => {
+          const r = await page.evaluate(([names, fillSel]) => {
             const H = window.innerHeight;
             const nav = document.querySelector('nav.bottom');
             const navR = nav && getComputedStyle(nav).display !== 'none' ? nav.getBoundingClientRect() : null;
@@ -85,8 +86,15 @@ for (const [w, h] of sizes) {
             const doc = document.documentElement;
             const scrollers = [doc, document.body, ...document.querySelectorAll('.main, .yt-page')].filter((e) => e.scrollWidth > e.clientWidth + 1).length;
             const bannerH = document.querySelector('[data-banner]')?.getBoundingClientRect().height ?? 0;
-            return { items, inputs, mitr, scrollers, bannerH: Math.round(bannerH), bannerCount: document.querySelectorAll('[data-banner]').length };
-          }, sc.names);
+            let free = null;
+            if (fillSel) {
+              const el = [...document.querySelectorAll(fillSel)].pop();
+              const host = document.querySelector('app-auth-shell') ?? document.scrollingElement;
+              const scrolls = host && host.scrollHeight > host.clientHeight + 1;
+              free = el && !scrolls ? Math.round(((H - el.getBoundingClientRect().bottom) / H) * 100) : (scrolls ? 'scroll' : null);
+            }
+            return { items, inputs, mitr, scrollers, free, bannerH: Math.round(bannerH), bannerCount: document.querySelectorAll('[data-banner]').length };
+          }, [sc.names, p.fill ?? null]);
           const tag = `${p.route}${sc.id ? ' [' + sc.id + ']' : ''}${banner === 'offline' ? ' +banner' : ''} @${w}x${h} ${SCALE_NAME[scale]}`;
           const hard = scale !== '125';
           const lines = [];
@@ -102,6 +110,12 @@ for (const [w, h] of sizes) {
             if (!hard) { info++; lines.push(`ⓘ ${it.n}: ล่าง ${it.bottom} / ขีด ${it.limit}${it.hitsFab ? ' ถูกปุ่มสแกนบัง' : ''}${bad ? ' (เลื่อนได้ ก++)' : ''}`); }
             else if (bad) { fail++; lines.push(`✘ ${it.n}: ล่าง ${it.bottom} > ขีด ${it.limit}${it.hitsFab ? ' / ถูกปุ่มสแกนบัง' : ''}`); }
             else { ok++; lines.push(`✓ ${it.n}: ล่าง ${it.bottom} ≤ ${it.limit}`); }
+          }
+          if (p.fill && scale === '100' && banner === 'none') {
+            if (r.free === 'scroll') lines.push('ⓘ ว่างใต้เนื้อหา: หน้าเลื่อนได้ (เนื้อหายาวกว่าจอ)');
+            else if (r.free === null) { fail++; lines.push('✘ ว่างใต้เนื้อหา: ไม่พบองค์ประกอบ ' + p.fill); }
+            else if (r.free > 20) { fail++; lines.push(`✘ ว่างใต้เนื้อหา ${r.free}% > 20% ของความสูงจอ`); }
+            else { ok++; lines.push(`✓ ว่างใต้เนื้อหา ${r.free}% ≤ 20%`); }
           }
           if (scale === '100' && banner === 'none') {
             const small = r.inputs.filter((x) => x.fs < 16);

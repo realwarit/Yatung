@@ -1,24 +1,36 @@
-<section class="progress" aria-label="ความคืบหน้าวันนี้" data-first-screen="progress">
-  @if (allDone()) {
-    <div class="cheer" data-first-screen="cheer">
-      <app-mascot mood="celebrate" size="l" [decorative]="false" label="น้องยาตรงดีใจที่วันนี้กินยาครบแล้ว" />
-      <p class="big" role="status">วันนี้กินครบแล้ว เก่งมากเลยค่ะ</p>
-      <p class="sub"><span class="num">{{ taken() }} / {{ total() }}</span> รายการ</p>
-    </div>
-    <app-tts-button class="listen" variant="compact" label="ฟัง" ariaLabel="ฟังสรุปยาวันนี้" ttsKey="today-all" [build]="speak()" data-first-screen="listen" />
-  } @else {
-    <app-mascot class="mc" [mood]="mood()" size="s" />
-    <div class="mid">
-      @if (total() > 0) {
-        <p class="line">
-          <span class="lbl">วันนี้กินแล้ว</span>
-          <span class="cnt"><span class="num n">{{ taken() }}</span> / <span class="num">{{ total() }}</span></span>
-        </p>
-        <div class="bar" role="progressbar" aria-label="ความคืบหน้ากินยาวันนี้" aria-valuemin="0" [attr.aria-valuemax]="total()" [attr.aria-valuenow]="taken()"><i [style.width.%]="pct()"></i></div>
+<section class="hero" data-first-screen="progress" aria-label="ความคืบหน้าวันนี้">
+  <div class="top">
+    <h1 class="greet">{{ greet() }}</h1>
+    <span class="date num" data-today-date>{{ date() }}</span>
+  </div>
+
+  <div class="card">
+    <div class="say" [class.say--l]="allDone()">
+      @if (allDone()) {
+        <div class="cheer" data-first-screen="cheer"><app-mascot mood="celebrate" size="l" [decorative]="false" label="น้องยาตรงดีใจที่วันนี้กินยาครบแล้ว" /></div>
       } @else {
-        <p class="lbl none">วันนี้ไม่มีรอบกินยา</p>
+        <app-mascot class="mc" [mood]="mood()" size="m" />
       }
+      <app-speech-bubble class="bub" tail="left" [typing]="false" [live]="true" [tone]="bubble().tone" [text]="bubble().text" />
     </div>
-    <app-tts-button class="listen" variant="compact" label="ฟัง" ariaLabel="ฟังยาที่ต้องกินวันนี้" ttsKey="today-all" [build]="speak()" data-first-screen="listen" />
-  }
+
+    <div class="stat">
+      @if (total() > 0) {
+        <div class="ring" role="progressbar" aria-label="ความคืบหน้ากินยาวันนี้" aria-valuemin="0" [attr.aria-valuemax]="total()" [attr.aria-valuenow]="taken()">
+          <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+            <circle class="trk" cx="24" cy="24" r="21" />
+            <circle class="val" cx="24" cy="24" r="21" [attr.stroke-dasharray]="dash()" transform="rotate(-90 24 24)" />
+            <text x="24" y="24" text-anchor="middle" dominant-baseline="central" [attr.font-size]="ringFont()">{{ taken() }}/{{ total() }}</text>
+          </svg>
+        </div>
+        <div class="txt">
+          <p class="lbl">วันนี้กินแล้ว</p>
+          <app-adherence-card [version]="taken()" />
+        </div>
+      } @else {
+        <div class="txt"><p class="lbl">วันนี้ไม่มีรอบกินยา</p><app-adherence-card [version]="0" /></div>
+      }
+      <app-tts-button class="listen" variant="compact" label="ฟัง" [ariaLabel]="allDone() ? 'ฟังสรุปยาวันนี้' : 'ฟังยาที่ต้องกินวันนี้'" ttsKey="today-all" [build]="speak()" data-first-screen="listen" />
+    </div>
+  </div>
 </section>

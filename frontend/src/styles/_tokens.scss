@@ -78,6 +78,19 @@
   --yt-shadow-sm: 0 1px 3px rgb(var(--yt-shadow-color) / 0.10), 0 1px 2px rgb(var(--yt-shadow-color) / 0.06);
   --yt-shadow-md: 0 6px 20px rgb(var(--yt-shadow-color) / 0.12), 0 2px 6px rgb(var(--yt-shadow-color) / 0.06);
   --yt-shadow-lg: 0 18px 44px rgb(var(--yt-shadow-color) / 0.18), 0 4px 12px rgb(var(--yt-shadow-color) / 0.08);
+  // ---------- D2.5 (คืนความน่ารัก) ----------
+  --yt-shadow-soft: 0 2px 10px rgb(15 110 86 / 0.08);   // เฉพาะการ์ดหลัก การ์ด auth กล่องคำพูด
+  --yt-hero-bg: #e1f5ee;                                 // พื้นแถบทักทายหน้าวันนี้ (โค้งมุมล่าง 24px)
+  // สีประจำมื้อ {bg, accent, fg} — fg บน bg ทุกคู่ contrast ≥ 4.5:1 (เทส meal-contrast.test.js)
+  --yt-meal-morning-bg: #faeeda;  --yt-meal-morning-accent: #fac775;  --yt-meal-morning-fg: #633806;
+  --yt-meal-noon-bg: #fff6d1;     --yt-meal-noon-accent: #f6d97a;     --yt-meal-noon-fg: #5c4500;
+  --yt-meal-evening-bg: #faece7;  --yt-meal-evening-accent: #f5c4b3;  --yt-meal-evening-fg: #712b13;
+  --yt-meal-bedtime-bg: #eeedfe;  --yt-meal-bedtime-accent: #cecbf6;  --yt-meal-bedtime-fg: #3c3489;
+  // กล่องคำพูด (app-speech-bubble tone) {bg, fg, ขอบ}
+  --yt-bubble-neutral-bg: #ffffff; --yt-bubble-neutral-fg: var(--yt-text); --yt-bubble-neutral-border: #9fe1cb;
+  --yt-bubble-info-bg: #e6f1fb;    --yt-bubble-info-fg: #0c447c;           --yt-bubble-info-border: #b5d4f4;
+  --yt-bubble-warning-bg: #faeeda; --yt-bubble-warning-fg: #633806;        --yt-bubble-warning-border: #fac775;
+  --yt-bubble-success-bg: #eaf3de; --yt-bubble-success-fg: #27500a;        --yt-bubble-success-border: #c0dd97;
 
   // ---------- ระยะห่าง 4/8/12/16/24/32/48 ----------
   // 8D: เป็น rem — ขยายตาม ก+/ก++ พร้อมตัวอักษร (ที่ ก = 4/8/12/16/24/32/48px)

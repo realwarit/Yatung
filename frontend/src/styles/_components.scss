@@ -238,6 +238,16 @@
   .yt-compact { flex: none; }
 }
 
+// ---------- กินครบมื้อนี้ (ดันลงล่างการ์ดเมื่อการ์ดแถวเดียวกันสูงไม่เท่ากัน) ----------
+.yt-all { margin-top: auto; padding: var(--yt-space-3) var(--yt-space-4) var(--yt-space-4); border-top: 1px solid var(--yt-border); }
+.yt-all-btn {
+  display: flex; align-items: center; justify-content: center; gap: var(--yt-space-2); width: 100%; min-height: var(--yt-tap);
+  border: 1.5px solid var(--yt-primary); border-radius: var(--yt-radius-pill); background: transparent;
+  color: var(--yt-primary-dark); font: 500 var(--yt-text-body) / 1 var(--yt-font-display); cursor: pointer; --icon-optical-offset: 0.06em;
+  &:hover { background: var(--yt-primary-soft); }
+  &[aria-disabled='true'] { opacity: 0.55; cursor: default; }
+}
+
 // yt-sheet: แผ่นล่าง (มือถือ) และแผงขวา (จอ ≥ 1024px) — โครงอยู่ที่ app-sheet-frame
 .yt-sheet-bottom.mat-bottom-sheet-container {
   padding: var(--yt-space-3) var(--yt-space-4) calc(var(--yt-space-4) + env(safe-area-inset-bottom, 0px));
