@@ -34,7 +34,7 @@ export type MedSheetResult =
       }
 
       <dl class="rows">
-        <div><dt>วิธีกิน</dt><dd>ครั้งละ {{ med.dose_per_time | doseQty: med.unit | nbNum }}@if (med.meal_relation | mealLabel; as meal) { · {{ meal }} }</dd></div>
+        <div><dt>วิธีกิน</dt><dd><span class="seg">ครั้งละ {{ med.dose_per_time | doseQty: med.unit | nbNum }}</span>@if (med.meal_relation | mealLabel; as meal) { · <span class="seg">{{ meal }}</span> }</dd></div>
         <div><dt>มื้อ</dt>
           <dd><ul class="chips" aria-label="มื้อที่กิน">
             @if (med.as_needed) { <li class="prn">เมื่อมีอาการ</li> }
@@ -44,7 +44,7 @@ export type MedSheetResult =
         @if (med.indication) { <div><dt>ใช้สำหรับ</dt><dd>{{ med.indication }}</dd></div> }
         @if (med.remaining_qty !== null) {
           <div><dt>คงเหลือ</dt>
-            <dd>@if (med.remaining_qty === 0) { ยาหมดแล้ว } @else { เหลือ {{ med.remaining_qty }}&nbsp;{{ med.unit | unitLabel }}@if (med.days_left !== null) { · พอใช้ {{ med.days_left }}&nbsp;วัน } }</dd>
+            <dd>@if (med.remaining_qty === 0) { ยาหมดแล้ว } @else { <span class="seg">เหลือ {{ med.remaining_qty }}&nbsp;{{ med.unit | unitLabel }}</span>@if (med.days_left !== null) { · <span class="seg">พอใช้ {{ med.days_left }}&nbsp;วัน</span> } }</dd>
           </div>
         }
       </dl>

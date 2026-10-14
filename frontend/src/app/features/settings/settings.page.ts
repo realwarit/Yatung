@@ -54,6 +54,7 @@ export class SettingsPage {
   protected readonly demoMode = signal(false);
   protected readonly leaving = signal(false);
   protected readonly installMode = this.install.settingsMode;
+  protected readonly installed = this.install.isInstalled;
 
   protected readonly timesSummary = computed(() => {
     const t = this.times();
@@ -62,10 +63,14 @@ export class SettingsPage {
   protected readonly pushLabel = computed(() => ({
     enabled: 'เปิดอยู่', off: 'ปิดอยู่', blocked: 'ถูกบล็อก', 'needs-install': 'ต้องติดตั้งก่อน', unsupported: 'ไม่รองรับ',
   }[this.push.state()]));
-  protected readonly say = computed<{ tone: BubbleTone; mood: MascotMood; text: string }>(() =>
-    this.lineLinked() === false
-      ? { tone: 'info', mood: 'happy', text: 'ยังไม่ได้เชื่อม LINE ค่ะ' + NL + 'แตะ "เชื่อม LINE" ได้เลยนะคะ' }
-      : { tone: 'neutral', mood: 'happy', text: 'ตั้งค่าให้เหมาะกับคุณนะคะ' });
+  /** กล่องคำพูด : ข้อแรกที่เป็นจริง (ยังไม่เชื่อม LINE → ยังไม่มีญาติ → ครบ) ; ยังโหลดไม่เสร็จ = ข้อความกลาง ; ประโยคละก้อน */
+  protected readonly say = computed<{ tone: BubbleTone; mood: MascotMood; text: string }>(() => {
+    const linked = this.lineLinked(), n = this.caregiverCount();
+    if (linked === false) return { tone: 'info', mood: 'happy', text: 'เชื่อม LINE ไว้ น้องจะเตือน' + NL + 'กินยาทาง LINE ด้วยนะคะ' };
+    if (linked === true && n === 0) return { tone: 'info', mood: 'happy', text: 'เพิ่มญาติไว้นะคะ ถ้าลืมกินยา' + NL + 'น้องจะบอกญาติให้ค่ะ' };
+    if (linked === true && n !== null) return { tone: 'success', mood: 'celebrate', text: 'ตั้งค่าครบแล้วค่ะ น้องพร้อม' + NL + 'เตือนทุกมื้อเลยนะคะ' };
+    return { tone: 'neutral', mood: 'happy', text: 'ตั้งค่าให้เหมาะกับคุณนะคะ' };
+  });
 
   constructor() {
     this.api.slotTimes().subscribe({ next: (t) => this.times.set(t), error: () => this.times.set(null) });

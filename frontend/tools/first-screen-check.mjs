@@ -49,7 +49,7 @@ const PAGES = [
   } },
   { route: '/medications', names: ['add', 'say'] },   // D3 ช่วง 1
   { route: '/medications/new', names: ['save'], d3: true },
-  { route: '/settings', names: ['slot-times'], d3: true },
+  { route: '/settings', names: ['say'], d3: true },
   { route: '/overview', names: [], d3: true },
 ];
 const only = val('routes', '').split(',').filter(Boolean);
@@ -163,6 +163,29 @@ for (const [w, h] of sizes) {
             const toolSize = fr ? [...document.querySelectorAll('.frame--image .tool')].map((e) => Math.round(e.getBoundingClientRect().height)) : [];
             return { toolsOut, toolSize, items, barBtns, stepper, inputs, mitr, placeholders, auth, scrollers, free, bannerH: Math.round(bannerH), bannerCount: document.querySelectorAll('[data-banner]').length };
           }, [sc.names, p.fill ?? null]);
+          // G2: เลื่อนสุดแล้ว ข้อความสุดท้ายของหน้า (รวม disclaimer) ต้องไม่ถูกแถบเมนู/ปุ่มสแกน/แถบปุ่มติดล่างทับ
+          const tail = await page.evaluate(() => {
+            const sc = [document.scrollingElement, document.querySelector('.main'), document.querySelector('app-auth-shell'), document.querySelector('.yt-page')].filter(Boolean);
+            sc.forEach((e) => { e.scrollTop = e.scrollHeight; });
+            const root = document.querySelector('.yt-page');
+            if (!root) return null;
+            const vis = (e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden'; };
+            const covers = [document.querySelector('nav.bottom'), document.querySelector('.scan__btn'), ...root.querySelectorAll('*')].filter((e) => e && vis(e) && (/^(sticky|fixed)$/.test(getComputedStyle(e).position) || e.matches('nav.bottom, .scan__btn')));
+            const coverR = covers.map((e) => e.getBoundingClientRect());
+            const texts = [];
+            const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+            for (let t = tw.nextNode(); t; t = tw.nextNode()) {
+              if (!(t.textContent || '').trim()) continue;
+              const el = t.parentElement;
+              if (!vis(el) || covers.some((c) => c.contains(el)) || el.closest('.cdk-visually-hidden, .sr-only, [aria-hidden=true]')) continue;
+              const rg = document.createRange(); rg.selectNodeContents(t);
+              for (const q of rg.getClientRects()) if (q.width > 1 && q.height > 1) texts.push({ q, s: t.textContent.trim().slice(0, 24) });
+            }
+            if (!texts.length) return null;
+            const last = texts.reduce((a, b) => (b.q.bottom > a.q.bottom ? b : a));
+            const hit = coverR.some((c) => last.q.left < c.right && last.q.right > c.left && last.q.top < c.bottom && last.q.bottom > c.top);
+            return { s: last.s, bottom: Math.round(last.q.bottom), hit, H: window.innerHeight };
+          });
           const tag = `${p.route}${p.id ? ' [' + p.id + ']' : ''}${sc.id ? ' [' + sc.id + ']' : ''}${banner === 'offline' ? ' +banner' : ''} @${w}x${h} ${SCALE_NAME[scale]}`;
           // Register: ก+ และ ก++ ยอมให้เลื่อน (ฟอร์ม 4 ช่อง ; ตามที่ D2 ตัดสิน) — รายงานอย่างเดียว
           const hard = scale !== '125' && !(p.route === '/register' && scale === '112');
@@ -213,6 +236,10 @@ for (const [w, h] of sizes) {
           if (r.toolsOut !== null) {
             if (r.toolsOut || r.toolSize.some((x) => x !== 48)) { fail++; lines.push(`✘ แถบเครื่องมือรูป: ล้นกรอบ ${r.toolsOut} ปุ่ม · ความสูง ${r.toolSize.join('/')}px (ต้อง 48)`); }
             else { ok++; lines.push('✓ แถบเครื่องมือรูปอยู่ในกรอบภาพ ปุ่ม 48px'); }
+          }
+          if (tail) {
+            if (tail.hit) { fail++; lines.push(`✘ ข้อความสุดท้ายถูกแถบเมนู/ปุ่มทับ: "${tail.s}" ล่าง ${tail.bottom}/${tail.H}`); }
+            else { ok++; lines.push(`✓ ข้อความสุดท้ายไม่ถูกทับ (ล่าง ${tail.bottom}/${tail.H})`); }
           }
           if (r.scrollers) { fail++; lines.push(`✘ ล้นแนวนอน ${r.scrollers} ตัว`); }
           console.log(`${tag}\n   ${lines.join('\n   ') || '(ไม่มีป้าย)'}`);

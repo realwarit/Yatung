@@ -4,8 +4,10 @@ p { margin: 0; }
 .low { background: var(--yt-warning-soft); color: var(--yt-on-warning-soft); }
 .stop { background: var(--yt-field-bg); color: var(--yt-text-muted); }
 
-.rows { margin: 0 0 var(--yt-space-4); }
-.rows > div { display: grid; grid-template-columns: minmax(0, 6.5rem) minmax(0, 1fr); gap: var(--yt-space-3); padding: var(--yt-space-2) 0; border-bottom: 1px solid var(--yt-border); }
+.rows { display: grid; grid-template-columns: fit-content(7em) minmax(0, 1fr); column-gap: var(--yt-space-3); margin: 0 0 var(--yt-space-4); }
+// คอลัมน์ป้ายกว้างเท่าป้ายที่ยาวสุด (≤ 7em) ทุกแถวตรงกัน ; ค่าที่คั่นด้วย " · " ตัดบรรทัดได้เฉพาะที่จุดคั่น (.seg ห้ามตัดกลาง)
+.rows > div { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; padding: var(--yt-space-2) 0; border-bottom: 1px solid var(--yt-border); }
+.seg { white-space: nowrap; }
 dt { color: var(--yt-text-muted); }
 dd { margin: 0; overflow-wrap: anywhere; font-weight: 500; }
 

@@ -19,6 +19,10 @@ const SC = { 100: 'k', 112: 'kp', 125: 'kpp' };
 const metformin = { ...MED, id: 3, name: 'Metformin', strength: '500 mg', slots: ['morning', 'noon', 'evening', 'bedtime'], indication: 'ลดน้ำตาลในเลือด', remaining_qty: 40, days_left: 20, is_low: false };
 const stopped = { ...MED, id: 4, name: 'Simvastatin', strength: '20 mg', slots: ['bedtime'], indication: 'ลดไขมันในเลือด', is_active: false, end_date: '2026-10-10', is_low: false, remaining_qty: 12, days_left: null };
 const MEDS = [MED, MED_PRN, metformin, stopped];
+const CG = [
+  { id: 1, name: 'คุณลูกสาว', relation: 'ลูกสาว', escalate_after_min: 60, line_linked: true, line_display_name: 'Somying', recent_escalations: [{ sent_at: '2026-10-13 18:35:00', scheduled_at: '2026-10-13 18:00:00', slot: 'evening', time: '18:00', doses: 2, outcome: 'confirmed' }] },
+  { id: 2, name: 'คุณหลาน', relation: 'หลาน', escalate_after_min: 90, line_linked: false, line_display_name: null, recent_escalations: [] },
+];
 
 // หน้า : [ชื่อไฟล์, route, เงื่อนไข/ขั้นตอนเพิ่ม]
 const SHOTS = [
@@ -30,12 +34,18 @@ const SHOTS = [
   ['medications-empty', '/medications', { meds: [] }],
   ['med-form', '/medications/new', {}],
   ['med-form-edit', '/medications/1/edit', {}],
-  ['settings', '/settings', {}],
-  ['settings-times', '/settings', { click: 'เวลากินยาแต่ละมื้อ', h: 900 }],
-  ['settings-line', '/settings/line', {}],
-  ['settings-caregivers', '/settings/caregivers', {}],
+  // settings : demoMode เปิด (สถานะที่ใช้จริงจนถึงวันส่ง) ; G4 กล่องคำพูด 3 สถานะ = nolink / nocg / (ครบ)
+  ['settings', '/settings', { cg: true }],
+  ['settings-nolink', '/settings', { linked: false }],
+  ['settings-nocg', '/settings', {}],
+  ['settings-times', '/settings', { cg: true, click: 'เวลากินยาแต่ละมื้อ', h: 900 }],
+  ['settings-demo-sheet', '/settings', { cg: true, click: 'ทดลองส่งเตือน', h: 900 }],
+  ['settings-install-sheet', '/settings', { cg: true, click: 'ติดตั้งแอป', h: 900 }],
+  ['settings-line', '/settings/line', { cg: true }],
+  ['settings-caregivers', '/settings/caregivers', { cg: true }],
+  ['settings-developer', '/settings/developer', { cg: true }],
   ['overview', '/overview', {}],
-  ['today-empty', '/today', { empty: true }],
+  ['today-empty', '/today', { empty: true, meds: [] }],
 ];
 
 const browser = await chromium.launch({ channel: 'msedge' }).catch(() => chromium.launch({ channel: 'chrome' }));
@@ -46,9 +56,11 @@ for (const scale of scales) for (const w of widths) for (const [name, route, o] 
   await ctx.addInitScript(([sc, tok]) => { try { localStorage.setItem('yatung_font_scale_v2', sc); localStorage.setItem('yatung_font_hint_off', '1'); localStorage.setItem('yatung_token', tok); localStorage.setItem('yatung_user', JSON.stringify({ id: 1, email: 'x@example.test', display_name: 'ผู้ทดสอบ' })); } catch {} }, [scale, FAKE_JWT]);
   await fakeThaiVoice(ctx);
   const page = await ctx.newPage();
-  await mockApi(page, { today: () => 'late' });
+  await mockApi(page, { today: () => 'late', demoMode: () => o.demo !== false });
+  if (o.linked === false) await page.route('**/api/line/status', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ linked: false, display_name: null }) }));
+  if (o.cg) await page.route('**/api/caregivers', (r) => (r.request().method() === 'GET' ? r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ caregivers: CG }) }) : r.fallback()));
   const list = o.meds ?? MEDS;
-  await page.route('**/api/medications', (r) => (r.request().method() === 'GET' ? r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(list) }) : r.fallback()));
+  await page.route(/\/api\/medications(\?.*)?$/,(r) => (r.request().method() === 'GET' ? r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(list) }) : r.fallback()));
   await page.route('**/api/medications/1', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MED) }));
   await page.route('**/api/medications/1/stop', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...MED, is_active: false, end_date: '2026-10-14' }) }));
   if (o.empty) await page.route('**/api/doses/today', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ summary: { total: 0, taken: 0, pending: 0, missed: 0 }, slots: [] }) }));

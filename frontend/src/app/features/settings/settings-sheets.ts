@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { InstallService } from '../../core/pwa/install.service';
 import { FontSizeToggleComponent } from '../../shared/font-size-toggle.component';
 import { InstallCardComponent } from '../../shared/components/install-card/install-card.component';
 import { SheetFrameComponent } from '../../shared/ui/sheet/sheet-frame.component';
@@ -28,9 +29,20 @@ export class TtsSheetComponent {}
   selector: 'app-install-sheet',
   imports: [SheetFrameComponent, InstallCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<app-sheet-frame title="ติดตั้งแอป"><app-install-card placement="settings" /></app-sheet-frame>`,
+  styles: `.how { margin: 0; line-height: var(--yt-line-height); } .how + .how { margin-top: var(--yt-space-3); }`,
+  template: `
+    <app-sheet-frame title="ติดตั้งแอป">
+      @if (svc.settingsMode()) {
+        <app-install-card placement="settings" />
+      } @else {
+        <!-- เบราว์เซอร์ที่ไม่ส่งปุ่มติดตั้งให้ (เดสก์ท็อป, Chrome บน iPhone ฯลฯ) : บอกวิธีทั่วไป -->
+        <p class="how">เปิดเมนูของเบราว์เซอร์ (ปุ่ม <strong>⋮</strong> หรือ <strong>แชร์</strong>) แล้วเลือก <strong>ติดตั้งแอป</strong> หรือ <strong>เพิ่มไปยังหน้าจอโฮม</strong> ค่ะ</p>
+        <p class="how">บน iPhone ต้องเปิดจาก Safari เท่านั้นนะคะ</p>
+      }
+    </app-sheet-frame>
+  `,
 })
-export class InstallSheetComponent {}
+export class InstallSheetComponent { protected readonly svc = inject(InstallService); }
 
 @Component({
   selector: 'app-demo-sheet',

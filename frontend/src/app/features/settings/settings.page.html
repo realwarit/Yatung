@@ -26,6 +26,11 @@
       <app-icon lead name="bell" />
       <span trail class="yt-chip" [class.yt-chip--ok]="push.state() === 'enabled'">{{ pushLabel() }}</span>
     </button>
+    @if (demoMode()) {
+      <button appListRow type="button" title="ทดลองส่งเตือน" sub="โหมดเดโม" [chevron]="true" (click)="openSheet('demo')">
+        <app-icon lead name="bell" />
+      </button>
+    }
   </app-section>
 
   <app-section label="แอป" id="set-c">
@@ -35,15 +40,12 @@
     <button appListRow type="button" title="การแสดงผล" sub="ขนาดตัวอักษร" [chevron]="true" (click)="openSheet('display')">
       <app-icon lead name="type" />
     </button>
-    @if (installMode()) {
-      <button appListRow type="button" title="ติดตั้งแอป" sub="เพิ่มลงหน้าจอโฮม" [chevron]="true" (click)="openSheet('install')">
+    @if (!installed()) {
+      <button appListRow type="button" title="ติดตั้งแอป" [sub]="installMode() ? 'เพิ่มลงหน้าจอโฮม' : 'ดูวิธีติดตั้ง'" [chevron]="true" (click)="openSheet('install')">
         <app-icon lead name="phone" />
       </button>
     }
     @if (demoMode()) {
-      <button appListRow type="button" title="ทดลองส่งเตือน" sub="โหมดเดโม" [chevron]="true" (click)="openSheet('demo')">
-        <app-icon lead name="bell" />
-      </button>
       <a appListRow routerLink="/settings/developer" title="ข้อมูลสำหรับผู้พัฒนา" [chevron]="true">
         <app-icon lead name="info" />
       </a>
