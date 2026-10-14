@@ -8,10 +8,21 @@
 }
 .head__actions { display: flex; flex-wrap: wrap; gap: var(--yt-space-3); }
 
-// น้องยาตรง S + กล่องคำพูดเดียวของหน้า
-.perch { display: flex; align-items: center; gap: var(--yt-space-3); margin-bottom: var(--yt-space-3); }
+// น้องยาตรง 56px (ไม่โตตาม ก) ชิดล่าง + กล่องคำพูดเดียวของหน้า (หางชี้มาที่ตัวน้อง)
+.perch { display: flex; align-items: flex-end; gap: var(--yt-space-3); margin-bottom: var(--yt-space-3); }
+.perch app-mascot { flex: none; }
 .perch .b { flex: 1; min-width: 0; }
-.scan-cta { align-self: flex-start; margin-bottom: var(--yt-space-3); max-width: 100%; }
+
+// หน้าว่าง : กลางพื้นที่ระหว่างหัวหน้ากับแถบเมนู ; น้องยาตรง L → M เมื่อจอเตี้ย
+.empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--yt-space-4);
+  min-height: calc(100dvh - var(--yt-bottom-clearance) - 11rem); padding-bottom: var(--yt-space-4);
+}
+.empty__mascot { width: 112px; flex: none; }
+.empty__say { width: 100%; max-width: 22rem; }
+.empty__btns { width: 100%; max-width: 22rem; }
+@media (max-height: 739.98px) { .empty__mascot { width: 56px; } }
+@media (min-width: 1024px) { .empty { min-height: 60dvh; } }
 
 .grid {
   display: grid;
@@ -44,7 +55,7 @@
   width: 100%; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
   h2 { flex: 1; min-width: 0; margin: 0; font-size: var(--yt-text-heading); overflow-wrap: anywhere; }
 }
-.strength { font: 500 var(--yt-text-body) var(--yt-font-body); color: var(--yt-text-muted); }
+.strength { display: inline-block; white-space: nowrap; font: 500 var(--yt-text-body) var(--yt-font-body); color: var(--yt-text-muted); }   // ก้อนเดียว : ไม่พอที่ = ทั้งก้อนลงบรรทัดใหม่
 .go { flex: none; margin-top: 0.2em; color: var(--yt-text-muted); }
 .low-tag {
   flex: none; display: inline-flex; align-items: center; padding: 0 var(--yt-space-3); border-radius: var(--yt-radius-pill);
@@ -64,16 +75,15 @@
 
 // แถบคงเหลือ ; ใกล้หมด = พื้นส้มอ่อน
 .supply {
-  display: flex; flex-wrap: wrap; align-items: center; gap: var(--yt-space-2);
+  display: flex; align-items: flex-start; gap: var(--yt-space-2);
   padding: var(--yt-space-2) var(--yt-space-3); border-radius: var(--yt-radius-sm); background: var(--yt-field-bg); font-weight: 500;
-  app-icon { flex: none; }
+  app-icon { flex: none; margin-top: 0.2em; }   // ไอคอนคงที่ซ้าย ข้อความตัดบรรทัดเฉพาะฝั่งขวา
 }
-.supply__txt { flex: 1 1 auto; min-width: 0; }
+.supply__txt { flex: 1 1 0; min-width: 0; }
 .supply--low { background: var(--yt-warning-soft); color: var(--yt-on-warning-soft); font-weight: 600; }
 .stopped-note { display: flex; align-items: center; gap: var(--yt-space-2); color: var(--yt-text-muted); font-weight: 500; }
 
-.actions { display: flex; flex-wrap: wrap; gap: var(--yt-space-2); margin-top: var(--yt-space-2); }
-.actions > * { flex: 1 1 8rem; min-width: 0; }
+.actions { margin-top: var(--yt-space-2); }   // แถวเดียวกันก่อน (yt-fitrow) ; เรียงลงเฉพาะเมื่อไล่ป้ายครบทุกขั้นแล้วยังไม่พอ
 // เติมยาตอนยังไม่ใกล้หมด: ปุ่มรอง (ใกล้หมด = ปุ่มหลักสีเต็ม)
 .quiet { --mat-button-filled-container-color: var(--yt-primary-soft); --mat-button-filled-label-text-color: var(--yt-primary-deep); }
 

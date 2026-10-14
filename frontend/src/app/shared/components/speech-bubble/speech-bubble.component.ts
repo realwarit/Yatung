@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, effect, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, signal } from '@angular/core';
 
+const NL = String.fromCharCode(10);
 const DOTS_MS = 600;   // จุด "..." กะพริบก่อนพิมพ์
 const TYPE_MS = 28;    // ความเร็วพิมพ์ต่อตัวอักษร
 
@@ -35,7 +36,7 @@ function graphemes(text: string): string[] {
       }
     } @else {
       <p class="bubble" [attr.aria-live]="live() ? 'polite' : null">
-        <span class="t">{{ text() }}</span>
+        <span class="t">@for (seg of segs(); track $index) {<span [class.seg]="segs().length > 1">{{ seg }}</span> }</span>
         @if (sub()) { <span class="s">{{ sub() }}</span> }
       </p>
     }
@@ -64,8 +65,9 @@ function graphemes(text: string): string[] {
       overflow-wrap: anywhere;
       text-wrap: pretty;   // ไม่ให้เหลือคำเดียวโดดๆ บรรทัดสุดท้าย
     }
-    :host(.tail-down) .bubble { text-wrap: balance; }
+    :host(.tail-down) .bubble { }
     .t { display: block; }
+    .seg { display: inline-block; max-width: 100%; }   // ประโยคหนึ่งไม่ถูกตัดกลาง ; ยาวเกินกล่องจริงจึงตัดภายในประโยค
     .s { display: block; margin-top: 0.125rem; font-family: var(--yt-font-body); font-weight: 400; font-size: 0.8125rem; opacity: 0.9; }
     .full { display: block; opacity: 0; }
     .typed { position: absolute; top: var(--pad-y); left: var(--pad-x); right: var(--pad-x); }
@@ -82,14 +84,17 @@ function graphemes(text: string): string[] {
       border: 1px solid var(--b-border); border-radius: 2px; transform: rotate(45deg);
     }
     :host(.tail-left) .bubble::before { top: 50%; left: -0.4rem; margin-top: -0.375rem; border-right: 0; border-top: 0; }
+    // หางชี้ซ้ายลงต่ำ : น้องยาตรงชิดล่างของแถว (กึ่งกลางตัวน้อง ≈ 28px จากล่าง ; กล่องเตี้ยกว่านั้น = กึ่งกลางกล่อง)
+    :host(.tail-left-low) .bubble::before { bottom: min(1.375rem, calc(50% - 0.375rem)); left: -0.4rem; border-right: 0; border-top: 0; }
+    :host(.tail-up) .bubble::before { top: -0.4rem; left: 50%; margin-left: -0.375rem; border-right: 0; border-bottom: 0; }
     :host(.tail-down) .bubble::before { bottom: -0.4rem; left: 50%; margin-left: -0.375rem; border-left: 0; border-top: 0; }
     :host(.tail-down-left) .bubble::before { bottom: -0.4rem; left: 1.5rem; border-left: 0; border-top: 0; }
   `,
-  host: { '[class.tail-left]': 'tail() === "left"', '[class.tail-down]': 'tail() === "down"', '[class.tone-info]': 'tone() === "info"', '[class.tone-warning]': 'tone() === "warning"', '[class.tone-success]': 'tone() === "success"' },
+  host: { '[class.tail-left]': 'tail() === "left"', '[class.tail-left-low]': 'tail() === "left-low"', '[class.tail-up]': 'tail() === "up"', '[class.tail-down]': 'tail() === "down"', '[class.tone-info]': 'tone() === "info"', '[class.tone-warning]': 'tone() === "warning"', '[class.tone-success]': 'tone() === "success"' },
 })
 export class SpeechBubbleComponent {
   readonly text = input.required<string>();
-  readonly tail = input<'left' | 'down'>('left');
+  readonly tail = input<'left' | 'left-low' | 'down' | 'up'>('left');
   readonly tone = input<BubbleTone>('neutral');
   /** บรรทัดรอง 13px (ไม่บังคับ) */
   readonly sub = input<string | null>(null);
@@ -98,6 +103,8 @@ export class SpeechBubbleComponent {
   /** aria-live="polite" เฉพาะกล่องที่ข้อความเปลี่ยนตามสถานะ (ใช้กับ typing = false) */
   readonly live = input(false);
 
+  /** ข้อความที่ขั้นประโยคด้วยบรรทัดใหม่ (ไม่บังคับ) — แต่ละประโยคเป็นก้อนเดียว ไม่ตัดกลาง */
+  protected readonly segs = computed(() => this.text().split(NL).map((x) => x.trim()).filter(Boolean));
   protected readonly dots = signal(false);
   protected readonly shown = signal('');
 

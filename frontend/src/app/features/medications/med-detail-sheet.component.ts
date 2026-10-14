@@ -3,7 +3,9 @@ import { MatButton } from '@angular/material/button';
 import { errorText } from '../../core/api/api-error';
 import { MedicationApi } from '../../core/api/medication.api';
 import { Medication } from '../../core/api/models';
-import { DoseQtyPipe, MealLabelPipe, SlotLabelPipe, UnitLabelPipe } from '../../core/i18n/labels.pipe';
+import { nbNum } from '../../core/nowrap';
+import { FitLabelDirective } from '../../shared/fit-label.directive';
+import { DoseQtyPipe, MealLabelPipe, NbNumPipe, SlotLabelPipe, UnitLabelPipe } from '../../core/i18n/labels.pipe';
 import { thaiShortDate } from '../../core/time';
 import { IconComponent } from '../../shared/icon.component';
 import { SheetFrameComponent } from '../../shared/ui/sheet/sheet-frame.component';
@@ -20,11 +22,11 @@ export type MedSheetResult =
  */
 @Component({
   selector: 'app-med-detail-sheet',
-  imports: [SheetFrameComponent, MatButton, IconComponent, DoseQtyPipe, MealLabelPipe, SlotLabelPipe, UnitLabelPipe],
+  imports: [SheetFrameComponent, MatButton, IconComponent, FitLabelDirective, DoseQtyPipe, MealLabelPipe, NbNumPipe, SlotLabelPipe, UnitLabelPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './med-detail-sheet.component.scss',
   template: `
-    <app-sheet-frame [title]="med.name + (med.strength ? ' ' + med.strength : '')">
+    <app-sheet-frame [title]="med.name + (med.strength ? ' ' + nb(med.strength) : '')">
       @if (med.is_active && med.is_low) {
         <p class="low"><app-icon name="alert" /> {{ med.remaining_qty === 0 ? 'ยาหมดแล้ว' : 'ใกล้หมด' }}</p>
       } @else if (!med.is_active) {
@@ -32,7 +34,7 @@ export type MedSheetResult =
       }
 
       <dl class="rows">
-        <div><dt>วิธีกิน</dt><dd>ครั้งละ {{ med.dose_per_time | doseQty: med.unit }}@if (med.meal_relation | mealLabel; as meal) { · {{ meal }} }</dd></div>
+        <div><dt>วิธีกิน</dt><dd>ครั้งละ {{ med.dose_per_time | doseQty: med.unit | nbNum }}@if (med.meal_relation | mealLabel; as meal) { · {{ meal }} }</dd></div>
         <div><dt>มื้อ</dt>
           <dd><ul class="chips" aria-label="มื้อที่กิน">
             @if (med.as_needed) { <li class="prn">เมื่อมีอาการ</li> }
@@ -42,7 +44,7 @@ export type MedSheetResult =
         @if (med.indication) { <div><dt>ใช้สำหรับ</dt><dd>{{ med.indication }}</dd></div> }
         @if (med.remaining_qty !== null) {
           <div><dt>คงเหลือ</dt>
-            <dd>@if (med.remaining_qty === 0) { ยาหมดแล้ว } @else { เหลือ {{ med.remaining_qty }} {{ med.unit | unitLabel }}@if (med.days_left !== null) { · พอใช้ {{ med.days_left }} วัน } }</dd>
+            <dd>@if (med.remaining_qty === 0) { ยาหมดแล้ว } @else { เหลือ {{ med.remaining_qty }}&nbsp;{{ med.unit | unitLabel }}@if (med.days_left !== null) { · พอใช้ {{ med.days_left }}&nbsp;วัน } }</dd>
           </div>
         }
       </dl>
@@ -52,17 +54,18 @@ export type MedSheetResult =
       @if (!med.is_active) {
         <div class="btns"><button mat-flat-button type="button" [disabled]="busy()" (click)="resume()"><app-icon name="undo" /> กลับมาใช้อีกครั้ง</button></div>
       } @else if (!confirming()) {
-        <div class="btns">
-          <button mat-flat-button type="button" [class.quiet]="!med.is_low" (click)="done({ act: 'refill' })"><app-icon name="plus" /> เติมยา</button>
-          <button mat-stroked-button type="button" (click)="done({ act: 'edit' })"><app-icon name="edit" /> แก้ไข</button>
+        <div class="btns yt-fitrow">
+          <button mat-flat-button type="button" [class.quiet]="!med.is_low" (click)="done({ act: 'refill' })" fitGroup="med-sheet" fitLabel="เติมยา"><app-icon class="fit-icon" name="plus" /> เติมยา</button>
+          <button mat-stroked-button type="button" (click)="done({ act: 'edit' })" fitGroup="med-sheet" fitLabel="แก้ไข"><app-icon class="fit-icon" name="edit" /> แก้ไข</button>
         </div>
         <button type="button" class="stop-link" (click)="ask()">หยุดใช้ยานี้</button>
       } @else {
         <div #confirm class="confirm" tabindex="-1" role="group" aria-labelledby="stop-q">
-          <p id="stop-q">หยุดใช้ {{ med.name }} ไหมคะ? ประวัติการกินยังอยู่ และกลับมาใช้ใหม่ได้ค่ะ</p>
-          <div class="btns">
-            <button mat-stroked-button type="button" [disabled]="busy()" (click)="confirming.set(false)">ยกเลิก</button>
-            <button mat-flat-button type="button" [disabled]="busy()" (click)="stop()">{{ busy() ? 'กำลังหยุด…' : 'หยุดใช้' }}</button>
+          <p id="stop-q" class="q">หยุดใช้ <span class="q__n">{{ med.name }}&nbsp;ไหมคะ?</span></p>
+          <p class="q__sub">ประวัติการกินยังอยู่ และกลับมาใช้ใหม่ได้ค่ะ</p>
+          <div class="btns yt-fitrow">
+            <button mat-stroked-button type="button" [disabled]="busy()" (click)="confirming.set(false)" fitGroup="med-stop" fitLabel="ยกเลิก">ยกเลิก</button>
+            <button mat-flat-button type="button" [disabled]="busy()" (click)="stop()" fitGroup="med-stop" [fitLabel]="busy() ? 'กำลังหยุด…' : 'หยุดใช้'">{{ busy() ? 'กำลังหยุด…' : 'หยุดใช้' }}</button>
           </div>
         </div>
       }
@@ -79,6 +82,7 @@ export class MedDetailSheetComponent {
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
 
+  protected readonly nb = nbNum;
   protected date(ymd: string): string { return thaiShortDate(ymd); }
   protected done(r: MedSheetResult): void { this.close(r); }
 

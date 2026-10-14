@@ -12,3 +12,15 @@ describe('nowrapUnits: ตัวเลขติดหน่วยในกล่
   it('มี n ช่องที่ควรตรวจ', () => expect(nowrapUnits('มี 3 ช่องที่ควรตรวจเป็นพิเศษ')).toBe(`มี 3${NB}ช่องที่ควรตรวจเป็นพิเศษ`));
   it('ข้อความที่ไม่มีตัวเลขไม่เปลี่ยน', () => expect(nowrapUnits('วันนี้กินครบแล้ว เก่งมากเลยค่ะ')).toBe('วันนี้กินครบแล้ว เก่งมากเลยค่ะ'));
 });
+
+import { glueThai, nbNum } from './nowrap';
+
+describe('nbNum / glueThai', () => {
+  it('ตัวเลขติดหน่วย', () => {
+    expect(nbNum('5 mg · 4 เม็ด · 2 วัน')).toBe('5 mg · 4 เม็ด · 2 วัน');
+    expect(nbNum(null)).toBe('');
+  });
+  it('glueThai ไม่เปลี่ยนตัวอักษร (มีแต่ตัวผูกคำเพิ่ม)', () => {
+    expect(glueThai('ใกล้หมดแล้วนะคะ').replace(/⁠/g, '')).toBe('ใกล้หมดแล้วนะคะ');
+  });
+});

@@ -8,8 +8,9 @@ import { errorText } from '../../core/api/api-error';
 import { MedicationApi } from '../../core/api/medication.api';
 import { Medication } from '../../core/api/models';
 import { SLOT_LABEL, thaiJoin } from '../../core/i18n/labels';
-import { DoseQtyPipe, MealLabelPipe, SlotLabelPipe, UnitLabelPipe } from '../../core/i18n/labels.pipe';
+import { DoseQtyPipe, MealLabelPipe, NbNumPipe, SlotLabelPipe, UnitLabelPipe } from '../../core/i18n/labels.pipe';
 import { thaiShortDate } from '../../core/time';
+import { FitLabelDirective } from '../../shared/fit-label.directive';
 import { MascotComponent } from '../../shared/components/mascot/mascot.component';
 import { SegmentedComponent } from '../../shared/components/segmented/segmented.component';
 import { SpeechBubbleComponent } from '../../shared/components/speech-bubble/speech-bubble.component';
@@ -22,7 +23,7 @@ import { RefillDialogComponent } from './refill-dialog.component';
 @Component({
   selector: 'app-medications-page',
   imports: [ErrTextComponent, RouterLink, MatButton, IconComponent, MascotComponent, SegmentedComponent, SpeechBubbleComponent,
-    DoseQtyPipe, MealLabelPipe, SlotLabelPipe, UnitLabelPipe],
+    DoseQtyPipe, MealLabelPipe, NbNumPipe, SlotLabelPipe, UnitLabelPipe, FitLabelDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './medications.page.html',
   styleUrl: './medications.page.scss',
@@ -48,6 +49,9 @@ export class MedicationsPage {
   ]);
   /** กล่องคำพูดเดียวของหน้า */
   protected readonly say = computed(() => medsSay(this.tab() === 'stopped' ? 'stopped' : 'active', this.meds()));
+
+  /** หน้าว่าง : ยังไม่มียา หรือมีแต่ยาที่หยุดแล้ว (แท็บ "กำลังใช้") */
+  protected readonly isEmpty = computed(() => !this.loading() && !this.error() && this.tab() === 'active' && this.active().length === 0);
 
   constructor() { this.load(); }
 

@@ -104,6 +104,8 @@ export class FitLabelDirective implements AfterViewInit, OnDestroy {
     if (!h.isConnected || h.getBoundingClientRect().width === 0) { this.best = null; return; }      // ซ่อนอยู่ (display:none) — วัดไม่ได้
     const sig = this.signature();
     if (sig === this.sig && h.dataset['fit'] !== undefined) return;
+    const grp = this.groupKey ? GROUPS.get(this.groupKey) : undefined;
+    for (const d of grp ?? [this]) d.host.removeAttribute('data-fit-fail');   // วัดในโครงแถวเดียวกันเสมอ
     const hasShort = !!this.fitShort() && !!h.querySelector('.fl-short');
     this.apply({ step: 0, px: null }, hasShort);
     const basePx = parseFloat(getComputedStyle(h).fontSize) || 16;
@@ -114,6 +116,9 @@ export class FitLabelDirective implements AfterViewInit, OnDestroy {
     this.apply(final, hasShort);
     this.sig = sig;
     if (group) for (const d of group) if (d !== this && d.best && d.host.isConnected) d.adopt(final);
+    // ไล่ครบทุกขั้นแล้วยังไม่พอ : ตั้ง data-fit-fail ให้ทุกปุ่มในกลุ่ม (CSS ของ .yt-fitrow เรียงลงแนวตั้ง)
+    const members = group ? [...group] : [this];
+    if (members.some((d) => d.host.isConnected && !fitsOneLine(d.host))) for (const d of members) d.host.setAttribute('data-fit-fail', '');
   }
 }
 
@@ -148,5 +153,5 @@ export function fitsOneLine(host: HTMLElement): boolean {
     }
   }
   if (tops.size > 1) return false;
-  return native.scrollWidth <= native.clientWidth + TOL;
+  return native.scrollWidth <= native.clientWidth + 2;   // ปุ่มกรอบเส้น (outlined) มีส่วนยื่น ~1px จากเส้นขอบ — ข้อความจริงตรวจแยกด้านบนแบบเข้ม
 }

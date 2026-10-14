@@ -13,10 +13,11 @@ const widths = val('widths', '384').split(',').map(Number);
 const scales = val('scales', '100,125').split(',');
 const out = `../docs/screenshots/day8d/d3-${tag}`;
 fs.mkdirSync(out, { recursive: true });
+const HEIGHT = { 384: 832, 320: 640 };
 const SC = { 100: 'k', 112: 'kp', 125: 'kpp' };
 
 const metformin = { ...MED, id: 3, name: 'Metformin', strength: '500 mg', slots: ['morning', 'noon', 'evening', 'bedtime'], indication: 'ลดน้ำตาลในเลือด', remaining_qty: 40, days_left: 20, is_low: false };
-const stopped = { ...MED, id: 4, name: 'Simvastatin', strength: '20 mg', slots: ['bedtime'], is_active: false, end_date: '2026-10-10', is_low: false, remaining_qty: 12, days_left: null };
+const stopped = { ...MED, id: 4, name: 'Simvastatin', strength: '20 mg', slots: ['bedtime'], indication: 'ลดไขมันในเลือด', is_active: false, end_date: '2026-10-10', is_low: false, remaining_qty: 12, days_left: null };
 const MEDS = [MED, MED_PRN, metformin, stopped];
 
 // หน้า : [ชื่อไฟล์, route, เงื่อนไข/ขั้นตอนเพิ่ม]
@@ -36,7 +37,7 @@ const SHOTS = [
 const browser = await chromium.launch({ channel: 'msedge' }).catch(() => chromium.launch({ channel: 'chrome' }));
 for (const scale of scales) for (const w of widths) for (const [name, route, o] of SHOTS) {
   if (only.length && !only.includes(name)) continue;
-  const h = o.h ?? (scale === '100' ? 1900 : 3400);
+  const h = HEIGHT[w] ?? 832;   // จอจริง : 384×832 (S23 FE) / 320×640 ; -full = หน้ายาวเต็มหน้า
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, locale: 'th-TH', timezoneId: 'Asia/Bangkok', deviceScaleFactor: 1.5, isMobile: true, hasTouch: true });
   await ctx.addInitScript(([sc, tok]) => { try { localStorage.setItem('yatung_font_scale_v2', sc); localStorage.setItem('yatung_font_hint_off', '1'); localStorage.setItem('yatung_token', tok); localStorage.setItem('yatung_user', JSON.stringify({ id: 1, email: 'x@example.test', display_name: 'ผู้ทดสอบ' })); } catch {} }, [scale, FAKE_JWT]);
   await fakeThaiVoice(ctx);
@@ -56,6 +57,7 @@ for (const scale of scales) for (const w of widths) for (const [name, route, o] 
   if (o.then) { await page.getByRole('button', { name: o.then }).evaluate((e) => e.click()); await page.waitForTimeout(900); }
   const file = `${out}/${name}-${w}-${SC[scale]}.png`;
   await page.screenshot({ path: file });
+  if (!o.noFull) { await page.setViewportSize({ width: w, height: o.h ?? (scale === '100' ? 1900 : 3400) }); await page.waitForTimeout(500); await page.screenshot({ path: file.replace('.png', '-full.png') }); }
   const ov = await page.evaluate(() => { const m = document.querySelector('.main') ?? document.documentElement; return [document.documentElement.scrollWidth, m.scrollWidth, m.clientWidth]; });
   console.log(`${name} ${w} ${SC[scale]} → ${file}  scrollWidth ${ov.join('/')}`);
   await ctx.close();

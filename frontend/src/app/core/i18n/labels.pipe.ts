@@ -1,4 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
+import { nbNum } from '../nowrap';
 import { DoseUnit, MealRelation, Slot } from '../api/medicine-parse.model';
 import { doseText, MEAL_LABEL, SLOT_LABEL, UNIT_LABEL, unitInDose } from './labels';
 
@@ -23,4 +24,10 @@ export class DoseQtyPipe implements PipeTransform {
   transform(v: number, unit?: DoseUnit): string {
     return unit ? `${doseText(v)} ${unitInDose(unit)}` : doseText(v);
   }
+}
+
+/** ตัวเลขติดหน่วยไม่ตัดบรรทัด ("5 mg", "4 เม็ด") */
+@Pipe({ name: 'nbNum' })
+export class NbNumPipe implements PipeTransform {
+  transform(v: string | null | undefined): string { return nbNum(v); }
 }

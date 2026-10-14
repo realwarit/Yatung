@@ -336,3 +336,9 @@ html.kb-open nav.bottom { display: none; }
 // dialog เต็มจอ (ดูรูปซองยาขยาย): ไม่มีมุมมน
 .yt-fullscreen-dialog .mat-mdc-dialog-container { --mat-dialog-container-shape: 0; }
 
+// ปุ่มคู่ที่ต้องอยู่แถวเดียวกันก่อน : ใช้คู่กับ fitLabel/fitGroup (ไล่ป้ายเต็ม → ไม่มีไอคอน → ลดตัวอักษร)
+// เรียงลงแนวตั้งเฉพาะเมื่อไล่ครบทุกขั้นแล้วยังไม่พอ (directive ตั้ง data-fit-fail)
+.yt-fitrow { display: flex; gap: var(--yt-space-2); }
+.yt-fitrow > * { flex: 1 1 0; min-width: 0; }
+.yt-fitrow:has([data-fit-fail]) { flex-direction: column; }
+.yt-fitrow:has([data-fit-fail]) > * { flex: none; width: 100%; }
