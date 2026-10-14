@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { ComponentType } from '@angular/cdk/portal';
-import { MatBottomSheet } from '@angular/material/bottom-sheet';
-import { MatDialog } from '@angular/material/dialog';
+import { MAT_BOTTOM_SHEET_DATA, MatBottomSheet, MatBottomSheetRef } from '@angular/material/bottom-sheet';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 
 export const SHEET_WIDE_QUERY = '(min-width: 1024px)';
 
@@ -30,4 +30,16 @@ export class SheetService {
     const ref = this.bottom.open<T, D, R>(component, { data, panelClass: 'yt-sheet-bottom', autoFocus: 'first-tabbable', restoreFocus: true });
     return new Promise((res) => ref.afterDismissed().subscribe((r) => res(r)));
   }
+}
+
+/** อ่านข้อมูลที่ส่งเข้า sheet ไม่ว่าจะเปิดเป็นแผ่นล่าง (มือถือ) หรือแผงขวา (จอกว้าง) — เรียกใน field initializer ของ component ที่เปิดผ่าน SheetService */
+export function injectSheetData<T>(): T {
+  return (inject(MAT_BOTTOM_SHEET_DATA, { optional: true }) ?? inject(MAT_DIALOG_DATA)) as T;
+}
+
+/** ปิด sheet พร้อมผลลัพธ์ (ใช้ได้ทั้งสองแบบ) */
+export function injectSheetClose(): (result?: unknown) => void {
+  const bottom = inject(MatBottomSheetRef, { optional: true });
+  const dialog = inject(MatDialogRef, { optional: true });
+  return (result) => { if (bottom) bottom.dismiss(result); else dialog?.close(result); };
 }
