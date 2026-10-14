@@ -14,6 +14,7 @@ export const ADD_MED_STEPS = ['ถ่ายรูป', 'ตรวจ', 'บั�
   template: `
     <ol class="steps" aria-label="ขั้นตอนการเพิ่มยา">
       @for (l of labels(); track l; let i = $index) {
+        @if (i > 0) { <li class="line" aria-hidden="true"></li> }
         <li class="s" [attr.data-state]="i < current() ? 'done' : i === current() ? 'now' : 'next'"
             [attr.aria-current]="i === current() ? 'step' : null">
           <span class="dot num" aria-hidden="true">@if (i < current()) { <app-icon name="check" /> } @else { {{ i + 1 }} }</span>
@@ -24,11 +25,11 @@ export const ADD_MED_STEPS = ['ถ่ายรูป', 'ตรวจ', 'บั�
     </ol>
   `,
   styles: `
-    :host { display: block; }
+    :host { display: block; container: steps / inline-size; }
     .steps { display: flex; align-items: center; margin: 0; padding: 0; list-style: none; }
-    .s { display: flex; align-items: center; gap: var(--yt-space-2); min-width: 0; color: var(--yt-text-muted); font-size: var(--yt-text-sm); font-weight: 500; line-height: var(--yt-line-height-tight); white-space: nowrap; }
-    .s:not(:last-child) { flex: 1; }
-    .s:not(:last-child)::after { content: ''; flex: 1; min-width: 0.5rem; height: 2px; margin: 0 var(--yt-space-2); background: var(--yt-border-strong); opacity: 0.5; }
+    .s { display: flex; flex: none; align-items: center; gap: var(--yt-space-2); color: var(--yt-text-muted); font-size: var(--yt-text-sm); font-weight: 500; line-height: var(--yt-line-height-tight); white-space: nowrap; }
+    /* G6: เส้นเชื่อมยาว ≥ 12px (0.75rem) ห่างวงกลมทั้งสองข้าง ≥ 8px ; ยืดตามที่ว่าง แต่ไม่เกิน 120px (จอกว้าง) */
+    .line { flex: 1 1 0; min-width: 0.75rem; max-width: 7.5rem; height: 2px; margin: 0 var(--yt-space-2); background: var(--yt-border-strong); opacity: 0.5; }
     .dot {
       --icon-optical-offset: 0;
       display: grid; place-items: center; flex: none; width: 1.75rem; height: 1.75rem; box-sizing: border-box;
@@ -38,6 +39,11 @@ export const ADD_MED_STEPS = ['ถ่ายรูป', 'ตรวจ', 'บั�
     .s[data-state='now'] .dot { border-color: var(--yt-primary); background: var(--yt-primary); color: var(--yt-on-primary); }
     .s[data-state='done'] { color: var(--yt-primary-deep); }
     .s[data-state='done'] .dot { border-color: var(--yt-primary); background: var(--yt-primary-soft); color: var(--yt-primary-deep); }
+    /* แคบ (มือถือ 320 / ก++): เหลือป้ายเฉพาะขั้นปัจจุบัน ที่เหลือเป็นวงกลมเลข — ข้อความยังอยู่ให้ screen reader */
+    @container steps (max-width: 19rem) {
+      .s:not([data-state='now']) .t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+      .s:not([data-state='now']) { gap: 0; }
+    }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   `,
 })

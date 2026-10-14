@@ -60,14 +60,14 @@ export class ScanStageComponent {
   protected readonly failed = computed(() => this.phase() === 'error');
 
   /** ปุ่มหลัก/รอง ของ state ปัจจุบัน (null = ไม่มีปุ่มในแถบ action) */
-  protected readonly action = computed<{ primary: string; secondary?: string; icon: string } | null>(() => {
+  protected readonly action = computed<{ primary: string; short?: string; secondary?: string; icon: string } | null>(() => {
     if (this.failed()) {
       return this.mode() === 'photo'
         ? { primary: 'ลองถ่ายใหม่', secondary: 'พิมพ์ข้อมูลยาเอง', icon: 'refresh-outline' }
         : { primary: 'ลองส่งอีกครั้ง', secondary: 'แก้ข้อความ', icon: 'refresh-outline' };
     }
     if (this.mode() === 'photo') return this.previewUrl() ? { primary: 'ให้น้องยาตรงอ่านซองยา', icon: 'sparkles-outline' } : null;
-    return this.text().trim().length >= MIN_TEXT ? { primary: 'ให้น้องยาตรงจัดตารางยา', icon: 'sparkles-outline' } : null;
+    return this.text().trim().length >= MIN_TEXT ? { primary: 'ให้น้องยาตรงจัดตารางยา', short: 'จัดตารางยา', icon: 'sparkles-outline' } : null;
   });
 
   /** ข้อความของน้องยาตรงตอนอ่านไม่สำเร็จ (สถานะอื่นไม่มีกล่องคำพูด — คำแนะนำอยู่ในกรอบถ่ายรูปแล้ว) */

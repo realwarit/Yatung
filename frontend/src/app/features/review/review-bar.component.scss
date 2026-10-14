@@ -21,8 +21,9 @@
 .more::before { content: ' '; }
 .bar__btns > button { min-height: var(--yt-tap); white-space: nowrap; }   // E2: ห้ามตัดบรรทัด
 .t-short { display: none; }
-// E2: แคบเกินจะใส่ข้อความเต็ม (ก++ / 320px) = ย่อเป็น "บันทึก (n)" / "ทิ้ง" ; วัดจากความกว้างแถบเป็น rem จึงขยายตามขนาดตัวอักษร
-@container bar (max-width: 22rem) { .t-full { display: none; } .t-short { display: inline; } .bar__drop { padding-inline: var(--yt-space-3); } }
+// E2/G6: ย่อเป็น "บันทึก (n)" / "ทิ้ง" เฉพาะเมื่อข้อความเต็มใส่ไม่พอจริง — วัดจากความกว้างแถบ (ไม่เกี่ยวกับ disabled/แถวเหตุผล) ;
+// ข้อความเต็มกว้าง ≈ 13.8rem (ตามขนาดตัวอักษร) + padding/ช่องว่างคงที่ ≈ 92px (+ เผื่อเลข 2 หลัก) → ที่ 360px ขนาด ก ได้ข้อความเต็ม, ก+ / ก++ / 320px ได้ข้อความสั้น
+@container bar (max-width: calc(14rem + 100px)) { .t-full { display: none; } .t-short { display: inline; } .bar__drop { padding-inline: var(--yt-space-3); } }
 .bar__save { flex: 1 1 14rem; }
 @container rv (max-width: 55.99rem) {
   // มือถือ: แถบเตี้ยลง — ข้อความสั้น (ข้อความเต็มยังอยู่ให้ screen reader) + ปุ่มทิ้ง/บันทึกอยู่แถวเดียว

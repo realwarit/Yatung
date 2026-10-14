@@ -124,13 +124,36 @@ for (const [w, h] of sizes) {
               const lines = t ? Math.round(t.getBoundingClientRect().height / parseFloat(getComputedStyle(t).lineHeight)) : null;
               auth = { cur, expected, fits, lines, text: t?.textContent?.trim() };
             }
-            // E2: ปุ่มใน review bar ต้องอยู่บรรทัดเดียว (ย่อเป็น "บันทึก (n)" / "ทิ้ง" เมื่อแคบ)
-            const barBtns = [...document.querySelectorAll('app-review-bar .bar__btns > button')].filter(vis).map((b) => {
-              const rg = document.createRange(); rg.selectNodeContents(b);
-              const tops = [...new Set([...rg.getClientRects()].filter((q) => q.width > 0).map((q) => Math.round(q.top / 6)))];
-              return { s: (b.textContent || '').replace(/s+/g, ' ').trim(), lines: tops.length, over: b.scrollWidth > b.clientWidth + 1 };
+            // E2/G6: ปุ่มของหน้า scan/review/today ต้องอยู่บรรทัดเดียว (ย่อเป็นป้ายสั้นเมื่อแคบ) — ตรวจจากข้อความที่มองเห็นจริง
+            const barBtns = [...document.querySelectorAll('app-review-bar button, ion-button.yt-btn, [mat-flat-button], [mat-stroked-button], .yt-all, .bar__next')].filter(vis).map((b) => {
+              // นับเฉพาะข้อความที่มองเห็นจริง (ข้ามข้อความ sr-only/ถูกตัด/display:none)
+              const tops = new Set(); const seen = [];
+              const tw = document.createTreeWalker(b, NodeFilter.SHOW_TEXT);
+              for (let t = tw.nextNode(); t; t = tw.nextNode()) {
+                const el = t.parentElement; if (!(t.textContent || '').trim()) continue;
+                const cs = getComputedStyle(el); const pr = el.getBoundingClientRect();
+                if (cs.display === 'none' || cs.clipPath !== 'none' || pr.width <= 2 || pr.height <= 2) continue;
+                const rg = document.createRange(); rg.selectNodeContents(t);
+                for (const q of rg.getClientRects()) if (q.width > 2) tops.add(Math.round(q.top / 6));
+                seen.push(t.textContent.trim());
+              }
+              return { s: seen.join(' '), lines: tops.size, over: !b.classList.contains('bar__next') && b.scrollWidth > b.clientWidth + 1 };   // .bar__next มี ::before ขยายพื้นที่แตะ
             });
-            return { items, barBtns, inputs, mitr, placeholders, auth, scrollers, free, bannerH: Math.round(bannerH), bannerCount: document.querySelectorAll('[data-banner]').length };
+            // G6: ตัวบอกขั้นตอน — เส้นเชื่อมยาว ≥ 12px, ห่างวงกลมทั้งสองข้าง ≥ 6px, ไม่ล้นแถว
+            const stp = document.querySelector('app-step-dots .steps');
+            let stepper = null;
+            if (stp && vis(stp)) {
+              const kids = [...stp.children].map((e) => ({ k: e.classList.contains('line') ? 'line' : 'step', r: e.getBoundingClientRect() }));
+              const lines = kids.filter((k) => k.k === 'line');
+              const gaps = []; for (let j = 0; j < kids.length - 1; j++) gaps.push(Math.round(kids[j + 1].r.left - kids[j].r.right));
+              const dots = [...stp.querySelectorAll('.dot')].map((d) => d.getBoundingClientRect());
+              const sr = stp.getBoundingClientRect();
+              const minLine = Math.round(Math.min(...lines.map((l) => l.r.width)));
+              const maxLine = Math.round(Math.max(...lines.map((l) => l.r.width)));
+              const lineGap = Math.round(Math.min(...lines.map((l, j) => Math.min(l.r.left - dots[j].right, dots[j + 1].left - l.r.right))));
+              stepper = { minLine, maxLine, lineGap, over: kids.some((k) => k.r.right > sr.right + 0.5 || k.r.left < sr.left - 0.5) || stp.scrollWidth > stp.clientWidth + 1, left: Math.round(sr.left), width: Math.round(sr.width) };
+            }
+            return { items, barBtns, stepper, inputs, mitr, placeholders, auth, scrollers, free, bannerH: Math.round(bannerH), bannerCount: document.querySelectorAll('[data-banner]').length };
           }, [sc.names, p.fill ?? null]);
           const tag = `${p.route}${p.id ? ' [' + p.id + ']' : ''}${sc.id ? ' [' + sc.id + ']' : ''}${banner === 'offline' ? ' +banner' : ''} @${w}x${h} ${SCALE_NAME[scale]}`;
           // Register: ก+ และ ก++ ยอมให้เลื่อน (ฟอร์ม 4 ช่อง ; ตามที่ D2 ตัดสิน) — รายงานอย่างเดียว
@@ -169,6 +192,11 @@ for (const [w, h] of sizes) {
             else { ok++; lines.push(`✓ ขนาดน้องยาตรง ${a.cur.toUpperCase()} (ใหญ่สุดที่พอดีจอ: ${JSON.stringify(a.fits)})`); }
             if (p.route === '/login' && scale !== '125' && a.cur === 's' && a.fits.s) { fail++; lines.push('✘ Login ก/ก+ ต้องได้ L หรือ M'); }
             if (a.lines !== 1) { fail++; lines.push(`✘ กล่องคำพูด ${a.lines} บรรทัด (ต้อง 1): ${a.text}`); }
+          }
+          if (r.stepper) {
+            const t = r.stepper;
+            if (t.minLine < 12 || t.lineGap < 6 || t.maxLine > 120.5 || t.over) { fail++; lines.push(`✘ stepper: เส้นสั้นสุด ${t.minLine}px (ต้อง ≥ 12) · ห่างวงกลม ${t.lineGap}px (ต้อง ≥ 6) · เส้นยาวสุด ${t.maxLine}px (≤ 120)${t.over ? ' · ล้นแถว' : ''}`); }
+            else { ok++; lines.push(`✓ stepper: เส้น ${t.minLine}–${t.maxLine}px · ห่างวงกลม ${t.lineGap}px`); }
           }
           for (const b of r.barBtns) {
             if (b.lines > 1 || b.over) { fail++; lines.push(`✘ ปุ่มใน review bar ตัดบรรทัด/ล้น: "${b.s}" (${b.lines} บรรทัด)`); }

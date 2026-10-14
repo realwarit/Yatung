@@ -68,8 +68,9 @@ ion-button.yt-btn {
   font-weight: 500;
   letter-spacing: normal;
   text-transform: none;
+  white-space: nowrap;   // G6: ปุ่มบรรทัดเดียวเสมอ
 
-  &::part(native) { min-height: var(--yt-tap); line-height: 1.2; }
+  &::part(native) { min-height: var(--yt-tap); line-height: 1.2; white-space: nowrap; }
   ion-icon { font-size: 1.35em; margin: 0 0.5em 0 0; transform: translateY(var(--icon-optical-offset)); }
   ion-icon[slot='icon-only'] { margin: 0; transform: none; }
   &[fill='outline'] {

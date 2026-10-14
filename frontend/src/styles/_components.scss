@@ -323,3 +323,7 @@ html.kb-open nav.bottom { display: none; }
 
 // dialog เต็มจอ (ดูรูปซองยาขยาย): ไม่มีมุมมน
 .yt-fullscreen-dialog .mat-mdc-dialog-container { --mat-dialog-container-shape: 0; }
+
+// G6: ปุ่ม "เพิ่มยาที่น้องอ่านไม่เจอ" (Review) บรรทัดเดียว — แคบเกินจะใช้ป้ายสั้น (ข้อความเต็มอยู่ใน aria-label) ; สไตล์อยู่ที่นี่เพราะ review.page.scss ชนงบ 4 kB
+.add { white-space: nowrap; .t-short { display: none; } }
+@container rv (max-width: 19rem) { .add { .t-full { display: none; } .t-short { display: inline; } } }

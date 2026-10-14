@@ -20,3 +20,5 @@
 }
 
 .steps { margin: 0 0 var(--yt-space-3); }
+// G6: จอกว้าง หัวเรื่อง + ตัวบอกขั้นตอนกว้างเท่าการ์ด (960) และชิดแนวเดียวกับการ์ด
+@media (min-width: 1024px) { app-page-header, .steps { width: 100%; max-width: 60rem; margin-inline: auto; box-sizing: border-box; } .steps { margin-bottom: var(--yt-space-3); } }

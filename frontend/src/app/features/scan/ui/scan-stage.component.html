@@ -36,8 +36,9 @@
 
         @if (action(); as a) {
           <div class="act" [class.is-static]="!stickyAction()">
-            <ion-button class="yt-btn" expand="block" (click)="onPrimary()">
-              <ion-icon slot="start" [name]="a.icon"></ion-icon>{{ a.primary }}
+            <ion-button class="yt-btn" expand="block" [attr.aria-label]="a.short ? a.primary : null" (click)="onPrimary()">
+              <ion-icon slot="start" [name]="a.icon"></ion-icon>
+              @if (a.short) { <span class="t-full">{{ a.primary }}</span><span class="t-short" aria-hidden="true">{{ a.short }}</span> } @else { {{ a.primary }} }
             </ion-button>
             @if (a.secondary) {
               <ion-button class="yt-btn" expand="block" fill="outline" (click)="onSecondary()">

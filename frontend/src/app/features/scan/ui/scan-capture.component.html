@@ -58,8 +58,8 @@
         <ion-button class="yt-btn" expand="block" data-first-screen="camera" (click)="camera.emit()">
           <ion-icon slot="start" name="camera-outline"></ion-icon>ถ่ายรูปซองยา
         </ion-button>
-        <ion-button class="yt-btn" expand="block" fill="outline" data-first-screen="gallery" (click)="gallery.emit()">
-          <ion-icon slot="start" name="images-outline"></ion-icon>เลือกรูปจากเครื่อง
+        <ion-button class="yt-btn" expand="block" fill="outline" data-first-screen="gallery" aria-label="เลือกรูปจากเครื่อง" (click)="gallery.emit()">
+          <ion-icon slot="start" name="images-outline"></ion-icon><span class="t-full">เลือกรูปจากเครื่อง</span><span class="t-short" aria-hidden="true">เลือกรูป</span>
         </ion-button>
       }
     </div>

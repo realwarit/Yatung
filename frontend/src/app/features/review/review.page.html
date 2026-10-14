@@ -114,7 +114,7 @@
                 </li>
               }
             </ol>
-            <button type="button" class="add" mat-stroked-button (click)="addCard()"><app-icon name="plus" /> เพิ่มยาที่น้องอ่านไม่เจอ</button>
+            <button type="button" class="add" mat-stroked-button aria-label="เพิ่มยาที่น้องอ่านไม่เจอ" (click)="addCard()"><app-icon name="plus" /> <span class="t-full">เพิ่มยาที่น้องอ่านไม่เจอ</span><span class="t-short" aria-hidden="true">เพิ่มยา</span></button>
           }
 
           @if (serverError(); as se) {
