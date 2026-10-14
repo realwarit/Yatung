@@ -1,8 +1,8 @@
 :host { display: block; container-type: inline-size; }
-.yt-page { max-width: 72rem; }
+.yt-page { max-width: 47.5rem; margin-inline: auto; }   // B3: Review/บันทึกสำเร็จ กว้างสูงสุด 760 จัดกลาง
 .stepno { font-size: var(--yt-text-sm); color: var(--yt-text-muted); }
 .steps { margin: 0 0 var(--yt-space-3); font-size: var(--yt-text-sm); color: var(--yt-text-muted); b { color: var(--yt-primary-deep); } }
-.sk { height: 22rem; margin-top: var(--yt-space-4); }
+.sk { height: 22rem; margin-top: 1rem; }
 
 // มือถือ = เรียงลงมา ; container ≥ 56rem = 2 คอลัมน์
 .grid { display: grid; gap: var(--yt-space-4); grid-template-columns: minmax(0, 1fr); }
@@ -23,7 +23,7 @@
 .pic__hint {
   --icon-optical-offset: 0; position: absolute; right: var(--yt-space-2); bottom: var(--yt-space-2); display: inline-flex; align-items: center; gap: 0.4em;
   padding: 0.15em var(--yt-space-3); border-radius: var(--yt-radius-pill); background: var(--yt-surface); color: var(--yt-text);
-  font-size: var(--yt-text-sm); font-weight: 500; box-shadow: var(--yt-shadow-sm);
+  font-size: var(--yt-text-sm); font-weight: 500;
 }
 .side__h { display: flex; align-items: center; gap: var(--yt-space-2); margin: 0 0 var(--yt-space-2); font-size: var(--yt-text-body); }
 .typed__t { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
@@ -42,6 +42,8 @@
 
 // สถานะเต็มหน้า
 .state { display: grid; justify-items: center; gap: var(--yt-space-3); max-width: 36rem; margin: var(--yt-space-4) auto 0; padding: var(--yt-space-4); text-align: center; p { margin: 0; } }
+
+.state--done { gap: var(--yt-space-4); max-width: 47.5rem; min-height: calc(100dvh - var(--yt-banner-h, 0px) - 8rem); align-content: center; border: 0; background: none; .say { max-width: 22rem; } }
 .state__t { margin: 0; font-size: var(--yt-text-title); color: var(--yt-primary-dark); }
 .state__btns { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--yt-space-3); width: 100%; a { flex: 1 1 12rem; min-height: var(--yt-tap); } }
 .done { display: grid; gap: var(--yt-space-2); width: 100%; margin: 0; padding: 0; list-style: none; text-align: left;

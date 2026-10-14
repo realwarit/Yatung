@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
+import { FontScaleService } from '../../../shared/font-scale.service';
 import { IonButton, IonIcon } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import {
@@ -17,8 +18,11 @@ import { ScanTipsComponent } from './scan-tips.component';
   imports: [IonButton, IonIcon, IconComponent, ScanTipsComponent],
   templateUrl: './scan-capture.component.html',
   styleUrl: './scan-capture.component.scss',
+  // ก+/ก++ บนจอเตี้ย: ตัดวงกลมกล้องในช่องมองให้ปุ่มทั้งสองอยู่ในจอแรก (media query วัดเป็น rem ตามขนาดตัวอักษรไม่ได้)
+  host: { '[class.big-text]': 'fontScale.scale() >= 112' },
 })
 export class ScanCaptureComponent {
+  protected readonly fontScale = inject(FontScaleService);
   readonly previewUrl = input<string | null>(null);
   readonly info = input('');
   readonly warnings = input<string[]>([]);

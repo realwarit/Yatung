@@ -35,6 +35,13 @@ const PAGES = [
   { route: '/register', auth: false, names: ['fields', 'submit'], fill: '.content .yt-disclaimer' },
   { route: '/scan', names: ['ai-notice', 'tips', 'camera', 'gallery'] },
   { route: '/review/1', names: ['banner', 'save-bar'] },
+  // บันทึกสำเร็จ (B2): กดยืนยันช่องที่ติด flag แล้วบันทึก → น้องยาตรง L + กล่องคำพูด จัดกลางแนวตั้ง ว่างใต้เนื้อหา ≤ 20%
+  { route: '/review/1', id: 'saved', names: ['saved'], fill: '.state--done .state__btns', after: async (page) => {
+    for (const b of await page.getByRole('button', { name: /ถูกต้องแล้ว/ }).all()) await b.click().catch(() => {});
+    await page.getByRole('button', { name: /บันทึก/ }).last().click();
+    await page.waitForSelector('.state--done', { timeout: 5000 });
+    await page.waitForTimeout(500);
+  } },
   { route: '/medications', names: ['add', 'rows-3'], d3: true },
   { route: '/medications/new', names: ['save'], d3: true },
   { route: '/settings', names: ['slot-times'], d3: true },
@@ -63,6 +70,7 @@ for (const [w, h] of sizes) {
           await page.addStyleTag({ content: '*{animation:none!important;transition:none!important}' });
           await page.waitForTimeout(500);
           if (banner === 'offline') { await ctx.setOffline(true); await page.evaluate(() => window.dispatchEvent(new Event('offline'))); await page.waitForTimeout(700); }
+          if (p.after) await p.after(page);
           await page.evaluate(() => { document.querySelectorAll('*').forEach((e) => { if (e.scrollTop) e.scrollTop = 0; }); });
           const r = await page.evaluate(([names, fillSel]) => {
             const H = window.innerHeight;
@@ -91,7 +99,7 @@ for (const [w, h] of sizes) {
             let free = null;
             if (fillSel) {
               const el = [...document.querySelectorAll(fillSel)].pop();
-              const host = document.querySelector('app-auth-shell') ?? document.scrollingElement;
+              const host = document.querySelector('app-auth-shell') ?? document.querySelector('.main') ?? document.scrollingElement;
               const scrolls = host && host.scrollHeight > host.clientHeight + 1;
               free = el && !scrolls ? Math.round(((H - el.getBoundingClientRect().bottom) / H) * 100) : (scrolls ? 'scroll' : null);
             }
@@ -118,7 +126,7 @@ for (const [w, h] of sizes) {
             }
             return { items, inputs, mitr, placeholders, auth, scrollers, free, bannerH: Math.round(bannerH), bannerCount: document.querySelectorAll('[data-banner]').length };
           }, [sc.names, p.fill ?? null]);
-          const tag = `${p.route}${sc.id ? ' [' + sc.id + ']' : ''}${banner === 'offline' ? ' +banner' : ''} @${w}x${h} ${SCALE_NAME[scale]}`;
+          const tag = `${p.route}${p.id ? ' [' + p.id + ']' : ''}${sc.id ? ' [' + sc.id + ']' : ''}${banner === 'offline' ? ' +banner' : ''} @${w}x${h} ${SCALE_NAME[scale]}`;
           // Register: ก+ และ ก++ ยอมให้เลื่อน (ฟอร์ม 4 ช่อง ; ตามที่ D2 ตัดสิน) — รายงานอย่างเดียว
           const hard = scale !== '125' && !(p.route === '/register' && scale === '112');
           const lines = [];

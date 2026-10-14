@@ -15,6 +15,7 @@ import { SLOT_LABEL, thaiJoin } from '../../core/i18n/labels';
 import { HasUnsavedChanges } from '../../core/unsaved-changes.guard';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { MascotComponent, MascotMood } from '../../shared/components/mascot/mascot.component';
+import { SpeechBubbleComponent } from '../../shared/components/speech-bubble/speech-bubble.component';
 import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
 import { IconComponent } from '../../shared/icon.component';
 import { ImageSheet, openImageZoom } from './image-viewer';
@@ -37,7 +38,7 @@ const DEFAULT_TIMES: SlotTimes = { morning: '08:00', noon: '12:00', evening: '18
 @Component({
   selector: 'app-review-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatButton, IconComponent, MascotComponent, PageHeaderComponent, ReviewCardComponent, ReviewBarComponent, ReviewBannerComponent],
+  imports: [RouterLink, MatButton, IconComponent, MascotComponent, SpeechBubbleComponent, PageHeaderComponent, ReviewCardComponent, ReviewBarComponent, ReviewBannerComponent],
   templateUrl: './review.page.html',
   styleUrl: './review.page.scss',
 })

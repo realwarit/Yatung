@@ -75,6 +75,7 @@ export async function mockApi(page, opts = {}) {
     if (u === '/api/settings/slot-times') return route.fulfill(json({ morning: '08:00', noon: '12:00', evening: '18:00', bedtime: '21:00' }));
     if (u === '/api/line/status') return route.fulfill(json({ linked: true, display_name: 'ผู้ทดสอบ' }));
     if (u === '/api/caregivers') return route.fulfill(json({ caregivers: [] }));
+    if (u === '/api/prescriptions/1/confirm') return route.fulfill(json({ created: [{ medication_id: 1, name: 'Metformin', skipped_slots_today: [] }], refilled: [] }));
     if (u === '/api/prescriptions/1') return route.fulfill(json(REVIEW));
     if (u === '/api/config') return route.fulfill(json({ demoMode: opts.demoMode?.() ?? false }));
     return route.fulfill(json({ error: 'NOT_MOCKED', details: u }, 404));

@@ -7,10 +7,16 @@
 }
 
 .scan {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
   max-width: 44rem;
   margin: 0 auto;
   padding: 0 var(--yt-gutter) var(--yt-space-4);
-  @media (min-width: 1024px) { padding: var(--yt-space-4) var(--yt-space-5) var(--yt-space-6); }
+  // มือถือ: เต็มความสูงจอ (หน้านี้ซ่อนแถบเมนูล่าง) ให้กรอบถ่ายรูปยืดกินที่ว่าง ปุ่มอยู่ล่างกรอบ
+  @media (max-width: 1023.98px) { min-height: calc(100dvh - var(--yt-banner-h, 0px)); }
+  // จอกว้าง: สองคอลัมน์ กว้างรวมสูงสุด 1100px
+  @media (min-width: 1024px) { max-width: 68.75rem; padding: var(--yt-space-4) var(--yt-space-5) var(--yt-space-6); }
 }
 
 // ขั้นตอน "ถ่าย · ตรวจ · บันทึก" บรรทัดเดียว

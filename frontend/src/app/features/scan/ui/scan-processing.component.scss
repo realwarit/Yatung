@@ -46,9 +46,8 @@
 }
 @keyframes scan { to { top: calc(100% - 4px); } }
 
-.who { display: flex; align-items: center; justify-content: center; gap: var(--yt-space-3); }
-
-.title { margin: 0; font-size: var(--yt-text-heading); color: var(--yt-primary-dark); }
+.who { display: flex; align-items: center; justify-content: center; gap: var(--yt-space-3); width: 100%; max-width: 22rem; text-align: left; }
+.say { flex: 1; min-width: 0; }
 
 .steps { display: grid; gap: var(--yt-space-3); width: min(100%, 22rem); margin: 0; padding: 0; list-style: none; text-align: left; }
 .step { display: flex; align-items: center; gap: var(--yt-space-3); font-weight: 500; line-height: var(--yt-line-height-tight); }
@@ -61,8 +60,10 @@
   height: 2rem;
   border: 2px solid var(--yt-border-strong);
   border-radius: 50%;
-  ion-spinner { width: 1.4rem; height: 1.4rem; }
 }
+// ตัวหมุน 24px (หมุนจริง ; reduced-motion = วงโค้งนิ่ง)
+.spin { width: 24px; height: 24px; box-sizing: border-box; border: 3px solid var(--yt-primary-soft); border-top-color: var(--yt-primary); border-radius: 50%; animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .step[data-state='active'] .mark { border-color: transparent; }
 .step[data-state='active'] .label { color: var(--yt-primary-deep); font-weight: 600; }
 .step[data-state='done'] .mark { border-color: var(--yt-success); background: var(--yt-success); color: var(--yt-on-primary); font-size: 0.9rem; }
@@ -72,4 +73,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   .scan { animation: none; top: 50%; }
+  .spin { animation: none; }
 }

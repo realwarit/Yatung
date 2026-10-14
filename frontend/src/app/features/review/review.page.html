@@ -39,9 +39,10 @@
     }
 
     @case ('done') {
-      <section class="state" aria-live="polite">
+      <!-- บันทึกสำเร็จ: น้องยาตรง L + กล่องคำพูด success จัดกลางแนวตั้ง -->
+      <section class="state state--done" aria-live="polite" data-first-screen="saved">
+        <app-speech-bubble class="say" tone="success" tail="down" [typing]="false" [text]="'บันทึกแล้ว ' + doneCount() + ' รายการค่ะ'" />
         <app-mascot mood="celebrate" size="l" />
-        <h2 class="state__t">บันทึกแล้ว <span class="num">{{ doneCount() }}</span> รายการ</h2>
         <ul class="done">
           @for (l of doneLines(); track l.name) {
             <li><app-icon name="check" /> <span><strong>{{ l.name }}</strong> <em class="kind">{{ l.kind }}</em>

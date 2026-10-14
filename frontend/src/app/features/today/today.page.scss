@@ -20,5 +20,7 @@
 
 // ---------- จอกว้าง : การ์ดความคืบหน้าอยู่บนสุดเต็มความกว้าง, มื้อเรียงเป็นคอลัมน์ (2–4 ตามความกว้าง) ----------
 @media (min-width: 1024px) {
-  .slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); align-items: start; gap: var(--yt-space-4); }
+  .slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr)); align-items: stretch; gap: var(--yt-space-4); }
+  // มื้อที่พับ (กินครบ/มื้อถัดไป) ไม่ต้องยืดสูงเท่าการ์ดที่กางข้างๆ
+  app-slot-group[data-mode='done'], app-slot-group[data-mode='next'] { align-self: start; }
 }

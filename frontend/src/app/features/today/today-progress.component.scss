@@ -27,3 +27,15 @@
 .txt { container-type: inline-size; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 0.125rem; }
 .lbl { margin: 0; font-size: var(--yt-text-sm); line-height: var(--yt-line-height-tight); color: var(--yt-text); }
 .listen { flex: none; }
+
+// ---------- จอกว้าง : แถวเดียวเต็มกว้าง ซ้าย น้องยาตรง M + กล่องคำพูด · กลาง วงแหวน 88 + "วันนี้กินแล้ว" + ลิงก์ 7 วัน · ขวา ปุ่ม 🔊 ----------
+@media (min-width: 1024px) {
+  .card { flex-direction: row; align-items: center; gap: var(--yt-space-6); padding: var(--yt-space-4) var(--yt-space-5); }
+  .say { flex: 1; min-width: 0; }
+  .stat { flex: none; gap: var(--yt-space-4); }
+  .ring { width: 5.5rem; height: 5.5rem; }
+}
+@media (min-width: 1024px) {
+  .bub { flex: 0 1 auto; max-width: 32rem; }
+  .txt { flex: none; width: 12rem; }   // container-type: inline-size ไม่มีความกว้างจากเนื้อหา → ต้องกำหนดเอง
+}

@@ -9,9 +9,9 @@
   </div>
 
   <div class="who">
-    <app-mascot mood="thinking" size="s" />
+    <app-mascot mood="thinking" size="m" />
     <p class="sr-only" aria-live="polite" role="status">{{ announce() }}</p>
-    <h2 class="title">{{ preparing() ? 'กำลังเตรียมรูป…' : 'กำลังอ่านซองยาอยู่นะคะ...' }}</h2>
+    <app-speech-bubble class="say" tail="left" [typing]="false" [text]="preparing() ? 'กำลังเตรียมรูป…' : 'กำลังอ่านซองยาอยู่นะคะ...'" />
   </div>
 
   <ol class="steps">
@@ -20,7 +20,7 @@
         <span class="mark">
           @switch (state(i)) {
             @case ('done') { <app-icon name="check" /> }
-            @case ('active') { <ion-spinner name="crescent" color="primary"></ion-spinner> }
+            @case ('active') { <span class="spin"></span> }
           }
         </span>
         <span class="label">{{ l }}</span>

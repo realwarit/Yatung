@@ -30,6 +30,7 @@ const SCENES = {
     { id: 'today-late', route: '/today', today: 'late', before: 'today' },
     { id: 'scan', route: '/scan', before: 'scan' },
     { id: 'review', route: '/review/1', before: 'review-1' },
+    { id: 'review-saved', route: '/review/1', save: true },
     { id: 'login', route: '/login', guest: true, before: 'login' },
   ],
 };
@@ -57,6 +58,13 @@ for (const s of SIZES) {
     await page.waitForLoadState('networkidle').catch(() => {});
     await page.addStyleTag({ content: '*{animation:none!important;transition:none!important}' });
     await page.waitForTimeout(sc.guest ? 4200 : 700);   // หน้า auth: รอท่าโบกมือเริ่มต้นจบ
+    if (sc.save) {
+      for (const b of await page.getByRole('button', { name: /ถูกต้องแล้ว/ }).all()) await b.click().catch(() => {});
+      await page.getByRole('button', { name: /บันทึก/ }).last().click();
+      await page.waitForSelector('.state--done');
+      await page.addStyleTag({ content: '*{animation:none!important;transition:none!important}' });
+      await page.waitForTimeout(500);
+    }
     if (sc.focus) { await page.locator(sc.focus).click(); await page.waitForTimeout(500); }
     await page.evaluate(() => { document.querySelectorAll('*').forEach((e) => { if (e.scrollTop) e.scrollTop = 0; }); });
     await page.screenshot({ path: path.join(DIR, fname(sc, s.id)) });

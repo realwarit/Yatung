@@ -21,9 +21,10 @@
     <p class="yt-alert yt-alert--warning" role="status"><app-icon name="alert" /> <span>{{ w }}</span></p>
   }
 } @else {
-  <!-- กรอบวางซองยา (เตี้ย) : คำแนะนำ 3 ข้อในกรอบ ; ปุ่มถ่าย/เลือกรูปอยู่ใต้กรอบ (กรอบไม่ใช่ปุ่มแล้ว) -->
+  <!-- ช่องมองกล้อง : พื้น primary-softer + มุม 4 ด้าน + วงกลมกล้อง + คำแนะนำ 3 ข้อ ; ยืดตามที่ว่างของจอ (สูง 220–380) ; ปุ่มถ่าย/เลือกรูปอยู่ใต้กรอบ (กรอบไม่ใช่ปุ่ม) -->
   <div class="frame frame--empty" [class.is-drag]="dragging()" role="group" aria-label="กรอบวางซองยา">
     <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+    <span class="cam" aria-hidden="true"><app-icon name="camera" /></span>
     <app-scan-tips />
     @if (dragging()) {
       <p class="hint hint--drag">ปล่อยรูปตรงนี้ได้เลย</p>

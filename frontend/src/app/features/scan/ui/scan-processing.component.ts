@@ -1,18 +1,19 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { IonButton, IonSpinner } from '@ionic/angular';
+import { IonButton } from '@ionic/angular';
 import { IconComponent } from '../../../shared/icon.component';
 import { MascotComponent } from '../../../shared/components/mascot/mascot.component';
+import { SpeechBubbleComponent } from '../../../shared/components/speech-bubble/speech-bubble.component';
 import { Mode, READING_STEPS } from '../scan.types';
 
 /**
  * กำลังประมวลผล (10–20 วินาที) — ใช้พื้นที่การ์ดทั้งหมด
- * ใช้ Ionic: ion-spinner (ขั้นปัจจุบัน), ion-button (ยกเลิก)
+ * ใช้ Ionic: ion-button (ยกเลิก) ; ตัวหมุนของขั้นปัจจุบันเป็น CSS ของเราเอง (ion-spinner แสดงเป็น "(" ที่ 24px)
  * step: 0 = กำลังเตรียมรูป · 1–3 = ขั้นที่กำลังทำ (ก่อนหน้า = ✓, ขั้น 3 ค้างจน API ตอบ)
  */
 @Component({
   selector: 'app-scan-processing',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IonSpinner, IonButton, IconComponent, MascotComponent],
+  imports: [IonButton, IconComponent, MascotComponent, SpeechBubbleComponent],
   templateUrl: './scan-processing.component.html',
   styleUrl: './scan-processing.component.scss',
 })
