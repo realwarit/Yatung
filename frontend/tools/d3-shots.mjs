@@ -29,6 +29,7 @@ const SHOTS = [
   ['medications-ok', '/medications', { meds: [metformin, MED_PRN] }],
   ['medications-empty', '/medications', { meds: [] }],
   ['med-form', '/medications/new', {}],
+  ['med-form-edit', '/medications/1/edit', {}],
   ['settings', '/settings', {}],
   ['overview', '/overview', {}],
   ['today-empty', '/today', { empty: true }],

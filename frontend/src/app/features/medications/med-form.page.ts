@@ -13,13 +13,17 @@ import { SLOT_LABEL, thaiJoin } from '../../core/i18n/labels';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { EMPTY_DRAFT, MedDraft, MedField, fieldFromMessage, previewText, toMedicationInput } from '../../shared/components/med-fields/med-draft';
 import { MedFieldsComponent } from '../../shared/components/med-fields/med-fields.component';
+import { NbNumPipe } from '../../core/i18n/labels.pipe';
+import { FitLabelDirective } from '../../shared/fit-label.directive';
+import { MascotComponent } from '../../shared/components/mascot/mascot.component';
+import { SpeechBubbleComponent } from '../../shared/components/speech-bubble/speech-bubble.component';
 import { IconComponent } from '../../shared/icon.component';
 
 const DEFAULT_TIMES: SlotTimes = { morning: '08:00', noon: '12:00', evening: '18:00', bedtime: '21:00' };
 
 @Component({
   selector: 'app-med-form-page',
-  imports: [RouterLink, MatButton, IconComponent, MedFieldsComponent],
+  imports: [RouterLink, MatButton, IconComponent, MedFieldsComponent, MascotComponent, SpeechBubbleComponent, FitLabelDirective, NbNumPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './med-form.page.html',
   styleUrl: './med-form.page.scss',
@@ -44,6 +48,10 @@ export class MedFormPage implements HasUnsavedChanges {
   protected readonly moreOpen = signal(false);
 
   /** ข้อความตรวจก่อนบันทึก เช่น "ทุกวัน เช้า และ เย็น ครั้งละ 1 เม็ด หลังอาหาร" */
+  /** ข้อความในกล่องคำพูดเดียวของหน้า (ขั้นประโยคด้วยบรรทัดใหม่ ไม่ตัดกลางประโยค) */
+  protected readonly say = computed(() => (this.isEdit()
+    ? 'แก้ไขเสร็จแล้ว' + String.fromCharCode(10) + 'กดบันทึกได้เลยค่ะ' : 'กรอกชื่อยากับมื้อที่กิน' + String.fromCharCode(10) + 'แล้วกดบันทึกได้เลยค่ะ'));
+
   protected readonly preview = computed(() => previewText(this.draft()));
 
   private initial = this.snapshot();

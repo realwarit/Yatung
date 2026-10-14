@@ -11,6 +11,11 @@
 
 form { margin-top: var(--yt-space-4); }
 
+// น้องยาตรง 56px (ไม่โตตาม ก) ชิดล่าง + กล่องคำพูดเดียวของหน้า
+.perch { display: flex; align-items: flex-end; gap: var(--yt-space-3); margin-top: var(--yt-space-2); }
+.perch app-mascot { flex: none; }
+.perch .b { flex: 1; min-width: 0; }
+
 .preview {
   margin-bottom: var(--yt-space-4);
   padding: var(--yt-space-4);
@@ -22,8 +27,7 @@ form { margin-top: var(--yt-space-4); }
 .preview__cap { display: flex; align-items: center; gap: var(--yt-space-2); font-size: var(--yt-text-sm); font-weight: 600; }
 .preview__text { margin-top: var(--yt-space-1) !important; font: 500 1.2rem / 1.6 var(--yt-font-display); }
 
-.actions { display: flex; gap: var(--yt-space-3); margin-bottom: var(--yt-space-4); }
-.actions > * { flex: 1 1 0; }
+.actions { gap: var(--yt-space-3); margin-bottom: var(--yt-space-4); }   // แถวเดียวกันก่อน (.yt-fitrow)
 /* มือถือ: ปุ่มบันทึก/ยกเลิกติดล่างจอ เหนือแถบเมนู (sticky ใน scroll container ของ shell ซึ่งแถบเมนูเป็นพี่น้อง จึงอยู่เหนือแถบพอดี) */
 @media (max-width: 1023.98px) {
   .actions {

@@ -76,7 +76,7 @@
     <div class="tiles" [id]="id('slots')" tabindex="-1" [attr.aria-invalid]="errors().slots ? 'true' : null"
          [attr.aria-describedby]="describedBy('slots')">
       @for (s of allSlots; track s) {
-        <button type="button" class="tile" [class.on]="draft().slots.includes(s)" [attr.aria-pressed]="draft().slots.includes(s)"
+        <button type="button" class="tile" [attr.data-slot]="s" [class.on]="draft().slots.includes(s)" [attr.aria-pressed]="draft().slots.includes(s)"
                 (click)="toggleSlot(s)">
           <app-icon [name]="slotIcon[s]" />
           <span class="tile__name">{{ slotLabel[s] }}</span>

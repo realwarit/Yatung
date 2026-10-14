@@ -342,3 +342,11 @@ html.kb-open nav.bottom { display: none; }
 .yt-fitrow > * { flex: 1 1 0; min-width: 0; }
 .yt-fitrow:has([data-fit-fail]) { flex-direction: column; }
 .yt-fitrow:has([data-fit-fail]) > * { flex: none; width: 100%; }
+
+// ปุ่มเลือกมื้อในฟอร์มยา (med-fields .tile) : สีประจำมื้อเมื่อเลือก — อยู่ที่นี่เพราะ scss ของ med-fields ชนงบ 4 kB ; .tile.tile = ชนะ specificity ของสไตล์ใน component
+.tiles .tile[data-slot='morning'] { --t-bg: var(--yt-meal-morning-bg); --t-accent: var(--yt-meal-morning-accent); --t-fg: var(--yt-meal-morning-fg); }
+.tiles .tile[data-slot='noon'] { --t-bg: var(--yt-meal-noon-bg); --t-accent: var(--yt-meal-noon-accent); --t-fg: var(--yt-meal-noon-fg); }
+.tiles .tile[data-slot='evening'] { --t-bg: var(--yt-meal-evening-bg); --t-accent: var(--yt-meal-evening-accent); --t-fg: var(--yt-meal-evening-fg); }
+.tiles .tile[data-slot='bedtime'] { --t-bg: var(--yt-meal-bedtime-bg); --t-accent: var(--yt-meal-bedtime-accent); --t-fg: var(--yt-meal-bedtime-fg); }
+.tiles .tile.tile.on[data-slot] { border-color: var(--t-accent); background: var(--t-bg); color: var(--t-fg); }
+.tiles .tile.tile.on[data-slot] .tile__time, .tiles .tile.tile.on[data-slot] .tile__tick { color: var(--t-fg); }
