@@ -56,7 +56,7 @@ export const MED = { id: 1, name: 'Amlodipine', tts_name: null, strength: '5 mg'
 export const MED_PRN = { ...MED, id: 9, name: 'Paracetamol', strength: '500 mg', as_needed: true, slots: [], indication: 'ลดไข้ แก้ปวด', is_low: false, days_left: null, remaining_qty: 10 };
 
 export const REVIEW = { prescription_id: 1, status: 'draft', input_type: 'image', has_image: false, ocr_text: 'Metformin 500 mg 1 tab bid pc', existing_matches: [], review_flags: [{ index: 0, field: 'dose', reason: 'ตรวจขนาดยา' }],
-  result: { is_medicine_label: true, medications: [{ name: 'Metformin', strength: '500 mg', dose_per_time: 1, unit: 'tablet', meal_relation: 'after', slots: ['morning', 'evening'], as_needed: false, total_qty: 60, indication: 'เบาหวาน', warnings: [], confidence: { name: 0.9, dose: 0.5 } }], unreadable_parts: [] } };
+  result: { is_medicine_label: true, medications: [{ name: 'Metformin', strength: '500 mg', dose_per_time: 1, unit: 'tablet', meal_relation: 'after', slots: ['morning', 'evening'], as_needed: false, total_qty: 60, indication: 'ลดน้ำตาลในเลือด', warnings: [], confidence: { name: 0.9, dose: 0.5 } }], unreadable_parts: [] } };
 
 export const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) });
 

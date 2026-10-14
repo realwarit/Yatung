@@ -38,7 +38,7 @@ export function dropUser(u) {
 /** ยา 1 ตัวตาม schema ของ AI (ค่าเริ่มต้น = อ่านได้มั่นใจ ไม่มี flag) */
 export const med = (o = {}) => ({
   name: 'Metformin', strength: '500 mg', dose_per_time: 1, unit: 'tablet', slots: ['morning', 'evening'], meal_relation: 'after',
-  as_needed: false, total_qty: 60, indication: 'ยาเบาหวาน', warnings: [],
+  as_needed: false, total_qty: 60, indication: 'ลดน้ำตาลในเลือด', warnings: [],
   source_text: `${o.name ?? 'Metformin'} ${o.strength ?? '500 mg'}\nครั้งละ 1 เม็ด วันละ 2 ครั้ง หลังอาหาร`,
   confidence: { name: 0.97, dose: 0.95, slots: 0.95, meal_relation: 0.95 }, ...o,
 });

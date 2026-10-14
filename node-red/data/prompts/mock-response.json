@@ -11,7 +11,7 @@
       "meal_relation": "after",
       "as_needed": false,
       "total_qty": 60,
-      "indication": "ยาเบาหวาน",
+      "indication": "ลดน้ำตาลในเลือด",
       "warnings": [],
       "source_text": "Metformin 500 mg   จำนวน 60 เม็ด\nรับประทานครั้งละ 1 เม็ด วันละ 2 ครั้ง\nหลังอาหาร เช้า - เย็น\nยาเบาหวาน",
       "confidence": { "name": 0.97, "dose": 0.95, "slots": 0.95, "meal_relation": 0.95 }

@@ -25,7 +25,7 @@ VALUES
    'ลดความดันโลหิต', JSON_ARRAY('อาจทำให้ข้อเท้าบวม'), 30, 22,
    DATE_SUB(CURDATE(), INTERVAL 8 DAY)),
   (2, 1, 'Metformin', '500 mg', 1, 'tablet', 'after', 0,
-   'ควบคุมระดับน้ำตาลในเลือด', JSON_ARRAY('กินพร้อมหรือหลังอาหารทันที'), 60, 5,
+   'ลดน้ำตาลในเลือด', JSON_ARRAY('กินพร้อมหรือหลังอาหารทันที'), 60, 5,
    DATE_SUB(CURDATE(), INTERVAL 8 DAY)),
   (3, 1, 'Simvastatin', '20 mg', 1, 'tablet', 'any', 0,
    'ลดไขมันในเลือด', JSON_ARRAY(), 30, 21,
