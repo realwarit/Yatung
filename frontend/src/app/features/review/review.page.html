@@ -41,7 +41,7 @@
     @case ('done') {
       <!-- บันทึกสำเร็จ: น้องยาตรง L + กล่องคำพูด success จัดกลางแนวตั้ง -->
       <section class="state state--done" aria-live="polite" data-first-screen="saved">
-        <app-speech-bubble class="say" tone="success" tail="down" [typing]="false" [text]="'บันทึกแล้ว ' + doneCount() + ' รายการค่ะ'" />
+        <app-speech-bubble class="say" tone="success" tail="down" [typing]="false" [text]="doneText()" />
         <app-mascot mood="celebrate" size="l" />
         <ul class="done">
           @for (l of doneLines(); track l.name) {
@@ -120,11 +120,11 @@
           @if (serverError(); as se) {
             <p class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span>{{ se.text }}</span></p>
           }
-
-          <app-review-bar [blocker]="blocker()" [short]="blockerShort()" [remaining]="remaining()" [count]="cards().length" [canSave]="canSave()"
-                          [saving]="saving()" [leaving]="leaving()" (next)="goNext()" (save)="save()" (discard)="askDiscard()" />
         </div>
       </div>
+      <!-- E1: แถบล่างอยู่นอก grid = เต็มความกว้างทั้งสองคอลัมน์ (sticky ล่าง) -->
+      <app-review-bar [blocker]="blocker()" [short]="blockerShort()" [remaining]="remaining()" [count]="cards().length" [canSave]="canSave()"
+                          [saving]="saving()" [leaving]="leaving()" (next)="goNext()" (save)="save()" (discard)="askDiscard()" />
       <p class="yt-disclaimer">ไม่ใช่คำแนะนำทางการแพทย์ · ตรวจให้ตรงกับซองยาก่อนบันทึกทุกครั้ง</p>
     }
   }

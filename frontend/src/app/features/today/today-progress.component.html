@@ -10,6 +10,7 @@
         <div class="cheer" data-first-screen="cheer"><app-mascot mood="celebrate" size="l" [decorative]="false" label="น้องยาตรงดีใจที่วันนี้กินยาครบแล้ว" /></div>
       } @else {
         <app-mascot class="mc" [mood]="mood()" size="m" />
+        <app-mascot class="mc-w" [mood]="mood()" [size]="96" />
       }
       <app-speech-bubble class="bub" tail="left" [typing]="false" [live]="true" [tone]="bubble().tone" [text]="bubble().text" />
     </div>

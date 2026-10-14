@@ -55,8 +55,8 @@ ion-segment-button {
 
 // กว้าง: สองคอลัมน์ (สูงสุด 1100 ตาม .scan) ซ้าย = น้องยาตรง L + กล่องคำพูด info · ขวา = การ์ดช่องมองกล้อง + ปุ่ม
 @container scan (min-width: 720px) {
-  .card { display: grid; grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr); gap: var(--yt-space-6); align-items: start; flex: none; }
-  .notice { position: sticky; top: var(--yt-space-4); margin-top: var(--yt-space-4); }
+  .card { display: grid; grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr); gap: var(--yt-space-6); align-items: center; flex: none; }
+  .notice { align-self: center; }   // E4: จัดกลางแนวตั้งให้ตรงกับการ์ดฝั่งขวา
   .panel { display: flex; flex-direction: column; gap: var(--yt-space-4); padding: var(--yt-space-5); border-radius: var(--yt-radius-lg); background: var(--yt-surface); box-shadow: var(--yt-shadow-md); }
   .mode { align-self: flex-start; width: fit-content; }
   .body, .main { flex: none; }

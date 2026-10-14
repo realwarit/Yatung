@@ -1,5 +1,5 @@
 <section class="card" [attr.aria-busy]="busy()">
-  <app-scan-notice class="notice" />
+  <app-scan-notice class="notice" [mood]="busy() ? 'thinking' : 'happy'" />
 
   <!-- panel: มือถือ = display: contents (ลูกเป็น flex item ของ .card ให้กรอบถ่ายรูปยืดได้) · กว้าง = การ์ดขาวคอลัมน์ขวา -->
   <div class="panel">

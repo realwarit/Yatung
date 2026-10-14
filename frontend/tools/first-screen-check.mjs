@@ -124,7 +124,13 @@ for (const [w, h] of sizes) {
               const lines = t ? Math.round(t.getBoundingClientRect().height / parseFloat(getComputedStyle(t).lineHeight)) : null;
               auth = { cur, expected, fits, lines, text: t?.textContent?.trim() };
             }
-            return { items, inputs, mitr, placeholders, auth, scrollers, free, bannerH: Math.round(bannerH), bannerCount: document.querySelectorAll('[data-banner]').length };
+            // E2: ปุ่มใน review bar ต้องอยู่บรรทัดเดียว (ย่อเป็น "บันทึก (n)" / "ทิ้ง" เมื่อแคบ)
+            const barBtns = [...document.querySelectorAll('app-review-bar .bar__btns > button')].filter(vis).map((b) => {
+              const rg = document.createRange(); rg.selectNodeContents(b);
+              const tops = [...new Set([...rg.getClientRects()].filter((q) => q.width > 0).map((q) => Math.round(q.top / 6)))];
+              return { s: (b.textContent || '').replace(/s+/g, ' ').trim(), lines: tops.length, over: b.scrollWidth > b.clientWidth + 1 };
+            });
+            return { items, barBtns, inputs, mitr, placeholders, auth, scrollers, free, bannerH: Math.round(bannerH), bannerCount: document.querySelectorAll('[data-banner]').length };
           }, [sc.names, p.fill ?? null]);
           const tag = `${p.route}${p.id ? ' [' + p.id + ']' : ''}${sc.id ? ' [' + sc.id + ']' : ''}${banner === 'offline' ? ' +banner' : ''} @${w}x${h} ${SCALE_NAME[scale]}`;
           // Register: ก+ และ ก++ ยอมให้เลื่อน (ฟอร์ม 4 ช่อง ; ตามที่ D2 ตัดสิน) — รายงานอย่างเดียว
@@ -163,6 +169,10 @@ for (const [w, h] of sizes) {
             else { ok++; lines.push(`✓ ขนาดน้องยาตรง ${a.cur.toUpperCase()} (ใหญ่สุดที่พอดีจอ: ${JSON.stringify(a.fits)})`); }
             if (p.route === '/login' && scale !== '125' && a.cur === 's' && a.fits.s) { fail++; lines.push('✘ Login ก/ก+ ต้องได้ L หรือ M'); }
             if (a.lines !== 1) { fail++; lines.push(`✘ กล่องคำพูด ${a.lines} บรรทัด (ต้อง 1): ${a.text}`); }
+          }
+          for (const b of r.barBtns) {
+            if (b.lines > 1 || b.over) { fail++; lines.push(`✘ ปุ่มใน review bar ตัดบรรทัด/ล้น: "${b.s}" (${b.lines} บรรทัด)`); }
+            else { ok++; lines.push(`✓ ปุ่ม review bar บรรทัดเดียว: "${b.s}"`); }
           }
           if (r.scrollers) { fail++; lines.push(`✘ ล้นแนวนอน ${r.scrollers} ตัว`); }
           console.log(`${tag}\n   ${lines.join('\n   ') || '(ไม่มีป้าย)'}`);

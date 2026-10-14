@@ -37,7 +37,7 @@ const SCENES = {
 /** ชื่อไฟล์ : <id>__<ขนาด>[-<suffix>].png */
 const fname = (sc, sid) => `${sc.id}__${sid}${sc.suffix ? '-' + sc.suffix : ''}.png`;
 const SIZES = set === 'phase2'
-  ? [{ id: '360-a', w: 360, h: 640, scale: '100' }, { id: '360-aaa', w: 360, h: 640, scale: '125' }, { id: '1366', w: 1366, h: 768, scale: '100' }]
+  ? [{ id: '360-a', w: 360, h: 640, scale: '100' }, { id: '360-aaa', w: 360, h: 640, scale: '125' }, { id: '1366', w: 1366, h: 768, scale: '100' }, { id: '1024', w: 1024, h: 768, scale: '100' }]
   : [{ id: '360-a', w: 360, h: 640, scale: '100' }, { id: '360-aaa', w: 360, h: 640, scale: '125' }];
 
 const browser = await chromium.launch({ channel: 'msedge' }).catch(() => chromium.launch({ channel: 'chrome' }));
@@ -80,7 +80,7 @@ const tags = [['d2', 'D2'], ['d25', 'D2.5']].filter(([t]) => fs.existsSync(path.
 const scenes = SCENES.phase2.concat(SCENES.phase1).filter((x, i, a) => a.findIndex((y) => fname(y, '') === fname(x, '')) === i);
 const fig = (src, cap) => (fs.existsSync(path.join(OUT, src)) ? `<figure><img src="${src}" style="height:640px" alt="${cap}"><figcaption>${cap}</figcaption></figure>` : '');
 const block = `<!--d25--><h1>D2.5 — เทียบ ก่อน 8D / D2 / D2.5 (360×640)</h1><style>figure{display:inline-block;margin:0 12px 12px 0;vertical-align:top}</style>` +
-  ['360-a:ขนาด ก', '360-aaa:ขนาด ก++', '1366:จอกว้าง 1366×768'].map((z) => {
+  ['360-a:ขนาด ก', '360-aaa:ขนาด ก++', '1366:จอกว้าง 1366×768', '1024:จอ 1024×768'].map((z) => {
     const [zid, zl] = z.split(':');
     const rows = scenes.map((sc) => {
       const cells = [];

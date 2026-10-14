@@ -23,10 +23,12 @@ import { IconComponent } from '../../shared/icon.component';
         </p>
       }
       <div class="bar__btns">
-        <button mat-stroked-button type="button" class="bar__drop" (click)="discard.emit()" [disabled]="leaving()">ทิ้งผลสแกนนี้</button>
+        <button mat-stroked-button type="button" class="bar__drop" (click)="discard.emit()" [disabled]="leaving()" aria-label="ทิ้งผลสแกนนี้">
+          <span class="t-full" aria-hidden="true">ทิ้งผลสแกนนี้</span><span class="t-short" aria-hidden="true">ทิ้ง</span>
+        </button>
         <button mat-flat-button type="button" class="bar__save" (click)="save.emit()" [disabled]="!canSave()"
-                [attr.aria-describedby]="blocker() ? 'why' : null">
-          @if (saving()) { กำลังบันทึก… } @else { บันทึก {{ count() }} รายการ<span class="more">เข้าตารางยา</span> }
+                [attr.aria-describedby]="blocker() ? 'why' : null" [attr.aria-label]="saving() ? null : 'บันทึก ' + count() + ' รายการเข้าตารางยา'">
+          @if (saving()) { กำลังบันทึก… } @else { <span class="t-full" aria-hidden="true">บันทึก&nbsp;{{ count() }}&nbsp;รายการ<span class="more">เข้าตารางยา</span></span><span class="t-short" aria-hidden="true">บันทึก&nbsp;({{ count() }})</span> }
         </button>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { nowrapUnits } from '../../core/nowrap';
 import { MascotComponent, MascotMood } from '../../shared/components/mascot/mascot.component';
 import { SpeechBubbleComponent } from '../../shared/components/speech-bubble/speech-bubble.component';
 import { IconComponent } from '../../shared/icon.component';
@@ -46,5 +47,5 @@ export class ReviewBannerComponent {
   /** ส่วนที่น้องอ่านไม่ออก/ข้อสังเกตของ AI */
   readonly alerts = input<string[]>([]);
   protected readonly open = signal(false);
-  protected readonly sub = computed(() => (this.remaining() > 0 ? 'มี ' + this.remaining() + ' ช่องที่ควรตรวจเป็นพิเศษ' : 'ตรวจครบทุกจุดแล้ว กดบันทึกได้เลย'));
+  protected readonly sub = computed(() => (this.remaining() > 0 ? nowrapUnits('มี ' + this.remaining() + ' ช่องที่ควรตรวจเป็นพิเศษ') : 'ตรวจครบทุกจุดแล้ว กดบันทึกได้เลย'));
 }

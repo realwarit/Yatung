@@ -16,6 +16,7 @@
 }
 .say { display: flex; align-items: center; gap: var(--yt-space-3); }
 .mc, .cheer { flex: none; }
+.mc-w { display: none; }
 .bub { flex: 1; min-width: 0; }
 
 .stat { display: flex; align-items: center; gap: var(--yt-space-3); min-height: 3.5rem; }
@@ -28,14 +29,14 @@
 .lbl { margin: 0; font-size: var(--yt-text-sm); line-height: var(--yt-line-height-tight); color: var(--yt-text); }
 .listen { flex: none; }
 
-// ---------- จอกว้าง : แถวเดียวเต็มกว้าง ซ้าย น้องยาตรง M + กล่องคำพูด · กลาง วงแหวน 88 + "วันนี้กินแล้ว" + ลิงก์ 7 วัน · ขวา ปุ่ม 🔊 ----------
+// ---------- จอกว้าง (E3) : grid 3 ส่วน auto 1fr auto — น้องยาตรง M 96 | กล่องคำพูด (ยืดเต็มส่วนกลาง ≤ 520) | วงแหวน 88 + "วันนี้กินแล้ว" + ลิงก์ 7 วัน + 🔊 ชิดขวา ----------
 @media (min-width: 1024px) {
-  .card { flex-direction: row; align-items: center; gap: var(--yt-space-6); padding: var(--yt-space-4) var(--yt-space-5); }
-  .say { flex: 1; min-width: 0; }
-  .stat { flex: none; gap: var(--yt-space-4); }
+  .card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--yt-space-5); padding: var(--yt-space-4) var(--yt-space-5); }
+  .say { display: contents; }
+  .mc { display: none; }
+  .mc-w { display: block; }
+  .bub { width: 100%; max-width: 32.5rem; }
+  .stat { gap: var(--yt-space-4); justify-self: end; }
   .ring { width: 5.5rem; height: 5.5rem; }
-}
-@media (min-width: 1024px) {
-  .bub { flex: 0 1 auto; max-width: 32rem; }
   .txt { flex: none; width: 12rem; }   // container-type: inline-size ไม่มีความกว้างจากเนื้อหา → ต้องกำหนดเอง
 }

@@ -1,5 +1,6 @@
 import { Dose, Slot, TodayResponse } from '../../core/api/models';
 import { SLOT_LABEL } from '../../core/i18n/labels';
+import { nowrapUnits } from '../../core/nowrap';
 import { clockTime, duration, lateMinutes, parseServerTime, remainMinutes } from '../../core/time';
 import { hasMultipleTimes, slotTimeLabel } from './slot-time';
 
@@ -101,6 +102,11 @@ export interface TodayBubble { text: string; tone: 'neutral' | 'warning' | 'succ
 
 /** เลือกข้อความตามลำดับ: ไม่มียา → กินครบ → มียาเลยเวลา → ถึงเวลา → มื้อถัดไป (นับถอยหลังจากนาฬิกา ปัดขึ้น) */
 export function bubbleOf(slots: readonly SlotVM[], nowMs: number): TodayBubble {
+  const b = rawBubble(slots, nowMs);
+  return { ...b, text: nowrapUnits(b.text) };   // E5: ตัวเลขไม่แยกจากหน่วย
+}
+
+function rawBubble(slots: readonly SlotVM[], nowMs: number): TodayBubble {
   const p = progressOf(slots);
   if (p.total === 0) return { text: 'วันนี้ไม่มียาที่ต้องกินค่ะ', tone: 'neutral' };
   if (p.allDone) return { text: 'วันนี้กินครบแล้ว เก่งมากเลยค่ะ', tone: 'success' };

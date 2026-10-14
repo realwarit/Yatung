@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { MascotComponent } from '../../../shared/components/mascot/mascot.component';
 import { SpeechBubbleComponent } from '../../../shared/components/speech-bubble/speech-bubble.component';
 
@@ -13,8 +13,8 @@ const TEXT = 'น้องยาตรงช่วยอ่านซองยา
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MascotComponent, SpeechBubbleComponent],
   template: `
-    <app-mascot class="m" mood="happy" size="m" />
-    <app-mascot class="l" mood="happy" size="l" />
+    <app-mascot class="m" [mood]="mood()" size="m" />
+    <app-mascot class="l" [mood]="mood()" [size]="128" />
     <app-speech-bubble class="b b-side" tone="info" tail="left" [typing]="false" [text]="text" />
     <app-speech-bubble class="b b-top" tone="info" tail="down" [typing]="false" [text]="text" />
   `,
@@ -33,5 +33,7 @@ const TEXT = 'น้องยาตรงช่วยอ่านซองยา
   host: { 'data-first-screen': 'ai-notice', role: 'note' },
 })
 export class ScanNoticeComponent {
+  /** กำลังอ่านซอง = thinking ไม่งั้น happy */
+  readonly mood = input<'happy' | 'thinking'>('happy');
   protected readonly text = TEXT;
 }

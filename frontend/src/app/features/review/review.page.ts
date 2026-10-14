@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { nowrapUnits } from '../../core/nowrap';
 import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { MatButton } from '@angular/material/button';
@@ -113,6 +114,7 @@ export class ReviewPage implements HasUnsavedChanges, OnDestroy {
       })),
     ];
   });
+  protected readonly doneText = computed(() => nowrapUnits(`บันทึกแล้ว ${this.doneCount()} รายการค่ะ`));
   protected readonly doneCount = computed(() => (this.result()?.created.length ?? 0) + (this.result()?.refilled.length ?? 0));
   protected readonly stepNow = computed(() => (this.view() === 'done' || this.view() === 'confirmed' ? 2 : 1));
   protected readonly textSource = computed(() => (this.rx()?.input_type === 'text' ? this.rx()!.ocr_text : ''));

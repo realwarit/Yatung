@@ -1,6 +1,6 @@
 // ---------- แถบล่าง (มือถือ: ติดล่างจอ) ----------
 :host { display: block; margin-top: var(--yt-space-4); }
-.bar { display: grid; gap: var(--yt-space-2); }
+.bar { display: grid; gap: var(--yt-space-2); container: bar / inline-size; }
 .bar__why {
   display: flex; flex-wrap: wrap; align-items: center; gap: var(--yt-space-2); margin: 0; padding: 0;
   color: var(--yt-on-warning-soft); font-weight: 600; font-size: var(--yt-text-sm);   // บรรทัดเหตุผล ไม่มีกล่องเหลือง (กล่องเหลืองอยู่ที่แถบบนสุดเท่านั้น)
@@ -19,9 +19,12 @@
 .bar__btns { display: flex; flex-wrap: wrap; gap: var(--yt-space-3); }
 .bar__drop { flex: 0 0 auto; }
 .more::before { content: ' '; }
-.bar__btns > button { min-height: var(--yt-tap); }
+.bar__btns > button { min-height: var(--yt-tap); white-space: nowrap; }   // E2: ห้ามตัดบรรทัด
+.t-short { display: none; }
+// E2: แคบเกินจะใส่ข้อความเต็ม (ก++ / 320px) = ย่อเป็น "บันทึก (n)" / "ทิ้ง" ; วัดจากความกว้างแถบเป็น rem จึงขยายตามขนาดตัวอักษร
+@container bar (max-width: 22rem) { .t-full { display: none; } .t-short { display: inline; } .bar__drop { padding-inline: var(--yt-space-3); } }
 .bar__save { flex: 1 1 14rem; }
-@container (max-width: 55.99rem) {
+@container rv (max-width: 55.99rem) {
   // มือถือ: แถบเตี้ยลง — ข้อความสั้น (ข้อความเต็มยังอยู่ให้ screen reader) + ปุ่มทิ้ง/บันทึกอยู่แถวเดียว
   .why__s { display: inline; }
   .why__l { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
@@ -33,7 +36,11 @@
     padding: var(--yt-space-2) var(--yt-space-4) calc(var(--yt-space-2) + env(safe-area-inset-bottom)); background: var(--yt-surface); box-shadow: 0 -4px 16px rgb(var(--yt-shadow-color) / 0.12);
   }
 }
-@container (min-width: 56rem) {
-  :host { position: sticky; bottom: var(--yt-space-3); z-index: 5; padding: var(--yt-space-3); border-radius: var(--yt-radius-md); background: var(--yt-surface); box-shadow: var(--yt-shadow-lg); }
+@container rv (min-width: 56rem) {
+  // E1: จอกว้าง = แถวเดียวเต็มความกว้างของทั้งสองคอลัมน์ ซ้าย เหตุผล + ไปจุดถัดไป · ขวา ทิ้ง | บันทึก
+  :host { position: sticky; bottom: var(--yt-space-3); z-index: 5; padding: var(--yt-space-3) var(--yt-space-4); border-radius: var(--yt-radius-md); background: var(--yt-surface); box-shadow: var(--yt-shadow-lg); }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: var(--yt-space-4); }
+  .bar__why { flex: 1 1 auto; min-width: 0; }
+  .bar__btns { margin-left: auto; flex: none; }
+  .bar__save { flex: 0 0 auto; min-width: 14rem; }
 }
-
