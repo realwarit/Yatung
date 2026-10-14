@@ -12,8 +12,11 @@
 //   Login ที่ ก และ ก+ ต้องได้ L หรือ M · กล่องคำพูดต้องพอดี 1 บรรทัด · placeholder ของช่องกรอกทุกช่องต้องไม่ถูกตัด (ทุกหน้า ทุกขนาดตัวอักษร)
 // ตรวจเพิ่มทุกหน้า (ที่ ก ทุกขนาดจอ): ช่องกรอกทุกช่อง font-size ≥ 16px (iOS ซูมหน้าเองถ้าเล็กกว่า) · Mitr ไม่หนาเกิน 500 (ยกเว้น .num) · ไม่ล้นแนวนอน
 import { chromium } from 'playwright';
+import { resolve } from 'node:path';
 import { FAKE_JWT, fakeThaiVoice, mockApi } from './lib/mock-app.mjs';
+import { loadScanImage } from './lib/child-overflow.mjs';
 
+const SAMPLE = resolve(process.env.SCAN_SAMPLE ?? '../docs/sample-images/yatung-test-envelope-1.png');
 const BASE = process.env.BASE ?? 'http://localhost:4200';
 const args = process.argv.slice(2);
 const val = (k, d) => (args.find((a) => a.startsWith(`--${k}=`)) ?? `--${k}=${d}`).split('=')[1];
@@ -34,6 +37,8 @@ const PAGES = [
   { route: '/login', auth: false, names: ['fields', 'submit'], fill: '.content .yt-disclaimer' },
   { route: '/register', auth: false, names: ['fields', 'submit'], fill: '.content .yt-disclaimer' },
   { route: '/scan', names: ['ai-notice', 'tips', 'camera', 'gallery'] },
+  // สแกนมีภาพแล้ว (D3 0.6): ปุ่มหลักอยู่ในจอแรก + แถบหมุน/ถ่ายใหม่/ลบ อยู่ในกรอบภาพ (ตรวจ toolsOut)
+  { route: '/scan', id: 'image', names: ['ai-notice'], after: (page) => loadScanImage(page, SAMPLE) },
   { route: '/review/1', names: ['banner', 'save-bar'] },
   // บันทึกสำเร็จ (B2): กดยืนยันช่องที่ติด flag แล้วบันทึก → น้องยาตรง L + กล่องคำพูด จัดกลางแนวตั้ง ว่างใต้เนื้อหา ≤ 20%
   { route: '/review/1', id: 'saved', names: ['saved'], fill: '.state--done .state__btns', after: async (page) => {
@@ -153,7 +158,10 @@ for (const [w, h] of sizes) {
               const lineGap = Math.round(Math.min(...lines.map((l, j) => Math.min(l.r.left - dots[j].right, dots[j + 1].left - l.r.right))));
               stepper = { minLine, maxLine, lineGap, over: kids.some((k) => k.r.right > sr.right + 0.5 || k.r.left < sr.left - 0.5) || stp.scrollWidth > stp.clientWidth + 1, left: Math.round(sr.left), width: Math.round(sr.width) };
             }
-            return { items, barBtns, stepper, inputs, mitr, placeholders, auth, scrollers, free, bannerH: Math.round(bannerH), bannerCount: document.querySelectorAll('[data-banner]').length };
+            const fr = document.querySelector('.frame--image')?.getBoundingClientRect();
+            const toolsOut = fr ? [...document.querySelectorAll('.frame--image .tool')].map((e) => e.getBoundingClientRect()).filter((b) => b.left < fr.left - 0.5 || b.right > fr.right + 0.5 || b.top < fr.top - 0.5 || b.bottom > fr.bottom + 0.5).length : null;
+            const toolSize = fr ? [...document.querySelectorAll('.frame--image .tool')].map((e) => Math.round(e.getBoundingClientRect().height)) : [];
+            return { toolsOut, toolSize, items, barBtns, stepper, inputs, mitr, placeholders, auth, scrollers, free, bannerH: Math.round(bannerH), bannerCount: document.querySelectorAll('[data-banner]').length };
           }, [sc.names, p.fill ?? null]);
           const tag = `${p.route}${p.id ? ' [' + p.id + ']' : ''}${sc.id ? ' [' + sc.id + ']' : ''}${banner === 'offline' ? ' +banner' : ''} @${w}x${h} ${SCALE_NAME[scale]}`;
           // Register: ก+ และ ก++ ยอมให้เลื่อน (ฟอร์ม 4 ช่อง ; ตามที่ D2 ตัดสิน) — รายงานอย่างเดียว
@@ -201,6 +209,10 @@ for (const [w, h] of sizes) {
           for (const b of r.barBtns) {
             if (b.lines > 1 || b.over) { fail++; lines.push(`✘ ปุ่มใน review bar ตัดบรรทัด/ล้น: "${b.s}" (${b.lines} บรรทัด)`); }
             else { ok++; lines.push(`✓ ปุ่ม review bar บรรทัดเดียว: "${b.s}"`); }
+          }
+          if (r.toolsOut !== null) {
+            if (r.toolsOut || r.toolSize.some((x) => x !== 48)) { fail++; lines.push(`✘ แถบเครื่องมือรูป: ล้นกรอบ ${r.toolsOut} ปุ่ม · ความสูง ${r.toolSize.join('/')}px (ต้อง 48)`); }
+            else { ok++; lines.push('✓ แถบเครื่องมือรูปอยู่ในกรอบภาพ ปุ่ม 48px'); }
           }
           if (r.scrollers) { fail++; lines.push(`✘ ล้นแนวนอน ${r.scrollers} ตัว`); }
           console.log(`${tag}\n   ${lines.join('\n   ') || '(ไม่มีป้าย)'}`);
