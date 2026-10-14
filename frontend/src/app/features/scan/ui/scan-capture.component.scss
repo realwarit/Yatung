@@ -42,10 +42,8 @@
 .yt-alert { margin: var(--yt-space-3) 0 0; }
 
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.buttons { display: grid; gap: var(--yt-space-2); }
-// G6: ปุ่มบรรทัดเดียวเสมอ — แคบเกินจะใช้ป้ายสั้น (ข้อความเต็มอยู่ใน aria-label) ; วัดเป็น rem ตามขนาดตัวอักษร
-.t-short { display: none; }
-@container scan (max-width: 17rem) { .t-full { display: none; } .t-short { display: inline; } }
+.buttons { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--yt-space-2); }
+.buttons > ion-button { max-width: 100%; min-width: 0; box-sizing: border-box; }   // ป้ายสั้น/ซ่อนไอคอน/ลดขนาด = fitLabel (วัดจริง)
 .tips-list { display: none; }
 
 // ---------- จอกว้าง : ซ้าย = ช่องมองกล้อง (สูงต่ำสุด 320) · ขวา = คำแนะนำเต็ม + ปุ่ม 2 ปุ่ม ----------

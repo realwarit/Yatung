@@ -43,7 +43,7 @@ ion-segment-button {
 
 // ปุ่มหลักบนมือถือติดล่างจอ (อยู่ในการ์ด จึงหยุดที่ท้ายเนื้อหา ไม่บังข้อความ disclaimer)
 .act {
-  position: sticky; bottom: 0; z-index: 5; display: grid; gap: var(--yt-space-2);
+  position: sticky; bottom: 0; z-index: 5; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--yt-space-2);   // minmax(0,1fr): track ไม่ขยายตามป้ายปุ่ม (ต้นเหตุปุ่มล้นการ์ด 4-5)
   margin: 0 calc(var(--yt-space-4) * -1); padding: var(--yt-space-3) var(--yt-space-4) calc(var(--yt-space-3) + env(safe-area-inset-bottom));
   background: var(--yt-surface); box-shadow: 0 -4px 16px rgb(var(--yt-shadow-color) / 0.10);
   &.is-static { position: static; margin: 0; padding: 0; box-shadow: none; background: transparent; }
@@ -57,17 +57,14 @@ ion-segment-button {
   .card { flex: none; padding: var(--yt-space-5); border-radius: var(--yt-radius-lg); box-shadow: var(--yt-shadow-md); gap: var(--yt-space-4); }
   .mode { align-self: flex-start; width: fit-content; min-width: 20rem; }
   .body, .main { flex: none; }
-  .act { position: static; margin: 0; padding: 0; box-shadow: none; background: transparent; grid-template-columns: 1fr 1fr; }
+  .act { position: static; margin: 0; padding: 0; box-shadow: none; background: transparent; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
 
-// มือถือแคบ/ก++ (วัดเป็น rem จึงตามขนาดตัวอักษร): ลดช่องไฟของ segment ไม่ให้ป้ายถูกตัด
+// มือถือแคบ : ลดช่องไฟ segment ให้ป้ายมีที่มากสุดก่อน (ที่เหลือ fitLabel ตัดสิน: ป้ายสั้น → ซ่อนไอคอน → ลดขนาด)
 @container scan (max-width: 22rem) {
-  ion-segment-button {
-    --padding-start: 0.25rem; --padding-end: 0.25rem; font-size: 0.9rem;
-    ion-icon { font-size: 1.1em; margin-inline-end: 0.25em; }
-  }
+  ion-segment-button { --padding-start: 0.25rem; --padding-end: 0.25rem; ion-icon { margin-inline-end: 0.25em; } }
 }
 
-// G6: ปุ่มหลักบรรทัดเดียว (ป้ายสั้นเมื่อแคบ)
-.t-short { display: none; }
-@container scan (max-width: 19rem) { .t-full { display: none; } .t-short { display: inline; } }
+// ปุ่มบรรทัดเดียว : พ่อ (.act) และปุ่มกันล้นที่ต้นเหตุ ; ป้ายสั้น/ซ่อนไอคอน/ลดขนาด ตัดสินโดย fitLabel (วัดจริง ไม่ใช้ breakpoint)
+.act > ion-button, .mode ion-segment-button { max-width: 100%; min-width: 0; box-sizing: border-box; }
+.act, .mode { min-width: 0; box-sizing: border-box; }   // (.act ห้ามตั้ง max-width: 100% — มันชิดขอบการ์ดด้วย margin ติดลบ)

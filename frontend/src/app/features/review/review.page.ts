@@ -1,3 +1,4 @@
+import { FitLabelDirective } from '../../shared/fit-label.directive';
 import { HttpErrorResponse } from '@angular/common/http';
 import { nowrapUnits } from '../../core/nowrap';
 import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, computed, inject, input, signal } from '@angular/core';
@@ -40,7 +41,7 @@ const DEFAULT_TIMES: SlotTimes = { morning: '08:00', noon: '12:00', evening: '18
 @Component({
   selector: 'app-review-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatButton, StepDotsComponent, IconComponent, MascotComponent, SpeechBubbleComponent, PageHeaderComponent, ReviewCardComponent, ReviewBarComponent, ReviewBannerComponent],
+  imports: [RouterLink, MatButton, StepDotsComponent, IconComponent, MascotComponent, SpeechBubbleComponent, PageHeaderComponent, ReviewCardComponent, ReviewBarComponent, ReviewBannerComponent, FitLabelDirective],
   templateUrl: './review.page.html',
   styleUrl: './review.page.scss',
 })

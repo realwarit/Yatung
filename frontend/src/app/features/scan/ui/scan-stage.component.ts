@@ -9,6 +9,7 @@ import { ScanCoachComponent } from './scan-coach.component';
 import { ScanProcessingComponent } from './scan-processing.component';
 import { ScanTextInputComponent } from './scan-text-input.component';
 import { ScanPerchComponent } from './scan-perch.component';
+import { FitLabelDirective } from '../../../shared/fit-label.directive';
 
 const MIN_TEXT = 5;
 
@@ -22,7 +23,7 @@ const MIN_TEXT = 5;
   selector: 'app-scan-stage',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    IonSegment, IonSegmentButton, IonLabel, IonButton, IonIcon,
+    IonSegment, IonSegmentButton, IonLabel, IonButton, IonIcon, FitLabelDirective,
     ScanCaptureComponent, ScanCoachComponent, ScanPerchComponent, ScanProcessingComponent, ScanTextInputComponent,
   ],
   templateUrl: './scan-stage.component.html',
@@ -66,7 +67,7 @@ export class ScanStageComponent {
         ? { primary: 'ลองถ่ายใหม่', secondary: 'พิมพ์ข้อมูลยาเอง', icon: 'refresh-outline' }
         : { primary: 'ลองส่งอีกครั้ง', secondary: 'แก้ข้อความ', icon: 'refresh-outline' };
     }
-    if (this.mode() === 'photo') return this.previewUrl() ? { primary: 'ให้น้องยาตรงอ่านซองยา', icon: 'sparkles-outline' } : null;
+    if (this.mode() === 'photo') return this.previewUrl() ? { primary: 'ให้น้องยาตรงอ่านซองยา', short: 'อ่านซองยา', icon: 'sparkles-outline' } : null;
     return this.text().trim().length >= MIN_TEXT ? { primary: 'ให้น้องยาตรงจัดตารางยา', short: 'จัดตารางยา', icon: 'sparkles-outline' } : null;
   });
 

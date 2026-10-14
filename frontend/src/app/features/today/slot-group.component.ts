@@ -1,3 +1,4 @@
+import { FitLabelDirective } from '../../shared/fit-label.directive';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { Slot } from '../../core/api/models';
 import { MEAL_LABEL, SLOT_LABEL, doseText, sourceLabel, unitInDose } from '../../core/i18n/labels';
@@ -17,7 +18,7 @@ const SLOT_ICON: Record<Slot, IconName> = { morning: 'sunrise', noon: 'sun', eve
  */
 @Component({
   selector: 'app-slot-group',
-  imports: [IconComponent, ListRowComponent, TtsButtonComponent],
+  imports: [IconComponent, ListRowComponent, TtsButtonComponent, FitLabelDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './slot-group.component.html',
   styleUrl: './slot-group.component.scss',

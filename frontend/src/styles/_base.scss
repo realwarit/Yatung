@@ -3,6 +3,7 @@ html {
   // 100% = 16px (ก); ก+ = 18px ก++ = 20px คูณสเกลจากปุ่ม ก/ก+/ก++ → หน่วย rem ทั้งแอปขยายตามอัตโนมัติ
   font-size: calc(100% * var(--yt-font-scale));
   -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;   // กัน Chrome Android ขยายตัวอักษรเอง (font boosting) ; การขยายจาก accessibility ของผู้ใช้ไม่ฝืน — fitLabel รับมือแทน
 }
 
 html, body {

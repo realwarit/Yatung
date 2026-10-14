@@ -48,18 +48,18 @@
   @if (interactive()) {
     <div class="buttons">
       @if (desktop()) {
-        <ion-button class="yt-btn" expand="block" data-first-screen="gallery" (click)="upload.emit()">
-          <ion-icon slot="start" name="cloud-upload-outline"></ion-icon>อัปโหลดรูปซองยา
+        <ion-button class="yt-btn" expand="block" data-first-screen="gallery" fitLabel="อัปโหลดรูปซองยา" fitShort="อัปโหลดรูป" (click)="upload.emit()">
+          <ion-icon slot="start" class="fit-icon" name="cloud-upload-outline"></ion-icon><span class="fl-full">อัปโหลดรูปซองยา</span><span class="fl-short" aria-hidden="true">อัปโหลดรูป</span>
         </ion-button>
-        <ion-button class="yt-btn" expand="block" fill="outline" data-first-screen="camera" (click)="camera.emit()">
-          <ion-icon slot="start" name="camera-outline"></ion-icon>ใช้กล้อง
+        <ion-button class="yt-btn" expand="block" fill="outline" data-first-screen="camera" fitLabel="ใช้กล้อง" (click)="camera.emit()">
+          <ion-icon slot="start" class="fit-icon" name="camera-outline"></ion-icon><span class="fl-full">ใช้กล้อง</span>
         </ion-button>
       } @else {
-        <ion-button class="yt-btn" expand="block" data-first-screen="camera" (click)="camera.emit()">
-          <ion-icon slot="start" name="camera-outline"></ion-icon>ถ่ายรูปซองยา
+        <ion-button class="yt-btn" expand="block" data-first-screen="camera" fitLabel="ถ่ายรูปซองยา" fitShort="ถ่ายรูป" (click)="camera.emit()">
+          <ion-icon slot="start" class="fit-icon" name="camera-outline"></ion-icon><span class="fl-full">ถ่ายรูปซองยา</span><span class="fl-short" aria-hidden="true">ถ่ายรูป</span>
         </ion-button>
-        <ion-button class="yt-btn" expand="block" fill="outline" data-first-screen="gallery" aria-label="เลือกรูปจากเครื่อง" (click)="gallery.emit()">
-          <ion-icon slot="start" name="images-outline"></ion-icon><span class="t-full">เลือกรูปจากเครื่อง</span><span class="t-short" aria-hidden="true">เลือกรูป</span>
+        <ion-button class="yt-btn" expand="block" fill="outline" data-first-screen="gallery" fitLabel="เลือกรูปจากเครื่อง" fitShort="เลือกรูป" (click)="gallery.emit()">
+          <ion-icon slot="start" class="fit-icon" name="images-outline"></ion-icon><span class="fl-full">เลือกรูปจากเครื่อง</span><span class="fl-short" aria-hidden="true">เลือกรูป</span>
         </ion-button>
       }
     </div>

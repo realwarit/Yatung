@@ -1,6 +1,6 @@
 // ---------- แถบล่าง (มือถือ: ติดล่างจอ) ----------
 :host { display: block; margin-top: var(--yt-space-4); }
-.bar { display: grid; gap: var(--yt-space-2); container: bar / inline-size; }
+.bar { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--yt-space-2); container: bar / inline-size; }   // minmax(0,1fr): ไม่ขยายตามเนื้อหา (ปุ่มเคยยื่นเลยขอบ 11px ที่ 360px)
 .bar__why {
   display: flex; flex-wrap: wrap; align-items: center; gap: var(--yt-space-2); margin: 0; padding: 0;
   color: var(--yt-on-warning-soft); font-weight: 600; font-size: var(--yt-text-sm);   // บรรทัดเหตุผล ไม่มีกล่องเหลือง (กล่องเหลืองอยู่ที่แถบบนสุดเท่านั้น)
@@ -20,10 +20,10 @@
 .bar__drop { flex: 0 0 auto; }
 .more::before { content: ' '; }
 .bar__btns > button { min-height: var(--yt-tap); white-space: nowrap; }   // E2: ห้ามตัดบรรทัด
-.t-short { display: none; }
-// E2/G6: ย่อเป็น "บันทึก (n)" / "ทิ้ง" เฉพาะเมื่อข้อความเต็มใส่ไม่พอจริง — วัดจากความกว้างแถบ (ไม่เกี่ยวกับ disabled/แถวเหตุผล) ;
-// ข้อความเต็มกว้าง ≈ 13.8rem (ตามขนาดตัวอักษร) + padding/ช่องว่างคงที่ ≈ 92px (+ เผื่อเลข 2 หลัก) → ที่ 360px ขนาด ก ได้ข้อความเต็ม, ก+ / ก++ / 320px ได้ข้อความสั้น
-@container bar (max-width: calc(14rem + 100px)) { .t-full { display: none; } .t-short { display: inline; } .bar__drop { padding-inline: var(--yt-space-3); } }
+// ป้ายสั้น/ซ่อนไอคอน/ลดขนาด ตัดสินโดย fitLabel (วัดจริง ไม่ใช้ breakpoint) ; ปุ่มกันล้นที่ต้นเหตุ
+.bar__btns { min-width: 0; max-width: 100%; }
+.bar__btns > button { max-width: 100%; min-width: 0; box-sizing: border-box; }
+.fit-short.bar__drop { padding-inline: var(--yt-space-3); }
 .bar__save { flex: 1 1 14rem; }
 @container rv (max-width: 55.99rem) {
   // มือถือ: แถบเตี้ยลง — ข้อความสั้น (ข้อความเต็มยังอยู่ให้ screen reader) + ปุ่มทิ้ง/บันทึกอยู่แถวเดียว

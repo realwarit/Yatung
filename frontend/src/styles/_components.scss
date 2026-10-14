@@ -247,6 +247,15 @@
   &[aria-disabled='true'] { opacity: 0.55; }
 }
 
+// ---------- fitLabel (shared/fit-label.directive.ts) : ปุ่มบรรทัดเดียว ป้ายพอดีเสมอ ----------
+// ขั้น 1+ = ป้ายสั้น (.fl-short แทน .fl-full) · ขั้น 2+ = ซ่อนไอคอน (.fit-icon) ; ขั้น 3 ลด font-size ผ่านสไตล์ inline ของตัวปุ่ม
+.fl-short { display: none; }
+.fit-short .fl-full { display: none; }
+.fit-short .fl-short { display: inline; }
+.fit-noicon .fit-icon { display: none; }
+// วลีที่ห้ามตัดกลางบรรทัด (ขึ้นบรรทัดใหม่ทั้งวลี) เช่น "ไม่ใช่คำแนะนำทางการแพทย์"
+.yt-nowrap { white-space: nowrap; }
+
 // ---------- กินครบมื้อนี้ (ดันลงล่างการ์ดเมื่อการ์ดแถวเดียวกันสูงไม่เท่ากัน) ----------
 .yt-all { margin-top: auto; padding: var(--yt-space-3) var(--yt-space-4) var(--yt-space-4); border-top: 1px solid var(--yt-border); }
 .yt-all-btn {
@@ -324,6 +333,3 @@ html.kb-open nav.bottom { display: none; }
 // dialog เต็มจอ (ดูรูปซองยาขยาย): ไม่มีมุมมน
 .yt-fullscreen-dialog .mat-mdc-dialog-container { --mat-dialog-container-shape: 0; }
 
-// G6: ปุ่ม "เพิ่มยาที่น้องอ่านไม่เจอ" (Review) บรรทัดเดียว — แคบเกินจะใช้ป้ายสั้น (ข้อความเต็มอยู่ใน aria-label) ; สไตล์อยู่ที่นี่เพราะ review.page.scss ชนงบ 4 kB
-.add { white-space: nowrap; .t-short { display: none; } }
-@container rv (max-width: 19rem) { .add { .t-full { display: none; } .t-short { display: inline; } } }

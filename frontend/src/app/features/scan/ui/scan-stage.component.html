@@ -6,13 +6,13 @@
     <!-- Ionic: ion-segment (pill) — เปลี่ยนโหมดแล้วรูป/ข้อความเดิมยังอยู่ -->
     <ion-segment mode="ios" class="mode" [value]="mode()" [disabled]="busy()"
                  aria-label="เลือกวิธีใส่ข้อมูลยา" (ionChange)="onMode($event.detail.value)">
-      <ion-segment-button value="photo" layout="icon-start">
-        <ion-icon name="camera-outline"></ion-icon>
-        <ion-label>ถ่ายรูปซองยา</ion-label>
+      <ion-segment-button value="photo" layout="icon-start" fitLabel="ถ่ายรูปซองยา" fitShort="ถ่ายรูป">
+        <ion-icon class="fit-icon" name="camera-outline"></ion-icon>
+        <ion-label><span class="fl-full">ถ่ายรูปซองยา</span><span class="fl-short" aria-hidden="true">ถ่ายรูป</span></ion-label>
       </ion-segment-button>
-      <ion-segment-button value="text" layout="icon-start">
-        <ion-icon name="create-outline"></ion-icon>
-        <ion-label>พิมพ์เอง</ion-label>
+      <ion-segment-button value="text" layout="icon-start" fitLabel="พิมพ์เอง">
+        <ion-icon class="fit-icon" name="create-outline"></ion-icon>
+        <ion-label><span class="fl-full">พิมพ์เอง</span></ion-label>
       </ion-segment-button>
     </ion-segment>
 
@@ -36,13 +36,13 @@
 
         @if (action(); as a) {
           <div class="act" [class.is-static]="!stickyAction()">
-            <ion-button class="yt-btn" expand="block" [attr.aria-label]="a.short ? a.primary : null" (click)="onPrimary()">
-              <ion-icon slot="start" [name]="a.icon"></ion-icon>
-              @if (a.short) { <span class="t-full">{{ a.primary }}</span><span class="t-short" aria-hidden="true">{{ a.short }}</span> } @else { {{ a.primary }} }
+            <ion-button class="yt-btn" expand="block" [fitLabel]="a.primary" [fitShort]="a.short ?? ''" (click)="onPrimary()">
+              <ion-icon slot="start" class="fit-icon" [name]="a.icon"></ion-icon>
+              <span class="fl-full">{{ a.primary }}</span>@if (a.short) { <span class="fl-short" aria-hidden="true">{{ a.short }}</span> }
             </ion-button>
             @if (a.secondary) {
-              <ion-button class="yt-btn" expand="block" fill="outline" (click)="onSecondary()">
-                <ion-icon slot="start" name="create-outline"></ion-icon>{{ a.secondary }}
+              <ion-button class="yt-btn" expand="block" fill="outline" [fitLabel]="a.secondary" (click)="onSecondary()">
+                <ion-icon slot="start" class="fit-icon" name="create-outline"></ion-icon><span class="fl-full">{{ a.secondary }}</span>
               </ion-button>
             }
           </div>
@@ -51,6 +51,6 @@
     }
 
     <!-- คำเตือน AI ฉบับเต็มอยู่ตรงนี้ (กล่องคำพูดด้านบนย่อไว้) -->
-    <p class="yt-disclaimer">น้องยาตรงอ่านซองให้ได้ แต่อาจผิดพลาด ตรวจทุกช่องก่อนบันทึกนะคะ · ไม่ใช่คำแนะนำทางการแพทย์</p>
+    <p class="yt-disclaimer">น้องยาตรงอ่านซองให้ได้ แต่อาจผิดพลาด ตรวจทุกช่องก่อนบันทึกนะคะ · <span class="yt-nowrap">ไม่ใช่คำแนะนำทางการแพทย์</span></p>
   </div>
 </section>

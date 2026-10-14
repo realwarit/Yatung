@@ -1,3 +1,4 @@
+import { FitLabelDirective } from '../../../shared/fit-label.directive';
 import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
 import { FontScaleService } from '../../../shared/font-scale.service';
 import { IonButton, IonIcon } from '@ionic/angular';
@@ -15,7 +16,7 @@ import { ScanTipsComponent, TIPS_FULL_TEXT } from './scan-tips.component';
 @Component({
   selector: 'app-scan-capture',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IonButton, IonIcon, IconComponent, ScanTipsComponent],
+  imports: [IonButton, IonIcon, IconComponent, ScanTipsComponent, FitLabelDirective],
   templateUrl: './scan-capture.component.html',
   styleUrl: './scan-capture.component.scss',
   // ก+/ก++ บนจอเตี้ย: ตัดวงกลมกล้องในช่องมองให้ปุ่มทั้งสองอยู่ในจอแรก (media query วัดเป็น rem ตามขนาดตัวอักษรไม่ได้)

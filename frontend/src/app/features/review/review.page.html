@@ -114,7 +114,7 @@
                 </li>
               }
             </ol>
-            <button type="button" class="add" mat-stroked-button aria-label="เพิ่มยาที่น้องอ่านไม่เจอ" (click)="addCard()"><app-icon name="plus" /> <span class="t-full">เพิ่มยาที่น้องอ่านไม่เจอ</span><span class="t-short" aria-hidden="true">เพิ่มยา</span></button>
+            <button type="button" class="add" mat-stroked-button fitLabel="เพิ่มยาที่น้องอ่านไม่เจอ" fitShort="เพิ่มยา" (click)="addCard()"><app-icon class="fit-icon" name="plus" /> <span class="fl-full">เพิ่มยาที่น้องอ่านไม่เจอ</span><span class="fl-short" aria-hidden="true">เพิ่มยา</span></button>
           }
 
           @if (serverError(); as se) {
@@ -125,7 +125,7 @@
       <!-- E1: แถบล่างอยู่นอก grid = เต็มความกว้างทั้งสองคอลัมน์ (sticky ล่าง) -->
       <app-review-bar [blocker]="blocker()" [short]="blockerShort()" [remaining]="remaining()" [count]="cards().length" [canSave]="canSave()"
                           [saving]="saving()" [leaving]="leaving()" (next)="goNext()" (save)="save()" (discard)="askDiscard()" />
-      <p class="yt-disclaimer">ไม่ใช่คำแนะนำทางการแพทย์ · ตรวจให้ตรงกับซองยาก่อนบันทึกทุกครั้ง</p>
+      <p class="yt-disclaimer"><span class="yt-nowrap">ไม่ใช่คำแนะนำทางการแพทย์</span> · ตรวจให้ตรงกับซองยาก่อนบันทึกทุกครั้ง</p>
     }
   }
 </div>
