@@ -1,4 +1,4 @@
-:host { display: block; }
+:host { display: block; container-type: inline-size; }
 
 // แถวบนของการ์ดภาพรวม (375px, html 18px): วงแหวน 104px | ข้อความ (19px / 17px) | น้องยาตรง 56px ชิดขวา
 .top { display: flex; align-items: center; gap: var(--yt-space-3); }
@@ -26,3 +26,9 @@ circle { fill: none; stroke-width: 12; }
 .sub { margin: 0; color: var(--yt-text-muted); }                           // 18px
 .streak { margin: 0; font-size: 0.9rem; color: var(--yt-text-muted); }      // 16px
 .mascot { flex: none; align-self: center; }
+
+// การ์ดแคบ (320px ก++ / ขยายตัวอักษรระบบ): ตัดน้องยาตรงออก + วงแหวนเล็กลง ให้ข้อความได้ที่ (ไม่ย่อตัวอักษร ไม่ตกทีละคำ)
+@container (max-width: 16rem) {
+  .mascot { display: none; }
+  .ring { width: 4.5rem; }
+}

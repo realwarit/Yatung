@@ -1,7 +1,7 @@
 :host { display: block; }
 
 // ขนาดที่ 375px (html 18px): คอลัมน์ 7 × ≈ 47 ที่ 360px / 49 ที่ 375px (กราฟชิดขอบการ์ด) — แคบกว่า 48px ได้เพราะปุ่มแตะสูงเกิน 100px (ข้อยกเว้นใน CLAUDE.md) · แท่งสูงสุด 96px (5.33rem) กว้าง 26px · เลขบนแท่ง 18px ห่างหัวแท่ง 4px · ป้ายวัน 2 บรรทัด 16/18px
-.chart { margin: 0 calc(var(--yt-space-4) * -1); }   // ชิดขอบการ์ด (margin ติดลบเท่า padding การ์ด 16px)
+.chart { margin: 0 calc(var(--yt-space-4) * -1); container-type: inline-size; }   // ชิดขอบการ์ด (margin ติดลบเท่า padding การ์ด 16px)
 figcaption { padding: 0 var(--yt-space-4); }
 h3 { margin: 0 0 var(--yt-space-2); font: 500 1rem / var(--yt-line-height-tight) var(--yt-font-display); }   // 18px
 
@@ -25,9 +25,9 @@ h3 { margin: 0 0 var(--yt-space-2); font: 500 1rem / var(--yt-line-height-tight)
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
-  gap: 4px;
+  gap: var(--yt-space-1);
   width: 100%;
-  height: calc(var(--bar-max) + 1.7rem + 4px);
+  height: calc(var(--bar-max) + 1.7rem + var(--yt-space-1));
 }
 .val {
   font-size: 1rem;
@@ -44,14 +44,14 @@ h3 { margin: 0 0 var(--yt-space-2); font: 500 1rem / var(--yt-line-height-tight)
   width: 1.45rem;
   height: calc(var(--bar-max) * var(--f, 0));
   min-height: 0.27rem;
-  border-radius: 6px 6px 2px 2px;
+  border-radius: 0.375rem 0.375rem 0.125rem 0.125rem;
   &.tone-good { background: var(--yt-scale-good); }
   &.tone-mid { background: var(--yt-scale-mid); }
   &.tone-low { background: var(--yt-scale-low); }
   // วันนี้ที่ยังไม่จบ: แท่งกรอบประสี teal สูงเท่า 100% (ยังนับไม่เสร็จ ไม่ใช่ข้อผิดพลาด)
   &.partial { box-sizing: border-box; background: transparent; border: 2px dashed var(--yt-scale-good); border-bottom-width: 3px; }
   // วันไม่มีข้อมูล: ขีดเทาบางๆ
-  &.none { height: 4px; min-height: 4px; border-radius: 2px; background: var(--yt-border-strong); opacity: 0.6; }
+  &.none { height: var(--yt-space-1); min-height: var(--yt-space-1); border-radius: 0.125rem; background: var(--yt-border-strong); opacity: 0.6; }
 }
 
 // ป้ายวัน 2 บรรทัดเสมอ (วันนี้ = "วันนี้" / เลขวัน) ความสูงทุกคอลัมน์จึงเท่ากันเอง
@@ -91,3 +91,13 @@ h3 { margin: 0 0 var(--yt-space-2); font: 500 1rem / var(--yt-line-height-tight)
 
 // sr-only มาตรฐาน: ใส่ที่ <div> ครอบตาราง (ไม่ใส่ที่ <table> เอง — ตารางไม่ยอมย่อความกว้างเป็น 1px จึงดันหน้าให้กว้างและเลื่อนซ้ายขวาได้)
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+
+// จอแคบ/ตัวอักษรใหญ่มาก (คอลัมน์ < ~2.1rem) : เลขบนแท่งไม่พอที่ → ซ่อน แล้วโชว์ค่าของวันที่แตะไว้ในชิปใต้กราฟ ; "วันนี้" ย่อเป็นวันในสัปดาห์ (ตัวหนา teal) ; ตัวอักษรไม่ถูกย่อ
+.abbr, .chip--val { display: none; }
+@container (max-width: 15rem) {
+  .val { display: none; }
+  .area { height: calc(var(--bar-max) + var(--yt-space-1)); }
+  .now { display: none; }
+  .abbr, .chip--val { display: inline; }
+  .chip--val { display: inline-flex; background: var(--yt-surface); }
+}

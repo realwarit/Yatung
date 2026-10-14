@@ -13,7 +13,7 @@
             @else { <span class="bar none"></span> }
           </span>
           <span class="lbl">
-            <span class="dow">{{ d.is_today ? 'วันนี้' : dow(d) }}</span>
+            <span class="dow">@if (d.is_today) { <span class="now">วันนี้</span><span class="abbr">{{ dow(d) }}</span> } @else { {{ dow(d) }} }</span>
             <span class="dn num">{{ dayNo(d) }}</span>
           </span>
         </div>
@@ -30,6 +30,7 @@
   <p class="detail" role="status" aria-live="polite">
     @if (selected(); as s) {
       <span class="dl">{{ s.label_th }}</span>
+      @if (valText(s); as v) { <span class="chip chip--val">{{ v }}</span> }
       @for (c of chips(); track c) { <span class="chip">{{ c }}</span> }
       @if (!chips().length) { <span class="chip chip--none">ไม่มียา</span> }
     }
