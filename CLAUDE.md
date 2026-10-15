@@ -12,6 +12,8 @@
 - Windows + PowerShell, Docker Desktop, Node 22, Angular 21, Ionic 9, Capacitor 8
 - **Ionic 9:** import standalone components จาก `'@ionic/angular'` โดยตรง ห้ามใช้ `'@ionic/angular/standalone'`
 - Ionic ใช้เฉพาะหน้า Scan (lazy route) หน้าอื่นใช้ Angular Material
+  - **Ionic โหลดเฉพาะ route /scan จริง** (15 ต.ค.): provider อยู่ที่ `features/scan/scan.routes.ts` (`loadChildren`; ไม่มี `provideIonicAngular` ใน `app.config.ts` และไม่มี Ionic ใน initial bundle ; initial 904→515 kB) — `provideIonicAngular` ผูก APP_INITIALIZER ซึ่งไม่ทำงานใน injector ของ route จึงเรียก `initialize()` + class `ion-ce` + pwa-elements เองใน `provideEnvironmentInitializer` ; เพิ่มคอมโพเนนต์ที่ใช้ Ionic นอกหน้า Scan ไม่ได้ (ต้องแตก route เป็น lazy ที่มี provider นี้) · ตรวจ: `node tools/scan-lazy-check.mjs` (dev) + `node tools/scan-offline-check.mjs` (ต้อง `ng build` ก่อน ; SW ออฟไลน์)
+  - **class `has-banner` บน `<html>`** (banner-host ตั้งเมื่อมี banner) ใช้ลดความสูงส่วนหัวบนจอเตี้ยมาก (≤ 600px) ให้ปุ่มสำคัญอยู่จอแรก — ใช้ใน today-progress / scan-capture / `styles/_components.scss` (กฎของ auth-shell กับ review อยู่ที่นี่เพราะ scss ของสองไฟล์นั้นชนงบ 4 kB) ; ตรวจด้วย `first-screen-check.mjs --sizes=320x568,…` (ใส่ `MSYS_NO_PATHCONV=1` เมื่อใช้ `--routes=/…` ใน Git Bash)
 - รันทั้งระบบ: `docker compose up -d --build` (เว็บ :8080, Node-RED 127.0.0.1:1880, Adminer 127.0.0.1:8081 ด้วย `--profile dev`, tunnel **ngrok** ด้วย `--profile tunnel` [inspector 127.0.0.1:4040]; 1880/3306/8081/4040 ผูก 127.0.0.1 เท่านั้น)
 - dev frontend: `docker compose up -d db nodered` แล้ว `cd frontend && npx ng serve` (proxy `/api` → :1880 ผ่าน `proxy.conf.json`)
 - Timezone ทุก service = Asia/Bangkok (MySQL `+07:00`)

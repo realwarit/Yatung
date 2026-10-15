@@ -350,3 +350,13 @@ html.kb-open nav.bottom { display: none; }
 .tiles .tile[data-slot='bedtime'] { --t-bg: var(--yt-meal-bedtime-bg); --t-accent: var(--yt-meal-bedtime-accent); --t-fg: var(--yt-meal-bedtime-fg); }
 .tiles .tile.tile.on[data-slot] { border-color: var(--t-accent); background: var(--t-bg); color: var(--t-fg); }
 .tiles .tile.tile.on[data-slot] .tile__time, .tiles .tile.tile.on[data-slot] .tile__tick { color: var(--t-fg); }
+
+// จอเตี้ยมาก (320×568) + มี banner (class has-banner บน <html> จาก banner-host) : ตัดของตกแต่งให้ปุ่มสำคัญอยู่ในจอแรก
+// (อยู่ที่นี่ไม่ใช่ใน scss ของคอมโพเนนต์ เพราะ auth-shell / review.page ใกล้งบ 4 kB)
+@media (max-width: 1023.98px) and (max-height: 600px) {
+  .has-banner app-auth-shell .peek { display: none; }   // Login/Register: แถวน้องยาตรง + กล่องคำพูด
+  .has-banner .state--done app-mascot { display: none; }   // Review บันทึกสำเร็จ: น้องยาตรงตัวใหญ่
+}
+
+// จอเตี้ยมาก : Review บันทึกสำเร็จบีบระยะให้ปุ่มครบจอแรก
+@media (max-height: 600px) { .yt-page.review .state--done { gap: var(--yt-space-3); margin-top: var(--yt-space-2); } }

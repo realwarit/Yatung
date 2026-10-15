@@ -1,7 +1,7 @@
 // e2e หน้า Review (วันที่ 5) ผ่านหน้าเว็บจริง + Node-RED จริง ไม่เรียก Gemini:
 //   สแกน (AI_MOCK) → Review → แก้ช่องเหลือง → ถูกต้องแล้ว → บันทึก → ยาเข้าตาราง / เติมยาเดิม / ทิ้ง / refresh / ออกโดยไม่บันทึก / 409
-// ต้องมี ng serve (4200) + docker (db, nodered ที่ AI_MOCK=true):
-//   AI_MOCK=true docker compose up -d --force-recreate nodered ; cd frontend && node tools/review-e2e.mjs
+// ต้องมี ng serve (4200) + docker (db, nodered ที่รันอยู่ ไม่ต้อง recreate — ขั้นสแกนจำลองด้วย page.route) :
+//   cd frontend && node tools/review-e2e.mjs
 // สร้าง user สุ่ม + ผลสแกนตัวอย่างใน DB แล้วลบทิ้งตอนจบ
 import { launch, newPage, login, api, check, summary, BASE } from './lib/e2e.mjs';
 import { SCENARIOS, insertDraft, makeUser, dropUser, sql } from './lib/seed.mjs';
@@ -13,6 +13,7 @@ try {
   const { page } = await newPage(browser, { width: 1440, height: 1000 });
   page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
   page.on('dialog', (d) => d.accept());
+  page.setDefaultTimeout(8000);
   const token = await login(page, user.email, user.password);
   const call = api(page, token);
   const card = (n) => page.locator('app-review-card').nth(n);
@@ -31,12 +32,9 @@ try {
   }
 
   console.log('\n1) สแกน (mock) → Review → บันทึก → ยาเข้าตาราง/หน้าวันนี้');
-  const mockProbe = await call('POST', '/api/scan', { text: 'Metformin 500 mg วันละ 2 ครั้ง หลังอาหาร เช้า-เย็น' });
-  const isMock = mockProbe.status === 200 && /AI_MOCK/.test(mockProbe.body?.result?.overall_note ?? '');
-  check('nodered อยู่โหมด AI_MOCK=true (ไม่เปลืองโควตา Gemini)', isMock, 'รัน: AI_MOCK=true docker compose up -d --force-recreate nodered');
-  if (!isMock) throw new Error('ต้องใช้ AI_MOCK=true');
-  await call('POST', `/api/prescriptions/${mockProbe.body.prescription_id}/discard`);
-
+  // ขั้นสแกนจำลองในเบราว์เซอร์ (route) : คำขอไม่ถึง Gemini/Node-RED เลย และไม่ต้อง recreate nodered เป็น AI_MOCK ; หน้า Review โหลดผลจาก DB จริง
+  const idScan = insertDraft(user, SCENARIOS.typed());
+  await page.route('**/api/scan', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ prescription_id: idScan, ocr_text: '', result: {}, review_flags: [] }) }));
   await page.goto(BASE + '/scan');
   await page.waitForSelector('app-scan-stage');
   await page.locator('ion-segment-button[value=text]').click(); await page.waitForTimeout(150);
@@ -45,7 +43,7 @@ try {
   await page.waitForURL('**/review/*', { timeout: 20000 });
   await card(0).waitFor();
   check('หน้า Review ไม่มีป้าย "หน้าทดสอบชั่วคราว"', (await page.getByText('หน้าทดสอบชั่วคราว').count()) === 0);
-  check('ตัวบอกขั้นตอน: ② ตรวจข้อมูล เป็นขั้นปัจจุบัน', (await page.locator('p.steps b').innerText()).includes('ตรวจข้อมูล'));
+  check('ตัวบอกขั้นตอน: ② ตรวจ เป็นขั้นปัจจุบัน', (await page.locator('app-step-dots [aria-current=step] .t').innerText()).trim() === 'ตรวจ');
   check('แสดงยา Metformin (ฟอร์มเดียวกับหน้าเพิ่มยา)', (await card(0).getByLabel('ชื่อยา').inputValue()) === 'Metformin');
   check('ตรวจครบแล้ว (mock ไม่มี flag)', (await card(0).locator('.yt-chip').innerText()).includes('ตรวจครบแล้ว'));
   check('มีประโยคสรุปท้ายการ์ด', /ทุกวัน เช้า และ เย็น ครั้งละ 1 เม็ด หลังอาหาร/.test(await card(0).locator('.sum').innerText()));
@@ -70,9 +68,10 @@ try {
   const idFlags = insertDraft(user, SCENARIOS.flags());
   await open(idFlags);
   check('3 การ์ด', (await page.locator('app-review-card').count()) === 3);
-  check('กรอบคำพูดสรุป: 3 รายการ 4 จุด', (await page.locator('app-review-banner').innerText()).includes('มี 4 ช่อง'));
-  await page.getByRole('button', { name: /ส่วนที่น้องไม่แน่ใจ/ }).click();
-  check('แสดง unreadable_parts + overall_note ทุกข้อ (3 ข้อ) ในแถบบนสุด', (await page.locator('app-review-banner li').count()) === 3);
+  const bannerTxt = (await page.locator('app-review-banner').textContent()).replace(/\s+/g, ' ');   // \s รวม nbsp ที่ nowrapUnits ใส่ระหว่างตัวเลขกับหน่วย
+  check('กรอบคำพูดสรุป: 3 รายการ 4 จุด', /มี 4 ช่อง/.test(bannerTxt), bannerTxt);
+  await page.getByRole('button', { name: /ส่วนที่น้องไม่แน่ใจ/ }).click(); await page.waitForTimeout(250);
+  check('แสดง unreadable_parts + overall_note ทุกข้อ (3 ข้อ) ในแถบบนสุด', (await page.locator('app-review-banner li').count()) === 3, String(await page.locator('app-review-banner li').count()));
   check('ป้ายหัวการ์ด: ตรวจอีก 2 จุด', (await card(0).locator('.yt-chip').innerText()).replace(/\s+/g, ' ').includes('ตรวจอีก 2 จุด'));
   check('ช่องเหลืองมีไอคอน + เหตุผล (4 จุด)', (await page.locator('.flag').count()) === 4 && (await page.locator('.flag app-icon').count()) >= 4);
   const mealFlagId = await card(0).locator('.yt-field[id$="-meal"]').getAttribute('aria-describedby');
@@ -212,7 +211,7 @@ try {
   console.log('\n8) การเข้าถึง / ขนาดตัวอักษร 125% บนมือถือ');
   const idA11y = insertDraft(user, SCENARIOS.flags());
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.evaluate(() => localStorage.setItem('yatung_font_scale', '125'));
+  await page.addInitScript(() => { try { localStorage.setItem('yatung_font_scale_v2', '125'); } catch { /* ignore */ } });   // ต่อจาก init script ของ newPage (ก) ซึ่งตั้งค่าซ้ำทุกครั้งที่โหลดหน้า
   await open(idA11y);
   await page.reload(); await card(0).waitFor();
   const over = await page.evaluate(() => {
@@ -228,7 +227,6 @@ try {
     .filter((e) => e.getBoundingClientRect().width > 0 && e.getBoundingClientRect().height < 55).map((e) => e.tagName + ' ' + Math.round(e.getBoundingClientRect().height)));
   check('ช่องกรอก/ปุ่มหลัก/ตัวเลือก สูง ≥ 56px', small.length === 0, small.slice(0, 5).join(', '));
   check('ตัวเลขใช้ class .num', (await page.locator('app-review-card .num').count()) > 0);
-  await page.evaluate(() => localStorage.setItem('yatung_font_scale', '100'));
 
   ok = summary();
 } catch (e) {
