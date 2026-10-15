@@ -50,3 +50,9 @@
   li { display: flex; gap: var(--yt-space-2); padding: var(--yt-space-3); border-radius: var(--yt-radius-sm); background: var(--yt-primary-softer); app-icon { margin-top: 0.25em; color: var(--yt-primary-deep); } } }
 .kind { margin-left: 0.4em; padding: 0.05em var(--yt-space-2); border-radius: var(--yt-radius-pill); background: var(--yt-surface); color: var(--yt-primary-deep); font-size: var(--yt-text-sm); font-style: normal; font-weight: 500; }
 .done__note { color: var(--yt-text-muted); font-size: var(--yt-text-sm); }
+
+// จอเตี้ยมาก (320×568) : บันทึกสำเร็จต้องเห็นปุ่มครบ — บีบระยะ ; มี banner = ซ่อนน้องยาตรงตัวใหญ่
+@media (max-height: 600px) {
+  .state--done { gap: var(--yt-space-3); margin-top: var(--yt-space-2); }
+  :host-context(.has-banner) .state--done app-mascot { display: none; }
+}

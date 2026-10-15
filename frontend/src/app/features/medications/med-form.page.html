@@ -24,7 +24,7 @@
         <p class="preview__text">{{ preview() | nbNum }}</p>
       </section>
 
-      <div class="actions yt-fitrow">
+      <div class="actions yt-fitrow" data-first-screen="save">
         <a mat-stroked-button routerLink="/medications" fitGroup="med-form-act" fitLabel="ยกเลิก">ยกเลิก</a>
         <button mat-flat-button type="submit" [disabled]="saving()" fitGroup="med-form-act" [fitLabel]="saving() ? 'กำลังบันทึก…' : 'บันทึก'">{{ saving() ? 'กำลังบันทึก…' : 'บันทึก' }}</button>
       </div>

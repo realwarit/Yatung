@@ -30,7 +30,11 @@ export class BannerHostComponent {
   constructor() {
     let ro: ResizeObserver | null = null;
     const root = document.documentElement;
-    const publish = () => root.style.setProperty('--yt-banner-h', this.svc.banner() ? `${this.el.nativeElement.offsetHeight}px` : '0px');
+    const publish = () => {
+      const on = !!this.svc.banner();
+      root.style.setProperty('--yt-banner-h', on ? `${this.el.nativeElement.offsetHeight}px` : '0px');
+      root.classList.toggle('has-banner', on);   // ให้หน้าที่ต้องลดความสูงส่วนหัวตอนมีแถบ (เช่น หัววันนี้บนจอเตี้ย) เลือกสไตล์ได้
+    };
     effect((onCleanup) => {
       this.svc.banner();
       queueMicrotask(publish);

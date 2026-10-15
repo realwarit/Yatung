@@ -16,7 +16,7 @@
       <div class="yt-skeleton sk-slot"></div>
     </div>
   } @else if (noMeds()) {
-    <app-empty-state data-first-screen="say" text="ยังไม่มียาในตารางค่ะ&#10;เพิ่มยาแล้วน้องจะเตือนให้นะคะ">
+    <app-empty-state data-first-screen="say" reserve="7.6rem" text="ยังไม่มียาในตารางค่ะ&#10;เพิ่มยาแล้วน้องจะเตือนให้นะคะ">
       <a mat-flat-button routerLink="/scan" fitGroup="today-empty" fitLabel="สแกนซองยา"><app-icon class="fit-icon" name="camera" /> สแกนซองยา</a>
       <a mat-stroked-button routerLink="/medications/new" fitGroup="today-empty" fitLabel="พิมพ์เอง"><app-icon class="fit-icon" name="edit" /> พิมพ์เอง</a>
     </app-empty-state>

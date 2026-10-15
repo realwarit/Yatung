@@ -221,7 +221,8 @@ for (const [w, h] of sizes) {
             const a = r.auth;
             if (a.cur !== a.expected) { fail++; lines.push(`✘ ขนาดน้องยาตรง ${a.cur.toUpperCase()} ≠ ที่ควรได้ ${a.expected.toUpperCase()} (พอดีจอ: ${JSON.stringify(a.fits)})`); }
             else { ok++; lines.push(`✓ ขนาดน้องยาตรง ${a.cur.toUpperCase()} (ใหญ่สุดที่พอดีจอ: ${JSON.stringify(a.fits)})`); }
-            if (p.route === '/login' && scale !== '125' && a.cur === 's' && a.fits.s) { fail++; lines.push('✘ Login ก/ก+ ต้องได้ L หรือ M'); }
+            // กติกา L→M→S: จอเตี้ยมาก (เช่น 320×568 ที่ ก+) ฟอร์มเต็มจอจน M ไม่พอดี การได้ S จึงถูกต้อง ; ผิดเฉพาะเมื่อ M พอดีแต่ยังได้ S
+            if (p.route === '/login' && scale !== '125' && a.cur === 's' && a.fits.m) { fail++; lines.push('✘ Login ก/ก+ ต้องได้ L หรือ M'); }
             if (a.lines !== 1) { fail++; lines.push(`✘ กล่องคำพูด ${a.lines} บรรทัด (ต้อง 1): ${a.text}`); }
           }
           if (r.stepper) {

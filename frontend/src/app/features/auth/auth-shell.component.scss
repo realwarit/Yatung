@@ -83,6 +83,9 @@ app-logo { flex: 0 1 auto; min-width: 0; white-space: nowrap; }
 
 .stage { display: none; }
 
+// จอเตี้ย + banner : ซ่อนแถวน้องยาตรง ให้ปุ่มส่งอยู่จอแรก
+@media (max-width: 1023.98px) and (max-height: 600px) { :host-context(.has-banner) .peek { display: none; } }
+
 // ---------- จอกว้าง (≥ 1024px): สองซีกเท่ากันเต็มความกว้าง เวทีกึ่งกลางซีกซ้าย การ์ดกึ่งกลางซีกขวา ----------
 @media (min-width: 1024px) {
   .top { height: var(--bar-h); box-sizing: border-box; padding: 0 1.7rem; }   // ชิดมุม ห่างขอบ ~30px เท่ากันทั้งซ้ายขวา

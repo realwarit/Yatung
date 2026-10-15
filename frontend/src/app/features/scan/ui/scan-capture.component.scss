@@ -68,3 +68,9 @@
 
 // จอเตี้ย (≤ 700px) ทุกขนาดตัวอักษร: กรอบเตี้ยลงก่อน เพื่อให้ปุ่ม "เลือกรูปจากเครื่อง" อยู่ในจอแรกแม้มี banner
 @media (max-height: 700px) { .frame--empty { min-height: 168px; } }
+
+// จอเตี้ยมาก (320×568) + banner : ซ่อนรูปประกอบ + ลดกรอบ ให้ปุ่ม "เลือกรูปจากเครื่อง" อยู่ในจอแรก
+@media (max-height: 600px) {
+  :host-context(.has-banner) .art { display: none; }
+  :host-context(.has-banner) .frame--empty { min-height: 88px; }
+}

@@ -135,7 +135,8 @@ main:focus { outline: none; }
     &.active app-icon { color: var(--yt-primary); }
   }
   // ตัวบอกหน้าปัจจุบันไม่ใช้สีอย่างเดียว: ขีดบนไอคอน
-  a.active:not(.scan) { box-shadow: inset 0 3px 0 var(--yt-primary); }
+  // (ไม่ใช้ inset box-shadow: ขอบแท็บเป็นเศษพิกเซลแล้วรั่วเป็นเส้นแนวตั้งข้างแท็บ)
+  a.active:not(.scan) { background: linear-gradient(var(--yt-primary), var(--yt-primary)) top / 100% 3px no-repeat; }
 
   .ico, .scan__slot { --icon-optical-offset: 0; position: relative; display: grid; place-items: center; width: 100%; height: 1.6rem; flex: none; }
   .ico app-icon { font-size: 1.15rem; }

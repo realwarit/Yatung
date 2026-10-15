@@ -10,7 +10,7 @@ import { SpeechBubbleComponent } from '../../components/speech-bubble/speech-bub
   selector: 'app-empty-state',
   imports: [MascotComponent, SpeechBubbleComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'yt-enter' },
+  host: { class: 'yt-enter', '[style.--yt-empty-reserve]': 'reserve()' },
   template: `
     <span class="mascot"><app-mascot mood="wave" [fluid]="true" /></span>
     <app-speech-bubble class="say" tail="up" [typing]="false" [live]="true" tone="info" [text]="text()" />
@@ -18,7 +18,7 @@ import { SpeechBubbleComponent } from '../../components/speech-bubble/speech-bub
   `,
   styles: `
     :host { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--yt-space-4);
-      min-height: calc(100dvh - var(--yt-bottom-clearance) - 11rem); padding-bottom: var(--yt-space-4); }
+      min-height: calc(100dvh - var(--yt-bottom-clearance) - var(--yt-empty-reserve, 11rem)); padding-bottom: var(--yt-space-4); }
     .mascot { width: 112px; flex: none; }
     .say, .btns { width: 100%; max-width: 22rem; }
     @media (max-height: 739.98px) { .mascot { width: 56px; } }
@@ -28,4 +28,6 @@ import { SpeechBubbleComponent } from '../../components/speech-bubble/speech-bub
 export class EmptyStateComponent {
   /** ข้อความในกล่องคำพูด (ประโยคละบรรทัดด้วย \n) */
   readonly text = input.required<string>();
+  /** ความสูงที่เหลือเผื่อให้หัวหน้า (ค่าเริ่มต้น = หัวแบบมีปุ่มด้านขวา ยาของฉัน ; วันนี้ใช้หัวทักทายบรรทัดเดียว จึงเผื่อน้อยกว่า) เพื่อให้เนื้อหาอยู่กลางพื้นที่ที่เหลือ */
+  readonly reserve = input('11rem');
 }
