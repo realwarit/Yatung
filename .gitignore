@@ -26,3 +26,18 @@ test-logs/
 
 # log error ของ Node-RED (errors.log, หมุนไฟล์) — ห้าม commit
 node-red/data/logs/
+
+# แอป Android (วันที่ 9) — ห้าม commit โดเมน/คีย์/ไฟล์ติดตั้ง (apk มีโดเมนฝังอยู่ข้างใน ห้ามแนบใน Release/รีโป)
+frontend/src/environments/environment.native.ts
+*.apk
+*.aab
+*.keystore
+*.jks
+local.properties
+frontend/android/app/release/
+frontend/android/.idea/
+frontend/android/app/src/main/assets/public/
+frontend/android/app/src/main/assets/capacitor.config.json
+frontend/android/app/src/main/assets/capacitor.plugins.json
+frontend/android/capacitor-cordova-android-plugins/
+frontend/android/app/src/main/res/xml/config.xml

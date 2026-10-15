@@ -61,6 +61,15 @@
               "outputHashing": "all",
               "serviceWorker": "ngsw-config.json"
             },
+            "native": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.native.ts"
+                }
+              ],
+              "serviceWorker": false
+            },
             "development": {
               "optimization": false,
               "extractLicenses": false,
