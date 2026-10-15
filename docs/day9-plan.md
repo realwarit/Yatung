@@ -160,3 +160,14 @@
 2. **แต่ละหน้าโหลดช้ากว่า PWA ชัดเจน** → วัดก่อนแก้ (ห้ามแก้ก่อนถาม) ทำหลัง docker build จบ (ตอนเน็ตว่าง) time-box 30 นาที: adb + Chrome DevTools Protocol (`adb forward` ไป `webview_devtools_remote_*`) ของแอป debug · เก็บตอนสลับแท็บ วันนี้ → ยาของฉัน → สรุป → ตั้งค่า: จำนวนคำขอ, จำนวน OPTIONS preflight, เวลาแต่ละคำขอ (TTFB/รวม) · เทียบกับ PWA บน Chrome ของเครื่องเดียวกันถ้าทำได้ · สมมติฐาน: (ก) preflight ทุกคำขอเพราะ CORS ปัจจุบันไม่มี `Max-Age` (ข) ไม่มี SW cache (ค) เน็ตถูก docker build แย่ง · วัดซ้ำหลังทาง A (Max-Age 600)
 
 **ลำดับ:** docker build → ทาง A (nginx) → วัดข้อ 2 → ช่วง C · ห้าม `up`/recreate หลัง 23:30 (ไม่ทัน = ย้ายไปพรุ่งนี้เช้า)
+
+---
+
+# สถานะคืน 15 ต.ค. (ปิดงานคืนนี้ — ไม่ได้ up/recreate container ใดๆ)
+
+- **docker build frontend ผ่านแล้ว** (168 วินาที: `npm ci` 150 วินาที 589 แพ็กเกจ · `ng build` 9 วินาที · process จบเอง · initial เว็บ 516.32 kB) — commit `77be86c`
+  - สาเหตุที่ build เคยค้าง/ล้ม: เครือข่ายสะดุดเป็นช่วง (tarball เดียวกัน 75 วินาที แล้ว 0.8 วินาที; ทั้งบนเครื่องและใน container; ไม่ใช่ IPv6) + npm เปิด ~15 ซ็อกเก็ตพร้อมกันแล้วถูกรีเซ็ต (`ECONNRESET`) · ตัวเลข 228–1376 วินาทีใน log รวมเวลารอคิว ไม่ใช่เวลาต่อไฟล์
+  - ที่ผิดพลาด: `--fetch-timeout=60000` (ชีฟแนะนำ) ทำให้เกิด `EIDLETIMEOUT` ซึ่งไม่ถูก retry → เอาออกแล้ว
+  - ที่แก้ใน Dockerfile: `--fetch-retries=5 --fetch-retry-mintimeout=2000 --maxsockets=4` + `--mount=type=cache,target=/root/.npm` (แคชข้ามรอบ แม้รอบที่ล้ม)
+- **ทาง A (nginx CORS) เตรียมไฟล์แล้วแต่ยังไม่ขึ้น:** `frontend/nginx.conf` (`map` origin → `https://localhost` เท่านั้น · `proxy_hide_header` ซ่อน `Access-Control-*` ของ Node-RED · ตอบ preflight 204 เอง ครบ methods รวม PATCH · `Max-Age 600` · `Vary: Origin`) · `nginx -t` ผ่านใน image ใหม่ (รันแบบ one-off ในเครือข่าย compose) · image `yatung-frontend:latest` build แล้ว แต่ container `yatung-frontend-1` ที่รันอยู่ยังใช้ image เก่า
+- **พรุ่งนี้เช้า (ต้องถามคาเด็ทก่อนทุกขั้น):** (1) `docker compose up -d frontend` (ขณะคาเด็ทไม่ได้เทสมือถือ) → (2) `bash scripts/test-cors-native.sh --ngrok` → (3) เว็บ Chrome เดสก์ท็อป: login และหยุด/กลับมาใช้ยา Paracetamol → (4) วัดความเร็วแอป (ข้อ 2 ผลช่วง A) ก่อน/หลังทาง A → (5) ช่วง C
