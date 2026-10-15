@@ -2,8 +2,8 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY package*.json ./
-# cache mount (BuildKit) : แคช npm อยู่นอก layer → lockfile เปลี่ยนก็ไม่ต้องโหลดแพ็กเกจเดิมซ้ำ ; timeout สั้น + retry = สะดุดแล้วลองใหม่เร็ว (ค่าเริ่มต้นของ npm รอ 300 วินาทีต่อครั้ง)
-RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund --fetch-timeout=60000 --fetch-retries=5 --fetch-retry-mintimeout=2000
+# cache mount (BuildKit) : แคช npm อยู่นอก layer → lockfile เปลี่ยนก็ไม่ต้องโหลดแพ็กเกจเดิมซ้ำ ; retry 5 ครั้ง + maxsockets=4 (เน็ตบางที่รีเซ็ตการเชื่อมต่อเมื่อเปิดพร้อมกันเยอะ) ; ห้ามตั้ง --fetch-timeout สั้น : 60 วินาทีทำให้เกิด EIDLETIMEOUT ซึ่งไม่ถูก retry
+RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund --fetch-retries=5 --fetch-retry-mintimeout=2000 --maxsockets=4
 COPY . .
 RUN npx ng build --configuration production
 
