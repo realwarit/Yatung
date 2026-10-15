@@ -29,8 +29,7 @@ export const routes: Routes = [
         // Ionic ถูกโหลดเฉพาะตอนเปิดหน้า Scan (lazy) · hideBottomNav = มือถือซ่อนแถบเมนูล่างเพื่อให้โฟกัสงานตรงหน้า
         path: 'scan',
         data: { hideBottomNav: true },
-        canDeactivate: [unsavedChangesGuard],
-        loadComponent: () => import('./features/scan/scan.page').then(m => m.ScanPage),
+        loadChildren: () => import('./features/scan/scan.routes').then(m => m.SCAN_ROUTES),
       },
       {
         // หน้าตรวจผลสแกนก่อนบันทึก: งานโฟกัส (ซ่อนแถบเมนูล่างบนมือถือ) · แก้แล้วยังไม่บันทึก = ถามก่อนออก
@@ -55,7 +54,7 @@ export const routes: Routes = [
   // หน้าตรวจมาสคอต: เปิดเฉพาะ dev (ng serve) ไม่มีใน production build
   ...(isDevMode() ? [
     { path: 'dev/mascot', loadComponent: () => import('./features/dev/mascot-showcase.page').then(m => m.MascotShowcasePage) },
-    { path: 'dev/scan-states', loadComponent: () => import('./features/dev/scan-states.page').then(m => m.ScanStatesPage) },
+    { path: 'dev/scan-states', loadChildren: () => import('./features/scan/scan.routes').then(m => m.SCAN_DEV_ROUTES) },
     { path: 'dev/buttons', loadComponent: () => import('./features/dev/buttons-showcase.page').then(m => m.ButtonsShowcasePage) },
     { path: 'dev/ui', loadComponent: () => import('./features/dev/ui-showcase.page').then(m => m.UiShowcasePage) },
     { path: 'dev/push-states', loadComponent: () => import('./features/dev/push-states.page').then(m => m.PushStatesPage) },

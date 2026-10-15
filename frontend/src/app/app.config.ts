@@ -1,7 +1,6 @@
 import { ApplicationConfig, ErrorHandler, provideBrowserGlobalErrorListeners, isDevMode } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { provideIonicAngular } from '@ionic/angular';
 
 import { routes } from './app.routes';
 import { provideServiceWorker } from '@angular/service-worker';
@@ -16,8 +15,7 @@ export const appConfig: ApplicationConfig = {
     { provide: ErrorHandler, useClass: AppErrorHandler },
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withInterceptors([ngrokInterceptor, htmlGuardInterceptor, authInterceptor, errorLogInterceptor])),
-    // Ionic ใช้เฉพาะหน้า Scan — mode 'md' ให้หน้าตาเหมือนกันทั้ง Android/iOS/เว็บ
-    provideIonicAngular({ mode: 'md' }),
+    // Ionic ใช้เฉพาะหน้า Scan : provider อยู่ใน features/scan/scan.routes.ts (lazy ไม่อยู่ใน initial bundle)
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',
