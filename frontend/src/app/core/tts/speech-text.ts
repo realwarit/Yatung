@@ -180,3 +180,12 @@ export function chunkSpeech(sentences: string[], max = MAX_CHUNK): string[] {
   if (cur) out.push(cur);
   return out;
 }
+
+/** ชื่อเสียงสำหรับแสดง: ยุบคำซ้ำติดกัน ("ไทย ไทย" → "ไทย") แล้วต่อ (lang) เฉพาะเมื่อชื่อยังไม่มีรหัสภาษา (th-TH / th_TH / tha) */
+export function voiceLabel(v: { name: string; lang: string }): string {
+  const name = v.name.trim().split(/\s+/).filter((w, i, a) => i === 0 || w !== a[i - 1]).join(' ');
+  const code = v.lang.trim();
+  const norm = (s: string): string => s.toLowerCase().replace(/_/g, '-');
+  const has = norm(name).includes(norm(code)) || /\((th|tha)([-_][a-z]+)?\)/i.test(name);
+  return !code || has ? name : `${name} (${code})`;
+}

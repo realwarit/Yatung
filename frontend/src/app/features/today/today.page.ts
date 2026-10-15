@@ -17,7 +17,7 @@ import { errorCode, errorText } from '../../core/api/api-error';
 import { Dose, DoseActionResult, Medication, Slot, TodayResponse } from '../../core/api/models';
 import { AuthService } from '../../core/auth/auth.service';
 import { startClock } from '../../core/clock';
-import { DoseQtyPipe, MealLabelPipe } from '../../core/i18n/labels.pipe';
+import { DoseQtyPipe, MealLabelPipe, MedNamePipe } from '../../core/i18n/labels.pipe';
 import { thaiDateShort, toServerTime } from '../../core/time';
 import { ConfettiComponent } from '../../shared/components/confetti/confetti.component';
 import { MascotMood } from '../../shared/components/mascot/mascot.component';
@@ -34,7 +34,7 @@ import { lowStockText } from './low-stock';
 
 @Component({
   selector: 'app-today-page',
-  imports: [EmptyStateComponent, FitLabelDirective, ErrTextComponent, RouterLink, MatButton, IconComponent, ConfettiComponent, SectionComponent, ListRowComponent,
+  imports: [MedNamePipe, EmptyStateComponent, FitLabelDirective, ErrTextComponent, RouterLink, MatButton, IconComponent, ConfettiComponent, SectionComponent, ListRowComponent,
     SlotGroupComponent, TodayProgressComponent, DoseQtyPipe, MealLabelPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './today.page.html',

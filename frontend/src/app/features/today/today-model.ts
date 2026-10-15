@@ -1,6 +1,7 @@
 import { Dose, Slot, TodayResponse } from '../../core/api/models';
 import { SLOT_LABEL } from '../../core/i18n/labels';
 import { nowrapUnits } from '../../core/nowrap';
+import { medDisplayName } from '../../core/text';
 import { clockTime, duration, lateMinutes, parseServerTime, remainMinutes } from '../../core/time';
 import { hasMultipleTimes, slotTimeLabel } from './slot-time';
 
@@ -77,7 +78,7 @@ export function buildSlots(data: TodayResponse | null, nowMs: number, flags: Slo
     return {
       slot: s.slot, time: slotTimeLabel(s.doses.map((x) => x.scheduled_at)), multiTime: hasMultipleTimes(s.doses.map((x) => x.scheduled_at)),
       doses, mode, expanded, chip,
-      summary: pending.map((d) => d.dose.name).join(' · '),
+      summary: pending.map((d) => medDisplayName(d.dose.name)).join(' · '),
       remain, isNext,
       takeAllIds: active.map((d) => d.dose.id),
     };

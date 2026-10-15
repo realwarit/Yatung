@@ -1,4 +1,5 @@
 import { FitLabelDirective } from '../../shared/fit-label.directive';
+import { medDisplayName } from '../../core/text';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { Slot } from '../../core/api/models';
 import { MEAL_LABEL, SLOT_LABEL, doseText, sourceLabel, unitInDose } from '../../core/i18n/labels';
@@ -46,7 +47,7 @@ export class SlotGroupComponent {
   protected readonly icon = (slot: Slot): IconName => SLOT_ICON[slot];
   protected readonly canTakeAll = (): boolean => this.s().mode === 'open' && this.s().takeAllIds.length >= 2;
 
-  protected title(v: DoseVM): string { return v.dose.strength ? `${v.dose.name} ${v.dose.strength}` : v.dose.name; }
+  protected title(v: DoseVM): string { const n = medDisplayName(v.dose.name); return v.dose.strength ? `${n} ${v.dose.strength}` : n; }
 
   /** "1 เม็ด · หลังอาหาร" (+ เวลาของรอบนี้เมื่อมื้อมีหลายเวลา, + ช่องทางที่ยืนยันเมื่อกินแล้ว) */
   protected sub(v: DoseVM): string {

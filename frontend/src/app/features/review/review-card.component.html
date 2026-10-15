@@ -14,12 +14,12 @@
   </header>
 
   @if (card().match; as m) {
-    <section class="match" [attr.aria-label]="'ยาที่มีอยู่แล้ว ' + m.name">
+    <section class="match" [attr.aria-label]="'ยาที่มีอยู่แล้ว ' + (m.name | medName)">
       <p class="match__txt"><app-icon name="info" />
-        <span>คุณมี <strong>{{ m.name }}{{ m.strength ? ' ' + m.strength : '' }}</strong> ในตารางแล้ว
+        <span>คุณมี <strong>{{ m.name | medName }}{{ m.strength ? ' ' + m.strength : '' }}</strong> ในตารางแล้ว
           @if (m.remaining_qty !== null) { (เหลือ <span class="num">{{ m.remaining_qty }}</span> {{ unitName() }}) }</span>
       </p>
-      <div class="yt-choices" role="radiogroup" [attr.aria-label]="'จัดการ ' + m.name">
+      <div class="yt-choices" role="radiogroup" [attr.aria-label]="'จัดการ ' + (m.name | medName)">
         <button type="button" role="radio" class="yt-choice" [class.on]="card().mode === 'refill'" [attr.aria-checked]="card().mode === 'refill'" (click)="setMode('refill')">
           <span class="yt-choice__txt"><strong>เติมจำนวนให้ยาเดิม</strong><small>ไม่สร้างยาซ้ำ</small></span>
           @if (card().mode === 'refill') { <app-icon name="check" class="yt-choice__tick" /> }

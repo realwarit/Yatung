@@ -2,7 +2,7 @@ import { UNITS } from '../i18n/labels';
 import { AdherenceResponse } from '../api/stats.api';
 import {
   ALL_DONE_SPEECH, HOUR_WORDS, MAX_CHUNK, SLOT_SPOKEN, UNIT_SPOKEN, adherenceSpeech, chunkSpeech, doseLine, doseSpoken,
-  mealSpoken, medNameSpeech, slotSpeech, speakableLatin, spokenName, strengthSpoken, thaiNumber, timeSpoken, todaySpeech,
+  mealSpoken, medNameSpeech, slotSpeech, speakableLatin, spokenName, strengthSpoken, thaiNumber, timeSpoken, todaySpeech, voiceLabel,
 } from './speech-text';
 
 describe('timeSpoken (เวลาเป็นภาษาพูดไทย)', () => {
@@ -180,4 +180,17 @@ describe('C5: ชื่อยาตัวพิมพ์ใหญ่ทั้ง
     expect(d.name).toBe('ZOLPIDEM');
   });
   it('ท่อนทดลองฟังชื่อยาในฟอร์ม ใช้กฎเดียวกัน', () => expect(medNameSpeech('', 'ZOLPIDEM')).toEqual(['zolpidem']));
+});
+
+describe('voiceLabel', () => {
+  it('ชื่อซ้ำ "ไทย ไทย" แสดงครั้งเดียว แล้วต่อ (lang)', () => {
+    expect(voiceLabel({ name: 'ไทย ไทย', lang: 'th_TH' })).toBe('ไทย (th_TH)');
+  });
+  it('ชื่อมีรหัสภาษาอยู่แล้ว ไม่ต่อซ้ำ', () => {
+    expect(voiceLabel({ name: 'ไทย (th_TH)', lang: 'th_TH' })).toBe('ไทย (th_TH)');
+    expect(voiceLabel({ name: 'Google ไทย th-TH', lang: 'th-TH' })).toBe('Google ไทย th-TH');
+  });
+  it('ชื่อธรรมดาต่อ (lang)', () => {
+    expect(voiceLabel({ name: 'Kanya', lang: 'th-TH' })).toBe('Kanya (th-TH)');
+  });
 });

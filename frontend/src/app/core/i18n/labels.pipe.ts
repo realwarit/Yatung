@@ -1,5 +1,6 @@
 import { Pipe, PipeTransform } from '@angular/core';
 import { nbNum } from '../nowrap';
+import { medDisplayName } from '../text';
 import { DoseUnit, MealRelation, Slot } from '../api/medicine-parse.model';
 import { doseText, MEAL_LABEL, SLOT_LABEL, UNIT_LABEL, unitInDose } from './labels';
 
@@ -30,4 +31,10 @@ export class DoseQtyPipe implements PipeTransform {
 @Pipe({ name: 'nbNum' })
 export class NbNumPipe implements PipeTransform {
   transform(v: string | null | undefined): string { return nbNum(v); }
+}
+
+/** ชื่อยาตัวพิมพ์ใหญ่ล้วน → Title Case ตอนแสดง (METFORMIN → Metformin) */
+@Pipe({ name: 'medName' })
+export class MedNamePipe implements PipeTransform {
+  transform(v: string | null | undefined): string { return medDisplayName(v); }
 }

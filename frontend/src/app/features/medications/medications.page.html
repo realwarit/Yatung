@@ -37,8 +37,8 @@
       @for (m of shown(); track m.id) {
         <li class="med" [class.low]="isLow(m)" [class.stopped]="!m.is_active" (click)="cardTap($event, m)">
           <!-- ส่วนหัวเป็นปุ่มจริง (คีย์บอร์ด/โปรแกรมอ่านจอเข้าได้) ; แตะที่ว่างของการ์ดก็เปิดรายละเอียดเหมือนกัน -->
-          <button type="button" class="med__head" [attr.aria-label]="'ดูรายละเอียด ' + m.name" (click)="open(m)">
-            <h2>{{ m.name }}@if (m.strength) { {{ ' ' }}<span class="strength">{{ m.strength | nbNum }}</span> }</h2>
+          <button type="button" class="med__head" [attr.aria-label]="'ดูรายละเอียด ' + (m.name | medName)" (click)="open(m)">
+            <h2>{{ m.name | medName }}@if (m.strength) { {{ ' ' }}<span class="strength">{{ m.strength | nbNum }}</span> }</h2>
             @if (isLow(m)) { <span class="low-tag">{{ m.remaining_qty === 0 ? 'ยาหมด' : 'ใกล้หมด' }}</span> }
             @else { <app-icon class="go" name="chevron-right" /> }
           </button>

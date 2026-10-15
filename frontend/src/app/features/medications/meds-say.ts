@@ -1,6 +1,7 @@
 import { Medication } from '../../core/api/models';
 import { UNIT_LABEL } from '../../core/i18n/labels';
 import { glueThai } from '../../core/nowrap';
+import { medDisplayName } from '../../core/text';
 import { MascotMood } from '../../shared/components/mascot/mascot.component';
 import { BubbleTone } from '../../shared/components/speech-bubble/speech-bubble.component';
 
@@ -23,9 +24,9 @@ export function medsSay(tab: 'active' | 'stopped', meds: Medication[]): MedsSay 
   const low = lowMeds(meds);
   if (!low.length) return { tone: 'success', mood: 'happy', text: 'ยาทุกตัวพอใช้ค่ะ เก่งมากเลยนะคะ', scan: false };
   const m = low[0];
-  if (low.length > 1) return { tone: 'warning', mood: 'worried', text: `${m.name} กับอีก ${low.length - 1}${NB}ตัวใกล้หมดแล้วนะคะ`, scan: false };
-  if (m.remaining_qty === 0) return { tone: 'warning', mood: 'worried', text: `${m.name} หมดแล้วนะคะ`, scan: false };
+  if (low.length > 1) return { tone: 'warning', mood: 'worried', text: `${medDisplayName(m.name)} กับอีก ${low.length - 1}${NB}ตัวใกล้หมดแล้วนะคะ`, scan: false };
+  if (m.remaining_qty === 0) return { tone: 'warning', mood: 'worried', text: `${medDisplayName(m.name)} หมดแล้วนะคะ`, scan: false };
   const left = m.days_left !== null ? `เหลือพอใช้อีก ${m.days_left}${NB}${glueThai('วันค่ะ')}` : `เหลืออีก ${m.remaining_qty}${NB}${glueThai((UNIT_LABEL[m.unit] ?? m.unit) + 'ค่ะ')}`;
-  return { tone: 'warning', mood: 'worried', text: `${m.name} ${glueThai('ใกล้หมดแล้วนะคะ')}
+  return { tone: 'warning', mood: 'worried', text: `${medDisplayName(m.name)} ${glueThai('ใกล้หมดแล้วนะคะ')}
 ${left}`, scan: false };
 }

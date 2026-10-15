@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, model, output, signal, untracked } from '@angular/core';
+import { MedNamePipe } from '../../core/i18n/labels.pipe';
 import { FormsModule } from '@angular/forms';
 import { SlotTimes } from '../../core/api/models';
 import { UNIT_LABEL, doseText } from '../../core/i18n/labels';
@@ -13,7 +14,7 @@ const NONE: ReadonlySet<MedGroup> = new Set();
 /** การ์ดยาหนึ่งตัวในหน้า Review: ฟอร์มเดียวกับหน้าเพิ่มยา (app-med-fields) + ช่องที่ต้องตรวจ + เติมจำนวนให้ยาเดิม */
 @Component({
   selector: 'app-review-card',
-  imports: [FormsModule, MedFieldsComponent, IconComponent],
+  imports: [FormsModule, MedFieldsComponent, IconComponent, MedNamePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './review-card.component.html',
   styleUrl: './review-card.component.scss',

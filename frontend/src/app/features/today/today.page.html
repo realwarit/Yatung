@@ -33,7 +33,7 @@
       @if (asNeeded().length) {
         <app-section label="ยาเมื่อมีอาการ" [id]="'prn'">
           @for (m of asNeeded(); track m.id) {
-            <div appListRow class="prn" [title]="m.strength ? m.name + ' ' + m.strength : m.name"
+            <div appListRow class="prn" [title]="m.strength ? (m.name | medName) + ' ' + m.strength : (m.name | medName)"
                  [sub]="'ครั้งละ ' + (m.dose_per_time | doseQty: m.unit) + ((m.meal_relation | mealLabel) ? ' · ' + (m.meal_relation | mealLabel) : '')">
               @if (m.indication) { <span class="ind">{{ m.indication }}</span> }
               @if (lowText().get(m.id); as low) { <span class="yt-chip yt-chip--warn"><app-icon name="alert" /> {{ low }}</span> }

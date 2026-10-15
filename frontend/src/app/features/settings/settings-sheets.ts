@@ -59,13 +59,14 @@ export class DemoSheetComponent {}
   styles: `
     .hint { margin: 0 0 var(--yt-space-3); color: var(--yt-text-muted); }
     .sample { margin: var(--yt-space-3) 0 0; padding: var(--yt-space-3) var(--yt-space-4); border-radius: var(--yt-radius-sm); background: var(--yt-field-bg); }
+    .nb { white-space: nowrap; }
     .cap { color: var(--yt-text-muted); font-weight: 600; }
   `,
   template: `
     <app-sheet-frame title="การแสดงผล">
       <p class="hint">ขนาดตัวอักษร</p>
       <app-font-size-toggle />
-      <p class="sample"><span class="cap">ตัวอย่าง:</span>&ngsp;<strong>Metformin</strong> ครั้งละ <span class="num">1</span>&nbsp;เม็ด หลังอาหาร</p>
+      <p class="sample"><span class="cap">ตัวอย่าง:</span>&ngsp;<strong>Metformin</strong> ครั้งละ <span class="num">1</span>&nbsp;เม็ด <span class="nb">หลังอาหาร</span></p>
     </app-sheet-frame>
   `,
 })

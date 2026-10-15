@@ -1,4 +1,5 @@
 import { ErrTextComponent } from '../../shared/components/err-text/err-text.component';
+import { medDisplayName } from '../../core/text';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { MatButton } from '@angular/material/button';
@@ -8,7 +9,7 @@ import { errorText } from '../../core/api/api-error';
 import { MedicationApi } from '../../core/api/medication.api';
 import { Medication } from '../../core/api/models';
 import { SLOT_LABEL, thaiJoin } from '../../core/i18n/labels';
-import { DoseQtyPipe, MealLabelPipe, NbNumPipe, SlotLabelPipe, UnitLabelPipe } from '../../core/i18n/labels.pipe';
+import { DoseQtyPipe, MealLabelPipe, MedNamePipe, NbNumPipe, SlotLabelPipe, UnitLabelPipe } from '../../core/i18n/labels.pipe';
 import { thaiShortDate } from '../../core/time';
 import { FitLabelDirective } from '../../shared/fit-label.directive';
 import { MascotComponent } from '../../shared/components/mascot/mascot.component';
@@ -24,7 +25,7 @@ import { RefillDialogComponent } from './refill-dialog.component';
 @Component({
   selector: 'app-medications-page',
   imports: [ErrTextComponent, RouterLink, MatButton, IconComponent, MascotComponent, SegmentedComponent, SpeechBubbleComponent, EmptyStateComponent,
-    DoseQtyPipe, MealLabelPipe, NbNumPipe, SlotLabelPipe, UnitLabelPipe, FitLabelDirective],
+    DoseQtyPipe, MealLabelPipe, MedNamePipe, NbNumPipe, SlotLabelPipe, UnitLabelPipe, FitLabelDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './medications.page.html',
   styleUrl: './medications.page.scss',
@@ -87,7 +88,7 @@ export class MedicationsPage {
       case 'edit': void this.router.navigate(['/medications', m.id, 'edit']); break;
       case 'stopped':
         this.replace(r.med);
-        this.snack.open(`หยุดใช้ ${m.name} แล้ว`, undefined, { duration: 5000, panelClass: 'yt-snack' });
+        this.snack.open(`หยุดใช้ ${medDisplayName(m.name)} แล้ว`, undefined, { duration: 5000, panelClass: 'yt-snack' });
         break;
       case 'resumed': this.resumed(m, r.med); break;
     }
@@ -114,7 +115,7 @@ export class MedicationsPage {
     const skipped = updated.skipped_slots_today ?? [];
     const extra = skipped.length
       ? ` · รอบ${thaiJoin(skipped.map((s) => SLOT_LABEL[s]), true)}ของวันนี้ผ่านไปแล้ว จะเริ่มเตือนพรุ่งนี้` : '';
-    this.snack.open(`กลับมาใช้ ${m.name} แล้ว${extra}`, 'ตกลง', { duration: skipped.length ? 10_000 : 5000, panelClass: 'yt-snack' });
+    this.snack.open(`กลับมาใช้ ${medDisplayName(m.name)} แล้ว${extra}`, 'ตกลง', { duration: skipped.length ? 10_000 : 5000, panelClass: 'yt-snack' });
     this.tab.set('active');
   }
 

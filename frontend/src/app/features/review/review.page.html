@@ -45,7 +45,7 @@
         <app-mascot mood="celebrate" size="l" />
         <ul class="done">
           @for (l of doneLines(); track l.name) {
-            <li><app-icon name="check" /> <span><strong>{{ l.name }}</strong> <em class="kind">{{ l.kind }}</em>
+            <li><app-icon name="check" /> <span><strong>{{ l.name | medName }}</strong> <em class="kind">{{ l.kind }}</em>
               @if (l.note) { <br /><span class="done__note">{{ l.note }}</span> }</span></li>
           }
         </ul>

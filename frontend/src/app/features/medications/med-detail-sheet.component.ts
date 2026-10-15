@@ -5,7 +5,7 @@ import { MedicationApi } from '../../core/api/medication.api';
 import { Medication } from '../../core/api/models';
 import { nbNum } from '../../core/nowrap';
 import { FitLabelDirective } from '../../shared/fit-label.directive';
-import { DoseQtyPipe, MealLabelPipe, NbNumPipe, SlotLabelPipe, UnitLabelPipe } from '../../core/i18n/labels.pipe';
+import { DoseQtyPipe, MealLabelPipe, MedNamePipe, NbNumPipe, SlotLabelPipe, UnitLabelPipe } from '../../core/i18n/labels.pipe';
 import { thaiShortDate } from '../../core/time';
 import { IconComponent } from '../../shared/icon.component';
 import { SheetFrameComponent } from '../../shared/ui/sheet/sheet-frame.component';
@@ -22,11 +22,11 @@ export type MedSheetResult =
  */
 @Component({
   selector: 'app-med-detail-sheet',
-  imports: [SheetFrameComponent, MatButton, IconComponent, FitLabelDirective, DoseQtyPipe, MealLabelPipe, NbNumPipe, SlotLabelPipe, UnitLabelPipe],
+  imports: [SheetFrameComponent, MatButton, IconComponent, FitLabelDirective, DoseQtyPipe, MealLabelPipe, MedNamePipe, NbNumPipe, SlotLabelPipe, UnitLabelPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './med-detail-sheet.component.scss',
   template: `
-    <app-sheet-frame [title]="med.name + (med.strength ? ' ' + nb(med.strength) : '')">
+    <app-sheet-frame [title]="(med.name | medName) + (med.strength ? ' ' + nb(med.strength) : '')">
       @if (med.is_active && med.is_low) {
         <p class="low"><app-icon name="alert" /> {{ med.remaining_qty === 0 ? 'ยาหมดแล้ว' : 'ใกล้หมด' }}</p>
       } @else if (!med.is_active) {
@@ -61,7 +61,7 @@ export type MedSheetResult =
         <button type="button" class="stop-link" (click)="ask()">หยุดใช้ยานี้</button>
       } @else {
         <div #confirm class="confirm" tabindex="-1" role="group" aria-labelledby="stop-q">
-          <p id="stop-q" class="q">หยุดใช้ <span class="q__n">{{ med.name }}&nbsp;ไหมคะ?</span></p>
+          <p id="stop-q" class="q">หยุดใช้ <span class="q__n">{{ med.name | medName }}&nbsp;ไหมคะ?</span></p>
           <p class="q__sub">ประวัติการกินยังอยู่ และกลับมาใช้ใหม่ได้ค่ะ</p>
           <div class="btns yt-fitrow">
             <button mat-stroked-button type="button" [disabled]="busy()" (click)="confirming.set(false)" fitGroup="med-stop" fitLabel="ยกเลิก">ยกเลิก</button>
