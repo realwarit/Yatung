@@ -1,7 +1,8 @@
 import { DestroyRef, Injectable, InjectionToken, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { SwUpdate } from '@angular/service-worker';
-import { RECONNECT_PARAM, RECONNECT_URL, isHtmlContentType } from './html-response';
+import { environment } from '../../../environments/environment';
+import { NGROK_SKIP_HEADER, RECONNECT_PARAM, RECONNECT_URL, isHtmlContentType } from './html-response';
 
 export interface ConnectionEnv {
   swEnabled: () => boolean;
@@ -9,6 +10,9 @@ export interface ConnectionEnv {
   go: (url: string) => void;
   location: () => { search: string; pathname: string; hash: string };
   replaceUrl: (url: string) => void;
+  /** แอป Android (ไม่มี service worker/หน้า Visit Site ที่ต้องเปิด) → "เชื่อมต่อใหม่" = ถาม API ตรงๆ แทนการ navigate */
+  native: boolean;
+  fetchApiConfig: () => Promise<{ ok: boolean; contentType: string | null }>;
 }
 
 export const CONNECTION_ENV = new InjectionToken<ConnectionEnv>('CONNECTION_ENV', {
@@ -26,6 +30,11 @@ export const CONNECTION_ENV = new InjectionToken<ConnectionEnv>('CONNECTION_ENV'
       location: () => ({ search: location.search, pathname: location.pathname, hash: location.hash }),
       // ผ่าน router (replaceUrl) ให้ state ของ router ตรงกับ URL ที่ลบพารามิเตอร์แล้ว ไม่ใช่แค่แก้ history เฉยๆ
       replaceUrl: (url) => { void router.navigateByUrl(url, { replaceUrl: true }); },
+      native: environment.native,
+      fetchApiConfig: async () => {
+        const r = await fetch(`${environment.apiBase}/api/config`, { cache: 'no-store', headers: { [NGROK_SKIP_HEADER]: '1' }, signal: AbortSignal.timeout(8000) });
+        return { ok: r.ok, contentType: r.headers.get('content-type') };
+      },
     };
   },
 });
@@ -82,5 +91,19 @@ export class ConnectionService {
   }
 
   /** พาไปหน้าที่ service worker ไม่ดักจับ → เห็นหน้า Visit Site → กดแล้ว ngrok พากลับ /today */
-  reconnect(): void { this.env.go(RECONNECT_URL); }
+  reconnect(): void {
+    if (this.env.native) { void this.reconnectNative(); return; }
+    this.env.go(RECONNECT_URL);
+  }
+
+  /**
+   * แอป Android: origin ของแอปคือ https://localhost (ไม่ใช่เซิร์ฟเวอร์) จึง navigate ไป /today?ngsw-bypass ไม่ได้ผล
+   * ถาม GET /api/config ผ่าน apiBase ทันที ; ได้ JSON จริง = ล้างสถานะ "เชื่อมต่อหมดอายุ" , ยังเป็น HTML/ล้มเหลว = คงสถานะไว้
+   */
+  async reconnectNative(): Promise<void> {
+    try {
+      const r = await this.env.fetchApiConfig();
+      if (r.ok && !isHtmlContentType(r.contentType)) { this.apiHtml.set(false); this.swHtml.set(false); }
+    } catch { /* ต่อไม่ได้ = ยังคงสถานะเดิม */ }
+  }
 }
