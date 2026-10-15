@@ -16,7 +16,7 @@ export const launch = () => chromium.launch({ channel: 'msedge' }).catch(() => c
 
 export async function newPage(browser, { width = 1440, height = 900, scale = '100' } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height }, locale: 'th-TH', timezoneId: 'Asia/Bangkok' });
-  await ctx.addInitScript((s) => { try { localStorage.setItem('yatung_font_scale', s); } catch { /* ignore */ } }, scale);
+  await ctx.addInitScript((s) => { try { localStorage.setItem('yatung_font_scale_v2', s); } catch { /* ignore */ } }, scale);
   return { ctx, page: await ctx.newPage() };
 }
 

@@ -1,4 +1,4 @@
-<article class="card yt-card" [attr.aria-labelledby]="prefix() + '-title'">
+<article class="card" [attr.aria-labelledby]="prefix() + '-title'">
   <header class="head">
     <div class="head__txt">
       <p class="cap">ยาตัวที่ <span class="num">{{ position() }}</span> จาก <span class="num">{{ total() }}</span></p>
@@ -7,19 +7,19 @@
       </h2>
     </div>
     @if (todo().length) {
-      <span class="badge badge--warn"><app-icon name="alert" /> ตรวจอีก <span class="num">{{ todo().length }}</span> จุด</span>
+      <span class="yt-chip yt-chip--warn"><app-icon name="alert" /> ตรวจอีก <span class="num">{{ todo().length }}</span> จุด</span>
     } @else {
-      <span class="badge badge--ok"><app-icon name="check" /> ตรวจครบแล้ว</span>
+      <span class="yt-chip yt-chip--ok"><app-icon name="check" /> ตรวจครบแล้ว</span>
     }
   </header>
 
   @if (card().match; as m) {
-    <section class="match" [attr.aria-label]="'ยาที่มีอยู่แล้ว ' + m.name">
+    <section class="match" [attr.aria-label]="'ยาที่มีอยู่แล้ว ' + (m.name | medName)">
       <p class="match__txt"><app-icon name="info" />
-        <span>คุณมี <strong>{{ m.name }}{{ m.strength ? ' ' + m.strength : '' }}</strong> ในตารางแล้ว
+        <span>คุณมี <strong>{{ m.name | medName }}{{ m.strength ? ' ' + m.strength : '' }}</strong> ในตารางแล้ว
           @if (m.remaining_qty !== null) { (เหลือ <span class="num">{{ m.remaining_qty }}</span> {{ unitName() }}) }</span>
       </p>
-      <div class="yt-choices" role="radiogroup" [attr.aria-label]="'จัดการ ' + m.name">
+      <div class="yt-choices" role="radiogroup" [attr.aria-label]="'จัดการ ' + (m.name | medName)">
         <button type="button" role="radio" class="yt-choice" [class.on]="card().mode === 'refill'" [attr.aria-checked]="card().mode === 'refill'" (click)="setMode('refill')">
           <span class="yt-choice__txt"><strong>เติมจำนวนให้ยาเดิม</strong><small>ไม่สร้างยาซ้ำ</small></span>
           @if (card().mode === 'refill') { <app-icon name="check" class="yt-choice__tick" /> }
@@ -45,7 +45,8 @@
   } @else {
     <app-med-fields [draft]="card().draft" (draftChange)="setDraft($event)"
                     [moreOpen]="card().moreOpen" (moreOpenChange)="setMore($event)"
-                    [times]="times()" [flags]="flags()" [idPrefix]="prefix()" (ack)="ack($event)" />
+                    [times]="times()" [flags]="flags()" [idPrefix]="prefix()" (ack)="ack($event)"
+                    [fold]="fold()" (unfold)="unfolded.set(true)" />
   }
 
   <p class="sum" [attr.aria-label]="'สรุปยาตัวที่ ' + position()"><app-icon name="info" /> <span>{{ summary() }}</span></p>

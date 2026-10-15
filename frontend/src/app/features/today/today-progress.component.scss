@@ -1,63 +1,54 @@
-:host { display: contents; }
+// แถบทักทาย : พื้น hero-bg เต็มความกว้าง โค้งมุมล่าง 24px
+:host {
+  display: block;
+  margin: calc(var(--yt-space-2) * -1) calc(var(--yt-gutter) * -1) 0;
+  padding: 0 var(--yt-gutter) var(--yt-space-3);
+  background: var(--yt-hero-bg);
+  border-radius: 0 0 1.5rem 1.5rem;
+}
+.top { display: flex; align-items: center; justify-content: space-between; gap: var(--yt-space-2); min-height: 2.5rem; }
+.greet { flex: 1; min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--yt-text-greet); font-weight: 500; line-height: var(--yt-line-height-tight); color: var(--yt-primary-deep); }
+.date { flex: none; font-size: var(--yt-text-label); color: var(--yt-text-muted); white-space: nowrap; }
 
-.progress { display: flex; flex-direction: column; align-items: center; gap: var(--yt-space-3); padding: var(--yt-space-4); }
-.progress__row { display: flex; align-items: center; justify-content: center; gap: var(--yt-space-4); }
-app-progress-ring { width: min(8rem, 44%); }   // ไม่ใช้ 8rem ตายตัว: ที่ 320px ก++ วงแหวน+น้องยาตรงกว้างเกินจอ
-.say {
-  position: relative;
-  align-self: stretch;
-  margin: 0;
-  padding: var(--yt-space-3) var(--yt-space-4);
-  border-radius: var(--yt-radius-md);
-  background: var(--yt-primary-softer);
-  border: 2px solid var(--yt-primary-soft);
-  font: 500 1.05rem / 1.6 var(--yt-font-display);
-  color: var(--yt-primary-deep);
-  text-align: center;
-  text-wrap: balance;
-  // หางกรอบคำพูดชี้ขึ้นไปหาน้องยาตรง (อยู่ขวาของแถว)
-  &::before {
-    content: '';
-    position: absolute;
-    right: 18%;
-    top: -9px;
-    width: 14px;
-    height: 14px;
-    background: var(--yt-primary-softer);
-    border: 2px solid var(--yt-primary-soft);
-    border-right: 0;
-    border-bottom: 0;
-    transform: rotate(45deg);
-  }
+.card {
+  display: flex; flex-direction: column; gap: var(--yt-space-2); padding: var(--yt-space-3);
+  border-radius: var(--yt-radius-md); background: var(--yt-surface); box-shadow: var(--yt-shadow-soft);
+}
+.say { display: flex; align-items: center; gap: var(--yt-space-3); }
+.mc, .cheer { flex: none; }
+.mc-w { display: none; }
+.bub { flex: 1; min-width: 0; }
+
+.stat { display: flex; align-items: center; gap: var(--yt-space-3); min-height: 3.5rem; }
+.ring { flex: none; width: 3rem; height: 3rem; }
+.ring svg { display: block; width: 100%; height: 100%; }
+.trk { fill: none; stroke: var(--yt-primary-soft); stroke-width: 6; }
+.val { fill: none; stroke: var(--yt-primary); stroke-width: 6; stroke-linecap: round; transition: stroke-dasharray var(--yt-duration); }
+.ring text { fill: var(--yt-primary-deep); font-family: var(--yt-font-body); font-weight: 700; }
+.txt { container-type: inline-size; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 0.125rem; }
+.lbl { margin: 0; font-size: var(--yt-text-sm); line-height: var(--yt-line-height-tight); color: var(--yt-text); }
+.listen { flex: none; }
+
+// จอเตี้ย (320×568 ก+) : ปุ่ม "กินแล้ว" มื้อแรกต้องอยู่จอแรก → ตัดน้องยาตรง บีบระยะ ; มี banner = ซ่อนแถวทักทาย + กล่องคำพูด (ยังอยู่ให้โปรแกรมอ่านจอ)
+@media (max-width: 1023.98px) and (max-height: 620px) {
+  .mc { display: none; }
+  .card { gap: 0; padding: var(--yt-space-1) var(--yt-space-3); }
+  .stat { min-height: 2.25rem; }
+  .ring { width: 2.25rem; height: 2.25rem; }
+  .top { min-height: 1.5rem; }
+  :host { padding-bottom: var(--yt-space-2); margin-bottom: calc(var(--yt-space-3) * -1); }
+  :host-context(.has-banner) .top { display: none; }
+  :host-context(.has-banner) .say { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 }
 
-.next {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--yt-space-2);
-  padding: var(--yt-space-3) var(--yt-space-4);
-  border-radius: var(--yt-radius-md);
-  background: var(--yt-info-soft);
-  color: var(--yt-on-info-soft);
-  font-weight: 600;
-  p { display: flex; align-items: flex-start; gap: var(--yt-space-3); margin: 0; }
-  app-icon { margin-top: 0.15em; }
-}
-.next--done { background: var(--yt-success-soft); color: var(--yt-on-success-soft); }
-.next__late { color: var(--yt-on-warning-soft); }
-.next--late { background: var(--yt-warning-soft); color: var(--yt-on-warning-soft); }
-.next__go {
-  min-height: var(--yt-tap);
-  padding: 0 var(--yt-space-5);
-  border: 2px solid var(--yt-warning);
-  border-radius: var(--yt-radius-pill);
-  background: var(--yt-surface);
-  color: var(--yt-on-warning-soft);
-  font: 600 1rem / 1.6 var(--yt-font-body);
-  cursor: pointer;
-}
-
+// ---------- จอกว้าง (E3) : grid 3 ส่วน auto 1fr auto — น้องยาตรง M 96 | กล่องคำพูด (ยืดเต็มส่วนกลาง ≤ 520) | วงแหวน 88 + "วันนี้กินแล้ว" + ลิงก์ 7 วัน + 🔊 ชิดขวา ----------
 @media (min-width: 1024px) {
-  .progress { padding: var(--yt-space-5); }
+  .card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--yt-space-5); padding: var(--yt-space-4) var(--yt-space-5); }
+  .say { display: contents; }
+  .mc { display: none; }
+  .mc-w { display: block; }
+  .bub { width: 100%; max-width: 32.5rem; }
+  .stat { gap: var(--yt-space-4); justify-self: end; }
+  .ring { width: 5.5rem; height: 5.5rem; }
+  .txt { flex: none; width: 12rem; }   // container-type: inline-size ไม่มีความกว้างจากเนื้อหา → ต้องกำหนดเอง
 }

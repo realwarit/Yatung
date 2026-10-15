@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, model } from '@angular/core';
+import { FitLabelDirective } from '../../fit-label.directive';
 
 export interface SegmentedOption {
   value: string;
@@ -10,15 +11,24 @@ export interface SegmentedOption {
 /** ปุ่มเลือก 1 ใน N แบบแบ่งช่อง (radiogroup) — ใช้เป็นแท็บและตัวเลือกก่อน/หลังอาหาร */
 @Component({
   selector: 'app-segmented',
+  imports: [FitLabelDirective],
   host: { '[class.pill]': 'pill()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="seg" [class.pill]="pill()" role="radiogroup" [attr.aria-label]="label()">
       @for (o of options(); track o.value) {
-        <button type="button" role="radio" [attr.aria-checked]="value() === o.value"
-                [class.on]="value() === o.value" (click)="value.set(o.value)">
-          {{ o.label }}@if (o.count !== undefined) { <span class="count num">{{ o.count }}</span> }
-        </button>
+        @if (pill()) {
+          <!-- แท็บ pill: ป้ายบรรทัดเดียว ย่อขนาดตัวอักษรเท่ากันทั้งกลุ่มเมื่อจอแคบ (fitLabel กลุ่ม) -->
+          <button type="button" role="radio" [attr.aria-checked]="value() === o.value" [class.on]="value() === o.value"
+                  [fitLabel]="o.label + (o.count !== undefined ? ' ' + o.count : '')" fitGroup="seg-pill" (click)="value.set(o.value)">
+            {{ o.label }}@if (o.count !== undefined) { <span class="count num">{{ o.count }}</span> }
+          </button>
+        } @else {
+          <button type="button" role="radio" [attr.aria-checked]="value() === o.value"
+                  [class.on]="value() === o.value" (click)="value.set(o.value)">
+            {{ o.label }}@if (o.count !== undefined) { <span class="count num">{{ o.count }}</span> }
+          </button>
+        }
       }
     </div>
   `,
@@ -32,7 +42,7 @@ export interface SegmentedOption {
     button {
       flex: 1 1 8rem;
       min-height: var(--yt-tap);
-      padding: var(--yt-space-2) var(--yt-space-4);
+      padding: var(--yt-space-2) clamp(8px, 3vw, var(--yt-space-4));   /* จอแคบ + ตัวอักษรใหญ่: rem ของช่องไฟโตเร็วกว่าจอ */
       border: 2px solid var(--yt-border-strong);
       border-radius: var(--yt-radius-field);
       background: var(--yt-surface);
@@ -62,8 +72,9 @@ export interface SegmentedOption {
       background: var(--yt-surface);
     }
     .pill button {
-      flex: none;
-      padding: var(--yt-space-2) var(--yt-space-5);
+      flex: 1 1 auto;
+      min-width: 0;
+      padding: var(--yt-space-2) clamp(8px, 3vw, var(--yt-space-4));   /* จอแคบ + ตัวอักษรใหญ่: rem ของช่องไฟโตเร็วกว่าจอ */
       border: 0;
       border-radius: var(--yt-radius-pill);
       background: transparent;

@@ -6,7 +6,7 @@ export type IconName =
   | 'alert' | 'check' | 'info' | 'pill'
   | 'sunrise' | 'sun' | 'sunset' | 'moon' | 'today' | 'chart' | 'sliders' | 'plus' | 'minus'
   | 'chevron-down' | 'logout' | 'clock' | 'undo' | 'edit' | 'ban' | 'bell' | 'dots' | 'thermometer'
-  | 'layers' | 'level' | 'bulb' | 'type' | 'trash' | 'image' | 'close' | 'arrow-right' | 'search' | 'share' | 'add-square' | 'volume' | 'stop' | 'phone' | 'download';
+  | 'layers' | 'level' | 'bulb' | 'type' | 'trash' | 'image' | 'close' | 'arrow-right' | 'search' | 'share' | 'add-square' | 'volume' | 'stop' | 'phone' | 'download' | 'arrow-left' | 'chevron-right' | 'cloud-off';
 
 // เส้นไอคอนแบบ inline SVG (ไม่พึ่งฟอนต์ภายนอก ใช้ได้ออฟไลน์) — markup เป็นค่าคงที่ในไฟล์นี้เท่านั้น
 const PATHS: Record<IconName, string> = {
@@ -49,6 +49,9 @@ const PATHS: Record<IconName, string> = {
   image: '<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-8 8"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
   'arrow-right': '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  'arrow-left': '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  'chevron-right': '<path d="m9 6 6 6-6 6"/>',
+  'cloud-off': '<path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 17.6 8.4M20 14.3A4 4 0 0 0 17 11M7 18h10"/><path d="M4 4l16 16"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
   share: '<path d="M12 3v12M8 7l4-4 4 4"/><path d="M7 11H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-1"/>',
   'add-square': '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/>',

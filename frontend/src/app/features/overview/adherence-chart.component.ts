@@ -27,6 +27,8 @@ export class AdherenceChartComponent {
   protected partial = isPartialToday;
   protected label = barLabel;
   protected tone = toneOf;
+  /** ค่าของวันที่เลือกเป็นข้อความ (ใช้แทนเลขบนแท่งเมื่อจอแคบ) : "3/5 ครั้ง" · "100%" */
+  protected valText(d: AdherenceDay): string { return isPartialToday(d) ? `${d.taken}/${d.due + d.upcoming} ครั้ง` : d.rate === null ? "" : d.rate + "%"; }
   protected frac(d: AdherenceDay): number { return barFraction(d.rate); }
   /** สีตัวเลขบนแท่ง: เฉดเข้มของสีเดียวกับแท่ง */
   protected inkOf(d: AdherenceDay): string { return isPartialToday(d) ? 'good' : toneOf(d.rate); }

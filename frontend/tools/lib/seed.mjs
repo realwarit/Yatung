@@ -38,7 +38,7 @@ export function dropUser(u) {
 /** ยา 1 ตัวตาม schema ของ AI (ค่าเริ่มต้น = อ่านได้มั่นใจ ไม่มี flag) */
 export const med = (o = {}) => ({
   name: 'Metformin', strength: '500 mg', dose_per_time: 1, unit: 'tablet', slots: ['morning', 'evening'], meal_relation: 'after',
-  as_needed: false, total_qty: 60, indication: 'ยาเบาหวาน', warnings: [],
+  as_needed: false, total_qty: 60, indication: 'ลดน้ำตาลในเลือด', warnings: [],
   source_text: `${o.name ?? 'Metformin'} ${o.strength ?? '500 mg'}\nครั้งละ 1 เม็ด วันละ 2 ครั้ง หลังอาหาร`,
   confidence: { name: 0.97, dose: 0.95, slots: 0.95, meal_relation: 0.95 }, ...o,
 });
@@ -73,7 +73,7 @@ export const SCENARIOS = {
       med({ name: 'AMLODIPINE', strength: '5 mg', dose_per_time: 0.5, slots: ['morning'], total_qty: 30, indication: 'ลดความดันโลหิต',
         warnings: ['อาจทำให้ข้อเท้าบวม'], source_text: 'AMLODIPINE 5 MG TAB\nครั้งละ ½ เม็ด วันละ 1 ครั้ง หลังอาหารเช้า',
         confidence: { name: 0.98, dose: 0.55, slots: 0.95, meal_relation: 0.95 } }),
-      med({ name: 'SIMVASTATIN', strength: '20 mg', slots: [], total_qty: 30, indication: 'ลดไขมัน', source_text: 'SIMVASTATIN 20 mg 1 tab ตอนเย็น',
+      med({ name: 'SIMVASTATIN', strength: '20 mg', slots: [], total_qty: 30, indication: 'ลดไขมันในเลือด', source_text: 'SIMVASTATIN 20 mg 1 tab ตอนเย็น',
         confidence: { name: 0.95, dose: 0.9, slots: 0.5, meal_relation: 0.9 } }),
     ],
   }),

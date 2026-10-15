@@ -4,168 +4,97 @@
 :host {
   --bar-h: 6.5rem;   // ความสูงหัวหน้าจอบนจอกว้าง (โลโก้ 56px + ระยะบนล่างขอบละ ~30px)
   position: fixed;
-  inset: 0;
+  inset: var(--yt-banner-h, 0px) 0 0 0;
   overflow-x: hidden;
   overflow-y: auto;
   background: linear-gradient(160deg, var(--yt-bg-mint) 0%, var(--yt-bg-cream) 100%);
 }
 
 // ---------- พื้นหลังตกแต่ง (อยู่ใต้ทุกอย่าง ไม่รับเมาส์) ----------
-.bg {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.bg__blob {
-  position: absolute;
-  animation: bg-drift 40s ease-in-out infinite alternate;
-}
-
+.bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.bg__blob { position: absolute; animation: bg-drift 40s ease-in-out infinite alternate; }
 .bg__tl {
-  width: 48vw; height: 44vw; top: -16vw; left: -14vw;
-  background: var(--yt-primary-soft); opacity: 0.5;
+  width: 48vw; height: 44vw; top: -16vw; left: -14vw; background: var(--yt-primary-soft); opacity: 0.5;
   border-radius: 56% 44% 62% 38% / 48% 58% 42% 52%;
 }
-
 .bg__br {
-  width: 42vw; height: 40vw; right: -14vw; bottom: -16vw;
-  background: var(--yt-peach); opacity: 0.3;
-  border-radius: 44% 56% 40% 60% / 56% 42% 58% 44%;
-  animation-delay: -12s;
+  width: 42vw; height: 40vw; right: -14vw; bottom: -16vw; background: var(--yt-peach); opacity: 0.3;
+  border-radius: 44% 56% 40% 60% / 56% 42% 58% 44%; animation-delay: -12s;
 }
-
 .bg__tr {
-  width: 16vw; height: 15vw; top: 22vh; right: 4vw;
-  background: var(--yt-amber); opacity: 0.3;
-  border-radius: 60% 40% 52% 48% / 46% 58% 42% 54%;
-  animation-delay: -24s;
+  width: 16vw; height: 15vw; top: 22vh; right: 4vw; background: var(--yt-amber); opacity: 0.3;
+  border-radius: 60% 40% 52% 48% / 46% 58% 42% 54%; animation-delay: -24s;
 }
-
 @keyframes bg-drift {
   from { transform: translate3d(0, 0, 0) rotate(0deg); }
   to   { transform: translate3d(2vw, 1.5vw, 0) rotate(8deg); }
 }
-
 .bg__dots { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.07; fill: var(--yt-primary-dark); }
+@media (prefers-reduced-motion: reduce) { .bg__blob { animation: none; } }
 
-@media (prefers-reduced-motion: reduce) {
-  .bg__blob { animation: none; }
-}
-
+// ---------- แถวบน (มือถือ: กะทัดรัด ; ตัวปรับขนาดไม่หด ; โลโก้ไม่ตัดบรรทัด) ----------
 .top {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--yt-space-3);
-  padding: var(--yt-space-4);
+  position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: var(--yt-space-3);
+  min-height: 2.5rem; padding: var(--yt-space-1) var(--yt-gutter);
 }
+app-font-size-toggle { flex: none; }
+app-logo { flex: 0 1 auto; min-width: 0; white-space: nowrap; }
 
+// ---------- โครง : เต็มความสูงจอ จัดกลางแนวตั้ง (เนื้อหาสูงกว่าจอ = margin-block auto ไม่ติดลบ จึงเริ่มจากบนและเลื่อนได้ ไม่ถูกตัด) ----------
+:host { display: flex; flex-direction: column; }
 .page {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 var(--yt-space-4);
-  box-sizing: border-box;
+  position: relative; z-index: 1; display: flex; flex: 1 0 auto; flex-direction: column; width: 100%; max-width: 1200px; margin: 0 auto;
+  padding: 0 var(--yt-gutter); box-sizing: border-box;
 }
+.shell { flex: 1 0 auto; display: flex; flex-direction: column; }
+.content { width: 100%; max-width: 26.25rem; margin: auto; padding: var(--yt-space-3) 0 var(--yt-space-4); box-sizing: border-box; }   // 420px ; บนห่างแถวบน ≥ 12px
 
-.shell { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr); }
+// ---------- มือถือ: น้องยาตรงโผล่หน้าจากหลังการ์ด มือเกาะขอบบน + กล่องคำพูดขวาบน ----------
+// ขนาดน้อง (ความกว้าง) ตั้งโดย AuthShellComponent.fit() ผ่าน data-size : L 130 → M 96 → S 72 (ซ่อนบรรทัดรอง)
+.content { --m: 130px; }   // px (ภาพประกอบไม่ขยายตามตัวอักษร)
+.content[data-size='m'] { --m: 96px; }
+.content[data-size='s'] { --m: 72px; }
+.content[data-size='s'] .yt-lead { display: none; }
+.peek { position: relative; z-index: 0; display: flex; align-items: flex-start; gap: var(--yt-space-3); }
+.peek__mascot { flex: none; width: var(--m); height: calc(var(--m) * 0.82); margin-bottom: -0.4rem; overflow: hidden; }   // ขอบการ์ดทับปลายมือเล็กน้อย → ดูเหมือนเกาะอยู่ด้านหลัง (ส่วนที่ยื่นลงไปเป็น z-index ใต้การ์ด)   // ตัดภาพที่ขอบการ์ด (ส่วนล่างของตัวอยู่หลังการ์ด ; มือเกาะอยู่เหนือขอบ)
+.peek__bubble { flex: 0 1 auto; min-width: 0; margin-top: calc(var(--m) * 0.12); }
+.b-short { display: none; }
+.content[data-short='1'] .b-long { display: none; }
+.content[data-short='1'] .b-short { display: block; }
 
-.content {
-  width: 100%;
-  max-width: 32rem;
-  margin: 0 auto;
-  padding-bottom: var(--yt-space-5);
-  box-sizing: border-box;
-}
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-// ---------- มือถือ: น้องยาตรงโผล่หน้าจากหลังการ์ด ----------
-.peek {
-  --m: min(9.5rem, 42vw);   // ความกว้างน้องยาตรง
-  position: relative;
-  z-index: 0;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: var(--yt-space-4);
-  margin-bottom: -0.4rem;   // ให้ขอบการ์ดทับปลายมือเล็กน้อย → ดูเหมือนเกาะอยู่ด้านหลัง
-}
-
-.peek__mascot {
-  flex: none;
-  width: var(--m);
-  height: calc(var(--m) * 0.82);   // ตัดภาพที่ขอบการ์ด (ส่วนล่างของตัวอยู่หลังการ์ด)
-  overflow: hidden;
-}
-
-.peek__bubble { flex: 0 1 14rem; margin-top: var(--yt-space-2); }
-
+// ---------- การ์ดฟอร์ม : ขาว radius 20 padding 16 เงาเบา ----------
 .card {
-  position: relative;
-  z-index: 1;
-  padding: var(--yt-space-5) var(--yt-space-4);
-  background: var(--yt-surface);
-  border-radius: var(--yt-radius-lg);
-  box-shadow: var(--yt-shadow-md);
+  position: relative; z-index: 1; padding: var(--yt-space-4); background: var(--yt-surface);
+  border-radius: var(--yt-radius-md); box-shadow: var(--yt-shadow-soft);
 }
+.yt-title { margin: 0; font-size: var(--yt-text-title); font-family: var(--yt-font-display); font-weight: 500; line-height: var(--yt-line-height-tight); color: var(--yt-primary-dark); }
+.yt-lead { margin: 0 0 var(--yt-space-3); font-size: var(--yt-text-sm); color: var(--yt-text-muted); }
+.content[data-size='s'] .yt-title { margin-bottom: var(--yt-space-1); }
+.content[data-size='s'] .card { padding-top: var(--yt-space-3); }
 
 .tagline {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--yt-space-2);
-  margin: var(--yt-space-4) 0 0;
-  font-weight: 500;
-  color: var(--yt-primary-dark);
-
+  display: flex; align-items: center; justify-content: center; gap: var(--yt-space-2); margin: var(--yt-space-3) 0 0;
+  font-size: var(--yt-text-sm); font-weight: 500; color: var(--yt-primary-dark);
   app-icon { color: var(--yt-peach); }
 }
-
-.yt-disclaimer { margin: var(--yt-space-2) 0 0; }
+.yt-disclaimer { margin: var(--yt-space-1) 0 0; font-size: var(--yt-text-xs); }
 
 .stage { display: none; }
-
-@media (min-width: 600px) {
-  .peek { --m: 12rem; }
-  .card { padding: var(--yt-space-6) var(--yt-space-5); }
-}
 
 // ---------- จอกว้าง (≥ 1024px): สองซีกเท่ากันเต็มความกว้าง เวทีกึ่งกลางซีกซ้าย การ์ดกึ่งกลางซีกขวา ----------
 @media (min-width: 1024px) {
   .top { height: var(--bar-h); box-sizing: border-box; padding: 0 1.7rem; }   // ชิดมุม ห่างขอบ ~30px เท่ากันทั้งซ้ายขวา
-
-  .page {
-    max-width: none;
-    min-height: calc(100dvh - var(--bar-h));
-    padding: 0 4vw;
-  }
-
-  .shell {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    column-gap: 0;
-    min-height: calc(100dvh - var(--bar-h));
-  }
+  .page { max-width: none; min-height: calc(100dvh - var(--bar-h)); padding: 0 4vw; }
+  .shell { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 0; min-height: calc(100dvh - var(--bar-h)); }
 
   // เวทีเลื่อนติดจอเมื่อการ์ดสูงกว่าจอ; เนื้อหาในเวทีอยู่กึ่งกลางทั้งแนวตั้งและแนวนอน
-  .stage {
-    display: flex;
-    position: sticky;
-    top: 0;
-    align-self: start;
-    min-height: calc(100dvh - var(--bar-h));
-  }
-
+  .stage { display: flex; position: sticky; top: 0; align-self: start; min-height: calc(100dvh - var(--bar-h)); }
   .peek, .tagline { display: none; }
 
-  .content { width: min(100%, 520px); max-width: none; justify-self: center; align-self: center; padding-bottom: var(--yt-space-4); }
-  .card { padding: var(--yt-space-5) var(--yt-space-6); }
+  .content { width: min(100%, 520px); max-width: none; justify-self: center; align-self: center; margin: 0; padding: 0 0 var(--yt-space-4); }
+  .card { padding: var(--yt-space-5) var(--yt-space-6); border-radius: var(--yt-radius-lg); box-shadow: var(--yt-shadow-md); }
+  .yt-lead { margin-bottom: var(--yt-space-4); font-size: var(--yt-text-body); }
+  .content[data-size='s'] .yt-lead { display: block; }
 }

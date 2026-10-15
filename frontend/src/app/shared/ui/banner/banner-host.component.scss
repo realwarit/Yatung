@@ -1,0 +1,12 @@
+:host { position: fixed; inset: 0 0 auto 0; z-index: 2000; display: block; padding-top: env(safe-area-inset-top, 0px); }
+.bar {
+  display: flex; align-items: center; gap: var(--yt-space-2); min-height: 2.75rem; padding: var(--yt-space-2) var(--yt-gutter);
+  font-size: var(--yt-text-sm); font-weight: 500; line-height: var(--yt-line-height-tight); border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+}
+.txt { flex: 1; min-width: 0; }
+.act { flex: none; border-color: currentColor; color: inherit; &:hover { background: rgb(0 0 0 / 0.08); } }
+.x { flex: none; display: inline-grid; place-items: center; width: var(--yt-tap); height: var(--yt-tap); margin: -0.375rem -0.75rem -0.375rem 0; border: 0; background: transparent; color: inherit; cursor: pointer; border-radius: var(--yt-radius-pill); }
+.tone-info { background: var(--yt-info-soft); color: var(--yt-on-info-soft); }
+.tone-warning { background: var(--yt-warning-soft); color: var(--yt-on-warning-soft); }
+.tone-success { background: var(--yt-success-soft); color: var(--yt-on-success-soft); }
+.tone-offline { background: var(--yt-offline-bg); color: var(--yt-on-offline); }

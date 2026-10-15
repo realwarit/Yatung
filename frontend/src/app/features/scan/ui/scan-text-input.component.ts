@@ -20,6 +20,9 @@ const EXAMPLE = 'Metformin 500 mg ครั้งละ 1 เม็ด วัน
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [IonTextarea, IonChip, IonButton, IonIcon],
   template: `
+    <!-- กรอบเดียวกับช่องมองกล้อง (พื้น primary-softer + มุม 4 ด้าน) -->
+    <div class="box">
+    <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
     <p class="yt-label" aria-hidden="true">ข้อความบนซองยา</p>
     <ion-textarea
       #ta
@@ -41,6 +44,7 @@ const EXAMPLE = 'Metformin 500 mg ครั้งละ 1 เม็ด วัน
         </ion-button>
       }
       <span class="count num" [class.near]="text().length > max - 50">{{ text().length }} / {{ max }}</span>
+    </div>
     </div>
     @if (!disabled()) {
       <p class="chips-title">คำที่ใช้บ่อย — กดเพื่อเติม</p>

@@ -1,8 +1,9 @@
 // พื้นฐาน: ฟอนต์ การขยายตัวอักษร focus ring reduced-motion
 html {
-  // 112.5% = 18px; คูณสเกลจากปุ่ม ก/ก+/ก++ → หน่วย rem ทั้งแอปขยายตามอัตโนมัติ
-  font-size: calc(112.5% * var(--yt-font-scale));
+  // 100% = 16px (ก); ก+ = 18px ก++ = 20px คูณสเกลจากปุ่ม ก/ก+/ก++ → หน่วย rem ทั้งแอปขยายตามอัตโนมัติ
+  font-size: calc(100% * var(--yt-font-scale));
   -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;   // กัน Chrome Android ขยายตัวอักษรเอง (font boosting) ; การขยายจาก accessibility ของผู้ใช้ไม่ฝืน — fitLabel รับมือแทน
 }
 
 html, body {
@@ -79,14 +80,6 @@ a {
   unicode-range: U+0030-0039;
   src: url('../../node_modules/@fontsource/noto-sans-thai-looped/files/noto-sans-thai-looped-latin-600-normal.woff2') format('woff2');
 }
-@font-face {
-  font-family: 'Mitr';
-  font-style: normal;
-  font-weight: 600;
-  unicode-range: U+0030-0039;
-  src: url('../../node_modules/@fontsource/noto-sans-thai-looped/files/noto-sans-thai-looped-latin-700-normal.woff2') format('woff2');
-}
-
 // ตัวเลขเด่น (เวลา จำนวน วงแหวน ตั้งค่า): ใช้ทั้งแอป
 .num {
   font-family: var(--yt-font-body);

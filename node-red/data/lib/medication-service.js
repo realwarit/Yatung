@@ -10,9 +10,12 @@ const toId = (v) => (/^\d+$/.test(String(v)) ? Number(v) : null);
 // SQL สร้าง dose_logs ของวันนี้ — INSERT IGNORE + NOT EXISTS (มื้อ, วัน) + UNIQUE ทั้ง (medication_id, scheduled_at) และ (medication_id, slot, วัน) = สร้างซ้ำกี่ครั้งก็ไม่เกิดแถวซ้ำ
 // byMedication : เฉพาะยา id เดียว (ต้องส่ง id เป็นพารามิเตอร์) ; onlyFuture : เฉพาะรอบที่ยังไม่ถึงเวลา (POST/PUT)
 // cron 00:05 เรียกแบบไม่กรองทั้งสองอย่าง
-const GENERATE_TODAY_SQL = (byMedication, onlyFuture) =>
-  'INSERT IGNORE INTO dose_logs (medication_id, user_id, slot, scheduled_at) ' +
-  'SELECT m.id, m.user_id, s.slot, TIMESTAMP(CURDATE(), t.slot_time) ' +
+// catchup : (ensureToday) แถวที่เวลานัดผ่านไปแล้วตอนสร้าง = catchup 1 + reminded_at = NOW() (ไม่เตือน/ติดตาม/แจ้งญาติย้อนหลัง) ;
+//           ใช้เฉพาะยาที่สร้างก่อนวันนี้ (ยาที่เพิ่มวันนี้ POST สร้างรอบเองและตั้งใจข้ามมื้อที่ผ่านไปแล้ว)
+const GENERATE_TODAY_SQL = (byMedication, onlyFuture, catchup = false) =>
+  'INSERT IGNORE INTO dose_logs (medication_id, user_id, slot, scheduled_at' + (catchup ? ', reminded_at, catchup' : '') + ') ' +
+  'SELECT m.id, m.user_id, s.slot, TIMESTAMP(CURDATE(), t.slot_time)' +
+  (catchup ? ', IF(TIMESTAMP(CURDATE(), t.slot_time) <= NOW(), NOW(), NULL), IF(TIMESTAMP(CURDATE(), t.slot_time) <= NOW(), 1, 0)' : '') + ' ' +
   'FROM medications m ' +
   'JOIN medication_slots s ON s.medication_id = m.id ' +
   'JOIN user_slot_times t ON t.user_id = m.user_id AND t.slot = s.slot ' +
@@ -21,6 +24,7 @@ const GENERATE_TODAY_SQL = (byMedication, onlyFuture) =>
   // กฎหลัก: ยา 1 ตัวมีได้ไม่เกิน 1 dose ต่อ (มื้อ, วัน) — มีรอบของมื้อนี้วันนี้แล้ว (สถานะอะไรก็ตาม, เวลาเดิมหรือที่ย้ายมา) ไม่สร้างเพิ่ม
   // (UNIQUE uq_dose_med_slot_day ใน DB เป็นด่านสุดท้าย ; migration 005)
   ' AND NOT EXISTS (SELECT 1 FROM dose_logs x WHERE x.medication_id = m.id AND x.slot = s.slot AND DATE(x.scheduled_at) = CURDATE())' +
+  (catchup ? ' AND m.created_at < CURDATE()' : '') +
   (byMedication ? ' AND m.id = ?' : '') +
   (onlyFuture ? ' AND TIMESTAMP(CURDATE(), t.slot_time) > NOW()' : '');
 
@@ -261,7 +265,7 @@ async function moveTodayDoses(conn, userId, times) {
   await conn.query('UPDATE dose_logs SET scheduled_at = scheduled_at + INTERVAL 100 YEAR WHERE id IN (?)', [moves.map((m) => m.id)]);
   for (const m of moves) {
     await conn.query(
-      'UPDATE dose_logs SET scheduled_at = ?' + (m.clear ? ', reminded_at = NULL, followup_at = NULL' : '') + ' WHERE id = ?', [m.to, m.id]);
+      'UPDATE dose_logs SET scheduled_at = ?' + (m.clear ? ', reminded_at = NULL, followup_at = NULL, catchup = 0' : '') + ' WHERE id = ?', [m.to, m.id]);
   }
   return moves;
 }

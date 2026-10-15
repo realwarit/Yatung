@@ -16,31 +16,36 @@
   </svg>
 </div>
 
-<!-- หัวหน้าจอ: โลโก้ชิดซ้าย ตัวปรับขนาดตัวอักษรชิดขวา ห่างขอบเท่ากัน (อยู่นอก container) -->
+<!-- แถวบน: โลโก้ชิดซ้าย ตัวปรับขนาดตัวอักษรชิดขวา (มือถือ = กะทัดรัด · ที่แคบ/ก++ ซ่อนคำ "ยาตรง" เหลือไอคอน) -->
 <header class="top">
-  <app-logo tone="light" [large]="true" />
-  <app-font-size-toggle />
+  <app-logo role="img" aria-label="ยาตรง" tone="light" [large]="true" [compact]="true" />
+  <app-font-size-toggle [compact]="true" />
 </header>
 
 <div class="page">
   <div class="shell">
     <app-auth-stage class="stage" [mood]="mood()" [message]="message()" [peek]="peek()" [chatty]="chatty()" />
 
-    <main class="content">
-      <!-- มือถือ: น้องโผล่หน้าจากหลังการ์ด มือเกาะขอบ -->
+    <main class="content" data-size="l" data-short="0">
+      <!-- มือถือ: น้องยาตรงโผล่หน้าจากหลังการ์ด มือเกาะขอบ + กล่องคำพูดขวาบน (1 บรรทัด ; ไม่พอ = ข้อความสั้น) ; จอกว้างอยู่ที่เวทีซ้าย -->
       <div class="peek">
         <div class="peek__mascot">
           <app-mascot [mood]="mood()" [peek]="peek()" [grip]="true" [fluid]="true" />
         </div>
-        <app-speech-bubble class="peek__bubble" tail="left" [text]="message()" />
+        <app-speech-bubble class="peek__bubble b-long" tail="left" [typing]="false" [text]="bubble()" />
+        <app-speech-bubble class="peek__bubble b-short" tail="left" [typing]="false" [text]="bubbleShort()" />
       </div>
 
       <div class="card yt-enter">
+        <div class="hello">
+          <h1 class="yt-title">{{ title() }}@if (wave()) {&nbsp;<app-wave-hand />}</h1>
+          <p class="yt-lead">{{ lead() }}</p>
+        </div>
         <ng-content />
       </div>
 
       <p class="tagline"><app-icon name="heart" /> ไม่ลืมกินยา ไม่กินผิดเวลา</p>
-      <p class="yt-disclaimer">ไม่ใช่คำแนะนำทางการแพทย์</p>
+      <p class="yt-disclaimer"><span class="yt-nowrap">ไม่ใช่คำแนะนำทางการแพทย์</span></p>
     </main>
   </div>
 </div>

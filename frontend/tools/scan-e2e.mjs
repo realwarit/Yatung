@@ -192,7 +192,7 @@ await page.screenshot({ path: OUT + 'e2e-01-empty-desktop.png' });
   check('กำลังประมวลผล: segment ถูกปิด', await page.locator('ion-segment').evaluate((e) => e.disabled));
   await page.screenshot({ path: OUT + 'e2e-06-processing.png' });
   await page.waitForSelector('.side.is-error', { timeout: 8000 });
-  check('422: แสดง state error (น้อง worried + ข้อความ)', (await page.locator('app-scan-coach .full').innerText()).includes('น้องอ่านซองนี้ไม่ได้'));
+  check('422: แสดง state error (น้อง worried + ข้อความ)', (await page.locator('app-scan-coach p').innerText()).includes('น้องอ่านซองนี้ไม่ได้'));
   check('error: ปุ่มหลักปุ่มเดียว "ลองถ่ายใหม่"', (await page.locator('.act ion-button').count()) === 2 && (await page.locator('.act ion-button').first().innerText()).includes('ลองถ่ายใหม่'));
   await page.screenshot({ path: OUT + 'e2e-07-error-desktop.png' });
   // พิมพ์ข้อมูลยาเอง: รูปเดิมยังอยู่ กลับมาได้

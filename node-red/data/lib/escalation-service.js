@@ -24,7 +24,7 @@ const dueSql = (extra = '') =>
   'FROM dose_logs d JOIN medications m ON m.id = d.medication_id JOIN users u ON u.id = d.user_id ' +
   'JOIN caregivers c ON c.user_id = d.user_id AND c.is_active = 1 AND c.line_user_id IS NOT NULL ' +
   'LEFT JOIN dose_escalations e ON e.dose_id = d.id AND e.caregiver_id = c.id ' +
-  "WHERE d.status IN ('pending', 'missed') AND m.is_active = 1 AND m.as_needed = 0 AND e.id IS NULL " +
+  "WHERE d.status IN ('pending', 'missed') AND d.catchup = 0 AND m.is_active = 1 AND m.as_needed = 0 AND e.id IS NULL " +
   'AND d.scheduled_at <= NOW() - INTERVAL c.escalate_after_min MINUTE ' +
   `AND d.scheduled_at >= NOW() - INTERVAL (c.escalate_after_min + ${BACKFILL_EXTRA_MIN}) MINUTE` + extra +
   ' ORDER BY c.id, d.user_id, d.scheduled_at, m.name, d.id';

@@ -66,13 +66,3 @@ export function loadImage(src: string | Blob): Promise<HTMLImageElement> {
     img.src = url;
   });
 }
-
-/** แปลง File จาก <input type="file"> เป็น data URL */
-export function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error('อ่านไฟล์ไม่ได้'));
-    reader.readAsDataURL(file);
-  });
-}

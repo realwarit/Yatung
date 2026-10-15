@@ -66,6 +66,31 @@ test('ไม่โหลดอะไรจาก CDN ภายนอก (ฟอ�
   const ng = read('angular.json');
   assert.ok(!/https?:\/\//.test(ng.replace(/https?:\/\/json\.schemastore\.org\S*/g, '').replace(/"\$schema"[^\n]*/g, '')), 'angular.json');
   const used = [...ng.matchAll(/@fontsource\/([\w-]+)\/(?:thai-|latin-)?(\d+)\.css/g)].map((m) => `${m[1]}/${m[2]}`);
-  assert.ok(new Set(used).size >= 6, 'ฟอนต์ที่ใช้โหลดผ่าน @fontsource');
+  assert.ok(new Set(used).size >= 5, 'ฟอนต์ที่ใช้โหลดผ่าน @fontsource');   // 8D: ถอด Mitr 600 (ใช้ 500 เท่านั้น) จาก 6 เหลือ 5
   assert.ok(!/mat-icon|material-icons/i.test(read('src/styles.scss')));
+});
+
+// 8D: รายการฟอนต์ที่ build ดึงต้องตรงชุดที่ออกแบบไว้เป๊ะ — Mitr 500 เท่านั้น (ไม่มี 600/700) · Noto Sans Thai Looped 400/500/600/700 · เฉพาะ subset thai + latin (ไม่เอา latin-ext/vietnamese)
+// เพิ่ม/ถอดฟอนต์ต้องแก้ทั้ง angular.json และรายการนี้ (กันฟอนต์หลุดกลับมาโดยไม่ตั้งใจ ซึ่งทำให้ woff2 ที่ผู้ใช้ต้องโหลดเพิ่มขึ้น)
+const fontStyles = () => JSON.parse(read('angular.json')).projects.frontend.architect.build.options.styles.filter((x) => typeof x === 'string' && x.startsWith('@fontsource/'));
+
+test('ฟอนต์: ชุดไฟล์ @fontsource ใน angular.json ตรงเป๊ะ (Mitr 500 เท่านั้น, Noto Looped 400–700, เฉพาะ thai+latin)', () => {
+  const want = [
+    ...['thai-500', 'latin-500'].map((x) => `@fontsource/mitr/${x}.css`),
+    ...[400, 500, 600, 700].flatMap((w) => [`thai-${w}`, `latin-${w}`].map((x) => `@fontsource/noto-sans-thai-looped/${x}.css`)),
+  ].sort();
+  assert.deepEqual(fontStyles().sort(), want);
+  for (const s of fontStyles()) {
+    assert.ok(!/latin-ext|vietnamese/.test(s), `ห้าม subset เกิน: ${s}`);
+    assert.ok(/\/(thai|latin)-\d+\.css$/.test(s), `ต้องระบุ subset (ไม่ใช้ไฟล์รวมทุก subset): ${s}`);
+  }
+  assert.ok(fontStyles().filter((s) => s.includes('/mitr/')).every((s) => /-500\.css$/.test(s)), 'Mitr ใช้น้ำหนัก 500 เท่านั้น');
+});
+
+test('ฟอนต์: ไฟล์ css ที่อ้างมีอยู่จริงใน node_modules และ Mitr ไม่มีน้ำหนักเกิน 500', { skip: !fs.existsSync(path.join(FE, 'node_modules/@fontsource')) && 'ยังไม่ได้ npm install' }, () => {
+  for (const s of fontStyles()) assert.ok(fs.existsSync(path.join(FE, 'node_modules', s)), s);
+  for (const s of fontStyles().filter((x) => x.includes('/mitr/'))) {
+    const css = fs.readFileSync(path.join(FE, 'node_modules', s), 'utf8');
+    assert.ok([...css.matchAll(/font-weight:\s*(\d+)/g)].every((m) => Number(m[1]) === 500), s);
+  }
 });

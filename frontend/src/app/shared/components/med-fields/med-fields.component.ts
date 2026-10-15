@@ -12,6 +12,10 @@ import { TtsButtonComponent } from '../tts-button/tts-button.component';
 import { medNameSpeech } from '../../../core/tts/speech-text';
 import { MedDraft, MedField } from './med-draft';
 
+/** กลุ่มช่องที่พับได้ (หน้า Review พับกลุ่มที่ไม่ติด flag และไม่ว่าง ; ชื่อยาและความแรงกางเสมอ) */
+export type MedGroup = 'schedule' | 'meal' | 'dose' | 'more';
+const NO_FOLD: ReadonlySet<MedGroup> = new Set();
+
 /** ช่องที่ต้องตรวจ: เหตุผล + กด "ถูกต้องแล้ว" ได้หรือไม่ (ค่าว่างต้องเลือกเอง กดผ่านไม่ได้) */
 export interface MedFlag { reason: string; canAck: boolean; }
 
@@ -39,11 +43,34 @@ export class MedFieldsComponent {
   readonly showTts = input(false);
   /** พับ "ข้อมูลเพิ่มเติม" (two-way) */
   readonly moreOpen = model(false);
+  /** กลุ่มที่พับเป็นบรรทัดสรุป (ว่าง = กางทั้งหมด เหมือนหน้าเพิ่ม/แก้ไขยา) */
+  readonly fold = input<ReadonlySet<MedGroup>>(NO_FOLD);
+  /** กด "แก้ไข" ที่บรรทัดสรุป → ผู้ใช้ของ component กางทุกช่องในที่เดิม */
+  readonly unfold = output<void>();
   readonly edited = output<MedField>();
   readonly ack = output<MedField>();
 
   /** ท่อนข้อความทดลองฟัง: ชื่อที่ให้อ่าน (ถ้าว่างใช้ชื่อยา) */
   protected readonly ttsPreview = (): string[] => { const d = this.draft(); return medNameSpeech(d.ttsName, d.name); };
+
+  protected folded(g: MedGroup): boolean { return this.fold().has(g); }
+
+  /** บรรทัดสรุปของกลุ่มที่พับ — แสดงค่าจริงทุกค่า (ไม่เขียนแค่ "ข้อมูลอื่นถูกต้อง") */
+  protected readonly foldSummary = computed(() => {
+    const d = this.draft(), f = this.fold();
+    const parts: string[] = [];
+    if (f.has('dose') && d.dose !== null) parts.push(`${doseText(d.dose)} ${unitInDose(d.unit)}`);
+    if (f.has('meal') && MEAL_LABEL[d.meal]) parts.push(MEAL_LABEL[d.meal]);
+    if (f.has('schedule')) parts.push(d.asNeeded ? 'เมื่อมีอาการ' : SLOT_ORDER.filter((s) => d.slots.includes(s)).map((s) => SLOT_LABEL[s]).join(' '));
+    if (f.has('more') && d.total !== null) parts.push(`${doseText(d.total)} ${unitInDose(d.unit)}`);
+    const extra: string[] = [];
+    if (f.has('more')) {
+      if (d.indication.trim()) extra.push(`ข้อบ่งใช้: ${d.indication.trim()}`);
+      const w = d.warnings.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
+      if (w.length) extra.push(`คำเตือน: ${w.join(' · ')}`);
+    }
+    return { line: parts.join(' · '), extra };
+  });
 
   protected readonly allSlots = SLOT_ORDER;
   protected readonly slotLabel = SLOT_LABEL;

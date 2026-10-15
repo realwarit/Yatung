@@ -44,8 +44,8 @@ const STATES = {
   today: { path: '/today', voices: true, focus: '.aside' },
   'today-novoice': { path: '/today', voices: false },
   overview: { path: '/overview', voices: true },
-  settings: { path: '/settings', voices: true, focus: '#h-tts' },
-  'settings-novoice': { path: '/settings', voices: false, focus: '#h-tts' },
+  settings: { path: '/settings', voices: true, click: 'เสียงอ่าน' },   // D3: เสียงอ่านอยู่ใน sheet ของหน้ารวมตั้งค่า
+  'settings-novoice': { path: '/settings', voices: false, click: 'เสียงอ่าน' },
   medform: { path: '/medications/1/edit', voices: true, focus: 'summary' },
 };
 
@@ -95,6 +95,7 @@ for (const [w, h] of sizes) {
     await page.waitForLoadState('networkidle').catch(() => {});
     await page.waitForTimeout(1500);   // เผื่อรอบถามรายการเสียงซ้ำของ service
 
+    if (st.click) { await page.getByRole('button', { name: st.click }).first().click(); await page.waitForTimeout(1200); }
     const spokeOnLoad = await page.evaluate(() => window.__spoke.length);
     if (st.focus) { await page.evaluate((sel) => { const el = document.querySelector(sel); const main = document.querySelector('.main'); if (el && main) main.scrollTop += el.getBoundingClientRect().top - 60; }, st.focus); await page.waitForTimeout(300); }
     const tag = `${name}-${w}x${h}${scale === '100' ? '' : '-s' + scale}`;

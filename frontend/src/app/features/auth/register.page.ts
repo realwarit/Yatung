@@ -87,6 +87,18 @@ export class RegisterPage {
     return 'ยินดีที่ได้รู้จักค่ะ! มาเริ่มกันเลย';
   });
 
+  /** กล่องคำพูดบนมือถือ (1 บรรทัด) */
+  readonly bubble = computed(() => {
+    if (this.success()) return 'ยินดีต้อนรับค่ะ!';
+    if (this.busy()) return 'รอสักครู่นะคะ…';
+    if (this.error() && this.errorFresh()) return 'อุ๊ย สมัครไม่สำเร็จค่ะ';
+    const s = this.focus() === 'secret' ? this.strength() : null;
+    if (s) return s.level <= 2 ? 'รหัสยังอ่อนอยู่นะคะ' : 'รหัสแข็งแรงเลยค่ะ!';
+    return 'มาเริ่มดูแลการกินยากันนะคะ';
+  });
+  /** ใช้เมื่อ bubble ยาวเกิน 1 บรรทัด (ก++) */
+  readonly bubbleShort = computed(() => (this.bubble() === 'มาเริ่มดูแลการกินยากันนะคะ' ? 'สวัสดีค่ะ' : this.bubble()));
+
   constructor() {
     this.form.valueChanges.subscribe(() => this.errorFresh.set(false));
   }

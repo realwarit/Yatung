@@ -1,7 +1,8 @@
 <div class="yt-page review">
-  <a class="back" routerLink="/scan"><app-icon name="chevron-down" class="back__ic" /> ย้อนกลับ</a>
-  <h1 class="yt-page-title">ตรวจข้อมูลยา</h1>
-  <app-flow-steps class="steps" [labels]="steps" [current]="stepNow()" />
+  <app-page-header title="ตรวจข้อมูลยา" back="/scan" backLabel="ย้อนกลับไปหน้าสแกน">
+    <span action class="stepno num" aria-label="ขั้นที่ {{ stepNow() + 1 }} จาก 3">{{ stepNow() + 1 }} / 3</span>
+  </app-page-header>
+  <app-step-dots class="steps" [current]="stepNow()" />
 
   @switch (view()) {
     @case ('loading') {
@@ -9,16 +10,16 @@
     }
 
     @case ('error') {
-      <section class="state yt-card" role="alert">
-        <app-mascot mood="worried" [size]="120" />
+      <section class="state" role="alert">
+        <app-mascot mood="worried" size="m" />
         <p class="state__t">{{ loadError() }}</p>
         <a mat-flat-button routerLink="/scan">สแกนซองยา</a>
       </section>
     }
 
     @case ('confirmed') {
-      <section class="state yt-card">
-        <app-mascot mood="happy" [size]="120" />
+      <section class="state">
+        <app-mascot mood="happy" size="m" />
         <h2 class="state__t">บันทึกไปแล้ว</h2>
         <p>ผลสแกนนี้ถูกบันทึกเข้าตารางยาเรียบร้อยแล้วค่ะ</p>
         <div class="state__btns">
@@ -29,8 +30,8 @@
     }
 
     @case ('discarded') {
-      <section class="state yt-card">
-        <app-mascot mood="sleepy" [size]="120" />
+      <section class="state">
+        <app-mascot mood="sleepy" size="m" />
         <h2 class="state__t">ผลสแกนนี้ถูกทิ้งแล้ว</h2>
         <p>ยาจะไม่ถูกบันทึก หากต้องการเพิ่มยา ให้สแกนซองใหม่ได้เลยค่ะ</p>
         <a mat-flat-button routerLink="/scan">สแกนซองใหม่</a>
@@ -38,12 +39,13 @@
     }
 
     @case ('done') {
-      <section class="state yt-card" aria-live="polite">
-        <app-mascot mood="celebrate" [size]="140" />
-        <h2 class="state__t">บันทึกแล้ว <span class="num">{{ doneCount() }}</span> รายการ</h2>
+      <!-- บันทึกสำเร็จ: น้องยาตรง L + กล่องคำพูด success จัดกลางแนวตั้ง -->
+      <section class="state state--done" aria-live="polite" data-first-screen="saved">
+        <app-speech-bubble class="say" tone="success" tail="down" [typing]="false" [text]="doneText()" />
+        <app-mascot mood="celebrate" size="l" />
         <ul class="done">
           @for (l of doneLines(); track l.name) {
-            <li><app-icon name="check" /> <span><strong>{{ l.name }}</strong> <em class="kind">{{ l.kind }}</em>
+            <li><app-icon name="check" /> <span><strong>{{ l.name | medName }}</strong> <em class="kind">{{ l.kind }}</em>
               @if (l.note) { <br /><span class="done__note">{{ l.note }}</span> }</span></li>
           }
         </ul>
@@ -55,24 +57,12 @@
     }
 
     @case ('draft') {
-      <div class="coach">
-        <app-mascot class="coach__m" [mood]="mood()" [size]="112" />
-        <app-speech-bubble class="coach__b" tail="left" [text]="bubble()" />
-      </div>
-
-      @if (alerts().length) {
-        <section class="yt-alert yt-alert--warning alerts" aria-label="ส่วนที่น้องอ่านไม่ออก หรือข้อสังเกต">
-          <app-icon name="alert" />
-          <div>
-            <strong>ส่วนที่น้องไม่แน่ใจ ช่วยดูเองอีกทีนะคะ</strong>
-            <ul>@for (a of alerts(); track $index) { <li>{{ a }}</li> }</ul>
-          </div>
-        </section>
-      }
+      <!-- แถบเด่นบนสุด : warning เมื่อมีช่องที่ควรตรวจ, info เมื่อไม่มี ; กล่องเหลืองกล่องเดียว (ส่วนที่น้องไม่แน่ใจอยู่ในแถบนี้) -->
+      <app-review-banner [mood]="mood()" [remaining]="remaining()" [alerts]="alerts()" />
 
       @if (notLabel()) {
-            <section class="notlabel yt-card" id="not-label" tabindex="-1" role="alert">
-              <app-mascot mood="worried" [size]="96" />
+            <section class="notlabel" id="not-label" tabindex="-1" role="alert">
+              <app-mascot mood="worried" size="m" />
               <div class="notlabel__txt">
                 <h2>รูปนี้อาจไม่ใช่ซองยา</h2>
                 <p>น้องไม่แน่ใจว่าเป็นฉลากยา ถ้าใช่ ตรวจรายการด้านล่างต่อได้เลย ถ้าไม่ใช่ ให้สแกนใหม่ค่ะ</p>
@@ -91,7 +81,7 @@
             <button type="button" class="sheetbtn" mat-stroked-button (click)="openSheet()" [disabled]="!imageUrl()">
               <app-icon name="image" /> ดูรูปซองยา
             </button>
-            <div class="pic yt-card">
+            <div class="pic">
               @if (imageUrl(); as url) {
                 <button type="button" class="pic__btn" (click)="viewImage()" aria-label="ขยายรูปซองยาเต็มจอ">
                   <img [src]="url" alt="รูปซองยาที่สแกน" />
@@ -102,12 +92,12 @@
               }
             </div>
           } @else if (textSource()) {
-            <div class="pic yt-card typed">
+            <div class="pic typed">
               <h2 class="side__h"><app-icon name="type" /> ข้อความที่คุณพิมพ์</h2>
               <pre class="typed__t">{{ textSource() }}</pre>
             </div>
           }
-          <details class="ocr yt-card">
+          <details class="ocr">
             <summary>ข้อความที่น้องอ่านได้ <span class="ocr__sub">(ปิดชื่อและ HN แล้ว)</span></summary>
             <pre>{{ rx()?.ocr_text }}</pre>
           </details>
@@ -124,18 +114,18 @@
                 </li>
               }
             </ol>
-            <button type="button" class="add" mat-stroked-button (click)="addCard()"><app-icon name="plus" /> เพิ่มยาที่น้องอ่านไม่เจอ</button>
+            <button type="button" class="add" mat-stroked-button fitLabel="เพิ่มยาที่น้องอ่านไม่เจอ" fitShort="เพิ่มยา" (click)="addCard()"><app-icon class="fit-icon" name="plus" /> <span class="fl-full">เพิ่มยาที่น้องอ่านไม่เจอ</span><span class="fl-short" aria-hidden="true">เพิ่มยา</span></button>
           }
 
           @if (serverError(); as se) {
             <p class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span>{{ se.text }}</span></p>
           }
-
-          <app-review-bar [blocker]="blocker()" [short]="blockerShort()" [remaining]="remaining()" [count]="cards().length" [canSave]="canSave()"
-                          [saving]="saving()" [leaving]="leaving()" (next)="goNext()" (save)="save()" (discard)="askDiscard()" />
         </div>
       </div>
-      <p class="yt-disclaimer">ไม่ใช่คำแนะนำทางการแพทย์ · ตรวจให้ตรงกับซองยาก่อนบันทึกทุกครั้ง</p>
+      <!-- E1: แถบล่างอยู่นอก grid = เต็มความกว้างทั้งสองคอลัมน์ (sticky ล่าง) -->
+      <app-review-bar [blocker]="blocker()" [short]="blockerShort()" [remaining]="remaining()" [count]="cards().length" [canSave]="canSave()"
+                          [saving]="saving()" [leaving]="leaving()" (next)="goNext()" (save)="save()" (discard)="askDiscard()" />
+      <p class="yt-disclaimer"><span class="yt-nowrap">ไม่ใช่คำแนะนำทางการแพทย์</span> · ตรวจให้ตรงกับซองยาก่อนบันทึกทุกครั้ง</p>
     }
   }
 </div>

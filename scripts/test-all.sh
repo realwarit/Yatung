@@ -25,6 +25,8 @@ add 7a     'bash scripts/test-day7a.sh'
 add 7b     'bash scripts/test-day7b.sh'
 add 7c     'bash scripts/test-day7c.sh'
 add 8      'bash scripts/test-day8.sh'
+add 8d     'bash scripts/test-day8d.sh'
+add catchup 'bash scripts/test-catchup.sh'
 
 WANT=" $* "
 declare -a ROWS NOTES

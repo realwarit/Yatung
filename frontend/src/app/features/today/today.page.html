@@ -1,91 +1,49 @@
 <div class="yt-page">
-  <header class="head">
-    <p class="greet">{{ greet() }}</p>
-    <h1 class="yt-page-title name">{{ who() }}</h1>
-    <p class="date">{{ today() }}</p>
-  </header>
-
-  <app-install-card placement="today" />
-
-  @if (!loadError() && !loading() && !noMeds()) { <app-adherence-card [version]="taken()" /> }
-
+  @if (!loadError() && !loading() && !noMeds()) {
+    <app-today-progress class="yt-enter" [greet]="greet()" [date]="dateShort()" [taken]="taken()" [total]="total()" [mood]="mood()" [allDone]="allDone()" [bubble]="bubble()" [speak]="speakAll" />
+  } @else {
+    <h1 class="head-plain">{{ greet() }}</h1>
+  }
   @if (loadError(); as err) {
     <div class="yt-alert yt-alert--danger" role="alert">
       <app-icon name="alert" /> <span><app-err-text [text]="err" /></span>
     </div>
     <button mat-flat-button type="button" (click)="load()">ลองใหม่</button>
   } @else if (loading()) {
-    <div class="layout" aria-busy="true" aria-label="กำลังโหลดตารางยาวันนี้">
-      <div class="aside"><div class="yt-skeleton sk-card"></div><div class="yt-skeleton sk-bar"></div></div>
-      <div class="list"><div class="yt-skeleton sk-slot"></div><div class="yt-skeleton sk-slot"></div></div>
+    <div class="body" aria-busy="true" aria-label="กำลังโหลดตารางยาวันนี้">
+      <div class="yt-skeleton sk-card"></div>
+      <div class="yt-skeleton sk-slot"></div>
+      <div class="yt-skeleton sk-slot"></div>
     </div>
   } @else if (noMeds()) {
-    <section class="empty yt-card yt-enter">
-      <app-mascot mood="happy" [size]="180" [decorative]="false" />
-      <h2>ยังไม่มียาในตาราง</h2>
-      <p>ถ่ายรูปซองยา หรือเพิ่มยาเอง แล้วยาตรงจะช่วยเตือนให้ค่ะ</p>
-      <div class="empty__actions">
-        <a mat-flat-button routerLink="/scan"><app-icon name="camera" /> สแกนซองยา</a>
-        <a mat-stroked-button routerLink="/medications/new"><app-icon name="plus" /> เพิ่มยาเอง</a>
-      </div>
-    </section>
+    <app-empty-state data-first-screen="say" reserve="7.6rem" text="ยังไม่มียาในตารางค่ะ&#10;เพิ่มยาแล้วน้องจะเตือนให้นะคะ">
+      <a mat-flat-button routerLink="/scan" fitGroup="today-empty" fitLabel="สแกนซองยา"><app-icon class="fit-icon" name="camera" /> สแกนซองยา</a>
+      <a mat-stroked-button routerLink="/medications/new" fitGroup="today-empty" fitLabel="พิมพ์เอง"><app-icon class="fit-icon" name="edit" /> พิมพ์เอง</a>
+    </app-empty-state>
   } @else {
-    <div class="layout yt-enter">
-      <!-- ความคืบหน้า + รอบถัดไป (จอกว้าง: คอลัมน์ขวา sticky) -->
-      <div class="aside">
-        <app-today-progress [taken]="taken()" [total]="total()" [mood]="mood()" [bubble]="bubble()" [notTaken]="notTaken()" [allDone]="allDone()"
-                            [next]="next()" (goFirst)="goFirstNotTaken()" />
-        <app-tts-button variant="big" label="ฟังยาที่ต้องกินวันนี้" ttsKey="today-all" [build]="speakAll" />
-      </div>
-
-      <div class="list">
+    <div class="body yt-enter">
+      <div class="slots">
         @for (s of slots(); track s.slot) {
-          <section class="slot" [attr.data-slot]="s.slot" [attr.aria-labelledby]="'h-' + s.slot">
-            @if (s.collapsible) {
-              <button type="button" class="slot__done" [attr.aria-expanded]="!s.collapsed" (click)="toggle(s.slot)">
-                <app-icon name="check" />
-                <span id="h-{{ s.slot }}">{{ s.slot | slotLabel }} กินครบแล้ว</span>
-                <span class="slot__time num">{{ s.time }}</span>
-                <app-icon name="chevron-down" class="chev" [class.open]="!s.collapsed" />
-              </button>
-            } @else {
-              <h2 class="slot__head" id="h-{{ s.slot }}">
-                <app-icon [name]="s.icon" /> {{ s.slot | slotLabel }}
-                <span class="slot__time num">{{ s.time }}</span>
-              </h2>
-            }
-            @if (!s.collapsed) {
-              <app-tts-button variant="small" label="ฟังมื้อนี้" [ariaLabel]="'ฟังรายการยามื้อ' + (s.slot | slotLabel)" [ttsKey]="'slot-' + s.slot" [build]="speakSlot(s.slot)" />
-              <div class="doses">
-                @for (v of s.doses; track v.dose.id) {
-                  <app-dose-card [dose]="v.dose" [state]="v.state" [lateMin]="v.lateMin" [takenClock]="v.takenClock" [source]="v.dose.source ?? null"
-                                 [canUndo]="v.canUndo" [busy]="isBusy(v.dose.id)" [offline]="offline()" [pop]="popId() === v.dose.id" [showTime]="s.multiTime" [lowText]="lowText().get(v.dose.medication_id) ?? null"
-                                 (take)="take(v, s.slot)" (undo)="undo(v.dose.id, s.slot)" />
-                }
-              </div>
-            }
-          </section>
+          <app-slot-group [s]="s" [offline]="offline()" [busyIds]="busyIds()" [popId]="popId()" [lowText]="lowText()" [taking]="takingAll()"
+                          [firstOpen]="firstOpen() === s.slot" [speak]="speakSlot(s.slot)"
+                          (take)="take($event, s.slot)" (undo)="undo($event, s.slot)" (takeAll)="takeAll(s)" (toggle)="toggle(s)" (blocked)="offlineTap()" />
         }
-
-        @if (asNeeded().length) {
-          <section class="slot" aria-labelledby="h-prn">
-            <h2 class="slot__head" id="h-prn"><app-icon name="pill" /> ยาเมื่อมีอาการ</h2>
-            <p class="prn-note">กินเฉพาะเมื่อมีอาการเท่านั้น ไม่ต้องกดบันทึก</p>
-            <div class="doses">
-              @for (m of asNeeded(); track m.id) {
-                <article class="prn">
-                  <h3>{{ m.name }}@if (m.strength) { <span class="strength"> {{ m.strength }}</span> }</h3>
-                  <p>ครั้งละ {{ m.dose_per_time | doseQty: m.unit }}@if (m.meal_relation | mealLabel; as meal) { · {{ meal }} }</p>
-                  @if (m.indication) { <p class="ind">{{ m.indication }}</p> }
-                  @if (lowText().get(m.id); as low) { <p class="low-tag"><app-icon name="alert" /> {{ low }}</p> }
-                </article>
-              }
-            </div>
-          </section>
-        }
-
-        <p class="yt-disclaimer">ไม่ใช่คำแนะนำทางการแพทย์ · ปรึกษาแพทย์หรือเภสัชกรเมื่อมีข้อสงสัย</p>
       </div>
+
+      @if (asNeeded().length) {
+        <app-section label="ยาเมื่อมีอาการ" [id]="'prn'">
+          @for (m of asNeeded(); track m.id) {
+            <div appListRow class="prn" [title]="m.strength ? (m.name | medName) + ' ' + m.strength : (m.name | medName)"
+                 [sub]="'ครั้งละ ' + (m.dose_per_time | doseQty: m.unit) + ((m.meal_relation | mealLabel) ? ' · ' + (m.meal_relation | mealLabel) : '')">
+              @if (m.indication) { <span class="ind">{{ m.indication }}</span> }
+              @if (lowText().get(m.id); as low) { <span class="yt-chip yt-chip--warn"><app-icon name="alert" /> {{ low }}</span> }
+            </div>
+          }
+          <p class="prn-note">กินเฉพาะเมื่อมีอาการเท่านั้น ไม่ต้องกดบันทึก</p>
+        </app-section>
+      }
+
+      <p class="yt-disclaimer"><span class="yt-nowrap">ไม่ใช่คำแนะนำทางการแพทย์</span> · ปรึกษาแพทย์หรือเภสัชกรเมื่อมีข้อสงสัย</p>
     </div>
   }
 </div>

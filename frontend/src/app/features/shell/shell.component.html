@@ -20,10 +20,9 @@
 
 <div class="main">
   <!-- มือถือ: แถบบนมีเฉพาะโลโก้ (ปรับขนาดตัวอักษรอยู่ในหน้าตั้งค่า) -->
-  @if (!focusMode()) {
+  @if (!focusMode() && !ownHeader()) {
     <header class="top"><app-logo tone="light" [iconOnly]="true" /></header>
   }
-  <app-offline-bar />
   <main id="main" tabindex="-1"><router-outlet /></main>
 </div>
 
@@ -31,15 +30,15 @@
 @if (!focusMode()) {
 <nav class="bottom" aria-label="เมนูหลัก">
   @for (n of left; track n.path) {
-    <a [routerLink]="n.path" routerLinkActive="active" ariaCurrentWhenActive="page">
+    <a [routerLink]="n.path" routerLinkActive="active" ariaCurrentWhenActive="page" [fitLabel]="n.label" fitGroup="nav" [fitMinPx]="14">
       <span class="ico"><app-icon [name]="n.icon" /></span><span>{{ n.label }}</span>
     </a>
   }
-  <a class="scan" routerLink="/scan" aria-label="สแกนซองยา">
+  <a class="scan" routerLink="/scan" fitLabel="สแกนซองยา" fitGroup="nav" [fitMinPx]="14">
     <span class="scan__slot"><span class="scan__btn"><app-icon name="camera" /></span></span><span>สแกน</span>
   </a>
   @for (n of right; track n.path) {
-    <a [routerLink]="n.path" routerLinkActive="active" ariaCurrentWhenActive="page">
+    <a [routerLink]="n.path" routerLinkActive="active" ariaCurrentWhenActive="page" [fitLabel]="n.label" fitGroup="nav" [fitMinPx]="14">
       <span class="ico"><app-icon [name]="n.icon" /></span><span>{{ n.label }}</span>
     </a>
   }

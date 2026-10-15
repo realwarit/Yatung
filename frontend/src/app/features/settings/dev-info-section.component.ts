@@ -1,13 +1,15 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatButton } from '@angular/material/button';
 import { ErrorLogService } from '../../core/diagnostics/error-log.service';
+import { ScreenInfoComponent } from './screen-info.component';
 
 /** "ข้อมูลสำหรับผู้พัฒนา" (แสดงเฉพาะ demoMode): error 20 รายการล่าสุดในเครื่องนี้ — เวลา, หน้า, รหัส, endpoint, status (ไม่มีข้อมูลผู้ใช้) */
 @Component({
   selector: 'app-dev-info-section',
-  imports: [MatButton],
+  imports: [MatButton, ScreenInfoComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <app-screen-info />
     <p class="hint">error ที่เกิดในเครื่องนี้ล่าสุด 20 รายการ (เก็บเฉพาะเวลา หน้า รหัส และชื่อ endpoint ไม่มีข้อมูลยาหรือข้อมูลส่วนตัว) ล้างเมื่อออกจากระบบ</p>
     @if (log.entries().length === 0) {
       <p class="empty" role="status">ยังไม่มี error ค่ะ</p>

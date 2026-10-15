@@ -26,7 +26,7 @@ function userFilter(env) {
 
 // dose ที่ถึงเวลาเตือน: pending, ยังไม่เคยเตือน, เลยเวลามาไม่เกิน 30 นาที, ยา active และไม่ใช่ as_needed, user มีช่องทาง (เชื่อม LINE แล้ว หรือมีเครื่องที่เปิดแจ้งเตือน)
 const dueSql = (extra = '') => `SELECT ${COLS} FROM dose_logs d JOIN medications m ON m.id = d.medication_id JOIN users u ON u.id = d.user_id ` +
-  "WHERE d.status = 'pending' AND d.reminded_at IS NULL AND d.scheduled_at <= NOW() AND d.scheduled_at >= NOW() - INTERVAL " + WINDOW_MIN + ' MINUTE ' +
+  "WHERE d.status = 'pending' AND d.catchup = 0 AND d.reminded_at IS NULL AND d.scheduled_at <= NOW() AND d.scheduled_at >= NOW() - INTERVAL " + WINDOW_MIN + ' MINUTE ' +
   'AND m.is_active = 1 AND m.as_needed = 0 AND ' + notify.HAS_CHANNEL_SQL + extra + ' ORDER BY d.user_id, d.scheduled_at, m.name, d.id';
 const DUE_SQL = dueSql();
 
@@ -128,7 +128,7 @@ async function run(db, client, env = process.env, push = null) {
 // อยู่ในหน้าต่าง N…N+30 นาที (ระบบล่มแล้วกลับมาไม่ส่งย้อนหลังเป็นกอง) ; จอง followup_at ก่อนส่ง ; kind=reminder ใช้งบเตือนปกติ
 const followupMin = (env) => { const n = Number(env && env.REMINDER_FOLLOWUP_MIN); return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0; };
 const followupSql = (n, extra = '') => `SELECT ${COLS} FROM dose_logs d JOIN medications m ON m.id = d.medication_id JOIN users u ON u.id = d.user_id ` +
-  "WHERE d.status = 'pending' AND d.reminded_at IS NOT NULL AND d.followup_at IS NULL " +
+  "WHERE d.status = 'pending' AND d.catchup = 0 AND d.reminded_at IS NOT NULL AND d.followup_at IS NULL " +
   `AND d.scheduled_at <= NOW() - INTERVAL ${n} MINUTE AND d.scheduled_at >= NOW() - INTERVAL ${n + WINDOW_MIN} MINUTE ` +
   'AND m.is_active = 1 AND m.as_needed = 0 AND ' + notify.HAS_CHANNEL_SQL + extra + ' ORDER BY d.user_id, d.scheduled_at, m.name, d.id';
 

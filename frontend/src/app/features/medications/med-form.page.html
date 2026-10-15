@@ -2,6 +2,12 @@
   <a class="back" routerLink="/medications"><app-icon name="chevron-down" class="back__ic" /> ยาของฉัน</a>
   <h1 class="yt-page-title">{{ isEdit() ? 'แก้ไขยา' : 'เพิ่มยา' }}</h1>
 
+  <!-- กล่องคำพูดเดียวของหน้า: น้องยาตรง 56px ชิดล่าง หางชี้มาที่ตัวน้อง -->
+  <div class="perch" data-first-screen="say">
+    <app-mascot mood="happy" [size]="56" />
+    <app-speech-bubble class="b" tail="left-low" [typing]="false" tone="info" [text]="say()" />
+  </div>
+
   @if (loading()) {
     <div class="yt-skeleton sk" aria-busy="true" aria-label="กำลังโหลดข้อมูลยา"></div>
   } @else {
@@ -15,14 +21,14 @@
       <!-- preview -->
       <section class="preview" aria-label="สรุปก่อนบันทึก">
         <p class="preview__cap"><app-icon name="info" /> ตรวจดูก่อนบันทึก</p>
-        <p class="preview__text">{{ preview() }}</p>
+        <p class="preview__text">{{ preview() | nbNum }}</p>
       </section>
 
-      <div class="actions">
-        <a mat-stroked-button routerLink="/medications">ยกเลิก</a>
-        <button mat-flat-button type="submit" [disabled]="saving()">{{ saving() ? 'กำลังบันทึก…' : 'บันทึก' }}</button>
+      <div class="actions yt-fitrow" data-first-screen="save">
+        <a mat-stroked-button routerLink="/medications" fitGroup="med-form-act" fitLabel="ยกเลิก">ยกเลิก</a>
+        <button mat-flat-button type="submit" [disabled]="saving()" fitGroup="med-form-act" [fitLabel]="saving() ? 'กำลังบันทึก…' : 'บันทึก'">{{ saving() ? 'กำลังบันทึก…' : 'บันทึก' }}</button>
       </div>
-      <p class="yt-disclaimer">ไม่ใช่คำแนะนำทางการแพทย์ · กินยาตามที่แพทย์หรือเภสัชกรสั่งเท่านั้น</p>
+      <p class="yt-disclaimer"><span class="yt-nowrap">ไม่ใช่คำแนะนำทางการแพทย์</span> · กินยาตามที่แพทย์หรือเภสัชกรสั่งเท่านั้น</p>
     </form>
   }
 </div>

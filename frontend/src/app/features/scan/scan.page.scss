@@ -2,95 +2,23 @@
 :host {
   display: block;
   font-family: var(--yt-font-body);
-  font-size: var(--yt-text-base);
+  font-size: var(--yt-text-body);
   line-height: var(--yt-line-height);
 }
 
 .scan {
-  max-width: 1040px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  max-width: 44rem;
   margin: 0 auto;
-  padding: var(--yt-space-2) var(--yt-space-4) var(--yt-space-5);
-  @media (min-width: 1024px) { padding: var(--yt-space-5) var(--yt-space-6) var(--yt-space-7); }
+  padding: 0 var(--yt-gutter) var(--yt-space-4);
+  // มือถือ: เต็มความสูงจอ (หน้านี้ซ่อนแถบเมนูล่าง) ให้กรอบถ่ายรูปยืดกินที่ว่าง ปุ่มอยู่ล่างกรอบ
+  @media (max-width: 1023.98px) { min-height: calc(100dvh - var(--yt-banner-h, 0px)); }
+  // จอกว้าง: สองคอลัมน์ กว้างรวมสูงสุด 1100px
+  @media (min-width: 1024px) { max-width: 68.75rem; padding: var(--yt-space-4) var(--yt-space-5) var(--yt-space-6); }
 }
 
-// ---------- ion-toolbar โปร่งใส ----------
-ion-header { background: transparent; }
-ion-toolbar {
-  --background: transparent;
-  --color: var(--yt-primary-deep);
-  --min-height: var(--yt-tap);
-  --padding-start: 0;
-  --padding-end: 0;
-  --border-width: 0;
-}
-ion-buttons { margin: 0; }
-.back {
-  width: 3rem;
-  height: 3rem;
-  margin: 0;
-  --padding-start: 0;
-  --padding-end: 0;
-  --border-radius: 50%;
-  --background: var(--yt-surface);
-  --color: var(--yt-primary);
-  --box-shadow: var(--yt-shadow-sm);
-  font-size: 1.5rem;
-  &::part(native) { min-height: 3rem; }
-}
-ion-title {
-  padding-inline: var(--yt-space-3);
-  font-family: var(--yt-font-display);
-  font-size: var(--yt-text-title);
-  font-weight: 500;
-  line-height: var(--yt-line-height-tight);
-  color: var(--yt-primary);
-  text-align: start;
-}
-
-// ---------- ตัวบอกขั้นตอน ① → ② → ③ ----------
-.steps {
-  display: flex;
-  align-items: center;
-  margin: var(--yt-space-2) 0 var(--yt-space-4);
-  padding: 0;
-  list-style: none;
-}
-.s {
-  display: flex;
-  align-items: center;
-  gap: var(--yt-space-2);
-  color: var(--yt-text-muted);
-  font-size: var(--yt-text-sm);
-  font-weight: 500;
-  line-height: var(--yt-line-height-tight);
-  min-width: 0;          // ให้ย่อได้ — ที่ 375px/ก+ ป้ายสามขั้นรวมกันกว้างเกินจอ
-
-  &:not(:last-child) { flex: 1; }
-  // เส้นเชื่อมไปขั้นถัดไป
-  &:not(:last-child)::after {
-    content: '';
-    flex: 1;
-    min-width: 0;
-    height: 2px;
-    margin: 0 var(--yt-space-2);
-    background: var(--yt-border-strong);
-    opacity: 0.5;
-  }
-}
-.dot {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 2rem;
-  height: 2rem;
-  border: 2px solid var(--yt-border-strong);
-  border-radius: 50%;
-  background: var(--yt-surface);
-  font-size: var(--yt-text-sm);
-  line-height: 1;
-}
-.is-current {
-  color: var(--yt-primary-deep);
-  font-weight: 600;
-  .dot { border-color: var(--yt-primary); background: var(--yt-primary); color: var(--yt-on-primary); }
-}
+.steps { margin: 0 0 var(--yt-space-3); }
+// G6: จอกว้าง หัวเรื่อง + ตัวบอกขั้นตอนกว้างเท่าการ์ด (960) และชิดแนวเดียวกับการ์ด
+@media (min-width: 1024px) { app-page-header, .steps { width: 100%; max-width: 60rem; margin-inline: auto; box-sizing: border-box; } .steps { margin-bottom: var(--yt-space-3); } }

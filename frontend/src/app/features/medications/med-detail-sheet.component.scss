@@ -1,0 +1,29 @@
+:host { display: block; }
+p { margin: 0; }
+.low, .stop { display: inline-flex; align-items: center; gap: var(--yt-space-2); margin-bottom: var(--yt-space-3); padding: 0 var(--yt-space-3); border-radius: var(--yt-radius-pill); font-size: var(--yt-text-sm); font-weight: 600; line-height: 1.7; }
+.low { background: var(--yt-warning-soft); color: var(--yt-on-warning-soft); }
+.stop { background: var(--yt-field-bg); color: var(--yt-text-muted); }
+
+.rows { display: grid; grid-template-columns: fit-content(7em) minmax(0, 1fr); column-gap: var(--yt-space-3); margin: 0 0 var(--yt-space-4); }
+// คอลัมน์ป้ายกว้างเท่าป้ายที่ยาวสุด (≤ 7em) ทุกแถวตรงกัน ; ค่าที่คั่นด้วย " · " ตัดบรรทัดได้เฉพาะที่จุดคั่น (.seg ห้ามตัดกลาง)
+.rows > div { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; padding: var(--yt-space-2) 0; border-bottom: 1px solid var(--yt-border); }
+.seg { white-space: nowrap; }
+dt { color: var(--yt-text-muted); }
+dd { margin: 0; overflow-wrap: anywhere; font-weight: 500; }
+
+// ชิปมื้อ = สีประจำมื้อ (bg/เส้น/ตัวอักษร) ; "เมื่อมีอาการ" = เทาเขียวกลาง ๆ
+.chips { display: flex; flex-wrap: wrap; gap: var(--yt-space-2); margin: 0; padding: 0; list-style: none; }
+.chips li { padding: 0 var(--yt-space-3); border: 1px solid var(--m-border, var(--yt-bubble-neutral-border)); border-radius: var(--yt-radius-pill); background: var(--m-bg, var(--yt-bubble-neutral-bg)); color: var(--m-fg, var(--yt-bubble-neutral-fg)); font-size: var(--yt-text-sm); font-weight: 600; line-height: 1.7; }
+.chips li[data-slot='morning'] { --m-bg: var(--yt-meal-morning-bg); --m-border: var(--yt-meal-morning-accent); --m-fg: var(--yt-meal-morning-fg); }
+.chips li[data-slot='noon'] { --m-bg: var(--yt-meal-noon-bg); --m-border: var(--yt-meal-noon-accent); --m-fg: var(--yt-meal-noon-fg); }
+.chips li[data-slot='evening'] { --m-bg: var(--yt-meal-evening-bg); --m-border: var(--yt-meal-evening-accent); --m-fg: var(--yt-meal-evening-fg); }
+.chips li[data-slot='bedtime'] { --m-bg: var(--yt-meal-bedtime-bg); --m-border: var(--yt-meal-bedtime-accent); --m-fg: var(--yt-meal-bedtime-fg); }
+
+.btns { margin: 0; }   // แถวเดียวกันก่อน (.yt-fitrow)
+.quiet { --mat-button-filled-container-color: var(--yt-primary-soft); --mat-button-filled-label-text-color: var(--yt-primary-deep); }
+.stop-link { display: block; width: 100%; min-height: var(--yt-tap); margin-top: var(--yt-space-2); border: 0; background: none; color: var(--yt-text-muted); font: 600 var(--yt-text-body) / 1.4 var(--yt-font-body); text-decoration: underline; cursor: pointer; }
+.confirm { padding: var(--yt-space-4); border: 1px solid var(--yt-border-strong); border-radius: var(--yt-radius-md); background: var(--yt-field-bg); }
+.q { margin-bottom: var(--yt-space-1); font-weight: 700; }
+.q__n { display: inline-block; max-width: 100%; }
+.q__sub { margin-bottom: var(--yt-space-3); color: var(--yt-text-muted); font-weight: 400; }
+.yt-error-text { margin-bottom: var(--yt-space-3); }

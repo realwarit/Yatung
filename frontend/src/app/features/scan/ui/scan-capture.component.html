@@ -21,9 +21,9 @@
     <p class="yt-alert yt-alert--warning" role="status"><app-icon name="alert" /> <span>{{ w }}</span></p>
   }
 } @else {
-  <!-- กรอบเล็งทั้งกรอบเป็นปุ่ม: Enter/Space ได้ -->
-  <button type="button" class="frame frame--empty" [class.is-drag]="dragging()"
-          [attr.aria-label]="desktop() ? 'เลือกไฟล์รูปซองยา' : 'ถ่ายรูปซองยา'"
+  <!-- ช่องมองกล้อง : พื้นเขียว + มุม 4 ด้าน + ภาพซองยา ; ทั้งกรอบเป็นปุ่ม (Enter/Space ได้) เหมือนปุ่มถ่ายรูป ; ยืดตามที่ว่างของจอ -->
+  <button type="button" class="frame frame--empty" [class.is-drag]="dragging()" data-first-screen="frame"
+          [attr.aria-label]="desktop() ? 'เลือกไฟล์รูปซองยา' : 'ถ่ายรูปซองยา'" aria-describedby="scan-tips-full"
           [disabled]="!interactive()" (click)="onFrame()">
     <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
     <svg class="art" viewBox="0 0 120 90" fill="none" stroke="currentColor" stroke-width="2.5"
@@ -41,22 +41,25 @@
       <span class="hint">แตะเพื่อถ่ายรูปซองยา</span>
     }
   </button>
+  <span id="scan-tips-full" class="sr-only">{{ tipsFull }}</span>
+  <app-scan-tips class="tips-line" variant="line" />
+  <app-scan-tips class="tips-list" variant="list" />
 
   @if (interactive()) {
     <div class="buttons">
       @if (desktop()) {
-        <ion-button class="yt-btn" expand="block" (click)="upload.emit()">
-          <ion-icon slot="start" name="cloud-upload-outline"></ion-icon>อัปโหลดรูปซองยา
+        <ion-button class="yt-btn" expand="block" data-first-screen="gallery" fitLabel="อัปโหลดรูปซองยา" fitShort="อัปโหลดรูป" fitGroup="scan-capture" (click)="upload.emit()">
+          <ion-icon slot="start" class="fit-icon" name="cloud-upload-outline"></ion-icon><span class="fl-full">อัปโหลดรูปซองยา</span><span class="fl-short" aria-hidden="true">อัปโหลดรูป</span>
         </ion-button>
-        <ion-button class="yt-btn" expand="block" fill="outline" (click)="camera.emit()">
-          <ion-icon slot="start" name="camera-outline"></ion-icon>ใช้กล้อง
+        <ion-button class="yt-btn" expand="block" fill="outline" data-first-screen="camera" fitLabel="ใช้กล้อง" fitGroup="scan-capture" (click)="camera.emit()">
+          <ion-icon slot="start" class="fit-icon" name="camera-outline"></ion-icon><span class="fl-full">ใช้กล้อง</span>
         </ion-button>
       } @else {
-        <ion-button class="yt-btn" expand="block" (click)="camera.emit()">
-          <ion-icon slot="start" name="camera-outline"></ion-icon>ถ่ายรูปซองยา
+        <ion-button class="yt-btn" expand="block" data-first-screen="camera" fitLabel="ถ่ายรูปซองยา" fitShort="ถ่ายรูป" fitGroup="scan-capture" (click)="camera.emit()">
+          <ion-icon slot="start" class="fit-icon" name="camera-outline"></ion-icon><span class="fl-full">ถ่ายรูปซองยา</span><span class="fl-short" aria-hidden="true">ถ่ายรูป</span>
         </ion-button>
-        <ion-button class="yt-btn" expand="block" fill="outline" (click)="gallery.emit()">
-          <ion-icon slot="start" name="images-outline"></ion-icon>เลือกรูปจากเครื่อง
+        <ion-button class="yt-btn" expand="block" fill="outline" data-first-screen="gallery" fitLabel="เลือกรูปจากเครื่อง" fitShort="เลือกรูป" fitGroup="scan-capture" (click)="gallery.emit()">
+          <ion-icon slot="start" class="fit-icon" name="images-outline"></ion-icon><span class="fl-full">เลือกรูปจากเครื่อง</span><span class="fl-short" aria-hidden="true">เลือกรูป</span>
         </ion-button>
       }
     </div>

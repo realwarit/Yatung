@@ -1,5 +1,6 @@
 :host { display: block; }
 :host(.small), :host(.inline) { display: flex; }
+:host(.compact), :host(.icon) { display: inline-block; }
 
 .btn {
   display: inline-flex;
@@ -34,5 +35,26 @@
 :host(.bar) .btn { width: 100%; background: var(--yt-primary-soft); &.on { background: var(--yt-primary); } }   // สูง 48px (min-height ของ .btn)
 :host(.small) .btn { margin-left: auto; }
 :host(.inline) .btn { margin-top: var(--yt-space-2); }
+
+// compact : มองเห็นสูง 36px (--yt-compact) พื้นที่แตะ 48px ด้วย ::before ; icon : วงกลม 48×48 ไอคอนล้วน
+:host(.compact) .btn {
+  position: relative;
+  min-height: var(--yt-compact);
+  padding: 0 0.875rem;
+  border-width: 1.5px;
+  font-size: var(--yt-text-sm);
+  line-height: 1;
+  &::before { content: ''; position: absolute; inset: calc((var(--yt-tap) - var(--yt-compact)) / -2 - 1.5px) -0.375rem; }
+}
+:host(.icon) .btn {
+  width: var(--yt-tap);
+  height: var(--yt-tap);
+  min-height: 0;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  &:hover { background: var(--yt-primary-soft); }
+  &.on { background: var(--yt-primary); }
+}
 
 @media (prefers-reduced-motion: reduce) { .btn:active { transform: none; } }

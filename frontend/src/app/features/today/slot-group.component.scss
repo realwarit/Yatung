@@ -1,0 +1,69 @@
+// สีประจำมื้อ: --m-bg หัว · --m-accent ขอบ/ไอคอน · --m-fg ตัวอักษร (token --yt-meal-*)
+:host { display: block; min-width: 0; scroll-margin-top: var(--yt-space-4); }
+:host([data-slot='morning']) { --m-bg: var(--yt-meal-morning-bg); --m-accent: var(--yt-meal-morning-accent); --m-fg: var(--yt-meal-morning-fg); }
+:host([data-slot='noon']) { --m-bg: var(--yt-meal-noon-bg); --m-accent: var(--yt-meal-noon-accent); --m-fg: var(--yt-meal-noon-fg); }
+:host([data-slot='evening']) { --m-bg: var(--yt-meal-evening-bg); --m-accent: var(--yt-meal-evening-accent); --m-fg: var(--yt-meal-evening-fg); }
+:host([data-slot='bedtime']) { --m-bg: var(--yt-meal-bedtime-bg); --m-accent: var(--yt-meal-bedtime-accent); --m-fg: var(--yt-meal-bedtime-fg); }
+
+.card { display: flex; flex-direction: column; height: 100%; overflow: hidden; border: 1px solid var(--m-accent); border-radius: var(--yt-radius-md); background: var(--yt-surface); }
+// มื้อกินครบ = แถวเขียวเดิม
+.card--done { border-color: transparent; background: var(--yt-success-soft); }
+:host([data-mode='done']) { --m-bg: var(--yt-success-soft); --m-accent: var(--yt-success); --m-fg: var(--yt-on-success-soft); }
+
+
+.ic {
+  display: grid; flex: none; place-items: center; width: 2rem; height: 2rem; border-radius: 50%;
+  background: var(--m-accent); color: var(--m-fg); --icon-optical-offset: 0;
+}
+:host([data-mode='done']) .ic { color: var(--yt-on-primary); }
+.chip {
+  display: inline-flex; flex: none; align-items: center; gap: 0.3em; min-height: 1.5rem; padding: 0 0.625rem; border-radius: var(--yt-radius-pill);
+  background: var(--yt-surface); color: var(--m-fg); font-size: 0.75rem; font-weight: 500; line-height: 1.5; white-space: nowrap;
+}
+
+// ---------- พับ : [ไอคอน] มื้อ · เวลา · chip · ˅ / [มื้อถัดไป] ชื่อยา ----------
+.fold {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--yt-space-1) var(--yt-space-2); width: 100%; min-height: 3.5rem; box-sizing: border-box;
+  padding: var(--yt-space-2) var(--yt-space-3); border: 0; background: var(--m-bg); color: var(--m-fg); font: inherit; text-align: left; cursor: pointer;
+}
+.ft { flex: 0 0 auto; font: 500 1rem / var(--yt-line-height-tight) var(--yt-font-display); white-space: nowrap; }
+.fch { flex: none; margin-left: auto; }
+.fold .chip { margin-left: auto; }
+.fold .chip + .fch { margin-left: 0; }
+.sub { order: 5; flex: 1 0 100%; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: var(--yt-space-2); min-width: 0; padding-left: 2.5rem; }
+.fold .sub .chip { margin-left: 0; }
+.fs { flex: 1 1 6rem; min-width: 0; font-size: var(--yt-text-sm); line-height: var(--yt-line-height-tight); opacity: 0.9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+// มื้อกินครบ: แถวเดียว [✓] ชื่อ | เวลา | ˅ ; ที่แคบ (ก++) ซ่อน chip เวลา
+.fold--done { flex-wrap: nowrap; }
+.fold--done .ft { flex: 1 1 0; min-width: 0; white-space: normal; }
+.fold--done .chip, .fold--done .fch { flex: none; margin-left: 0; }
+:host { container-type: inline-size; }
+@container (max-width: 18rem) { .fold--done .chip { display: none; } }
+
+// ---------- หัวมื้อ : บรรทัด 1 = ไอคอน + "มื้อ · เวลา" + 🔊 · บรรทัด 2 = chip ชิดซ้ายตรงข้อความ ----------
+.head { display: flex; align-items: flex-start; gap: var(--yt-space-2); padding: 0.25rem var(--yt-space-1) 0.25rem var(--yt-space-3); background: var(--m-bg); color: var(--m-fg); }
+.head .ic { margin-top: 0.5rem; }
+.htxt { display: flex; flex: 1; flex-wrap: wrap; align-items: center; column-gap: var(--yt-space-2); min-width: 0; }
+.htxt .chip { margin-bottom: 0.25rem; }
+.h { margin: 0; font: 500 1rem / 2.5rem var(--yt-font-display); color: var(--m-fg); white-space: nowrap; }
+.listen { flex: none; }
+.listen ::ng-deep .btn { color: var(--m-fg); }
+.fold-btn {
+  display: inline-grid; place-items: center; flex: none; width: var(--yt-tap); height: var(--yt-tap);
+  border: 0; border-radius: var(--yt-radius-pill); background: transparent; color: var(--m-fg); cursor: pointer;
+  &:hover { background: var(--yt-surface); }
+}
+.up { transform: rotate(180deg); }
+.rows { flex: 1; }
+
+// ---------- แถวยา ----------
+.dose--taken { color: var(--yt-on-success-soft); }
+.tick {
+  display: grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: 50%;
+  background: var(--yt-success); color: var(--yt-on-primary); font-size: 0.8rem; --icon-optical-offset: 0;
+}
+.pop { animation: pop 280ms var(--yt-ease) both; }
+@keyframes pop { 0% { transform: scale(0.3); } 70% { transform: scale(1.3); } 100% { transform: scale(1); } }
+.at { font-size: var(--yt-text-sm); font-weight: 600; color: var(--yt-on-success-soft); }
+.extra { align-self: flex-start; margin-top: var(--yt-space-1); }
+// ปุ่ม "กินครบมื้อนี้" (.yt-all / .yt-all-btn) และปุ่ม "กดผิด? ยกเลิก" (.yt-undo) อยู่ใน styles/_components.scss เพื่อไม่ให้ไฟล์นี้เกินงบ 4 kB

@@ -65,6 +65,8 @@ export class InstallService {
   }
 
   readonly settingsMode = computed(() => this.modeFor(true));
+  /** ติดตั้งแล้ว/เปิดในแอป (standalone หรือ Capacitor) → หน้าตั้งค่าซ่อนแถวติดตั้ง */
+  readonly isInstalled = computed(() => this.installed() || this.env.isStandalone() || this.env.isCapacitor());
   /** หน้าวันนี้ ไม่สนว่าชวนไปแล้วหรือยัง (ใช้กับการ์ดที่กำลังแสดงอยู่: หายเมื่อกดปิด/ติดตั้งแล้ว) */
   readonly todayModeNow = computed(() => this.modeFor(false));
   /** หน้าวันนี้: เริ่มแสดงได้เมื่อยังไม่เคยชวนในรอบ login นี้ และไม่ได้กดปิดใน 14 วัน */

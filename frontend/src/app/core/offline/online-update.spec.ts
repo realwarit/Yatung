@@ -1,7 +1,6 @@
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { SwUpdate } from '@angular/service-worker';
 import { Subject } from 'rxjs';
 import { htmlGuardInterceptor } from '../network/html-guard.interceptor';
@@ -66,49 +65,47 @@ describe('UpdateService', () => {
   function setup(enabled = true) {
     const versions = new Subject<{ type: string }>();
     const unrecoverable = new Subject<unknown>();
-    const actions = new Subject<void>();
-    const open = vi.fn((_text: string, _action?: string, _cfg?: unknown) => ({ onAction: () => actions }));
     const sw = { isEnabled: enabled, versionUpdates: versions, unrecoverable, activateUpdate: vi.fn(() => Promise.resolve(true)) };
-    TestBed.configureTestingModule({ providers: [{ provide: SwUpdate, useValue: sw }, { provide: MatSnackBar, useValue: { open } }] });
+    TestBed.configureTestingModule({ providers: [{ provide: SwUpdate, useValue: sw }] });
     const svc = TestBed.inject(UpdateService);
     svc.reload = vi.fn();
-    return { svc, sw, versions, unrecoverable, actions, open };
+    return { svc, sw, versions, unrecoverable };
   }
-  it('VERSION_READY → snackbar "มีเวอร์ชันใหม่ แตะเพื่ออัปเดต" ยังไม่ reload จนกว่าจะกด', async () => {
-    const { svc, sw, versions, actions, open } = setup();
+  it('VERSION_READY → state ready (banner "' + UPDATE_READY_TEXT + '") ยังไม่ reload จนกว่าจะกด apply()', async () => {
+    const { svc, sw, versions } = setup();
     svc.watch();
     versions.next({ type: 'VERSION_DETECTED' });
-    expect(open).not.toHaveBeenCalled();
+    expect(svc.state()).toBe('none');
     versions.next({ type: 'VERSION_READY' });
-    expect(open).toHaveBeenCalledTimes(1);
-    expect(open.mock.calls[0][0]).toBe(UPDATE_READY_TEXT);
+    expect(svc.state()).toBe('ready');
     expect(svc.reload).not.toHaveBeenCalled();
-    actions.next();
+    svc.apply();
     await Promise.resolve(); await Promise.resolve();
     expect(sw.activateUpdate).toHaveBeenCalled();
     await new Promise((r) => setTimeout(r, 0));
     expect(svc.reload).toHaveBeenCalled();
   });
-  it('unrecoverable → snackbar ให้โหลดใหม่ แล้ว reload เมื่อกด', () => {
-    const { svc, unrecoverable, actions, open } = setup();
+  it('unrecoverable → state broken (banner "' + UPDATE_BROKEN_TEXT + '") แล้ว reload เมื่อกด', () => {
+    const { svc, sw, unrecoverable } = setup();
     svc.watch();
     unrecoverable.next({ reason: 'x' });
-    expect(open.mock.calls[0][0]).toBe(UPDATE_BROKEN_TEXT);
-    actions.next();
+    expect(svc.state()).toBe('broken');
+    svc.apply();
     expect(svc.reload).toHaveBeenCalled();
+    expect(sw.activateUpdate).not.toHaveBeenCalled();
   });
   it('ไม่มี service worker (dev/http) = ไม่ทำอะไร', () => {
-    const { svc, versions, open } = setup(false);
+    const { svc, versions } = setup(false);
     svc.watch();
     versions.next({ type: 'VERSION_READY' });
-    expect(open).not.toHaveBeenCalled();
+    expect(svc.state()).toBe('none');
   });
   it('activateUpdate ล้มเหลวก็ยัง reload (ไม่ค้าง)', async () => {
-    const { svc, sw, versions, actions } = setup();
+    const { svc, sw, versions } = setup();
     sw.activateUpdate.mockReturnValueOnce(Promise.reject(new Error('x')));
     svc.watch();
     versions.next({ type: 'VERSION_READY' });
-    actions.next();
+    svc.apply();
     await new Promise((r) => setTimeout(r, 0));
     expect(svc.reload).toHaveBeenCalled();
   });

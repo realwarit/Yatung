@@ -109,6 +109,29 @@ async function takeMany(db, userId, rawIds, source = 'line', opts = {}) {
   return res;
 }
 
+// ---- POST /api/doses/take-many (ปุ่ม "กินครบมื้อนี้" ในแอป) ----
+const TAKE_MANY_MAX = 50;
+const bad = (details) => err(400, 'VALIDATION', details);
+
+// ตรวจ body { ids } : 1–50 จำนวนเต็มบวก (ซ้ำกันได้ จะ dedupe) ; ผิด = { error: {status, body} } , ถูก = { ids: [...] }
+function parseTakeManyIds(body) {
+  const raw = body && body.ids;
+  if (!Array.isArray(raw) || raw.length === 0) return { error: bad('กรุณาระบุรายการยาที่ต้องการบันทึก (ids) อย่างน้อย 1 รายการ') };
+  if (raw.length > TAKE_MANY_MAX) return { error: bad('บันทึกได้ครั้งละไม่เกิน ' + TAKE_MANY_MAX + ' รายการ') };
+  if (!raw.every((v) => Number.isSafeInteger(v) && v > 0)) return { error: bad('รายการยา (ids) ต้องเป็นจำนวนเต็มบวกเท่านั้น') };
+  return { ids: [...new Set(raw)] };
+}
+
+// กติกาเดียวกับ take() ทุกข้อ (ใช้ takeInTx ตัวเดียวกันใน transaction เดียว) ; id ที่ไม่ใช่ของผู้ใช้ = ข้ามเงียบ ๆ นับ skipped ;
+// ไม่มี id ไหนเป็นของผู้ใช้เลย = 404 (ไม่เผยว่ามี dose นั้นอยู่) ; hook ปิดเรื่องญาติเรียกครั้งเดียวหลัง COMMIT (ใน takeMany)
+async function takeManyForApp(db, userId, body) {
+  const p = parseTakeManyIds(body);
+  if (p.error) return p.error;
+  const r = await takeMany(db, userId, p.ids, 'app');
+  if (!r.taken.length && !r.already.length) return notFound();
+  return { status: 200, body: { taken: r.taken, already: r.already, skipped: r.skipped, at: r.at } };
+}
+
 async function undo(db, userId, rawId) {
   const id = toId(rawId);
   if (!id) return notFound();
@@ -132,10 +155,29 @@ async function undo(db, userId, rawId) {
   });
 }
 
-// cron 00:05: สร้างรอบของวันนี้ทุกคน (ไม่กรองเวลา)
+// cron 00:05: สร้างรอบของวันนี้ทุกคน (ไม่กรองเวลา) + เขียน marker daily_generation (ให้ ensureToday รู้ว่าวันนี้สร้างแล้ว)
 async function generateToday(db) {
   const res = await db.query(GENERATE_TODAY_SQL(false, false));
+  await db.query("INSERT INTO daily_generation (gen_date, source, inserted) VALUES (CURDATE(), 'cron', ?) ON DUPLICATE KEY UPDATE inserted = inserted + VALUES(inserted)", [res.affectedRows]);
   return { inserted: res.affectedRows };
+}
+
+// ensureToday (ตอน Node-RED start + ทุกชั่วโมง :07): ถ้าวันนี้ยังไม่เคยสร้างรอบ (พลาด cron 00:05 เพราะเครื่องหลับ/ล่ม) → สร้างแบบ catch-up
+//   รอบที่เวลานัดผ่านไปแล้วติด catchup=1 + reminded_at (pending ; ผู้ใช้กินย้อนหลังได้ ; ไม่ส่ง LINE/Push/แจ้งญาติย้อนหลัง) ; รอบที่ยังไม่ถึงเวลาเป็นแถวปกติ
+//   มี marker ของวันนี้แล้ว = ไม่ทำอะไร (กันสร้างรอบที่ถูกข้ามโดยตั้งใจตอนเพิ่ม/แก้ยากลางวัน) ; จองด้วย INSERT marker ก่อน (รัน 2 process ได้ 1 ครั้ง)
+async function ensureToday(db) {
+  const claim = await db.query("INSERT IGNORE INTO daily_generation (gen_date, source) VALUES (CURDATE(), 'ensure')");
+  if (!claim.affectedRows) return { skipped: true, inserted: 0, catchup: 0 };
+  try {
+    const res = await db.query(GENERATE_TODAY_SQL(false, false, true));
+    const rows = await db.query('SELECT COUNT(*) AS n FROM dose_logs WHERE catchup = 1 AND scheduled_date = CURDATE()');
+    const catchup = Number(rows[0] && rows[0].n) || 0;
+    await db.query("UPDATE daily_generation SET inserted = ?, catchup = ? WHERE gen_date = CURDATE()", [res.affectedRows, catchup]);
+    return { skipped: false, inserted: res.affectedRows, catchup };
+  } catch (e) {
+    await db.query('DELETE FROM daily_generation WHERE gen_date = CURDATE() AND source = ?', ['ensure']).catch(() => {});   // ล้มเหลว = ให้รอบถัดไปลองใหม่
+    throw e;
+  }
 }
 
 // cron 03:00: รอบของวันก่อนๆ ที่ยัง pending = ไม่ได้กิน → missed (Dashboard นับ taken ÷ (taken + missed)) ; รันซ้ำได้ ; ไม่แตะวันนี้/taken
@@ -147,4 +189,4 @@ async function closeStaleDoses(db, env = process.env) {
   return { missed: res.affectedRows };
 }
 
-module.exports = { setAfterTaken, closeStaleDoses, todayQuery, shapeToday, take, takeInTx, takeMany, undo, generateToday };
+module.exports = { setAfterTaken, closeStaleDoses, ensureToday, todayQuery, shapeToday, take, takeInTx, takeMany, parseTakeManyIds, takeManyForApp, undo, generateToday };

@@ -6,16 +6,15 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../core/auth/auth.service';
 import { IconComponent } from '../../shared/icon.component';
-import { WaveHandComponent } from '../../shared/components/wave-hand/wave-hand.component';
 import { MascotMood } from '../../shared/components/mascot/mascot.component';
 import { AuthShellComponent } from './auth-shell.component';
-import { AuthFocus, focusKind, greetingFor, useIntroMood } from './auth-mascot';
+import { AuthFocus, focusKind, greetingFor, greetingShort, useIntroMood } from './auth-mascot';
 
 @Component({
   selector: 'app-login-page',
   imports: [
     ReactiveFormsModule, RouterLink, MatButtonModule, MatProgressSpinnerModule,
-    AuthShellComponent, IconComponent, WaveHandComponent,
+    AuthShellComponent, IconComponent,
   ],
   templateUrl: './login.page.html',
   styleUrl: './auth.scss',
@@ -42,6 +41,7 @@ export class LoginPage {
   private readonly rejected = signal(false);
   private readonly intro = useIntroMood();
   private readonly greeting = greetingFor();
+  private readonly greetingShort = greetingShort();
 
   readonly mood = computed<MascotMood>(() => {
     if (this.success()) return 'celebrate';
@@ -62,6 +62,16 @@ export class LoginPage {
     }
     return this.greeting;
   });
+
+  /** กล่องคำพูดบนมือถือ (1 บรรทัด) */
+  readonly bubble = computed(() => {
+    if (this.success()) return 'ยินดีต้อนรับค่ะ!';
+    if (this.busy()) return 'รอสักครู่นะคะ…';
+    if (this.error() && this.errorFresh()) return 'อุ๊ย ลองใหม่นะคะ';
+    return this.greetingShort;
+  });
+  /** ใช้เมื่อ bubble ยาวเกิน 1 บรรทัด (ก++) */
+  readonly bubbleShort = computed(() => (this.bubble() === this.greetingShort ? 'สวัสดีค่ะ' : this.bubble()));
 
   constructor() {
     this.form.valueChanges.subscribe(() => this.errorFresh.set(false));

@@ -1,75 +1,70 @@
 <div class="yt-page set">
-  <h1 class="yt-page-title">ตั้งค่า</h1>
+  <app-page-header title="ตั้งค่า" />
 
-  <app-install-card placement="settings" />
+  <!-- กล่องคำพูดเดียวของหน้า: น้องยาตรง 56px ชิดล่าง หางชี้มาที่ตัวน้อง -->
+  <div class="perch" data-first-screen="say">
+    <app-mascot [mood]="say().mood" [size]="56" />
+    <app-speech-bubble class="b" tail="left-low" [typing]="false" [live]="true" [tone]="say().tone" [text]="say().text" />
+  </div>
 
-  <section class="card yt-card" aria-labelledby="h-times">
-    <h2 id="h-times">เวลากินยาแต่ละมื้อ</h2>
-    <p class="hint">รอบวันนี้ที่ยังไม่ได้กินจะย้ายไปเวลาใหม่ รอบที่กินแล้วไม่เปลี่ยน</p>
+  <app-section label="การกินยา" id="set-a">
+    <button appListRow type="button" title="เวลากินยาแต่ละมื้อ" [sub]="timesSummary()" [chevron]="true" (click)="openSheet('times')">
+      <app-icon lead name="clock" />
+    </button>
+  </app-section>
 
-    @if (loadError(); as err) {
-      <div class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span><app-err-text [text]="err" /></span></div>
-      <button mat-flat-button type="button" (click)="load()">ลองใหม่</button>
-    } @else if (times(); as t) {
-      @for (s of slots; track s) {
-        <div class="slot">
-          <app-time-row [value]="t[s]" (valueChange)="setTime(s, $event)" [label]="label[s]" [icon]="icon[s]" [error]="orderErrors()[s] ?? null" />
-        </div>
-      }
-      @if (saveError(); as se) {
-        <div class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span>{{ se }}</span></div>
-      }
-      <div class="savebar" [class.dirty]="dirty">
-        <button mat-flat-button type="button" class="save" [disabled]="saving() || !dirty || hasOrderError()" (click)="save()">
-          {{ saving() ? 'กำลังบันทึก…' : 'บันทึกเวลา' }}
-        </button>
-      </div>
-    } @else {
-      <div class="yt-skeleton sk" aria-busy="true" aria-label="กำลังโหลดเวลามื้อ"></div>
+  <app-section label="การแจ้งเตือน" id="set-b">
+    <a appListRow routerLink="/settings/line" title="เชื่อม LINE" [chevron]="true" data-first-screen="line">
+      <app-icon lead name="chat" />
+      <span trail class="yt-chip" [class.yt-chip--ok]="lineLinked() === true">{{ lineLinked() === null ? '…' : lineLinked() ? 'เชื่อมแล้ว' : 'ยังไม่เชื่อม' }}</span>
+    </a>
+    <a appListRow routerLink="/settings/caregivers" title="ญาติ/ผู้ดูแล" [chevron]="true">
+      <app-icon lead name="heart" />
+      <span trail class="yt-chip">{{ caregiverCount() === null ? '…' : caregiverCount() + ' คน' }}</span>
+    </a>
+    <button appListRow type="button" title="แจ้งเตือนบนเครื่องนี้" [chevron]="true" (click)="openSheet('push')">
+      <app-icon lead name="bell" />
+      <span trail class="yt-chip" [class.yt-chip--ok]="push.state() === 'enabled'">{{ pushLabel() }}</span>
+    </button>
+    @if (demoMode()) {
+      <button appListRow type="button" title="ทดลองส่งเตือน" sub="โหมดเดโม" [chevron]="true" (click)="openSheet('demo')">
+        <app-icon lead name="bell" />
+      </button>
     }
-  </section>
+  </app-section>
 
-  <section class="card yt-card" aria-labelledby="h-line">
-    <h2 id="h-line"><app-icon name="chat" /> เชื่อม LINE</h2>
-    <app-line-section />
-  </section>
+  <app-section label="แอป" id="set-c">
+    <button appListRow type="button" title="เสียงอ่าน" [chevron]="true" (click)="openSheet('tts')">
+      <app-icon lead name="volume" />
+    </button>
+    <button appListRow type="button" title="การแสดงผล" sub="ขนาดตัวอักษร" [chevron]="true" (click)="openSheet('display')">
+      <app-icon lead name="type" />
+    </button>
+    @if (!installed()) {
+      <button appListRow type="button" title="ติดตั้งแอป" [sub]="installMode() ? 'เพิ่มลงหน้าจอโฮม' : 'ดูวิธีติดตั้ง'" [chevron]="true" (click)="openSheet('install')">
+        <app-icon lead name="phone" />
+      </button>
+    }
+    @if (demoMode()) {
+      <a appListRow routerLink="/settings/developer" title="ข้อมูลสำหรับผู้พัฒนา" [chevron]="true">
+        <app-icon lead name="info" />
+      </a>
+    }
+    @if (!leaving()) {
+      <button appListRow type="button" class="danger" title="ออกจากระบบ" (click)="leaving.set(true)">
+        <app-icon lead name="logout" />
+      </button>
+    } @else {
+      <!-- ยืนยัน inline (ไม่ซ้อน dialog) -->
+      <div class="ask" role="group" aria-labelledby="out-q">
+        <p id="out-q" class="ask__t">ออกจากระบบไหมคะ?</p>
+        <div class="yt-fitrow">
+          <button mat-stroked-button type="button" fitGroup="out-act" fitLabel="ยกเลิก" (click)="leaving.set(false)">ยกเลิก</button>
+          <button mat-flat-button type="button" fitGroup="out-act" fitLabel="ออกจากระบบ" (click)="logout()">ออกจากระบบ</button>
+        </div>
+      </div>
+    }
+  </app-section>
 
-  <section class="card yt-card" aria-labelledby="h-push">
-    <h2 id="h-push"><app-icon name="bell" /> แจ้งเตือนบนเครื่องนี้</h2>
-    <app-push-section />
-  </section>
-
-  <section class="card yt-card" aria-labelledby="h-tts">
-    <h2 id="h-tts"><app-icon name="volume" /> เสียงอ่าน</h2>
-    <app-tts-section />
-  </section>
-
-  <section class="card yt-card" aria-labelledby="h-cg">
-    <h2 id="h-cg"><app-icon name="heart" /> ญาติ/ผู้ดูแล</h2>
-    <app-caregivers-section />
-  </section>
-
-  @if (demoMode()) {
-    <section class="card yt-card" aria-labelledby="h-demo">
-      <h2 id="h-demo"><app-icon name="bell" /> โหมดเดโม</h2>
-      <app-demo-section />
-    </section>
-    <section class="card yt-card" aria-labelledby="h-dev">
-      <h2 id="h-dev"><app-icon name="info" /> ข้อมูลสำหรับผู้พัฒนา</h2>
-      <app-dev-info-section />
-    </section>
-  }
-
-  <section class="card yt-card" aria-labelledby="h-font">
-    <h2 id="h-font">การแสดงผล</h2>
-    <p class="hint">ขนาดตัวอักษร</p>
-    <app-font-size-toggle />
-    <p class="sample"><span class="sample__cap">ตัวอย่าง:</span>&ngsp;<strong>Metformin</strong> ครั้งละ <span class="num">1</span> เม็ด หลังอาหาร</p>
-  </section>
-
-  <button mat-stroked-button type="button" class="logout" (click)="logout()">
-    <app-icon name="logout" /> ออกจากระบบ
-  </button>
-
-  <p class="yt-disclaimer">ไม่ใช่คำแนะนำทางการแพทย์ · ปรึกษาแพทย์หรือเภสัชกรเมื่อมีข้อสงสัย</p>
+  <p class="yt-disclaimer"><span class="yt-nowrap">ไม่ใช่คำแนะนำทางการแพทย์</span> · ปรึกษาแพทย์หรือเภสัชกรเมื่อมีข้อสงสัย</p>
 </div>

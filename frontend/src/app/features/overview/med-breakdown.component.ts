@@ -1,3 +1,4 @@
+import { MedNamePipe } from '../../core/i18n/labels.pipe';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { AdherenceMedication, AdherenceSources } from '../../core/api/stats.api';
 import { sourceLine, toneOf } from './adherence-level';
@@ -8,6 +9,7 @@ import { sourceLine, toneOf } from './adherence-level';
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './med-breakdown.component.html',
   styleUrl: './med-breakdown.component.scss',
+  imports: [MedNamePipe],
 })
 export class MedBreakdownComponent {
   readonly meds = input.required<AdherenceMedication[]>();

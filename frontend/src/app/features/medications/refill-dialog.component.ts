@@ -4,17 +4,17 @@ import { MatButton } from '@angular/material/button';
 import { errorText } from '../../core/api/api-error';
 import { MedicationApi } from '../../core/api/medication.api';
 import { Medication } from '../../core/api/models';
-import { UnitLabelPipe } from '../../core/i18n/labels.pipe';
+import { MedNamePipe, UnitLabelPipe } from '../../core/i18n/labels.pipe';
 import { StepperComponent } from '../../shared/components/stepper/stepper.component';
 import { IconComponent } from '../../shared/icon.component';
 
 /** เติมยา: เลือกจำนวนด้วยปุ่ม − / + ใหญ่ๆ แล้วบันทึกเลย; ปิดด้วยยาที่อัปเดตแล้ว (หรือ undefined = ยกเลิก) */
 @Component({
   selector: 'app-refill-dialog',
-  imports: [MatDialogTitle, MatDialogContent, MatDialogActions, MatButton, StepperComponent, IconComponent, UnitLabelPipe],
+  imports: [MatDialogTitle, MatDialogContent, MatDialogActions, MatButton, StepperComponent, IconComponent, MedNamePipe, UnitLabelPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 mat-dialog-title>เติมยา {{ med.name }}</h2>
+    <h2 mat-dialog-title>เติมยา {{ med.name | medName }}</h2>
     <mat-dialog-content>
       <p class="now">ตอนนี้เหลือ {{ med.remaining_qty ?? 0 }} {{ med.unit | unitLabel }}</p>
       <p class="ask" id="refill-q">เติมเพิ่มกี่{{ med.unit | unitLabel }}?</p>

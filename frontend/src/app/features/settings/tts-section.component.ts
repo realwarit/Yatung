@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { voiceLabel } from '../../core/tts/speech-text';
 import { SegmentedComponent, SegmentedOption } from '../../shared/components/segmented/segmented.component';
 import { TtsButtonComponent } from '../../shared/components/tts-button/tts-button.component';
 import { IconComponent } from '../../shared/icon.component';
@@ -15,14 +16,14 @@ import { TRY_PHRASE, TTS_RATES, TtsService } from '../../core/tts/tts.service';
       <p class="hint">ให้แอปอ่านรายการยาออกเสียงให้ฟัง กดปุ่ม <app-icon name="volume" /> ในหน้า "วันนี้" และ "สรุป" (แอปไม่พูดเองโดยอัตโนมัติ)</p>
       <p class="hint">ตั้งค่านี้ใช้เฉพาะเครื่องนี้ เพราะแต่ละเครื่องมีเสียงไม่เหมือนกัน</p>
 
-      <p class="hint voice-now" id="tts-voice-now">เสียงที่ใช้: @if (tts.selectedVoice(); as v) { <strong>{{ v.name }} ({{ v.lang }})</strong> } @else { <strong>เสียงเริ่มต้นของเครื่อง (th-TH)</strong> }</p>
+      <p class="hint voice-now" id="tts-voice-now">เสียงที่ใช้: @if (tts.selectedVoice(); as v) { <strong>{{ voiceLabel(v) }}</strong> } @else { <strong>เสียงเริ่มต้นของเครื่อง (th-TH)</strong> }</p>
 
       @if (tts.thaiVoices().length > 1) {
         <div class="field">
           <label class="yt-label" for="tts-voice">เสียงที่ใช้อ่าน</label>
           <div class="yt-control">
             <select id="tts-voice" [value]="tts.selectedVoice()?.voiceURI ?? ''" (change)="tts.setVoice($any($event.target).value)">
-              @for (v of tts.thaiVoices(); track v.voiceURI) { <option [value]="v.voiceURI">{{ v.name }}</option> }
+              @for (v of tts.thaiVoices(); track v.voiceURI) { <option [value]="v.voiceURI">{{ voiceLabel(v) }}</option> }
             </select>
           </div>
         </div>
@@ -59,5 +60,7 @@ export class TtsSectionComponent {
   protected readonly tts = inject(TtsService);
   protected readonly rates: SegmentedOption[] = TTS_RATES.map((r) => ({ value: String(r.value), label: r.label }));
   protected readonly rateValue = computed(() => String(this.tts.rate()));
+  /** ชื่อเสียง + (lang) — ถ้าชื่อมีรหัสภาษาอยู่แล้ว ("ไทย (th_TH)") ไม่ต่อซ้ำ ; ชื่อซ้ำ "ไทย ไทย" แสดงครั้งเดียว */
+  protected readonly voiceLabel = (v: { name: string; lang: string }): string => voiceLabel(v);
   protected readonly tryPhrase = (): string[] => [TRY_PHRASE];
 }

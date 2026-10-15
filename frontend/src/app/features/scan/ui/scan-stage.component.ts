@@ -8,21 +8,23 @@ import { ScanCaptureComponent } from './scan-capture.component';
 import { ScanCoachComponent } from './scan-coach.component';
 import { ScanProcessingComponent } from './scan-processing.component';
 import { ScanTextInputComponent } from './scan-text-input.component';
-import { ScanTipsComponent } from './scan-tips.component';
+import { ScanPerchComponent } from './scan-perch.component';
+import { FitLabelDirective } from '../../../shared/fit-label.directive';
 
 const MIN_TEXT = 5;
 
 /**
  * การ์ดหลักของหน้า Scan — แสดงผลล้วน (รับ state ผ่าน input, ส่ง event ผ่าน output) ให้ /scan และ /dev/scan-states ใช้ร่วมกัน
  * ใช้ Ionic: ion-segment / ion-segment-button / ion-label / ion-button / ion-icon (ส่วนย่อยใช้ ion-textarea, ion-chip, ion-spinner)
+ * D2.5 G: การ์ดขาวใบเดียว + น้องยาตรงเกาะขอบบน (scan-perch) · ช่องมองกล้องทั้งกรอบแตะได้ · คำแนะนำย่อใต้กรอบ
  * หลักปุ่ม: แต่ละ state มีปุ่มหลัก (สีทึบ) ได้ปุ่มเดียว และไม่แสดงปุ่มหลักแบบ disabled
  */
 @Component({
   selector: 'app-scan-stage',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    IonSegment, IonSegmentButton, IonLabel, IonButton, IonIcon,
-    ScanCaptureComponent, ScanCoachComponent, ScanProcessingComponent, ScanTextInputComponent, ScanTipsComponent,
+    IonSegment, IonSegmentButton, IonLabel, IonButton, IonIcon, FitLabelDirective,
+    ScanCaptureComponent, ScanCoachComponent, ScanPerchComponent, ScanProcessingComponent, ScanTextInputComponent,
   ],
   templateUrl: './scan-stage.component.html',
   styleUrl: './scan-stage.component.scss',
@@ -59,25 +61,24 @@ export class ScanStageComponent {
   protected readonly failed = computed(() => this.phase() === 'error');
 
   /** ปุ่มหลัก/รอง ของ state ปัจจุบัน (null = ไม่มีปุ่มในแถบ action) */
-  protected readonly action = computed<{ primary: string; secondary?: string; icon: string } | null>(() => {
+  protected readonly action = computed<{ primary: string; short?: string; secondary?: string; icon: string } | null>(() => {
     if (this.failed()) {
       return this.mode() === 'photo'
         ? { primary: 'ลองถ่ายใหม่', secondary: 'พิมพ์ข้อมูลยาเอง', icon: 'refresh-outline' }
         : { primary: 'ลองส่งอีกครั้ง', secondary: 'แก้ข้อความ', icon: 'refresh-outline' };
     }
-    if (this.mode() === 'photo') return this.previewUrl() ? { primary: 'ให้น้องยาตรงอ่านซองยา', icon: 'sparkles-outline' } : null;
-    return this.text().trim().length >= MIN_TEXT ? { primary: 'ให้น้องยาตรงจัดตารางยา', icon: 'sparkles-outline' } : null;
+    if (this.mode() === 'photo') return this.previewUrl() ? { primary: 'ให้น้องยาตรงอ่านซองยา', short: 'อ่านซองยา', icon: 'sparkles-outline' } : null;
+    return this.text().trim().length >= MIN_TEXT ? { primary: 'ให้น้องยาตรงจัดตารางยา', short: 'จัดตารางยา', icon: 'sparkles-outline' } : null;
   });
 
-  protected readonly showTips = computed(() => this.mode() === 'photo' && !this.previewUrl() && !this.failed());
+  /** ข้อความของน้องยาตรงตอนอ่านไม่สำเร็จ (สถานะอื่นไม่มีกล่องคำพูด — คำแนะนำอยู่ในกรอบถ่ายรูปแล้ว) */
+  protected readonly coachText = computed(() => (this.failed() ? (this.errorMessage() ?? 'อ่านไม่สำเร็จ ลองใหม่อีกครั้งนะคะ') : null));
 
-  protected readonly coach = computed<{ mood: MascotMood; text: string }>(() => {
-    if (this.failed()) return { mood: 'worried', text: this.errorMessage() ?? 'อ่านไม่สำเร็จ ลองใหม่อีกครั้งนะคะ' };
-    if (this.mode() === 'text') return { mood: 'happy', text: 'พิมพ์ข้อความบนซองยาได้เลย น้องจะช่วยจัดตารางให้ค่ะ' };
-    if (!this.previewUrl()) return { mood: 'happy', text: 'วางซองยาให้อยู่ในกรอบนะคะ' };
-    if (this.warnings().length) return { mood: 'worried', text: 'รูปนี้อาจอ่านยากนิดหน่อย ถ่ายใหม่จะแม่นกว่า แต่ส่งให้น้องอ่านเลยก็ได้ค่ะ' };
-    return { mood: 'happy', text: 'รูปพร้อมแล้ว! ให้น้องอ่านได้เลยค่ะ' };
-  });
+  /** น้องยาตรงที่เกาะขอบการ์ด : อ่านอยู่ = thinking · อ่านไม่สำเร็จ = worried · ปกติ = happy */
+  protected readonly perchMood = computed<MascotMood>(() => (this.busy() ? 'thinking' : this.failed() ? 'worried' : 'happy'));
+  protected readonly perchText = computed(() =>
+    this.busy() ? (this.step() === 0 ? 'กำลังเตรียมรูป…' : 'กำลังอ่านซองยาอยู่นะคะ…') : 'น้องช่วยอ่านซองให้ แต่อาจอ่านผิด ตรวจก่อนบันทึกนะคะ');
+  protected readonly perchShort = computed(() => (this.busy() ? 'กำลังอ่านซองอยู่นะคะ…' : 'ตรวจก่อนบันทึกนะคะ'));
 
   constructor() {
     addIcons({ cameraOutline, createOutline, refreshOutline, sparklesOutline });

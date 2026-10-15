@@ -1,0 +1,5 @@
+:host { display: flex; flex-direction: column; max-height: 85dvh; min-height: 0; }
+.head { display: flex; align-items: center; gap: var(--yt-space-3); padding: 0 0 var(--yt-space-3); }
+h2 { flex: 1; min-width: 0; margin: 0; font-size: var(--yt-text-heading); font-weight: 500; }
+.body { min-height: 0; overflow-y: auto; }
+@media (min-width: 1024px) { :host { max-height: 100dvh; height: 100%; } }

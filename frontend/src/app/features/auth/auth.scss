@@ -2,14 +2,16 @@
 
 :host { display: block; }
 
-form { margin-top: var(--yt-space-5); }
-
-.yt-lead { margin-bottom: 0; }
+// มือถือกะทัดรัด (8D D2): ป้ายชื่อ 14px ช่องกรอก 48px ระยะระหว่างช่อง 12px ให้ทุกช่องและปุ่มยืนยันอยู่ในจอแรก
+form { margin-top: 0; }
+.yt-field { margin-bottom: var(--yt-space-2); }
+.yt-label { margin-bottom: var(--yt-space-1); font-size: var(--yt-text-sm); font-weight: 500; line-height: var(--yt-line-height-tight); }
+.yt-alert { margin-bottom: var(--yt-space-3); }
 
 .yt-submit {
   width: 100%;
   height: var(--yt-tap);
-  margin-top: var(--yt-space-3);
+  margin-top: var(--yt-space-1);
   --mat-button-filled-container-color: transparent;
   --mat-button-filled-label-text-color: var(--yt-on-primary);
   --mat-button-filled-state-layer-color: var(--yt-on-primary);
@@ -30,85 +32,59 @@ form { margin-top: var(--yt-space-5); }
 }
 
 .switch {
-  margin: var(--yt-space-5) 0 0;
+  margin: var(--yt-space-2) 0 0;
   text-align: center;
 
   a {
     display: inline-block;
-    padding: var(--yt-space-3) var(--yt-space-2);
+    padding: var(--yt-space-3) var(--yt-space-2);   // พื้นที่แตะ ≥ 48px
     font-weight: 600;
   }
 }
 
-// ข้อความช่วยเรื่องรหัสผ่าน + แถบความแข็งแรง อยู่แถวเดียวกัน (สูงคงที่ ไม่กระโดดตอนเริ่มพิมพ์)
+// ความแข็งแรงของรหัสผ่านอยู่แถวเดียวกับป้ายชื่อ (ขวา) — สูงคงที่ ไม่กระโดดตอนเริ่มพิมพ์ ; ไม่ใช้สีอย่างเดียว (จำนวนแท่ง + ข้อความ)
+.lbl-row { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 var(--yt-space-2); margin-bottom: var(--yt-space-1); .yt-label { flex: none; margin: 0; white-space: nowrap; } }
 .strength {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--yt-space-1) var(--yt-space-3);
-  margin-top: var(--yt-space-2);
-
-  &__text {
-    margin: 0;
-    font-size: var(--yt-text-sm);
-    color: var(--yt-text-muted);
-  }
-
-  &__label { font-weight: 600; }
-
-  &__bars {
-    display: grid;
-    grid-template-columns: repeat(4, 1.1rem);
-    gap: var(--yt-space-1);
-  }
-
-  &__bar {
-    height: 8px;
-    border-radius: var(--yt-radius-pill);
-    background: var(--yt-border);
-    transition: background var(--yt-duration);
-  }
-
+  display: flex; align-items: center; gap: var(--yt-space-2); min-height: 1.5rem;
+  &__label { font-size: var(--yt-text-sm); font-weight: 600; white-space: nowrap; }
+  &--0 &__bars { display: none; }   // ยังไม่พิมพ์ = มีแค่คำใบ้ "8 ตัวอักษรขึ้นไป" (ข้อความเต็มของ placeholder)
+  &__bars { display: grid; grid-template-columns: repeat(4, 1.1rem); gap: var(--yt-space-1); }
+  &__bar { height: 8px; border-radius: var(--yt-radius-pill); background: var(--yt-border); transition: background var(--yt-duration); }
   &--1 &__bar:nth-child(-n + 1) { background: var(--yt-danger); }
   &--2 &__bar:nth-child(-n + 2) { background: var(--yt-warning); }
   &--3 &__bar:nth-child(-n + 3) { background: var(--yt-primary); }
   &--4 &__bar:nth-child(-n + 4) { background: var(--yt-success); }
-
   &--1 &__label { color: var(--yt-danger); }
   &--2 &__label { color: var(--yt-warning); }
   &--3 &__label { color: var(--yt-primary-dark); }
   &--4 &__label { color: var(--yt-success); }
 }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-// รหัสผ่าน + ยืนยันรหัสผ่าน + ข้อความช่วย: จัดตามพื้นที่ของกล่อง (container query)
-// แคบ = เรียงลงมาเหมือนเดิม · กว้างพอ = สองช่องคู่กัน แถวข้อความช่วยอยู่ใต้ (ปุ่ม "แสดงรหัส" อยู่ในช่องรหัสผ่านเสมอ)
+// รหัสผ่าน + ยืนยันรหัสผ่าน: จัดตามพื้นที่ของกล่อง (container query)
+// แคบ = เรียงลงมา · กว้างพอ = สองช่องคู่กัน (ปุ่ม "แสดงรหัส" อยู่ในช่องรหัสผ่านเสมอ)
 .pair-wrap { container-type: inline-size; }
 .pair {
   display: grid;
-  grid-template-areas: 'pw' 'hint' 'confirm';
+  grid-template-areas: 'pw' 'confirm';
+  grid-template-columns: minmax(0, 1fr);   // ไม่ใส่ = คอลัมน์กว้างตามเนื้อหา ทำให้ช่องรหัสผ่านล้นการ์ดที่ ก+
 }
-.pair__pw { grid-area: pw; position: relative; margin-bottom: 0; }
-.pair__hint { grid-area: hint; margin-bottom: var(--yt-space-4); }
+.pair__pw { grid-area: pw; }
 .pair__confirm { grid-area: confirm; }
 
 @container (min-width: 25rem) {
   .pair {
-    grid-template-areas: 'pw confirm' 'hint hint';
+    grid-template-areas: 'pw confirm';
     grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);   // ช่องรหัสผ่านกว้างกว่า เพราะมีปุ่ม "แสดงรหัส" อยู่ข้างใน
     column-gap: var(--yt-space-3);
   }
-  .pair__hint { margin-bottom: 0; }
-  .pair__pw { margin-bottom: var(--yt-space-3); }
 }
 
 // จอกว้าง: กระชับระยะห่างให้หน้า Register พอดีจอสูง ≥ 800px (มือถือไม่แตะ)
 @media (min-width: 1024px) {
-  form { margin-top: var(--yt-space-4); }
-  .yt-field { margin-bottom: var(--yt-space-3); }
+  .yt-label { font-size: var(--yt-text-body); font-weight: 600; }
   .yt-submit { margin-top: var(--yt-space-2); }
-  .yt-label { margin-bottom: var(--yt-space-1); }
-  .switch { margin-top: var(--yt-space-2); a { padding: var(--yt-space-2); } }
+  .switch a { padding: var(--yt-space-2); }
 }
 
 .nw { white-space: nowrap; }

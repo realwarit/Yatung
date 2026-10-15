@@ -2,7 +2,6 @@
 // server ส่งเวลาเป็นสตริง 'YYYY-MM-DD HH:mm:ss' (เวลาไทยอยู่แล้ว)
 const OFFSET_MS = 7 * 60 * 60 * 1000;
 
-const DAYS = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
 const MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
   'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 
@@ -26,12 +25,6 @@ export function clockTime(ms: number): string {
   return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
 }
 
-/** 'วันอาทิตย์ที่ 4 ตุลาคม 2569' */
-export function thaiDate(ms: number): string {
-  const d = new Date(ms + OFFSET_MS);
-  return `วัน${DAYS[d.getUTCDay()]}ที่ ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear() + 543}`;
-}
-
 /** 'YYYY-MM-DD' → '4 ตุลาคม 2569' */
 export function thaiShortDate(ymd: string): string {
   const [y, m, d] = ymd.split('-').map(Number);
@@ -53,4 +46,23 @@ export function duration(totalMin: number): string {
   const r = m % 60;
   if (h === 0) return `${r} นาที`;
   return r === 0 ? `${h} ชม.` : `${h} ชม. ${r} นาที`;
+}
+
+const DAYS_SHORT = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+const MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+
+/** 'อ. 13 ต.ค.' (วันที่แบบย่อ เวลาไทย) */
+export function thaiDateShort(ms: number): string {
+  const d = new Date(ms + OFFSET_MS);
+  return `${DAYS_SHORT[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS_SHORT[d.getUTCMonth()]}`;
+}
+
+/** อีกกี่นาทีถึงเวลาเป้าหมาย — ปัดขึ้นเสมอ (ทั้งแอปใช้แบบเดียว) : เหลือ 5:00 → 5 · เหลือ 0:30 → 1 · ถึง/เลยเวลาแล้ว → 0 */
+export function remainMinutes(targetMs: number, nowMs: number): number {
+  return Math.max(0, Math.ceil((targetMs - nowMs) / 60000));
+}
+
+/** เลยเวลามากี่นาที (ปัดลง) ; ยังไม่ถึงเวลา → ติดลบ */
+export function lateMinutes(targetMs: number, nowMs: number): number {
+  return Math.floor((nowMs - targetMs) / 60000);
 }

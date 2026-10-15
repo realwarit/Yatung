@@ -3,11 +3,21 @@
     <h1 class="yt-page-title">ยาของฉัน</h1>
     <div class="head__actions">
       <a mat-stroked-button class="scan-btn" routerLink="/scan"><app-icon name="camera" /> สแกนซองยา</a>
-      <a mat-flat-button routerLink="/medications/new"><app-icon name="plus" /> เพิ่มยา</a>
+      <a mat-flat-button data-first-screen="add" routerLink="/medications/new"><app-icon name="plus" /> เพิ่มยา</a>
     </div>
   </header>
 
-  <app-segmented [options]="tabs()" [(value)]="tab" label="กรองรายการยา" [pill]="true" />
+  @if (!loading() && !error() && !isEmpty()) {
+    <!-- กล่องคำพูดเดียวของหน้า (D3): น้องยาตรง 56px ชิดล่าง (ไม่โตตาม ก) + กล่องคำพูดหางชี้มาที่ตัวน้อง -->
+    <div class="perch" data-first-screen="say">
+      <app-mascot [mood]="say().mood" [size]="56" />
+      <app-speech-bubble class="b" tail="left-low" [typing]="false" [live]="true" [tone]="say().tone" [text]="say().text" />
+    </div>
+  }
+
+  @if (meds().length && !loading()) {
+    <app-segmented [options]="tabs()" [(value)]="tab" label="กรองรายการยา" [pill]="true" />
+  }
 
   @if (error(); as err) {
     <div class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span><app-err-text [text]="err" /></span></div>
@@ -16,37 +26,30 @@
     <div class="grid" aria-busy="true" aria-label="กำลังโหลดรายการยา">
       <div class="yt-skeleton sk"></div><div class="yt-skeleton sk"></div><div class="yt-skeleton sk"></div>
     </div>
-  } @else if (shown().length === 0) {
-    <section class="empty yt-card">
-      <app-mascot mood="happy" [size]="140" />
-      @if (tab() === 'active') {
-        <h2>ยังไม่มียาที่กำลังใช้</h2>
-        <p>สแกนซองยา หรือเพิ่มยาเองได้เลยค่ะ</p>
-      } @else {
-        <h2>ยังไม่มียาที่หยุดแล้ว</h2>
-      }
-    </section>
-  } @else {
+  } @else if (isEmpty()) {
+    <!-- หน้าว่าง (ยังไม่มียา / มีแต่ยาที่หยุดแล้ว): จัดกลางพื้นที่ระหว่างหัวหน้ากับแถบเมนู -->
+    <app-empty-state data-first-screen="say" [text]="say().text">
+      <a mat-flat-button routerLink="/scan" fitGroup="med-empty" fitLabel="สแกนซองยา"><app-icon class="fit-icon" name="camera" /> สแกนซองยา</a>
+      <a mat-stroked-button routerLink="/medications/new" fitGroup="med-empty" fitLabel="พิมพ์เอง"><app-icon class="fit-icon" name="edit" /> พิมพ์เอง</a>
+    </app-empty-state>
+  } @else if (shown().length) {
     <ul class="grid yt-enter">
       @for (m of shown(); track m.id) {
-        <li class="med" [class.low]="isLow(m)" [class.stopped]="!m.is_active">
-          <div class="med__head">
-            <h2>{{ m.name }}@if (m.strength) { <span class="strength"> {{ m.strength }}</span> }</h2>
-            @if (m.is_active) {
-              <button type="button" class="more" [matMenuTriggerFor]="menu" [matMenuTriggerData]="{ m: m }"
-                      [attr.aria-label]="'ตัวเลือกของ ' + m.name">
-                <app-icon name="dots" />
-              </button>
-            }
-          </div>
+        <li class="med" [class.low]="isLow(m)" [class.stopped]="!m.is_active" (click)="cardTap($event, m)">
+          <!-- ส่วนหัวเป็นปุ่มจริง (คีย์บอร์ด/โปรแกรมอ่านจอเข้าได้) ; แตะที่ว่างของการ์ดก็เปิดรายละเอียดเหมือนกัน -->
+          <button type="button" class="med__head" [attr.aria-label]="'ดูรายละเอียด ' + (m.name | medName)" (click)="open(m)">
+            <h2>{{ m.name | medName }}@if (m.strength) { {{ ' ' }}<span class="strength">{{ m.strength | nbNum }}</span> }</h2>
+            @if (isLow(m)) { <span class="low-tag">{{ m.remaining_qty === 0 ? 'ยาหมด' : 'ใกล้หมด' }}</span> }
+            @else { <app-icon class="go" name="chevron-right" /> }
+          </button>
           <p class="how">
-            ครั้งละ {{ m.dose_per_time | doseQty: m.unit }}
+            ครั้งละ {{ m.dose_per_time | doseQty: m.unit | nbNum }}
             @if (m.meal_relation | mealLabel; as meal) { · {{ meal }} }
           </p>
 
           <ul class="chips" aria-label="มื้อที่กิน">
-            @if (m.as_needed) { <li>เมื่อมีอาการ</li> }
-            @for (s of m.slots; track s) { <li>{{ s | slotLabel }}</li> }
+            @if (m.as_needed) { <li class="prn">เมื่อมีอาการ</li> }
+            @for (s of m.slots; track s) { <li [attr.data-slot]="s">{{ s | slotLabel }}</li> }
           </ul>
 
           @if (m.indication) { <p class="ind">{{ m.indication }}</p> }
@@ -59,24 +62,23 @@
               <span class="supply__txt">
                 @if (m.remaining_qty === 0) { ยาหมดแล้ว }
                 @else {
-                  เหลือ {{ m.remaining_qty }} {{ m.unit | unitLabel }}
-                  @if (m.days_left !== null) { · พอใช้ {{ m.days_left }} วัน }
+                  เหลือ {{ m.remaining_qty }}&nbsp;{{ m.unit | unitLabel }}
+                  @if (m.days_left !== null) { · พอใช้ {{ m.days_left }}&nbsp;วัน }
                 }
               </span>
-              @if (isLow(m)) { <span class="low-tag">ใกล้หมด</span> }
             </p>
           }
 
           @if (m.is_active) {
-            <div class="actions">
-              <button mat-flat-button type="button" [class.quiet]="!isLow(m)" (click)="refill(m)">
-                <app-icon name="plus" /> เติมยา
+            <div class="actions yt-fitrow">
+              <button mat-flat-button type="button" [class.quiet]="!isLow(m)" (click)="refill(m)" fitGroup="med-act" fitLabel="เติมยา">
+                <app-icon class="fit-icon" name="plus" /> เติมยา
               </button>
-              <a mat-stroked-button [routerLink]="['/medications', m.id, 'edit']"><app-icon name="edit" /> แก้ไข</a>
+              <a mat-stroked-button [routerLink]="['/medications', m.id, 'edit']" fitGroup="med-act" fitLabel="แก้ไข"><app-icon class="fit-icon" name="edit" /> แก้ไข</a>
             </div>
           } @else {
             <div class="actions">
-              <button mat-flat-button type="button" (click)="resume(m)"><app-icon name="undo" /> กลับมาใช้อีกครั้ง</button>
+              <button mat-flat-button type="button" (click)="resume(m)"><app-icon name="undo" /> กลับมาใช้</button>
             </div>
           }
         </li>
@@ -84,11 +86,5 @@
     </ul>
   }
 
-  <mat-menu #menu="matMenu" xPosition="before">
-    <ng-template matMenuContent let-m="m">
-      <button mat-menu-item type="button" (click)="stop(m)"><app-icon name="ban" /> หยุดใช้ยา</button>
-    </ng-template>
-  </mat-menu>
-
-  <p class="yt-disclaimer">ไม่ใช่คำแนะนำทางการแพทย์ · ปรึกษาแพทย์หรือเภสัชกรเมื่อมีข้อสงสัย</p>
+  <p class="yt-disclaimer"><span class="yt-nowrap">ไม่ใช่คำแนะนำทางการแพทย์</span> · ปรึกษาแพทย์หรือเภสัชกรเมื่อมีข้อสงสัย</p>
 </div>

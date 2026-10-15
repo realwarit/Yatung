@@ -1,4 +1,7 @@
+import { FitLabelDirective } from '../../shared/fit-label.directive';
+import { MedNamePipe } from '../../core/i18n/labels.pipe';
 import { HttpErrorResponse } from '@angular/common/http';
+import { nowrapUnits } from '../../core/nowrap';
 import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { MatButton } from '@angular/material/button';
@@ -14,11 +17,13 @@ import { SettingsApi } from '../../core/api/settings.api';
 import { SLOT_LABEL, thaiJoin } from '../../core/i18n/labels';
 import { HasUnsavedChanges } from '../../core/unsaved-changes.guard';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
-import { FlowStepsComponent } from '../../shared/components/flow-steps/flow-steps.component';
 import { MascotComponent, MascotMood } from '../../shared/components/mascot/mascot.component';
 import { SpeechBubbleComponent } from '../../shared/components/speech-bubble/speech-bubble.component';
+import { StepDotsComponent } from '../../shared/components/step-dots/step-dots.component';
+import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
 import { IconComponent } from '../../shared/icon.component';
 import { ImageSheet, openImageZoom } from './image-viewer';
+import { ReviewBannerComponent } from './review-banner.component';
 import { ReviewBarComponent } from './review-bar.component';
 import { ReviewCardComponent } from './review-card.component';
 import {
@@ -28,7 +33,6 @@ import {
 type View = 'loading' | 'error' | 'draft' | 'done' | 'confirmed' | 'discarded';
 
 const DEFAULT_TIMES: SlotTimes = { morning: '08:00', noon: '12:00', evening: '18:00', bedtime: '21:00' };
-const STEPS = ['ถ่ายรูป', 'ตรวจข้อมูล', 'บันทึก'];
 
 /**
  * หน้าตรวจข้อมูลยาหลังสแกน (/review/:id) — AI เสนอ คนตรวจ แล้วค่อยบันทึก
@@ -38,7 +42,7 @@ const STEPS = ['ถ่ายรูป', 'ตรวจข้อมูล', 'บ�
 @Component({
   selector: 'app-review-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatButton, IconComponent, MascotComponent, SpeechBubbleComponent, FlowStepsComponent, ReviewCardComponent, ReviewBarComponent],
+  imports: [RouterLink, MatButton, StepDotsComponent, IconComponent, MascotComponent, SpeechBubbleComponent, PageHeaderComponent, ReviewCardComponent, ReviewBarComponent, ReviewBannerComponent, FitLabelDirective, MedNamePipe],
   templateUrl: './review.page.html',
   styleUrl: './review.page.scss',
 })
@@ -53,7 +57,6 @@ export class ReviewPage implements HasUnsavedChanges, OnDestroy {
   /** :id จาก route (withComponentInputBinding) */
   readonly id = input.required<string>();
 
-  protected readonly steps = STEPS;
   protected readonly view = signal<View>('loading');
   protected readonly loadError = signal('');
   protected readonly rx = signal<PrescriptionResponse | null>(null);
@@ -96,16 +99,6 @@ export class ReviewPage implements HasUnsavedChanges, OnDestroy {
     if (this.notLabel() || !this.rx()?.result.medications.length) return 'worried';
     return this.initialTodo() > 0 ? 'thinking' : 'happy';
   });
-  protected readonly bubble = computed(() => {
-    const r = this.rx();
-    if (!r) return '';
-    const n = r.result.medications.length;
-    if (this.notLabel()) return 'รูปนี้อาจไม่ใช่ซองยา ช่วยดูอีกทีนะคะ';
-    if (!n) return 'น้องอ่านรายการยาไม่เจอเลยค่ะ ลองสแกนใหม่ หรือเพิ่มยาเองก็ได้นะคะ';
-    return this.initialTodo() > 0
-      ? `น้องอ่านได้ ${n} รายการ มี ${this.initialTodo()} จุดที่อยากให้ช่วยตรวจค่ะ`
-      : 'น้องอ่านได้ครบ ลองตรวจอีกนิดก่อนบันทึกนะคะ';
-  });
   protected readonly alerts = computed(() => {
     const r = this.rx()?.result;
     return r ? [...r.unreadable_parts, ...(r.overall_note ? [r.overall_note] : [])] : [];
@@ -124,6 +117,7 @@ export class ReviewPage implements HasUnsavedChanges, OnDestroy {
       })),
     ];
   });
+  protected readonly doneText = computed(() => nowrapUnits(`บันทึกแล้ว ${this.doneCount()} รายการค่ะ`));
   protected readonly doneCount = computed(() => (this.result()?.created.length ?? 0) + (this.result()?.refilled.length ?? 0));
   protected readonly stepNow = computed(() => (this.view() === 'done' || this.view() === 'confirmed' ? 2 : 1));
   protected readonly textSource = computed(() => (this.rx()?.input_type === 'text' ? this.rx()!.ocr_text : ''));

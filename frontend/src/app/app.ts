@@ -3,12 +3,13 @@ import { RouterOutlet } from '@angular/router';
 import { ConnectionService } from './core/network/connection.service';
 import { UpdateService } from './core/pwa/update.service';
 import { PushTakeService } from './core/push/push-take.service';
-import { ConnectionBannerComponent } from './shared/components/connection-banner/connection-banner.component';
+import { BannerHostComponent } from './shared/ui/banner/banner-host.component';
+import { KeyboardService } from './core/banner/keyboard.service';
 import { FontScaleService } from './shared/font-scale.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ConnectionBannerComponent],
+  imports: [RouterOutlet, BannerHostComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -22,7 +23,9 @@ export class App {
     inject(PushTakeService).watch();
     // ngrok ฟรีแทรกหน้าเตือน HTML → แสดงแถบ "การเชื่อมต่อหมดอายุ" (ดู core/network)
     inject(ConnectionService).watch();
-    // เวอร์ชันใหม่พร้อม → snackbar "แตะเพื่ออัปเดต" (ไม่ reload เอง)
+    // เวอร์ชันใหม่พร้อม → yt-banner "แตะเพื่ออัปเดต" (ไม่ reload เอง)
     inject(UpdateService).watch();
+    // ช่องกรอกโฟกัส = คีย์บอร์ดเปิด → class kb-open ซ่อนแถบเมนูล่าง
+    inject(KeyboardService).watch();
   }
 }

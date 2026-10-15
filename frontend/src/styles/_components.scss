@@ -72,6 +72,9 @@
   &:hover { background: var(--yt-primary-soft); }
 }
 
+// ปุ่มไอคอนล้วน (แสดง/ซ่อนรหัสผ่าน) อยู่ในช่องกรอกเป็นสี่เหลี่ยมคงที่ ไม่โตตามขนาด ก (ชื่อปุ่มบอกด้วย aria-label)
+.yt-control__action--icon { display: grid; place-items: center; height: 48px; min-height: 0; aspect-ratio: 1; padding: 0; --icon-optical-offset: 0; font-size: 1.25rem; }
+
 .yt-hint {
   margin: var(--yt-space-2) 0 0;
   font-size: var(--yt-text-sm);
@@ -164,14 +167,13 @@
 }
 
 // ข้อความข้างปุ่มที่ใช้เน็ตไม่ได้ตอนออฟไลน์ (ต้องมองเห็น ไม่ใช่แค่ปุ่มจาง)
-.yt-offline-hint { margin: var(--yt-space-2) 0 0; color: var(--yt-on-warning-soft); font-weight: 600; font-size: 1rem; line-height: var(--yt-line-height-tight); }
 
 // ปุ่ม Material ที่มีไอคอน + ข้อความ: จัดกึ่งกลางแนวตั้งให้ตรงกัน (ไอคอนไม่ลอยเหนือตัวอักษรไทย)
 .mdc-button__label { display: inline-flex; align-items: center; justify-content: center; gap: 0.5em; line-height: 1; }
 .mat-mdc-button-base { --mat-button-filled-icon-spacing: 0; --mat-button-outlined-icon-spacing: 0; --mat-button-text-icon-spacing: 0; }
 
 // รายการในเมนู ⋮ และตัวเลือกของ select (overlay นอก component) สูง ≥ 48px
-.mat-mdc-menu-item, .mat-mdc-option { min-height: max(48px, 2.7rem); }
+.mat-mdc-menu-item, .mat-mdc-option { min-height: 3rem; }
 .mat-mdc-menu-item .mdc-list-item__primary-text { display: inline-flex; align-items: center; gap: var(--yt-space-2); }
 
 // ---------- ไอคอนข้างข้อความ (ทุกปุ่ม/chip/สถานะ/แถบแจ้งเตือน) ----------
@@ -183,19 +185,102 @@
   gap: 0.5em;
   line-height: 1;
 }
-// chip / ป้ายสถานะ / ข้อความที่มีไอคอนนำ
+// chip / ป้ายสถานะ (8D): สูง 24px (1.5rem) 13px/500 ; tone ด้วย modifier --warn | --ok | --info | --late (ใช้ chip เล็กในแถว ไม่ใช่กล่องเตือนใหญ่)
 .yt-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.5em;
-  padding: 0.15em 0.8em;
+  gap: 0.35em;
+  min-height: 1.5rem;
+  padding: 0 0.625rem;
   border-radius: var(--yt-radius-pill);
   background: var(--yt-primary-soft);
   color: var(--yt-primary-deep);
-  font-size: var(--yt-text-sm);
-  font-weight: 600;
-  line-height: 1.6;
+  font-size: var(--yt-text-xs);
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+  app-icon { font-size: 1em; }
+  &--warn { background: var(--yt-warning-soft); color: var(--yt-on-warning-soft); }
+  &--late { background: var(--yt-danger-soft); color: var(--yt-on-danger-soft); }
+  &--ok { background: var(--yt-success-soft); color: var(--yt-on-success-soft); }
+  &--info { background: var(--yt-info-soft); color: var(--yt-on-info-soft); }
 }
+
+// ปุ่มกะทัดรัดในแถว (8D): สูงที่มองเห็น 36px (--yt-compact) แต่พื้นที่แตะ ≥ 48px ด้วย ::before ; หลัก = เติมสี, ค่าเริ่มต้น = เส้นขอบ
+.yt-compact {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  min-height: var(--yt-compact);
+  padding: 0 0.875rem;
+  border: 1.5px solid var(--yt-primary);
+  border-radius: var(--yt-radius-pill);
+  background: transparent;
+  color: var(--yt-primary-dark);
+  font: 500 var(--yt-text-sm) / 1 var(--yt-font-display);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  --icon-optical-offset: 0.06em;
+  &::before { content: ''; position: absolute; inset: calc((var(--yt-tap) - var(--yt-compact)) / -2 - 1.5px) calc(-0.375rem - 1.5px); }   // พื้นที่แตะ ≥ 48px (ชดเชยเส้นขอบ 1.5px เพราะ inset วัดจาก padding box)
+  &:hover { background: var(--yt-primary-soft); }
+  &--primary { background: var(--yt-primary); color: var(--yt-on-primary); &:hover { background: var(--yt-primary-dark); } }
+  &--danger { border-color: var(--yt-danger); color: var(--yt-danger); &:hover { background: var(--yt-danger-soft); } }
+  &:disabled, &[aria-disabled='true'] { opacity: 0.55; cursor: default; }
+}
+
+// บรรทัดสรุปของช่องที่พับ (หน้า Review) : ค่าจริงทุกค่า + ปุ่ม "แก้ไข" กางทุกช่องในที่เดิม
+.yt-foldsum {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: var(--yt-space-3); margin: 0 0 var(--yt-space-4); padding: var(--yt-space-3);
+  border-radius: var(--yt-radius-sm); background: var(--yt-primary-softer); color: var(--yt-primary-deep);
+  &__txt { flex: 1; min-width: 0; }
+  &__line { margin: 0; font-weight: 500; line-height: var(--yt-line-height-tight); overflow-wrap: anywhere; }
+  &__extra { margin: var(--yt-space-1) 0 0; font-size: var(--yt-text-sm); line-height: var(--yt-line-height-tight); overflow-wrap: anywhere; }
+  .yt-compact { flex: none; }
+}
+
+// ---------- ปุ่มลิงก์ "กดผิด? ยกเลิก" ใต้ชื่อยาที่กินแล้ว (หน้าวันนี้) ----------
+.yt-undo {
+  position: relative; align-self: flex-start; display: inline-flex; align-items: center; gap: 0.4em;
+  min-height: 1.75rem; margin-top: var(--yt-space-1); padding: 0; border: 0; background: transparent;
+  color: var(--yt-text-muted); font: 400 var(--yt-text-label) / 1.4 var(--yt-font-body); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; cursor: pointer;
+  &::before { content: ''; position: absolute; inset: -0.625rem -0.5rem; }   // พื้นที่แตะ ≥ 48px
+  &[aria-disabled='true'] { opacity: 0.55; }
+}
+
+// ---------- fitLabel (shared/fit-label.directive.ts) : ปุ่มบรรทัดเดียว ป้ายพอดีเสมอ ----------
+// ขั้น 1+ = ป้ายสั้น (.fl-short แทน .fl-full) · ขั้น 2+ = ซ่อนไอคอน (.fit-icon) ; ขั้น 3 ลด font-size ผ่านสไตล์ inline ของตัวปุ่ม
+.fl-short { display: none; }
+.fit-short .fl-full { display: none; }
+.fit-short .fl-short { display: inline; }
+.fit-noicon .fit-icon { display: none; }
+// วลีที่ห้ามตัดกลางบรรทัด (ขึ้นบรรทัดใหม่ทั้งวลี) เช่น "ไม่ใช่คำแนะนำทางการแพทย์"
+.yt-nowrap { white-space: nowrap; }
+
+// ---------- กินครบมื้อนี้ (ดันลงล่างการ์ดเมื่อการ์ดแถวเดียวกันสูงไม่เท่ากัน) ----------
+.yt-all { margin-top: auto; padding: var(--yt-space-3) var(--yt-space-4) var(--yt-space-4); border-top: 1px solid var(--yt-border); }
+.yt-all-btn {
+  display: flex; align-items: center; justify-content: center; gap: var(--yt-space-2); width: 100%; min-height: var(--yt-tap);
+  border: 1.5px solid var(--yt-primary); border-radius: var(--yt-radius-pill); background: transparent;
+  color: var(--yt-primary-dark); font: 500 var(--yt-text-body) / 1 var(--yt-font-display); cursor: pointer; --icon-optical-offset: 0.06em;
+  &:hover { background: var(--yt-primary-soft); }
+  &[aria-disabled='true'] { opacity: 0.55; cursor: default; }
+}
+
+// yt-sheet: แผ่นล่าง (มือถือ) และแผงขวา (จอ ≥ 1024px) — โครงอยู่ที่ app-sheet-frame
+.yt-sheet-bottom.mat-bottom-sheet-container {
+  padding: var(--yt-space-3) var(--yt-space-4) calc(var(--yt-space-4) + env(safe-area-inset-bottom, 0px));
+  border-radius: 1.25rem 1.25rem 0 0;
+  background: var(--yt-surface);
+  box-shadow: var(--yt-shadow-lg);
+}
+.yt-sheet-bottom.mat-bottom-sheet-container::before { content: ''; display: block; width: 2.25rem; height: 4px; margin: 0 auto var(--yt-space-3); border-radius: 2px; background: var(--yt-border-strong); }
+.yt-sheet-side .mat-mdc-dialog-surface { padding: var(--yt-space-4); border-radius: var(--yt-radius-card) 0 0 var(--yt-radius-card); box-shadow: var(--yt-shadow-lg); }
+
+// ซ่อนแถบเมนูล่างขณะคีย์บอร์ดเปิด (interactive-widget=resizes-content ทำให้แถบลอยขึ้นมาบนคีย์บอร์ด) — class ตั้งโดย KeyboardService
+html.kb-open nav.bottom { display: none; }
 // ไอคอนล้วน (ไม่มีข้อความ) ไม่ต้องขยับ
 .yt-icon-only { --icon-optical-offset: 0; }
 
@@ -250,3 +335,28 @@
 
 // dialog เต็มจอ (ดูรูปซองยาขยาย): ไม่มีมุมมน
 .yt-fullscreen-dialog .mat-mdc-dialog-container { --mat-dialog-container-shape: 0; }
+
+// ปุ่มคู่ที่ต้องอยู่แถวเดียวกันก่อน : ใช้คู่กับ fitLabel/fitGroup (ไล่ป้ายเต็ม → ไม่มีไอคอน → ลดตัวอักษร)
+// เรียงลงแนวตั้งเฉพาะเมื่อไล่ครบทุกขั้นแล้วยังไม่พอ (directive ตั้ง data-fit-fail)
+.yt-fitrow { display: flex; gap: var(--yt-space-2); }
+.yt-fitrow > * { flex: 1 1 0; min-width: 0; }
+.yt-fitrow:has([data-fit-fail]) { flex-direction: column; }
+.yt-fitrow:has([data-fit-fail]) > * { flex: none; width: 100%; }
+
+// ปุ่มเลือกมื้อในฟอร์มยา (med-fields .tile) : สีประจำมื้อเมื่อเลือก — อยู่ที่นี่เพราะ scss ของ med-fields ชนงบ 4 kB ; .tile.tile = ชนะ specificity ของสไตล์ใน component
+.tiles .tile[data-slot='morning'] { --t-bg: var(--yt-meal-morning-bg); --t-accent: var(--yt-meal-morning-accent); --t-fg: var(--yt-meal-morning-fg); }
+.tiles .tile[data-slot='noon'] { --t-bg: var(--yt-meal-noon-bg); --t-accent: var(--yt-meal-noon-accent); --t-fg: var(--yt-meal-noon-fg); }
+.tiles .tile[data-slot='evening'] { --t-bg: var(--yt-meal-evening-bg); --t-accent: var(--yt-meal-evening-accent); --t-fg: var(--yt-meal-evening-fg); }
+.tiles .tile[data-slot='bedtime'] { --t-bg: var(--yt-meal-bedtime-bg); --t-accent: var(--yt-meal-bedtime-accent); --t-fg: var(--yt-meal-bedtime-fg); }
+.tiles .tile.tile.on[data-slot] { border-color: var(--t-accent); background: var(--t-bg); color: var(--t-fg); }
+.tiles .tile.tile.on[data-slot] .tile__time, .tiles .tile.tile.on[data-slot] .tile__tick { color: var(--t-fg); }
+
+// จอเตี้ยมาก (320×568) + มี banner (class has-banner บน <html> จาก banner-host) : ตัดของตกแต่งให้ปุ่มสำคัญอยู่ในจอแรก
+// (อยู่ที่นี่ไม่ใช่ใน scss ของคอมโพเนนต์ เพราะ auth-shell / review.page ใกล้งบ 4 kB)
+@media (max-width: 1023.98px) and (max-height: 600px) {
+  .has-banner app-auth-shell .peek { display: none; }   // Login/Register: แถวน้องยาตรง + กล่องคำพูด
+  .has-banner .state--done app-mascot { display: none; }   // Review บันทึกสำเร็จ: น้องยาตรงตัวใหญ่
+}
+
+// จอเตี้ยมาก : Review บันทึกสำเร็จบีบระยะให้ปุ่มครบจอแรก
+@media (max-height: 600px) { .yt-page.review .state--done { gap: var(--yt-space-3); margin-top: var(--yt-space-2); } }

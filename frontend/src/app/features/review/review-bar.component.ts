@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { MatButton } from '@angular/material/button';
 import { IconComponent } from '../../shared/icon.component';
+import { FitLabelDirective } from '../../shared/fit-label.directive';
 
 /**
  * แถบล่างของหน้า Review: ปุ่มหลัก "บันทึก N รายการ" + "ทิ้งผลสแกนนี้"
@@ -8,7 +9,7 @@ import { IconComponent } from '../../shared/icon.component';
  */
 @Component({
   selector: 'app-review-bar',
-  imports: [MatButton, IconComponent],
+  imports: [MatButton, IconComponent, FitLabelDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="bar" role="region" aria-label="บันทึกผลสแกน">
@@ -18,20 +19,23 @@ import { IconComponent } from '../../shared/icon.component';
           <span class="why__s" aria-hidden="true">{{ short() }}</span>
           <span class="why__l">{{ blocker() }}</span>
           @if (remaining() > 0 && count() > 0) {
-            <button type="button" class="bar__next" (click)="next.emit()">ไปจุดถัดไป <app-icon name="arrow-right" /></button>
+            <button type="button" class="bar__next" aria-label="ไปจุดถัดไป" (click)="next.emit()">ถัดไป <app-icon name="arrow-right" /></button>
           }
         </p>
       }
       <div class="bar__btns">
-        <button mat-stroked-button type="button" class="bar__drop" (click)="discard.emit()" [disabled]="leaving()">ทิ้งผลสแกนนี้</button>
+        <button mat-stroked-button type="button" class="bar__drop" (click)="discard.emit()" [disabled]="leaving()" fitLabel="ทิ้งผลสแกนนี้" fitShort="ทิ้ง" fitGroup="review-bar">
+          <span class="fl-full" aria-hidden="true">ทิ้งผลสแกนนี้</span><span class="fl-short" aria-hidden="true">ทิ้ง</span>
+        </button>
         <button mat-flat-button type="button" class="bar__save" (click)="save.emit()" [disabled]="!canSave()"
-                [attr.aria-describedby]="blocker() ? 'why' : null">
-          @if (saving()) { กำลังบันทึก… } @else { บันทึก {{ count() }} รายการ<span class="more">เข้าตารางยา</span> }
+                [attr.aria-describedby]="blocker() ? 'why' : null" fitGroup="review-bar" [fitLabel]="saving() ? '' : 'บันทึก ' + count() + ' รายการเข้าตารางยา'" [fitShort]="saving() ? '' : 'บันทึก (' + count() + ')'">
+          @if (saving()) { กำลังบันทึก… } @else { <span class="fl-full" aria-hidden="true">บันทึก&nbsp;{{ count() }}&nbsp;รายการ<span class="more">เข้าตารางยา</span></span><span class="fl-short" aria-hidden="true">บันทึก&nbsp;({{ count() }})</span> }
         </button>
       </div>
     </div>
   `,
   styleUrl: './review-bar.component.scss',
+  host: { 'data-first-screen': 'save-bar' },
 })
 export class ReviewBarComponent {
   /** ข้อความเต็ม (อ่านออกเสียง/จอกว้าง) */
