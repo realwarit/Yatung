@@ -211,3 +211,10 @@
 
 # ผลช่วง E บนเครื่อง (Samsung Galaxy S23 FE, 16 ต.ค.) — ผ่าน
 ไอคอนใหม่บนหน้าโฮม ชื่อ "ยาตรง" · cold start (บังคับหยุดก่อน) เห็น splash พื้นมิ้นต์ + น้องยาตรง จังหวะเดียว ไม่มีจอขาวตามมา · แถบสถานะเขียว · คีย์บอร์ดหน้า login ไม่บัง
+
+# ช่วง G — TTS native ทาง (ก) (16 ต.ค., เริ่ม 13:12)
+- `@capacitor-community/text-to-speech@8.0.2` ผ่าน adapter `TtsEngine` (`core/tts/tts-engine.ts`) · ตัว native `native-tts-engine.ts` โหลดด้วย `import()` เฉพาะเมื่อ `TTS_ENV.native` ไม่เป็น null (build native) → initial เว็บ 517.39 kB / native 517.44 kB (เดิม 517.27 / 517.32 ≈ +0.1 kB) · ปลั๊กอินมี `<queries>` TTS_SERVICE มาเองไม่ต้องแก้ manifest
+- lang `th-TH` ; ตรวจเสียงไทยด้วย `isLanguageSupported` (ถามซ้ำ 6×500 ms เพราะ TextToSpeech ของระบบเริ่มแบบ async) ; **ไม่มีเสียงไทย = `canSpeak=false` ปุ่ม 🔊 ซ่อนเอง (ทาง ข)** ; ระหว่างตรวจ = ซ่อน
+- คิว: ปลั๊กอินไม่มีคิวที่รอจบ → วนทีละท่อนด้วย await + token (กดหยุด/เริ่มใหม่ ท่อนเก่าไม่ลามต่อ) ; `speak()` ของปลั๊กอินไม่ resolve หลัง `stop()` (ล้างคิวภายใน) จึงตัดสินด้วย token ไม่ใช่ promise
+- ตั้งค่า: แถว "เสียงอ่าน" เปิด sheet ได้เมื่อ `canSpeak` ; ไม่งั้นยังเป็นป้าย "ใช้ได้บนเว็บ" · ไม่มีการเลือกเสียง (ใช้เสียงเริ่มต้นของระบบ) ความเร็วช้า/ปกติใช้ได้
+- เว็บไม่เปลี่ยน: `tts.service.spec` เดิมผ่านทั้งหมดโดยไม่แก้ · เพิ่ม `tts-native.spec.ts` 9 เคส · `ng test` 395 (เดิม 386)

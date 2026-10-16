@@ -2,11 +2,14 @@ import { DestroyRef, Injectable, InjectionToken, computed, inject, signal } from
 import { NavigationStart, Router } from '@angular/router';
 import { filter } from 'rxjs';
 import { isNative } from '../native/native';
+import type { TtsEngine } from './tts-engine';
 
 /** ตัวห่อ Web Speech API — ทดสอบด้วยของจำลองได้ ; synth = null เมื่อเบราว์เซอร์ไม่รองรับ */
 export interface TtsEnv {
   synth: SpeechSynthesis | null;
   makeUtterance: (text: string) => SpeechSynthesisUtterance;
+  /** แอป Android: โหลดเครื่องยนต์ native (lazy) แทน Web Speech ; เว็บ = null */
+  native?: (() => Promise<TtsEngine>) | null;
 }
 
 export const TTS_ENV = new InjectionToken<TtsEnv>('TTS_ENV', {
@@ -14,6 +17,7 @@ export const TTS_ENV = new InjectionToken<TtsEnv>('TTS_ENV', {
   factory: (): TtsEnv => ({
     synth: typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined' ? speechSynthesis : null,
     makeUtterance: (text) => new SpeechSynthesisUtterance(text),
+    native: isNative() ? () => import('./native-tts-engine').then((m) => new m.NativeTtsEngine()) : null,
   }),
 });
 
@@ -49,7 +53,11 @@ export class TtsService {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly supported = signal(!!this.env.synth);
+  private readonly viaNative = !!this.env.native;
+  readonly supported = signal(!!this.env.synth || this.viaNative);
+  /** แอป Android: null = กำลังตรวจ · true = มีเสียงไทย · false = ไม่มี (ซ่อนปุ่ม) */
+  private readonly nativeThai = signal<boolean | null>(null);
+  private nativeEngine: TtsEngine | null = null;
   private readonly voices = signal<SpeechSynthesisVoice[]>([]);
   readonly thaiVoices = computed(() => this.voices().filter((v) => isThaiLang(v.lang)));
   /** มีเสียงไทยให้ใช้ = แสดงปุ่ม 🔊 ได้ ; ไม่มี = ซ่อนทุกปุ่ม */
@@ -58,7 +66,7 @@ export class TtsService {
    * แสดงปุ่ม 🔊 ได้ไหม: เบราว์เซอร์รองรับ และ (มีเสียงไทย หรือ รายการเสียงยังว่าง)
    * iOS ส่งรายการเสียงช้า/บางครั้งว่างตลอด → ห้ามซ่อนปุ่มหรือรอก่อนพูด ; รายการมีแล้วแต่ไม่มีเสียงไทยเลย = ซ่อน (พูดไทยไม่ได้จริง)
    */
-  readonly canSpeak = computed(() => !isNative() && this.supported() && (this.voices().length === 0 || this.thaiVoices().length > 0));
+  readonly canSpeak = computed(() => this.viaNative ? this.nativeThai() === true : this.supported() && (this.voices().length === 0 || this.thaiVoices().length > 0));
   private readonly prefs = signal<Prefs>(readPrefs());
   readonly rate = computed(() => this.prefs().rate);
   readonly selectedVoice = computed<SpeechSynthesisVoice | null>(() => {
@@ -74,6 +82,7 @@ export class TtsService {
 
   constructor() {
     const synth = this.env.synth;
+    if (this.viaNative) { this.initNative(); return; }
     if (!synth) return;
     this.loadVoices();
     const onChange = () => this.loadVoices();
@@ -87,11 +96,24 @@ export class TtsService {
     }, VOICE_RETRY_MS);
     this.destroyRef.onDestroy(() => clearInterval(timer));
 
-    // หยุดเมื่อเปลี่ยนหน้า / ซ่อนแอป
+    this.stopOnLeave();
+  }
+
+  /** หยุดเมื่อเปลี่ยนหน้า / ซ่อนแอป */
+  private stopOnLeave(): void {
     this.router.events.pipe(filter((e) => e instanceof NavigationStart)).subscribe(() => this.stop());
     const onVis = () => { if (document.visibilityState === 'hidden') this.stop(); };
     document.addEventListener('visibilitychange', onVis);
     this.destroyRef.onDestroy(() => document.removeEventListener('visibilitychange', onVis));
+  }
+
+  /** แอป Android: โหลดเครื่องยนต์แล้วถามว่ามีเสียงไทยไหม (ไม่มี = canSpeak เป็น false ปุ่ม 🔊 ซ่อนเอง) */
+  private initNative(): void {
+    this.stopOnLeave();
+    void this.env.native!().then(async (engine) => {
+      this.nativeEngine = engine;
+      this.nativeThai.set(await engine.probe());
+    }, () => this.nativeThai.set(false));
   }
 
   private loadVoices(): void {
@@ -104,6 +126,7 @@ export class TtsService {
    * ท่อนทั้งหมดถูกจัดคิวให้ synth ทันที (ไม่รอ onend เพราะ iOS ไม่ยอมให้ speak จาก callback)
    */
   speak(chunks: string[], key: string | null = null): boolean {
+    if (this.viaNative) return this.speakNative(chunks, key);
     const synth = this.env.synth;
     const voice = this.selectedVoice();   // null = รายการเสียงยังว่าง → พูดด้วย lang อย่างเดียว ไม่รอ
     const parts = chunks.map((c) => c.trim()).filter(Boolean);
@@ -128,6 +151,26 @@ export class TtsService {
     return true;
   }
 
+  /** แอป Android: ท่อนต่อท่อนรอ promise ทีละท่อน (ปลั๊กอินไม่มีคิวที่รอจบให้) ; token กันท่อนเก่าหลังกดหยุด/เริ่มใหม่ */
+  private speakNative(chunks: string[], key: string | null): boolean {
+    const engine = this.nativeEngine;
+    const parts = chunks.map((c) => c.trim()).filter(Boolean);
+    if (!engine || this.nativeThai() !== true || !parts.length) return false;
+    const mine = ++this.token;
+    this.speaking.set(true);
+    this.speakingKey.set(key);
+    void (async () => {
+      try {
+        for (const text of parts) {
+          if (mine !== this.token) return;
+          await engine.speak(text, this.rate());
+        }
+      } catch { /* อ่านไม่สำเร็จ — จบการอ่าน */ }
+      if (mine === this.token) this.finish();
+    })();
+    return true;
+  }
+
   /** กดปุ่มเดิมซ้ำ = หยุด ; กดปุ่มอื่น = เปลี่ยนไปอ่านอันใหม่ */
   toggle(key: string, chunks: string[]): void {
     if (this.speaking() && this.speakingKey() === key) this.stop();
@@ -138,6 +181,7 @@ export class TtsService {
     if (!this.speaking() && !this.env.synth?.speaking) return;
     this.token++;
     this.env.synth?.cancel();
+    if (this.viaNative) void this.nativeEngine?.stop();
     this.finish();
   }
 

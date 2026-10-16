@@ -7,6 +7,7 @@ import { SettingsApi } from '../../core/api/settings.api';
 import { SlotTimes } from '../../core/api/models';
 import { AuthService } from '../../core/auth/auth.service';
 import { SLOT_ORDER } from '../../core/i18n/labels';
+import { TtsService } from '../../core/tts/tts.service';
 import { useBackLayer } from '../../core/native/back-layers';
 import { isNative } from '../../core/native/native';
 import { PushService } from '../../core/push/push.service';
@@ -48,6 +49,7 @@ export class SettingsPage {
   private route = inject(ActivatedRoute);
   private install = inject(InstallService);
   protected readonly push = inject(PushService);
+  protected readonly tts = inject(TtsService);
 
   protected readonly times = signal<SlotTimes | null>(null);
   protected readonly lineLinked = signal<boolean | null>(null);
@@ -55,7 +57,7 @@ export class SettingsPage {
   /** GET /api/config (สาธารณะ) → true = แสดงแถวเดโม ; เรียกไม่ได้ = ซ่อน */
   protected readonly demoMode = signal(false);
   protected readonly leaving = signal(false);
-  /** แอป Android : เสียงอ่านใช้ไม่ได้ในแอป (ใช้ได้บนเว็บ) · การแจ้งเตือนบนเครื่องใช้ LINE แทน */
+  /** แอป Android : เสียงอ่านใช้ได้เมื่อเครื่องมีเสียงไทย ไม่งั้นแสดง "ใช้ได้บนเว็บ" · การแจ้งเตือนบนเครื่องใช้ LINE แทน */
   protected readonly native = isNative();
   // ปุ่ม back ของ Android ปิดกล่องยืนยัน "ออกจากระบบ" ก่อนเปลี่ยนหน้า
   private readonly backLayer = useBackLayer(this.leaving, () => this.leaving.set(false), 'page');

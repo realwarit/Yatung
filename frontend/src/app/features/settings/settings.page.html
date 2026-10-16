@@ -34,8 +34,8 @@
   </app-section>
 
   <app-section label="แอป" id="set-c">
-    @if (native) {
-      <!-- แอป Android: เสียงอ่านใช้ไม่ได้ในแอป (ใช้ได้บนเว็บ) → แถวบอกสถานะ ไม่เปิด sheet -->
+    @if (native && !tts.canSpeak()) {
+      <!-- แอป Android ที่ยังไม่มีเสียงไทย/กำลังตรวจ: ไม่เปิด sheet ที่ใช้งานไม่ได้ → แถวบอกสถานะ (มีเสียงไทยแล้วเป็นแถวปกติ) -->
       <div appListRow title="เสียงอ่าน">
         <app-icon lead name="volume" />
         <span trail class="yt-chip">ใช้ได้บนเว็บ</span>
