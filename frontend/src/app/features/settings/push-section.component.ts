@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { MatButton } from '@angular/material/button';
 import { errorText } from '../../core/api/api-error';
 import { LineApi } from '../../core/api/line.api';
@@ -10,6 +10,7 @@ import { SegmentedComponent, SegmentedOption } from '../../shared/components/seg
 import { SpeechBubbleComponent } from '../../shared/components/speech-bubble/speech-bubble.component';
 import { injectSheetClose } from '../../shared/ui/sheet/sheet.service';
 import { IconComponent } from '../../shared/icon.component';
+import { nativeNotifyCopy } from './push-native-copy';
 
 /** ส่วน "แจ้งเตือนบนเครื่องนี้" (Web Push) : 5 สถานะ ไม่รองรับ / ต้องเพิ่มลงหน้าจอโฮมก่อน / ยังไม่เปิด / เปิดแล้ว / ถูกบล็อก */
 @Component({
@@ -23,9 +24,9 @@ import { IconComponent } from '../../shared/icon.component';
         <div class="perch">
           <app-mascot mood="happy" [size]="56" />
           <app-speech-bubble class="b" tail="left-low" [typing]="false" [live]="true" tone="info"
-            text="แอปนี้ส่งเตือนกินยาทาง LINE นะคะ&#10;เชื่อม LINE ไว้ น้องจะเตือนให้ค่ะ" />
+            [text]="nativeCopy().text" />
         </div>
-        <button mat-flat-button type="button" class="full go" (click)="goLine()"><app-icon name="chat" /> ไปหน้าเชื่อม LINE</button>
+        <button mat-flat-button type="button" class="full go" (click)="goLine()"><app-icon name="chat" /> {{ nativeCopy().button }}</button>
       }
       @case ('unsupported') {
         <p class="yt-alert" role="status"><app-icon name="info" /> <span>เครื่องหรือเบราว์เซอร์นี้ยังรับการแจ้งเตือนจากแอปไม่ได้ค่ะ ไม่เป็นไร — ยังใช้แอปดูตารางยา และรับการเตือนทาง LINE ได้ตามปกติ</span></p>
@@ -108,6 +109,7 @@ export class PushSectionComponent implements OnInit {
 
   protected readonly modes: SegmentedOption[] = [{ value: 'line', label: 'LINE อย่างเดียว' }, { value: 'both', label: 'ทั้ง LINE และเครื่อง' }];
   protected readonly lineLinked = signal(false);
+  protected readonly nativeCopy = computed(() => nativeNotifyCopy(this.lineLinked()));
   protected readonly notifyBoth = signal(false);
   protected readonly notifyBusy = signal(false);
   protected readonly notifyError = signal<string | null>(null);
