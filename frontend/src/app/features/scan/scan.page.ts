@@ -12,6 +12,7 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
 
 import { ScanService } from './scan.service';
 import { scanErrorMessage } from './scan-errors';
+import { cameraErrorMessage } from './camera-errors';
 import { compressImage } from './image-compress';
 import { assessImageQuality } from './image-quality';
 import { ScanResponse } from '../../core/api/medicine-parse.model';
@@ -94,10 +95,9 @@ export class ScanPage implements OnDestroy {
       await this.ingest(photo.dataUrl);
     } catch (e: unknown) {
       this.phase.set('idle');
-      const msg = e instanceof Error ? e.message : String(e);
-      // ผู้ใช้กดยกเลิกเอง ไม่ต้องแสดง error
-      if (/cancel/i.test(msg)) return;
-      this.toastMessage.set('เปิดกล้องหรือรูปไม่ได้: ' + msg);
+      // ผู้ใช้กดยกเลิกเอง = null ไม่ต้องแสดง error ; ข้อความไทยตามชนิด (ไม่ต่อข้อความดิบของปลั๊กอิน กันข้อมูลรูปหลุด)
+      const msg = cameraErrorMessage(e);
+      if (msg) this.toastMessage.set(msg);
     }
   }
 
