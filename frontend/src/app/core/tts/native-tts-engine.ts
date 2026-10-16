@@ -14,14 +14,16 @@ const CALL_TIMEOUT_MS = 2500;
 const PROBE_GAP_MS = 500;
 
 export class NativeTtsEngine implements TtsEngine {
-  private plugin: typeof import('@capacitor-community/text-to-speech').TextToSpeech | null = null;
+  /** ห่อไว้ในอ็อบเจ็กต์เสมอ : ปลั๊กอินของ Capacitor เป็น Proxy ที่ตอบทุกชื่อ (รวม `then`) เป็นเมธอด native —
+   *  ถ้าคืนตัวปลั๊กอินตรงๆ จาก async function/await JS จะเรียก `.then()` ของมันแล้วรอตลอดไป (บั๊กที่ทำให้ปุ่ม 🔊 ไม่ขึ้นบน Android) */
+  private plugin: { tts: typeof import('@capacitor-community/text-to-speech').TextToSpeech } | null = null;
   /** รหัสที่ engine ยอมรับจริง (ใช้ตอน speak — ปลั๊กอินปฏิเสธถ้ารหัสที่ส่งไม่ผ่าน isLanguageSupported) */
   private lang = DEFAULT_LANG;
   private diagValue: TtsDiag = { engineLoaded: false, languageCount: null, voiceCount: null, hasThai: false, via: null, error: null, stage: 'new' };
   onDiag?: (d: TtsDiag) => void;
 
   private async load() {
-    if (!this.plugin) this.plugin = (await import('@capacitor-community/text-to-speech')).TextToSpeech;
+    if (!this.plugin) this.plugin = { tts: (await import('@capacitor-community/text-to-speech')).TextToSpeech };
     return this.plugin;
   }
 
@@ -42,9 +44,9 @@ export class NativeTtsEngine implements TtsEngine {
    * ลำดับ: isLanguageSupported (th-TH, th, tha) → getSupportedLanguages → getSupportedVoices (ทนรหัส th/th-TH/th_TH/tha)
    */
   async probe(): Promise<boolean> {
-    let tts;
+    let tts: NonNullable<typeof this.plugin>['tts'];
     try {
-      tts = await this.call('load', () => this.load());
+      tts = (await this.call('load', () => this.load())).tts;
       this.diagValue.engineLoaded = true;
       this.stage('loaded');
     } catch (e) { this.note(e); return false; }  /* โหลดปลั๊กอินไม่ได้ */
@@ -92,11 +94,11 @@ export class NativeTtsEngine implements TtsEngine {
 
   /** อ่าน 1 ท่อน จบเมื่ออ่านเสร็จ ; เรียก stop() ระหว่างอ่าน = promise นี้ไม่จบเอง (ปลั๊กอินล้างคิว) ผู้เรียกต้องใช้ token ตัดสิน */
   async speak(text: string, rate: number): Promise<void> {
-    const tts = await this.load();
+    const { tts } = await this.load();
     await tts.speak({ text, lang: this.lang, rate, pitch: 1, volume: 1, category: 'ambient' });
   }
 
   async stop(): Promise<void> {
-    try { await (await this.load()).stop(); } catch { /* ไม่มีอะไรให้หยุด */ }
+    try { await (await this.load()).tts.stop(); } catch { /* ไม่มีอะไรให้หยุด */ }
   }
 }

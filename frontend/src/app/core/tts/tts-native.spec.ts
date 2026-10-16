@@ -132,3 +132,21 @@ describe('TtsService แอป Android (เครื่องยนต์ native
     expect(log).toEqual([]);
   });
 });
+
+describe('NativeTtsEngine: ไม่คืนปลั๊กอินตรงๆ จาก async (Proxy ของ Capacitor ตอบ then เป็นเมธอด native)', () => {
+  it('load() จบได้แม้ตัวปลั๊กอินเป็น Proxy ที่ตอบทุกชื่อเป็นฟังก์ชันค้าง', async () => {
+    vi.resetModules();
+    const never = () => new Promise<never>(() => {});
+    const proxy = new Proxy({}, { get: () => never });
+    vi.doMock('@capacitor-community/text-to-speech', () => ({ TextToSpeech: proxy }));
+    const { NativeTtsEngine } = await import('./native-tts-engine');
+    const e = new NativeTtsEngine();
+    // ถ้า load() คืน proxy ตรงๆ บรรทัดนี้ค้างจนเกิน timeout ของการเรียก (2.5 วินาที) แล้ว engineLoaded เป็น false
+    const probing = e.probe();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(e.diag().engineLoaded).toBe(true);
+    expect(e.diag().stage).not.toBe('load');
+    void probing;
+    vi.doUnmock('@capacitor-community/text-to-speech');
+  });
+});
