@@ -3,6 +3,7 @@ import { NavigationStart, Router } from '@angular/router';
 import { filter } from 'rxjs';
 import { isNative } from '../native/native';
 import type { TtsEngine } from './tts-engine';
+import type { TtsDiag } from './tts-lang';
 
 /** ตัวห่อ Web Speech API — ทดสอบด้วยของจำลองได้ ; synth = null เมื่อเบราว์เซอร์ไม่รองรับ */
 export interface TtsEnv {
@@ -58,6 +59,10 @@ export class TtsService {
   /** แอป Android: null = กำลังตรวจ · true = มีเสียงไทย · false = ไม่มี (ซ่อนปุ่ม) */
   private readonly nativeThai = signal<boolean | null>(null);
   private nativeEngine: TtsEngine | null = null;
+  /** แอป Android: ข้อมูลวินิจฉัยของ engine (หน้า "ข้อมูลสำหรับผู้พัฒนา") ; null = ยังไม่โหลด engine / โหลดไม่ได้ */
+  readonly nativeDiag = signal<TtsDiag | null>(null);
+  /** แอป Android: โหลด engine ไม่ได้ (true) — แยกจาก "โหลดได้แต่ไม่มีเสียงไทย" */
+  readonly nativeLoadFailed = signal(false);
   private readonly voices = signal<SpeechSynthesisVoice[]>([]);
   readonly thaiVoices = computed(() => this.voices().filter((v) => isThaiLang(v.lang)));
   /** มีเสียงไทยให้ใช้ = แสดงปุ่ม 🔊 ได้ ; ไม่มี = ซ่อนทุกปุ่ม */
@@ -112,8 +117,21 @@ export class TtsService {
     this.stopOnLeave();
     void this.env.native!().then(async (engine) => {
       this.nativeEngine = engine;
-      this.nativeThai.set(await engine.probe());
-    }, () => this.nativeThai.set(false));
+      await this.probeNative();
+    }, () => { this.nativeLoadFailed.set(true); this.nativeThai.set(false); });
+    // ผู้ใช้ไปเปลี่ยน TTS engine / ติดตั้งเสียงไทยในตั้งค่าเครื่องแล้วกลับมา → ตรวจใหม่ (เดิมจำผลแรกจนปิดแอป)
+    const onBack = () => { if (document.visibilityState === 'visible' && this.nativeThai() === false) void this.probeNative(); };
+    document.addEventListener('visibilitychange', onBack);
+    this.destroyRef.onDestroy(() => document.removeEventListener('visibilitychange', onBack));
+  }
+
+  /** ตรวจเสียงไทยของ engine native ใหม่ (ใช้ตอนเริ่ม/กลับเข้าแอป/ปุ่มตรวจอีกครั้ง) */
+  async probeNative(): Promise<void> {
+    const engine = this.nativeEngine;
+    if (!engine) return;
+    const ok = await engine.probe();
+    this.nativeDiag.set(engine.diag?.() ?? null);
+    this.nativeThai.set(ok);
   }
 
   private loadVoices(): void {

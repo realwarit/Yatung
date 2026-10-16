@@ -1,39 +1,76 @@
 import type { TtsEngine } from './tts-engine';
+import { TtsDiag, findThaiTag, toLanguageTag } from './tts-lang';
 
 /**
  * เครื่องยนต์อ่านออกเสียงของแอป Android — ห่อ `@capacitor-community/text-to-speech` (Android TextToSpeech ของระบบ)
  * ไฟล์นี้ถูก import() แบบ lazy เฉพาะ build native เท่านั้น (ดู TTS_ENV) ปลั๊กอินจึงไม่อยู่ใน initial bundle
  */
-const LANG = 'th-TH';
+const DEFAULT_LANG = 'th-TH';
+/** ลองถามตรงๆ ทีละรหัส (Java Locale อ่านได้เฉพาะรูปแบบขีดกลาง) */
+const DIRECT_TAGS = ['th-TH', 'th', 'tha'];
 const PROBE_TRIES = 6;
 const PROBE_GAP_MS = 500;
 
 export class NativeTtsEngine implements TtsEngine {
   private plugin: typeof import('@capacitor-community/text-to-speech').TextToSpeech | null = null;
+  /** รหัสที่ engine ยอมรับจริง (ใช้ตอน speak — ปลั๊กอินปฏิเสธถ้ารหัสที่ส่งไม่ผ่าน isLanguageSupported) */
+  private lang = DEFAULT_LANG;
+  private diagValue: TtsDiag = { engineLoaded: false, languageCount: null, voiceCount: null, hasThai: false, via: null };
 
   private async load() {
     if (!this.plugin) this.plugin = (await import('@capacitor-community/text-to-speech')).TextToSpeech;
     return this.plugin;
   }
 
-  /** เครื่องมีเสียงไทยไหม — TextToSpeech ของระบบเริ่มทำงานแบบ async จึงถามซ้ำสั้นๆ ก่อนสรุปว่าไม่มี */
+  diag(): TtsDiag { return { ...this.diagValue }; }
+
+  /**
+   * เครื่องมีเสียงไทยไหม — TextToSpeech ของระบบเริ่มทำงานแบบ async จึงถามซ้ำสั้นๆ ก่อนสรุปว่าไม่มี ;
+   * ลำดับ: isLanguageSupported (th-TH, th, tha) → getSupportedLanguages → getSupportedVoices (ทนรหัส th/th-TH/th_TH/tha)
+   */
   async probe(): Promise<boolean> {
+    let tts;
     try {
-      const tts = await this.load();
-      for (let i = 0; i < PROBE_TRIES; i++) {
+      tts = await this.load();
+      this.diagValue.engineLoaded = true;
+    } catch { return false; }  /* โหลดปลั๊กอินไม่ได้ */
+
+    for (let i = 0; i < PROBE_TRIES; i++) {
+      for (const tag of DIRECT_TAGS) {
         try {
-          if ((await tts.isLanguageSupported({ lang: LANG })).supported) return true;
-        } catch { /* ระบบ TTS ยังไม่พร้อม — ลองใหม่ */ }
-        await new Promise((r) => setTimeout(r, PROBE_GAP_MS));
+          if ((await tts.isLanguageSupported({ lang: tag })).supported) return this.found(tag, 'isLanguageSupported');
+        } catch { /* ระบบ TTS ยังไม่พร้อม — ลองต่อ */ }
       }
-    } catch { /* โหลดปลั๊กอินไม่ได้ */ }
+      try {
+        const { languages } = await tts.getSupportedLanguages();
+        this.diagValue.languageCount = Array.isArray(languages) ? languages.length : null;
+        const tag = findThaiTag(languages);
+        if (tag) return this.found(tag, 'languages');
+      } catch { /* ไม่รองรับ/ยังไม่พร้อม */ }
+      try {
+        const { voices } = await tts.getSupportedVoices();
+        this.diagValue.voiceCount = Array.isArray(voices) ? voices.length : null;
+        const tag = findThaiTag(voices);
+        if (tag) return this.found(tag, 'voices');
+      } catch { /* ไม่รองรับ/ยังไม่พร้อม */ }
+      await new Promise((r) => setTimeout(r, PROBE_GAP_MS));
+    }
+    this.diagValue.hasThai = false;
+    this.diagValue.via = null;
     return false;
+  }
+
+  private found(tag: string, via: NonNullable<TtsDiag['via']>): true {
+    this.lang = toLanguageTag(tag);
+    this.diagValue.hasThai = true;
+    this.diagValue.via = via;
+    return true;
   }
 
   /** อ่าน 1 ท่อน จบเมื่ออ่านเสร็จ ; เรียก stop() ระหว่างอ่าน = promise นี้ไม่จบเอง (ปลั๊กอินล้างคิว) ผู้เรียกต้องใช้ token ตัดสิน */
   async speak(text: string, rate: number): Promise<void> {
     const tts = await this.load();
-    await tts.speak({ text, lang: LANG, rate, pitch: 1, volume: 1, category: 'ambient' });
+    await tts.speak({ text, lang: this.lang, rate, pitch: 1, volume: 1, category: 'ambient' });
   }
 
   async stop(): Promise<void> {
