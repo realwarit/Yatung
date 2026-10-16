@@ -62,10 +62,9 @@ run_suite() {
   # 6) /line/webhook ไม่เปลี่ยน : ลายเซ็นผิด = 401 และไม่มี header CORS
   req -X POST "$base/line/webhook" -H 'Content-Type: application/json' -H 'x-line-signature: invalid' -H 'Origin: https://localhost' -d '{"events":[]}'
   [ "$CODE" = 401 ] && ok "/line/webhook ลายเซ็นผิด → 401" || bad "/line/webhook ได้ $CODE (ต้อง 401)"
-  # หมายเหตุ: Node-RED (editor-api) ตอบ ACAO: * เองอยู่ก่อนแล้ว ไม่ใช่ nginx — ข้อนี้เช็กแค่ว่า nginx ไม่เติม origin ของแอปให้
-  # (งานค้าง: proxy_hide_header ใน location = /line/webhook ดู docs/day9-plan.md)
+  # nginx ซ่อน header CORS ของ Node-RED ใน location นี้ (ลายเซ็น LINE เป็นตัวตรวจสิทธิ์ ไม่ใช่ CORS)
   acao=$(hdr access-control-allow-origin)
-  { [ -z "$acao" ] || [ "$acao" = '*' ]; } && ok "/line/webhook: nginx ไม่เติม ACAO (ได้ '${acao:-ว่าง}')" || bad "/line/webhook มี ACAO แปลก: '$acao'"
+  [ -z "$acao" ] && ok "/line/webhook: ไม่มี ACAO" || bad "/line/webhook มี ACAO: '$acao'"
   rm -f "$H" "$B"
 }
 
