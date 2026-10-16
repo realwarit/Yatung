@@ -27,9 +27,9 @@
 | `scan-lazy-check` | ผ่านทั้งหมด |
 | `scan-offline-check` | ผ่านทั้งหมด (SW แคช 115 ไฟล์) |
 | `review-e2e` | 67/0 |
-| `test-cors-native.sh` | 30/30 (localhost + ngrok) เมื่อ 13:14 — รันซ้ำหลัง build image ใหม่: ดูหัวข้อ "รอ" ด้านล่าง |
+| `test-cors-native.sh` | 30/30 (localhost + ngrok) หลัง build image ใหม่ 15:26 |
 | `git grep` โดเมน ngrok จริง | ไม่พบในไฟล์ที่ track (เหลือเฉพาะตัวอย่าง `example`/`xxx` ในเอกสาร) |
-| บนเครื่อง S23 FE | ช่วง A, B, D, E, G ผ่าน (ดูตารางสรุป) |
+| บนเครื่อง S23 FE | ช่วง A–G ผ่านทั้งหมด (C กล้อง 6-18 ถึง 6-24) |
 
 ## วิธี build apk
 ดู [`docs/day9-android.md`](day9-android.md) — JDK 21 → `npm run cap:sync` ในโฟลเดอร์ `frontend` → ต่อ USB → Run ใน Android Studio (อย่ากด Upgrade ของ AGP)
@@ -38,7 +38,7 @@
 - `frontend/src/environments/environment.native.ts` — สร้างโดย `npm run cap:env` จาก `.env` (มีโดเมน tunnel)
 - keystore / `*.jks` และ `*.apk`
 - `frontend/android/app/build/` และ `frontend/android/local.properties` (ถูก ignore โดย `frontend/android/.gitignore`)
-- `docs/screenshots/day9/` และ `docs/screenshots/testandroid/` (ภาพทดสอบ — ยังเป็น untracked ไม่ได้อยู่ใน .gitignore ต้องให้คาเด็ทตัดสินว่าจะ commit หรือไม่)
+- ภาพทดสอบ `docs/screenshots/day9/` และ `docs/screenshots/testandroid/` — ไม่ commit (ใส่ `.gitignore` แล้ว)
 
 ## ข้อควรรู้ผู้ตรวจ
 - ต้อง `docker compose up -d --build frontend` เพื่อให้ nginx ใหม่ (CORS + webhook ซ่อน ACAO) ขึ้น

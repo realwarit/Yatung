@@ -8,7 +8,7 @@
 
 - Windows + Node 22 ขึ้นไป + Git
 - Android Studio รุ่นล่าสุด (ติดตั้ง SDK platform 36 และ build-tools ตอนที่ Studio ถาม)
-- ไฟล์ `.env` ที่ตั้ง `API_BASE_URL` แล้ว (ดู `.env.example`) — ค่านี้ถูกฝังใน apk ตอน build ดังนั้น **apk ห้ามแนบใน GitHub Release หรือส่งต่อสาธารณะ**
+- ไฟล์ `.env` ที่ตั้ง `API_BASE_URL` แล้ว (ดู `.env.example`; ถ้าไม่ตั้ง สคริปต์จะใช้ `https://<NGROK_DOMAIN>` แทน) — ค่านี้ถูกฝังใน apk ตอน build ดังนั้น **apk ห้ามแนบใน GitHub Release หรือส่งต่อสาธารณะ**
 - มือถือ Android และสาย USB (หรือใช้ทางสำรองข้อ 6)
 
 ## 1. ตั้ง JDK 21 ให้ Gradle (ทำครั้งเดียว)
@@ -64,7 +64,7 @@ splash (พื้นมิ้นต์ + น้องยาตรง) แสด�
 
 ```powershell
 cd frontend
-npx @capacitor/assets generate --android
+npx -y @capacitor/assets@3.0.5 generate --android
 npm run cap:sync
 ```
 
@@ -89,7 +89,7 @@ npm run cap:sync
 | แอปเปิดแล้ว login ไม่ได้ ในคอนโซลเห็น CORS / preflight ล้ม | คำขอ `OPTIONS` ที่เบราว์เซอร์ส่งก่อนคำขอจริงไม่ได้คำตอบที่ถูก | nginx ใน `frontend/nginx.conf` ตอบ preflight ให้เอง (อนุญาตเฉพาะ origin ของแอป, แคช 10 นาที) ตรวจด้วย `bash scripts/test-cors-native.sh` ถ้าเพิ่งแก้ nginx ต้อง build และ up frontend ใหม่ |
 | ทุกหน้าได้ข้อความเกี่ยวกับ "การเชื่อมต่อหมดอายุ" หรือเป็น HTML | tunnel ฟรีแสดงหน้าเตือนก่อนเข้า | แอปส่ง header ข้ามหน้าเตือนให้ทุกคำขอ `/api` แล้ว ถ้ายังเกิด ให้ตรวจว่า `API_BASE_URL` ใน `.env` ตรงกับ tunnel ที่เปิดอยู่ แล้ว `cap:sync` ใหม่ |
 | แก้เว็บแล้วบนมือถือไม่เปลี่ยน | ลืมซิงก์ | `npm run cap:sync` แล้ว Run ใหม่ |
-| ปุ่ม 🔊 ไม่ขึ้น | เครื่องไม่มีเสียงภาษาไทยในระบบอ่านออกเสียง (แอปซ่อนปุ่มเองเมื่อพูดไทยไม่ได้) | ติดตั้ง Speech Services by Google จาก Play Store แล้วตั้งค่า → ระบบ → ภาษาและการป้อนข้อมูล → เอาต์พุตการอ่านออกเสียง → ติดตั้งข้อมูลเสียงภาษาไทย แล้วปิดแอปเปิดใหม่ |
+| ปุ่ม 🔊 ไม่ขึ้น | เครื่องไม่มีเสียงภาษาไทยในระบบอ่านออกเสียง (แอปซ่อนปุ่มเองเมื่อพูดไทยไม่ได้) | ตั้งค่ามือถือ → ค้นหาคำว่า "เสียงพูด" (Text-to-speech) → เครื่องมือที่ต้องการ = Speech Services by Google (ไม่มีให้ติดตั้งจาก Play Store) → ⚙️ → ติดตั้งข้อมูลเสียง → ไทย → บังคับหยุดแอปแล้วเปิดใหม่ · Samsung TTS ไม่มีเสียงไทย |
 
 ## 8. ข้อควรจำ
 

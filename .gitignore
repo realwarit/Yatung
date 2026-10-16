@@ -32,6 +32,9 @@ frontend/src/environments/environment.native.ts
 *.apk
 *.aab
 *.keystore
+# ภาพทดสอบบนเครื่องจริง (วันที่ 9) — ไม่ commit
+docs/screenshots/day9/
+docs/screenshots/testandroid/
 *.jks
 local.properties
 frontend/android/app/release/
