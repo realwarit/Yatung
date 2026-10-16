@@ -34,9 +34,17 @@
   </app-section>
 
   <app-section label="แอป" id="set-c">
-    <button appListRow type="button" title="เสียงอ่าน" [chevron]="true" (click)="openSheet('tts')">
-      <app-icon lead name="volume" />
-    </button>
+    @if (native && !tts.canSpeak()) {
+      <!-- แอป Android ที่ยังไม่มีเสียงไทย/กำลังตรวจ: ไม่เปิด sheet ที่ใช้งานไม่ได้ → แถวบอกสถานะ (มีเสียงไทยแล้วเป็นแถวปกติ) -->
+      <div appListRow title="เสียงอ่าน">
+        <app-icon lead name="volume" />
+        <span trail class="yt-chip">ใช้ได้บนเว็บ</span>
+      </div>
+    } @else {
+      <button appListRow type="button" title="เสียงอ่าน" [chevron]="true" (click)="openSheet('tts')">
+        <app-icon lead name="volume" />
+      </button>
+    }
     <button appListRow type="button" title="การแสดงผล" sub="ขนาดตัวอักษร" [chevron]="true" (click)="openSheet('display')">
       <app-icon lead name="type" />
     </button>

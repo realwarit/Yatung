@@ -29,6 +29,9 @@ function svg(size, scale, { bg = C.bg, radius = 0 } = {}) {
 // 1024px: any = เต็มพื้น, maskable = เล็กลงให้อยู่ใน safe zone (วงกลมรัศมี 40%) — แคปซูลสูง 140u × 5.2 = 728px
 const ANY = 6.4 * 1;
 const MASK = 5.2;
+// Android adaptive icon: วงกลมที่มองเห็นจริง = 72dp กลางของ 108dp (66.7% = 683px) ; ให้ตัวน้องรวมเส้นขอบสูง ≈ 62% ของวงกลมนั้น
+// (146.5u × 2.9 = 425px = 0.62 × 683) กึ่งกลางพอดี (แคปซูลกึ่งกลางที่ y = 104u ตรงกับ translate ใน svg())
+const ADAPTIVE = 2.9;
 const out = (p, buf) => writeFileSync(p, buf);
 mkdirSync('public/icons', { recursive: true });
 mkdirSync('resources', { recursive: true });
@@ -37,7 +40,7 @@ const png = (s, size) => sharp(Buffer.from(s)).resize(size, size).png().toBuffer
 
 const anySvg = svg(1024, ANY), maskSvg = svg(1024, MASK);
 out('resources/icon-only.png', await png(anySvg, 1024));
-out('resources/icon-foreground.png', await png(svg(1024, MASK, { bg: null }), 1024));
+out('resources/icon-foreground.png', await png(svg(1024, ADAPTIVE, { bg: null }), 1024));
 out('resources/icon-background.png', await sharp({ create: { width: 1024, height: 1024, channels: 3, background: C.bg } }).png().toBuffer());
 
 for (const s of [72, 96, 128, 144, 152, 192, 384, 512]) out(`public/icons/icon-${s}x${s}.png`, await png(anySvg, s));

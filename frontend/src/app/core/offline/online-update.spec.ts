@@ -110,3 +110,39 @@ describe('UpdateService', () => {
     expect(svc.reload).toHaveBeenCalled();
   });
 });
+
+describe('OnlineService — probe ในแอป Android', () => {
+  afterEach(() => vi.useRealTimers());
+  function setupNative(probe: () => Promise<boolean>) {
+    TestBed.configureTestingModule({});
+    const svc = TestBed.inject(OnlineService);
+    svc.probeEnabled = true; svc.probe = probe;
+    return svc;
+  }
+  it('คำขอล้มเหลวแล้ว tunnel กลับมา → probe สำเร็จเองภายใน 15 วินาที + backOnline ; probe หยุดหลังกลับมา', async () => {
+    vi.useFakeTimers();
+    let up = false; const probe = vi.fn(async () => up);
+    const svc = setupNative(probe);
+    let back = 0; svc.backOnline.subscribe(() => back++);
+    svc.markFailed();
+    await vi.advanceTimersByTimeAsync(15000);
+    expect(svc.offline()).toBe(true);        // ยังต่อไม่ได้ = ยังออฟไลน์
+    up = true;
+    await vi.advanceTimersByTimeAsync(15000);
+    expect(svc.offline()).toBe(false);
+    expect(back).toBe(1);
+    const calls = probe.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(60000);
+    expect(probe.mock.calls.length).toBe(calls);   // หยุด probe แล้ว
+  });
+  it('เว็บ (probeEnabled=false) ไม่ probe เลย', async () => {
+    vi.useFakeTimers();
+    TestBed.configureTestingModule({});
+    const svc = TestBed.inject(OnlineService);
+    const probe = vi.fn(async () => true); svc.probe = probe;
+    svc.markFailed();
+    await vi.advanceTimersByTimeAsync(60000);
+    expect(probe).not.toHaveBeenCalled();
+    expect(svc.offline()).toBe(true);
+  });
+});

@@ -8,6 +8,11 @@ import { PushEnv, PushService, detectIos, pushState } from './push.service';
 const base: PushEnv = { isIos: false, standalone: false, swEnabled: true, hasPushManager: true, permission: 'default', subscribed: false };
 
 describe('pushState (5 สถานะ)', () => {
+  it('แอป Android → native (ใช้ LINE แทน) ก่อนเงื่อนไขอื่นทุกข้อ', () => {
+    expect(pushState({ ...base, native: true })).toBe('native');
+    expect(pushState({ ...base, native: true, permission: 'granted', subscribed: true })).toBe('native');
+    expect(pushState({ ...base, native: true, isIos: true })).toBe('native');
+  });
   it('ยังไม่เปิด', () => expect(pushState(base)).toBe('off'));
   it('เปิดแล้ว (มี subscription + อนุญาต)', () => expect(pushState({ ...base, permission: 'granted', subscribed: true })).toBe('enabled'));
   it('อนุญาตแล้วแต่ไม่มี subscription → ยังไม่เปิด', () => expect(pushState({ ...base, permission: 'granted' })).toBe('off'));

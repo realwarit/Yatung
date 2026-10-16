@@ -1,19 +1,33 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { MatButton } from '@angular/material/button';
 import { errorText } from '../../core/api/api-error';
 import { LineApi } from '../../core/api/line.api';
 import { PushApi } from '../../core/api/push.api';
 import { PushService } from '../../core/push/push.service';
+import { Router } from '@angular/router';
+import { MascotComponent } from '../../shared/components/mascot/mascot.component';
 import { SegmentedComponent, SegmentedOption } from '../../shared/components/segmented/segmented.component';
+import { SpeechBubbleComponent } from '../../shared/components/speech-bubble/speech-bubble.component';
+import { injectSheetClose } from '../../shared/ui/sheet/sheet.service';
 import { IconComponent } from '../../shared/icon.component';
+import { nativeNotifyCopy } from './push-native-copy';
 
 /** ส่วน "แจ้งเตือนบนเครื่องนี้" (Web Push) : 5 สถานะ ไม่รองรับ / ต้องเพิ่มลงหน้าจอโฮมก่อน / ยังไม่เปิด / เปิดแล้ว / ถูกบล็อก */
 @Component({
   selector: 'app-push-section',
-  imports: [MatButton, SegmentedComponent, IconComponent],
+  imports: [MatButton, SegmentedComponent, IconComponent, MascotComponent, SpeechBubbleComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @switch (push.state()) {
+      @case ('native') {
+        <!-- แอป Android: ไม่ใช้แจ้งเตือนบนเครื่อง การเตือนกินยาและแจ้งญาติมาทาง LINE -->
+        <div class="perch">
+          <app-mascot mood="happy" [size]="56" />
+          <app-speech-bubble class="b" tail="left-low" [typing]="false" [live]="true" tone="info"
+            [text]="nativeCopy().text" />
+        </div>
+        <button mat-flat-button type="button" class="full go" (click)="goLine()"><app-icon name="chat" /> {{ nativeCopy().button }}</button>
+      }
       @case ('unsupported') {
         <p class="yt-alert" role="status"><app-icon name="info" /> <span>เครื่องหรือเบราว์เซอร์นี้ยังรับการแจ้งเตือนจากแอปไม่ได้ค่ะ ไม่เป็นไร — ยังใช้แอปดูตารางยา และรับการเตือนทาง LINE ได้ตามปกติ</span></p>
         <p class="hint">ถ้าอยากได้การแจ้งเตือนบนเครื่อง ลองเปิดแอปนี้ด้วย Chrome (Android) หรือติดตั้งแอปลงหน้าจอโฮม</p>
@@ -68,6 +82,9 @@ import { IconComponent } from '../../shared/icon.component';
     :host { display: block; }
     .hint { margin: 0 0 var(--yt-space-3); color: var(--yt-text-muted); }
     .full { width: 100%; }
+    .perch { display: flex; align-items: flex-end; gap: var(--yt-space-3); margin-bottom: var(--yt-space-4); }
+    .perch app-mascot { flex: none; }
+    .perch .b { flex: 1; min-width: 0; }
     .off { margin-top: var(--yt-space-3); }
     .ok { display: flex; align-items: flex-start; gap: var(--yt-space-2); margin: 0 0 var(--yt-space-3); font-weight: 700; color: var(--yt-success); font-size: 1.15rem; text-wrap: balance; }
     .ok app-icon { margin-top: 0.3em; }
@@ -85,11 +102,14 @@ import { IconComponent } from '../../shared/icon.component';
 })
 export class PushSectionComponent implements OnInit {
   protected push = inject(PushService);
+  private router = inject(Router);
+  private closeSheet = injectSheetClose();
   private pushApi = inject(PushApi);
   private lineApi = inject(LineApi);
 
   protected readonly modes: SegmentedOption[] = [{ value: 'line', label: 'LINE อย่างเดียว' }, { value: 'both', label: 'ทั้ง LINE และเครื่อง' }];
   protected readonly lineLinked = signal(false);
+  protected readonly nativeCopy = computed(() => nativeNotifyCopy(this.lineLinked()));
   protected readonly notifyBoth = signal(false);
   protected readonly notifyBusy = signal(false);
   protected readonly notifyError = signal<string | null>(null);
@@ -98,6 +118,12 @@ export class PushSectionComponent implements OnInit {
     void this.push.refresh();
     this.lineApi.status().subscribe({ next: (s) => this.lineLinked.set(s.linked), error: () => this.lineLinked.set(false) });
     this.pushApi.notify().subscribe({ next: (n) => this.notifyBoth.set(n.notify_both === true), error: () => { /* ซ่อนสวิตช์ได้ ไม่ใช่เรื่องสำคัญ */ } });
+  }
+
+  /** ปิด sheet ก่อนแล้วค่อยเปลี่ยนหน้า (ห้ามเปลี่ยนหน้าทั้งที่ sheet ยังเปิด) */
+  protected goLine(): void {
+    this.closeSheet();
+    void this.router.navigateByUrl('/settings/line');
   }
 
   protected setBoth(on: boolean): void {

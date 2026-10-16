@@ -1,0 +1,39 @@
+// เฉพาะแอป Android (Capacitor) — class `is-native` ถูกใส่ที่ <html> โดย main.ts ก่อน bootstrap ; เว็บ/PWA ไม่มี class นี้จึงไม่ได้รับกฎใดในไฟล์นี้
+//
+// Android 15+ บังคับ edge-to-edge : หน้าเว็บอยู่ใต้แถบสถานะ/แถบนำทาง และตั้งสีแถบผ่านปลั๊กอินไม่ได้ (StatusBar.backgroundColor ใช้ไม่ได้)
+// จึงวาดพื้นของแถบเองด้วยแถบ fixed (ความสูง = safe-area) แล้วให้โครงแอปเริ่มใต้แถบบน (--yt-top-off ใน _tokens.scss)
+//   บน  : พื้นเขียวหลัก (ไอคอนสถานะขาว ตั้งใน core/native/native-init.ts)
+//   ล่าง: พื้นเดียวกับแถบเมนูล่างของแอป (ไอคอนแถบนำทางเข้ม)
+// ค่า safe-area ใช้ env() เท่านั้น (Capacitor ตั้ง viewport-fit=cover แล้วส่งค่าที่ถูกต้องมาให้ ; WebView เก่า < 140 ได้ 0 และ Capacitor เว้นขอบให้เอง)
+html.is-native {
+  --yt-safe-top: env(safe-area-inset-top, 0px);
+  --yt-safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  &::before,
+  &::after {
+    content: '';
+    position: fixed;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+  }
+  &::before {
+    top: 0;
+    height: var(--yt-safe-top);
+    background: var(--yt-primary);
+    z-index: 2500;   // เหนือ banner (2000) : ไอคอนสถานะสีขาวต้องอยู่บนพื้นเขียวเสมอ
+  }
+  &::after {
+    bottom: 0;
+    height: var(--yt-safe-bottom);
+    background: var(--yt-surface);
+    z-index: 900;    // ต่ำกว่า sheet/dialog (1000+) ให้แผ่นล่างคลุมแถบนี้ได้
+  }
+
+  // แผ่นล่าง (yt-sheet): ปุ่มสุดท้ายต้องพ้นแถบนำทางล่างของระบบ
+  // (หมายเหตุ: กฎ `.yt-sheet-bottom.mat-bottom-sheet-container` ใน _components.scss ไม่ตรงกับ DOM ของ Material รุ่นนี้ — panelClass อยู่ที่ overlay pane ไม่ใช่ตัว container
+  //  จึงไม่มีมุมโค้ง/ขีดจับ/safe-area ทั้งบนเว็บและแอป ; แก้บนเว็บจะเปลี่ยนหน้าตาเว็บ รอคาเด็ทสั่ง)
+  .yt-sheet-bottom .mat-bottom-sheet-container {
+    padding-bottom: calc(var(--yt-space-4) + var(--yt-safe-bottom));
+  }
+}

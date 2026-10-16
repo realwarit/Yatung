@@ -1,4 +1,5 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, Injector, inject, signal } from '@angular/core';
+import { isNative } from './core/native/native';
 import { RouterOutlet } from '@angular/router';
 import { ConnectionService } from './core/network/connection.service';
 import { UpdateService } from './core/pwa/update.service';
@@ -27,5 +28,10 @@ export class App {
     inject(UpdateService).watch();
     // ช่องกรอกโฟกัส = คีย์บอร์ดเปิด → class kb-open ซ่อนแถบเมนูล่าง
     inject(KeyboardService).watch();
+    // แอป Android เท่านั้น : สีไอคอนแถบระบบ + ปุ่ม back (lazy — เว็บ/PWA ไม่ดึงโค้ดนี้)
+    if (isNative()) {
+      const injector = inject(Injector);
+      void import('./core/native/native-init').then((m) => m.initNative(injector));
+    }
   }
 }

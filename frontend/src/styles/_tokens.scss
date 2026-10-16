@@ -9,6 +9,10 @@
   --yt-scan-lift: 1.25rem;      // ส่วนที่ปุ่มกล้องยื่นขึ้นเหนือแถบ (20px ที่ ก)
   --yt-bottom-clearance: calc(var(--yt-nav-h) + var(--yt-scan-lift) + env(safe-area-inset-bottom, 0px));
 
+  // ระยะบนของโครงแอป = max(แถบข้อความ, safe-area บน) ; --yt-safe-top เป็น 0 เสมอ ยกเว้นแอป Android (.is-native ใน _native.scss) จึงไม่เปลี่ยนเว็บ
+  --yt-safe-top: 0px;
+  --yt-top-off: max(var(--yt-banner-h, 0px), var(--yt-safe-top));
+
   // ---------- สี ----------
   --yt-primary: #0f766e;
   --yt-primary-dark: #115e59;

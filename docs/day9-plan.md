@@ -1,0 +1,257 @@
+# วันที่ 9 ส่วนที่ 1 — Capacitor + .apk : ข้อเสนอ (รออนุมัติ)
+
+สถานะ: **สำรวจเสร็จ ยังไม่แก้โค้ด/ไม่ติดตั้งอะไร** (15 ต.ค. 2026) · สาขา `feat/day9-capacitor` (แยกจาก main หลัง PR #32 merge) · ไฟล์นี้เป็นไฟล์เดียวที่เพิ่ม
+
+เป้าหมาย/คำตัดสิน 1–13 ตามที่สั่ง (ไม่ทวนซ้ำ) — เอกสารนี้ตอบ "รายการส่วนที่ 2"
+
+---
+
+## 1. ตรวจเครื่องคาเด็ท
+
+| รายการ | พบ | สถานะ |
+|---|---|---|
+| Node / npm | v24.21.0 / 11.19.0 (CLAUDE.md เขียน 22; Capacitor CLI ต้อง ≥ 22) | ✓ ใช้ได้ |
+| Android Studio | **2026.1** ติดตั้งที่ `D:\Program` (`bin\studio.exe`) | ✓ |
+| JDK ของ Studio | JBR ในตัว = **Java 25.0.2** (`D:\Program\jbr`) | ⚠ ดูความเสี่ยง R1 |
+| JDK ใน PATH | **Java 8** (JRE 1.8.0_401), `JAVA_HOME` ไม่ได้ตั้ง | ✗ ใช้ build ไม่ได้ (Capacitor 8 ต้อง Java 21) |
+| Android SDK | `C:\Users\waritsara\AppData\Local\Android\Sdk` · platforms **35, 36** · build-tools **35.0.0, 36.0.0** · platform-tools 37.0.1 · emulator + system-images (31, 35, 37.1) | ✓ ตรง compileSdk 36 |
+| `ANDROID_HOME` / `ANDROID_SDK_ROOT` | ไม่ได้ตั้ง | ✓ ไม่จำเป็นถ้า build จาก Studio (Studio เขียน `local.properties` เอง) |
+| `adb` | มีที่ `...\Sdk\platform-tools\adb.exe` แต่**ไม่อยู่ใน PATH** · `adb devices` = **ไม่มีเครื่องต่ออยู่** | ⚠ ต้องต่อ S23 FE |
+| cmdline-tools | ไม่มี | ✓ ไม่ต้องใช้ (build ผ่าน Studio) |
+| debug keystore | มี `~\.android\debug.keystore` | ✓ debug apk เซ็นได้ทันที |
+
+**สิ่งที่คาเด็ทต้องทำเอง (Claude ไม่ติดตั้งให้):**
+1. **JDK 21 สำหรับ Gradle** — ทางง่ายสุด: เปิดโปรเจกต์ใน Studio → *Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK* → เลือก *Download JDK…* → เวอร์ชัน **21** (Eclipse Temurin หรือ JetBrains) → OK. (ทางเลือก: ติดตั้ง Temurin 21 เองแล้วตั้ง `JAVA_HOME`)
+2. ครั้งแรก Studio จะ sync Gradle และดาวน์โหลด Gradle wrapper + dependency (~ร้อย MB, ต้องมีเน็ต) · ถ้าถามให้ติดตั้ง SDK ที่ขาด/Accept licenses → กดยอมรับ
+3. **S23 FE**: เปิด *ตัวเลือกนักพัฒนา* (ตั้งค่า → เกี่ยวกับโทรศัพท์ → ข้อมูลซอฟต์แวร์ → แตะ "หมายเลขบิลด์" 7 ครั้ง) → เปิด *USB debugging* → ต่อสาย USB → กด "อนุญาต" บนเครื่อง · ถ้า Windows ไม่เห็นเครื่อง ติดตั้ง Samsung USB Driver
+4. (ไม่บังคับ) เพิ่ม `...\Sdk\platform-tools` เข้า PATH เพื่อพิมพ์ `adb` ได้ · ผมจะเรียกด้วย path เต็มเอง
+5. บอกเวอร์ชัน Android/One UI ของเครื่อง (เพราะ Android 15+ บังคับ edge-to-edge)
+
+## 2. เวอร์ชัน Capacitor / plugin
+
+มีใน `package.json` แล้ว: `@capacitor/core ^8.5.2`, `@capacitor/cli ^8.5.2`, `@capacitor/camera ^8.2.5` (ใช้ในหน้า Scan อยู่แล้ว). Capacitor ไม่ผูกกับ Angular — ไม่มีปัญหากับ Angular 21; Node ≥ 22 ✓. ตรวจจาก npm registry วันนี้:
+
+| แพ็กเกจ | ใช้ | เวอร์ชัน | หมายเหตุ |
+|---|---|---|---|
+| `@capacitor/android` | ✓ | 8.5.3 | template: AGP 8.13.0, compileSdk 36, minSdk 24, **Java 21** |
+| `@capacitor/app` | ✓ | 8.1.2 | ปุ่ม back, exitApp |
+| `@capacitor/status-bar` | ✓ | 8.0.4 | สไตล์ตัวอักษรขาว |
+| `@capacitor/splash-screen` | ✓ | 8.0.2 | |
+| `@capacitor/assets` | ✓ (dev) | 3.0.5 | gen ไอคอน/splash จาก `resources/` (ไฟล์ 1024px มีอยู่แล้ว) |
+| `@capacitor-community/text-to-speech` | ถ้าเลือก TTS ทาง (ก) | 8.0.2 | ไม่มี `@capacitor/text-to-speech` ของทางการ |
+| `@capacitor/keyboard` | ✗ | — | `KeyboardService` เดิมใช้ได้ ไม่เพิ่ม |
+| `@capacitor/browser` | ✗ (ดู R6) | — | ใช้ถ้าลิงก์ LINE ไม่เปิด |
+
+ทุกตัว peer `@capacitor/core >=8`. จะปรับ core/cli/camera ให้ minor เดียวกัน (8.5.x) ตอน `npm install` (แตะ `package-lock.json`).
+
+## 3. ข้อ 2 — API base ตอน build (ไม่ commit โดเมน)
+
+- `.env` / `.env.example`: เพิ่ม `API_BASE_URL=https://${NGROK_DOMAIN}` **ต่อท้าย `NGROK_DOMAIN`** (กฎลำดับตัวแปรเดิม) · ใน `.env.example` ใส่ placeholder เท่านั้น
+- `frontend/tools/gen-native-env.mjs` (ใหม่): อ่าน `../.env` เอง (แทนค่า `${…}`), ตรวจต้องเป็น `https://…` ไม่มี `/` ท้าย, เขียน `src/environments/environment.native.ts` = `{ native: true, apiBase: '…' }` — **ไฟล์นี้ใส่ `.gitignore`** · ไม่พิมพ์ค่าโดเมนออก log (บอกแค่ "ตั้งค่าแล้ว") · ไม่มีค่า = หยุดพร้อมข้อความไทยบอกวิธีแก้
+- `src/environments/environment.ts` (commit): `{ native: false, apiBase: '' }` → เว็บ/PWA ไม่เปลี่ยน
+- `angular.json`: configuration ใหม่ `native` = `fileReplacements` (environment.ts → environment.native.ts) + **`serviceWorker: false`** (ไม่สร้าง ngsw ใน bundle native) + outputPath เดิม
+- `app.config.ts`: `provideServiceWorker(... enabled: !isDevMode() && !environment.native)` และเพิ่ม `apiBaseInterceptor` เป็น**ตัวสุดท้าย**ของ chain (ตัวอื่นทั้งหมดเช็ก `req.url.startsWith('/api/')` จึงต้องเห็น URL แบบ relative ก่อน; ตัวสุดท้ายค่อย prefix `apiBase`) · ทำงานเมื่อ `apiBase !== ''` เท่านั้น
+- ข้อ 3: **`ngrok.interceptor` เดิมใส่ `ngrok-skip-browser-warning` ให้ทุก `/api/` อยู่แล้ว** (ทั้งเว็บและ native) จึงไม่ต้องเขียนเพิ่ม — เพิ่มเทสว่า header ยังติดหลัง prefix
+- จุดอื่นที่ยิงเน็ตตรง: `connection.service` (probe `/ngsw.json` — ไม่ทำงานเมื่อ SW ปิด ✓), `scan.page` `fetch(src)` (URL ของรูปในเครื่อง ✓). `html-guard` ใช้ต่อได้ (native ก็เจอหน้าเตือน ngrok ถ้า header หลุด)
+- npm scripts: `cap:env` (gen env) · `build:native` (= `cap:env` + `ng build -c native`) · `cap:sync` (= `build:native` + `cap sync android`) · `cap:open` (`cap open android`)
+- `capacitor.config.ts` (commit, ไม่มีโดเมน): `appId com.yatung.app`, `appName ยาตรง`, `webDir dist/frontend/browser`, `server.androidScheme 'https'` (origin = `https://localhost`), ไม่ตั้ง `server.url`, `CapacitorHttp` ปิด (ให้ CORS ทำงานตามข้อ 4)
+- `.gitignore` เพิ่ม: `frontend/src/environments/environment.native.ts`, `*.keystore`, `*.jks`, `local.properties`, `frontend/android/.idea`, `frontend/android/app/src/main/assets/public` (สำเนา dist ที่ฝังโดเมนอยู่ — template ของ Capacitor ignore อยู่แล้ว ตรวจซ้ำ), `frontend/android/capacitor-cordova-android-plugins` (มี `app/build/` และ `.gradle/` อยู่แล้ว)
+- ข้อสังเกต: โดเมนอยู่ใน apk ที่สร้างเสร็จ (ไม่ใช่ความลับแต่ไม่ควรแชร์ไฟล์ apk ต่อสาธารณะ) · **เปลี่ยนโดเมน ngrok = ต้อง build apk ใหม่** (ngrok ฟรีมีโดเมน static ต่อบัญชี ถ้าใช้ `NGROK_DOMAIN` คงที่ก็ไม่เจอปัญหา)
+
+## 4. ข้อ 4 — CORS ที่ Node-RED
+
+- ไฟล์ที่แตะ: **`node-red/data/settings.js` เท่านั้น** (บรรทัด ~110 มี `httpNodeCors` ถูกคอมเมนต์ไว้) + `node-red/test/cors-config.test.js` ใหม่. **ไม่แตะ `flows.json`** → กฎ "stop nodered ก่อนแก้ flows" ไม่เกี่ยว; แต่ `settings.js` มีผลเมื่อ `restart nodered` → **ถามคาเด็ทก่อนทุกครั้ง** ไม่ทำช่วง 23:50–00:15 ไม่ทำระหว่างคาเด็ทเทสมือถือ
+- ค่า: `httpNodeCors = { origin: ['https://localhost'], methods: 'GET,POST,PUT,PATCH,DELETE,OPTIONS', allowedHeaders: 'Authorization,Content-Type,ngrok-skip-browser-warning', maxAge: 600, credentials: false }` (Node-RED ใช้แพ็กเกจ `cors` ตอบ preflight `OPTIONS *` ให้เองก่อน route/middleware อื่น)
+  - origin อื่น/ไม่มี Origin (เว็บ same-origin, curl, LINE webhook) → ไม่ได้ header `Access-Control-Allow-Origin` = พฤติกรรมเดิม
+  - `ngrok-skip-browser-warning` ทำให้ทุกคำขอเป็น preflight → `maxAge` ช่วยแคช 10 นาที
+- nginx/ngrok ไม่ต้องแก้ (proxy ส่ง `OPTIONS` และ header ผ่านอยู่แล้ว)
+- ตรวจ: unit test ฟังก์ชันสร้าง config + (หลังได้รับอนุญาต restart) curl 5 กรณี: preflight จาก `https://localhost` → 204 + header ครบ · จาก `http://evil.example` → ไม่มี ACAO · GET จริงมี ACAO เฉพาะ origin ที่อนุญาต · ไม่มี Origin → ไม่มี ACAO · `/line/webhook` ไม่กระทบ (401 เมื่อลายเซ็นผิดเหมือนเดิม)
+- ทางสำรองหาก CORS มีปัญหาบนเครื่องจริง: เปิด `CapacitorHttp` (ส่ง HTTP ผ่านฝั่ง native ไม่ติด CORS) — ไม่ใช้เป็นค่าเริ่มต้น เพราะเปลี่ยนพฤติกรรมของ blob/ไฟล์ใหญ่
+
+## 5. ข้อ 8 — TTS : ทาง (ก) / (ข)
+
+ข้อเท็จจริงที่ต้องตรวจก่อน: `speechSynthesis` ใน Android WebView **ไม่ได้ "ไม่มี" แน่นอน** — มักมีอ็อบเจ็กต์อยู่แต่ `getVoices()` ว่าง/พูดไม่ออกในบางเครื่อง. โค้ดเดิมจัดการรายการเสียงว่างโดยพูดด้วย `lang=th-TH` อยู่แล้ว (`canSpeak`). → **ในช่วง A ผมจะเสนอให้ทดสอบ 1 นาทีบนเครื่องจริง** (กดปุ่ม 🔊 จริง) ก่อนตัดสิน
+
+| | (ก) plugin `@capacitor-community/text-to-speech` ผ่าน adapter | (ข) ซ่อนปุ่ม 🔊 ใน native |
+|---|---|---|
+| งาน | แยก `TtsEngine` interface (voices/speak/cancel) ใน `TtsService`: web engine = โค้ดเดิม, native engine = plugin (`speak({text, lang:'th-TH', rate})`, `getSupportedVoices`), import แบบ lazy เฉพาะ native · ปรับ `tts.service.spec` ที่ผูกกับ `SpeechSynthesis` · หน้าตั้งค่า "เสียงที่ใช้" ใช้ type กลาง | ตั้ง `canSpeak=false` เมื่อ native (หรือปล่อยให้ logic เดิมซ่อนเองเมื่อไม่มีเสียงไทย) |
+| เวลา | ประมาณ **0.5–1 วัน** (เทส + ทดสอบเครื่องจริง) | **< 1 ชม.** |
+| ความเสี่ยง | ต้องมีเสียงไทยในเครื่อง (S23 FE ปกติมี Google Speech Services; Samsung TTS ไม่มีไทย) · คิวท่อนต้องรอ promise ต่อท่อน (ต่างจาก web ที่จัดคิวทันที) · bundle: plugin ต้องไม่หลุดเข้า initial | เสียฟีเจอร์สำหรับผู้สูงอายุใน apk (กลุ่มผู้ใช้หลัก) · เกณฑ์ "ความรู้นอกเหนือ" ไม่เสีย (ยังโชว์ได้บนเว็บ) |
+
+**คำแนะนำ:** เริ่มด้วย (ข)-เป็นค่าตั้งต้นที่ปลอดภัยในช่วง A–F (ไม่เสียเวลาแก้ TTS ก่อน apk ตัวแรกรัน) แล้วทำ (ก) เป็น**ช่วง G แยก** time-box 1 วัน หลังคาเด็ทยืนยันว่าช่วง A–F บนเครื่องจริงผ่าน — ถ้าผลทดสอบ A พบว่า `speechSynthesis` พูดไทยได้อยู่แล้ว ข้ามช่วง G ได้เลย (ประหยัดทั้งหมด)
+
+## 6. แบ่งงานเป็นช่วง + จุดที่ต้องทดสอบบนเครื่องจริง
+
+| ช่วง | งาน | ทดสอบเครื่องจริง (คาเด็ท) |
+|---|---|---|
+| **A** ติดตั้ง + build เปล่า | `npm i` plugin ข้อ 2 · `capacitor.config.ts` · `cap add android` · `.gitignore` · สคริปต์ env + config `native` + `apiBaseInterceptor` + ปิด SW · build bundle ตรวจ initial ≤ ~530 kB | คาเด็ท: ตั้ง JDK 21 ใน Studio → Run บน S23 FE → เห็นหน้า login · **ตรวจ TTS 1 นาที** · (ก่อนช่วง B login ยังติด CORS ถือว่าปกติ) |
+| **B** API + CORS | `settings.js` CORS + เทส · (ขออนุญาต restart nodered) | login ได้, วันนี้/ยาของฉัน/สรุป/ตั้งค่า โหลดข้อมูลจริง, กดกินแล้ว, ปิดแอปเปิดใหม่ยัง login อยู่ · เปิดแอปตอน tunnel ล่ม → เห็นแถบออฟไลน์ ไม่ขาว |
+| **C** กล้อง | permission `CAMERA` ใน manifest · ข้อความไทยก่อนขอสิทธิ์ + ตอนถูกปฏิเสธ (ดู R5) · ตรวจ `Camera.getPhoto` บน Android | สแกนซองจริง → Review → บันทึก · ปฏิเสธสิทธิ์แล้วขอใหม่ · เลือกจากคลังภาพ |
+| **D** back / safe-area / status bar | `BackHandlerService` (stack: sheet → ยืนยัน inline → router → ออก) ลงทะเบียนแบบ lazy เฉพาะ native · `SheetService`/`MatDialog`/กล่องยืนยันใน `med-detail-sheet` ฯลฯ · class `is-native` บน `<html>` · safe-area บน/ล่าง · StatusBar ขาวบนพื้นเขียว `#0f766e` · แถว "แจ้งเตือนบนเครื่องนี้" → "ใช้ LINE แทน" (+ sheet อธิบาย, เพิ่มสถานะ `native` ใน `pushState`) | back ทุกกรณีข้อ 9 · **ทั้งโหมดปัดและโหมด 3 ปุ่ม** · ก/ก+/ก++ · หมุนจอ (ถ้ารองรับ) |
+| **E** ไอคอน + splash | `tools/make-splash.mjs` (sharp, ใช้ SVG น้องยาตรงชุดเดียวกับ `make-icons.mjs`) · `npx @capacitor/assets generate --android` · SplashScreen config | ไอคอนบนหน้าจอโฮม (ถูกครอบวงกลม/สี่เหลี่ยมมน), splash ตอนเปิดแอป |
+| **F** เอกสาร + ตรวจเว็บ | `docs/day9-android.md` (ทีละขั้นสำหรับคนไม่เคยใช้ Studio + ภาพหน้าจอจุดสำคัญ ถ้ามี) · รันเทสข้อ 13 ทั้งชุด (ng test, first-screen strict, overflow-check, review-e2e, scan-lazy/offline, dup-styles, ขนาด initial) | อัดคลิป build ใน Studio ตามเอกสาร |
+| **G** (ถ้าอนุมัติ) TTS native | ข้อ 5 ทาง (ก) | ฟังเสียงอ่านหน้าวันนี้ / สรุป / ฟอร์มยา |
+
+หลังแต่ละช่วงจะแจ้งให้ซิงก์ (`npm run cap:sync`) แล้ว Run ใน Studio อีกครั้ง; commit แยกช่วงละ commit, **ไม่ push/PR จนกว่าคาเด็ทสั่ง**
+
+## 7. ความเสี่ยง
+
+- **R1 JDK 25 ของ Studio vs Gradle:** wrapper ใน template ของ Capacitor 8 ใช้ Gradle 8.x ซึ่ง (ตามที่ผมทราบ) ยังไม่รองรับรันบน Java 25 → ใช้ JDK 21 ตามข้อ 1.1 (Capacitor ตั้ง source/target = 21 ด้วย). ยังไม่ได้ยืนยันกับ Gradle ที่จะโหลดจริง จะรู้ตอน sync ครั้งแรก
+- **R2 Edge-to-edge:** targetSdk 36 บังคับ edge-to-edge → `setBackgroundColor` ของ StatusBar ไม่มีผลบน Android 15+; ต้องวาดแถบเขียวเองด้วย padding บน (`env(safe-area-inset-top)` / ตัวแปร CSS ของ Capacitor `SystemBars`) · ต้องยืนยัน `env()` ทำงานใน WebView ของเครื่อง (WebView เก่าไม่รองรับ) — มีทางสำรองเป็นตัวแปร CSS จากปลั๊กอิน
+- **R3 แถบเมนูล่าง + ปุ่มสแกนที่ยื่นขึ้น:** ใช้ `--yt-bottom-clearance` อยู่แล้ว (รวม `env(safe-area-inset-bottom)`) จึงควรรอดทั้งสองโหมด แต่ **ยืนยันได้ด้วยเครื่องจริงเท่านั้น** (โหมด 3 ปุ่มความสูงแถบต่างกัน)
+- **R4 Splash บน Android 12+:** ระบบแสดงได้แค่ "ไอคอนกลางพื้นสี" (ครอบวงกลม) — ภาพ splash เต็มจอแบบ iOS ทำไม่ได้ → ใช้ พื้น `#e8f7f3` + น้องยาตรงตัวเดียว ตามข้อ 11 โดยไม่ใส่ชื่อแอป/ข้อความ
+- **R5 "ข้อความขออนุญาตกล้องเป็นภาษาไทย":** Android ไม่มีช่อง usage-description แบบ iOS — กล่องขอสิทธิ์เป็นของระบบ แสดงตามภาษาเครื่อง. ที่ทำได้: ข้อความไทยของแอปเอง**ก่อน**ขอสิทธิ์ ("ยาตรงขอใช้กล้องถ่ายซองยา") และข้อความไทยเมื่อถูกปฏิเสธถาวร ("เปิดสิทธิ์ที่ ตั้งค่า → แอป → ยาตรง → สิทธิ์") + ชื่อแอป/`strings.xml` เป็นไทย — ขอยืนยันว่าตีความถูกไหม
+- **R6 ลิงก์ LINE (`line.me/R/oaMessage/…`) / ปุ่ม "เปิด LINE":** WebView ปกติส่งลิงก์ https ภายนอกไปเบราว์เซอร์/แอป LINE เอง แต่ต้องทดสอบบนเครื่อง; ถ้าไม่เปิดจะเพิ่ม `@capacitor/browser`
+- **R7 ปุ่ม back กับ route guard:** `Location.back()` ผ่าน `canDeactivate` เดิม (Review/ฟอร์มยา ถามก่อนออก) ✓ แต่ต้องกันกรณีกล่องยืนยันซ้อน sheet (กฎ 8D ห้ามอยู่แล้ว) และ `/login` ที่ถูกแทนด้วย `replaceUrl` หลัง login
+- **R8 bundle:** `@capacitor/core` ถูกดึงเข้า initial ถ้า import แบบสถิต → ใช้ helper `isNative()` อ่าน `window.Capacitor` (ไม่ import) และ `import()` ปลั๊กอิน (app/status-bar/splash) แบบ dynamic เฉพาะ native · วัดก่อน/หลังทุกช่วง
+- **R9 localStorage/JWT ใน WebView:** เก็บใน origin `https://localhost` ของแอป — ถ้าผู้ใช้ล้างข้อมูลแอปต้อง login ใหม่ (ปกติ) · ไม่มีการเปลี่ยนวิธีเก็บ token
+- **R10 ไฟล์ใหญ่ใน repo:** `cap add android` เพิ่มไฟล์ Gradle wrapper (jar ~60 kB) + res ไอคอนหลายขนาด รวม ~ไม่กี่ร้อย kB; ไม่มี keystore (debug key อยู่ใน `~/.android` นอกรีโป)
+
+## 8. คำถามที่ต้องการคำตอบก่อนเริ่มช่วง A
+
+1. **อนุมัติแผนช่วง A–F** (และให้ช่วง G TTS เป็นตัวเลือกหลังเห็นผลทดสอบ A) ใช่ไหม? ตัวเลือก TTS: ตามคำแนะนำ (ข)-ก่อน-แล้ว(ก) / ทำ (ก) เลย / (ข) ถาวร
+2. อนุมัติให้ `npm install` เพิ่มแพ็กเกจข้อ 2 (แก้ `package.json`/`package-lock.json`) และ `npx cap add android` (สร้าง `frontend/android/`)?
+3. Android/One UI เวอร์ชันของ S23 FE? ต่อ USB ได้ไหม (ตอนนี้ `adb devices` ว่าง)? — ถ้าไม่ได้ใช้ USB ให้ติดตั้ง apk ด้วยการส่งไฟล์เข้าเครื่องเอง (ผมเขียนทางนี้ไว้ในเอกสารด้วย)
+4. โดเมน ngrok ที่จะใส่ใน apk คงที่ตลอดช่วงเดโมใช่ไหม? (ถ้าเปลี่ยนต้อง build ใหม่)
+5. ปุ่ม back บนหน้าแท็บหลัก (ยาของฉัน / สรุป / ตั้งค่า): ตามข้อ 9 ตรงตัว (ถอยตามประวัติ router, ออกแอปเมื่อถึง /today หรือ /login) หรืออยากให้ back จากแท็บอื่น "กลับ /today ก่อน" เสมอ?
+6. R5 — ยืนยันการตีความเรื่องข้อความขอสิทธิ์กล้องเป็นข้อความไทยของแอปเอง
+7. ช่วงเวลาที่ผมขอ restart nodered ได้ในช่วง B (ต้องไม่ขัดกับที่คาเด็ททดสอบมือถืออยู่)
+
+---
+
+# ส่วนที่ 3 — คำตอบที่ตัดสินแล้ว (15 ต.ค. 2026; ขัดกับส่วนที่ 2 ให้ถือส่วนนี้)
+
+อนุมัติช่วง A–F · ช่วง G (TTS native) ตามเงื่อนไขข้อ 1
+
+## คำตอบคำถาม 8.1–8.7
+1. **TTS:** ช่วง A–C ไม่แตะ TTS · ทดสอบปุ่ม 🔊 **หลังช่วง B** (ต้อง login ก่อนถึงจะเห็นปุ่ม) · พูดไทยได้ = ไม่ทำอะไร · พูดไม่ได้ = ทาง (ข) ในช่วง D (native บังคับ `canSpeak=false`, แถวตั้งค่าเสียงแสดง "เสียงอ่านใช้ได้บนเว็บ") · ช่วง G ทำเฉพาะเมื่อ A–F ผ่านบนเครื่องจริงก่อน **17 ต.ค. 18:00** และจำกัด **3 ชม.** — ไม่ทันให้หยุดและคงทาง (ข) (18 ต.ค. ทดสอบ iPhone, 19 ต.ค. freeze)
+2. อนุมัติ `npm install` ตามตารางข้อ 2 (ยังไม่เพิ่ม keyboard/browser — ดูข้อ 14) และ `npx cap add android` · คง major 8 · `@capacitor/assets` เป็น devDependency · ตรวจว่า Dockerfile ของ frontend ยัง `npm ci` ผ่าน · **ถามก่อน rebuild container**
+3. ออกแบบเผื่อ Android 15+ edge-to-edge ทุกเวอร์ชันเครื่อง · คาเด็ทแจ้งเวอร์ชันตอนต่อเครื่องในช่วง A · USB เป็นหลัก + เขียนวิธีส่งไฟล์ apk เองเป็นทางสำรองในเอกสาร
+4. โดเมน ngrok คงที่ (static domain บัญชีฟรี) ตลอดเดโม
+5. **ปุ่ม back** (ห้ามถอยข้ามแท็บตามประวัติ router): (1) ปิด sheet/dialog → (2) ยกเลิกยืนยัน inline → (3) หน้าย่อย (`/settings/*`, ฟอร์มยา, Review): `Location.back()` ผ่าน canDeactivate → (4) แท็บหลักที่ไม่ใช่ `/today`: ไป `/today` (`replaceUrl`) → (5) `/today` หรือ `/login`: `App.exitApp()`
+6. R5 ตีความถูก: ข้อความไทยของแอปก่อนขอสิทธิ์ (ครั้งแรกเท่านั้น) · ถูกปฏิเสธถาวร = ข้อความไทย + ปุ่ม "เปิดหน้าตั้งค่าแอป" ถ้าทำง่าย ไม่งั้นข้อความอย่างเดียว · `app_name` = "ยาตรง"
+7. **restart nodered:** ถามคาเด็ทในแชทบรรทัดเดียวก่อนทุกครั้ง · ห้าม 23:50–00:15, 02:55–03:10, ระหว่างคาเด็ทเทสมือถือ, ±10 นาทีจากเวลามื้อของบัญชีทดสอบ
+
+## แก้/เพิ่มในแผน
+8. **ngrok กับ preflight = ความเสี่ยงใหญ่สุด พิสูจน์ก่อนอย่างอื่นในช่วง B:** preflight `OPTIONS` แนบ `ngrok-skip-browser-warning` ไม่ได้ (header อยู่แค่ใน `Access-Control-Request-Headers`) ngrok ฟรีอาจตอบหน้าเตือน HTML · curl 5 กรณี ทั้งผ่าน `localhost:8080` และ**โดเมน ngrok จริง** (UA Chrome Android, `Origin: https://localhost`, Request-Method, Request-Headers: authorization, content-type, ngrok-skip-browser-warning) · ต้องได้ 204 + ACAO ไม่ใช่ HTML · อ่านโดเมนจาก `.env` เป็นตัวแปร ห้ามพิมพ์ออก log/รายงาน · ได้หน้าเตือน = หยุดและรายงานทางเลือก (เช่น `CapacitorHttp` + ทดสอบอัปโหลดรูปสแกน) ห้ามแก้เองก่อนถาม
+9. **ตรวจก่อนแก้ `settings.js` แล้วรายงานก่อนลงมือ:** (ก) `httpNodeMiddleware` ทำอะไรกับ OPTIONS (ถ้าตรวจ JWT ก่อน CORS → preflight ได้ 401) (ข) grep `Access-Control-` ใน `flows.json` (อ่านอย่างเดียว) และ nginx conf — ตั้ง header เองจะซ้ำแล้ว CORS พัง
+10. build native = `ng build -c production,native` (configuration ไม่สืบทอดกัน) · `native` มีแค่ fileReplacements + `serviceWorker: false` · รายงาน initial เว็บ (คง ~515 kB) และ native (≤ 530 kB)
+11. **grep URL ที่ไม่ผ่าน HttpClient** (origin native = `https://localhost`): `location.origin`, `window.location`, `document.baseURI`, `src` ที่ชี้ `/api`, `fetch(`, `EventSource`, `sendBeacon`, `href` ไปเซิร์ฟเวอร์ — เสี่ยง 2 กลุ่ม: ลิงก์ที่ส่งให้คนอื่น (เชิญญาติ/เชื่อม LINE/QR) และรูปจาก API · รายงานรายการที่เจอ + วิธีแก้ในรายงานช่วง A
+12. **`connection.service` ใน native** ไม่มี `/ngsw.json` ให้ probe → ระบุว่าตัดสิน online/offline จากอะไร · ต้องเห็นแถบออฟไลน์เมื่อ tunnel ล่ม และไม่ค้างเมื่อเน็ตปกติ · ถ้าต้องแก้ ให้ native probe endpoint เบาของ API ผ่าน apiBase
+13. `.gitignore` เพิ่ม `*.apk`, `*.aab`, `frontend/android/app/release/` · ห้ามแนบ apk ใน GitHub Release/รีโป (มีโดเมนข้างใน) · ก่อน commit ทุกช่วง `git grep` โดเมน (ผ่านตัวแปร) ต้องว่าง · `git status` ต้องไม่มี `environment.native.ts`, `local.properties`, `assets/public`
+14. **คีย์บอร์ด + edge-to-edge** (Android 15 อาจไม่ resize): ทดสอบช่วง D — login, ฟอร์มยา, ช่องค้นหา · บังช่องกรอก = อนุมัติล่วงหน้าให้เพิ่ม `@capacitor/keyboard` (`resizeOnFullScreen: true`, import lazy เฉพาะ native) เฉพาะกรณีนี้
+15. **StatusBar** ตัวอักษร/ไอคอนขาว = `Style.Dark` (ชื่อในปลั๊กอินกลับกับความรู้สึก — ตรวจให้ถูก) · แถบเขียววาดเองด้วย padding `safe-area-top` · ขอบล่างไม่ทับแถบนำทางระบบทั้งโหมดปัด/3 ปุ่ม · หน้า Scan (Ionic) ต้องตรวจ safe-area ด้วย
+16. ล็อกแนวตั้ง `screenOrientation="portrait"` → ตัดเทสหมุนจอออก
+17. **กล้อง:** ขนาด/คุณภาพรูปเท่าเส้นทางเว็บเดิม (ระบุค่าในรายงาน) · ห้าม log base64 · permission ใส่เฉพาะที่เอกสาร `@capacitor/camera` v8 กำหนด + รายงานว่าใส่อะไรเพราะอะไร
+18. **ไอคอน/splash:** adaptive foreground หน้าน้องยาตรงอยู่ใน safe zone กลาง ~60% บนพื้น `#0f766e` · splash พื้น `#e8f7f3` + น้องยาตรง (R4) · **ก่อน gen ทับ** ทำภาพ preview (วงกลม + สี่เหลี่ยมมน + splash) ที่ `docs/screenshots/day9/` (ไม่ commit) แล้วรอชีฟดู · ไม่ทำ monochrome
+19. **เว็บ/PWA ต้องไม่เปลี่ยน** (SW, Web Push, pwa-elements, TTS บนเว็บ): ทุกช่วงรัน `ng test` อย่างน้อย · ช่วง F รันเทสชุดข้อ 13 ของคำสั่งเดิมทั้งหมด · จำนวนเทสห้ามลด (363 + ใหม่)
+20. `docs/day9-android.md` ต้องเตือน: ถ้า Studio เด้ง "AGP Upgrade Assistant" / "Upgrade Gradle" → กด *Remind me later*/ไม่ **ห้ามอัปเกรด** (จะแก้ไฟล์ใน `android/`)
+21. **ลำดับเวลา:** 15 ต.ค. ช่วง A · 16 ต.ค. B → C → D · 17 ต.ค. E → F → (G) · รายงานท้ายแต่ละช่วง: ตารางสถานะ · initial เว็บ/native · จำนวนเทสก่อน/หลัง · ขั้นตอนที่คาเด็ททำใน Studio/มือถือทีละขั้น พร้อมเลขจุดถ่ายภาพ 6-x (ระบุ Samsung Galaxy S23 FE) · commit ช่วงละ 1 commit · ไม่ push/PR จนกว่าคาเด็ทสั่ง · ติดเกิน 45 นาที = หยุดแล้วรายงานทางเลือก
+22. ช่วง A ห้ามแตะ nodered · commit `docs/day9-plan.md` (รวมส่วนที่ 3) พร้อม commit ช่วง A
+
+---
+
+# ผลช่วง A (ทดสอบบน Samsung Galaxy S23 FE · One UI 8.5 / Android 16 · 15 ต.ค. 2026)
+
+**ผ่าน:** Run จาก Android Studio · login · หน้าวันนี้/ยาของฉัน/สรุป/ตั้งค่า โหลดข้อมูลจริง · ปิด-เปิดแอปยัง login อยู่ · แถบเมนูล่างไม่ทับเมนูระบบ
+
+**พบ 2 เรื่อง**
+1. **TTS ใช้ไม่ได้ใน WebView** (ขึ้น "เบราว์เซอร์นี้ยังอ่านออกเสียงไม่ได้") → ใช้ **ทาง (ข)** ในช่วง D ตามข้อ 1 ของส่วนที่ 3: native บังคับ `canSpeak=false` ซ่อนปุ่ม 🔊 ทั้งหมด · แถว "เสียงอ่าน" ในตั้งค่าแสดง "ใช้ได้บนเว็บ" **ไม่เปิดเป็น sheet** ที่ใช้งานไม่ได้ · ช่วง G (plugin) ยังเป็นตัวเลือกตามเงื่อนไขเดิม (ก่อน 17 ต.ค. 18:00, ≤ 3 ชม.)
+2. **แต่ละหน้าโหลดช้ากว่า PWA ชัดเจน** → วัดก่อนแก้ (ห้ามแก้ก่อนถาม) ทำหลัง docker build จบ (ตอนเน็ตว่าง) time-box 30 นาที: adb + Chrome DevTools Protocol (`adb forward` ไป `webview_devtools_remote_*`) ของแอป debug · เก็บตอนสลับแท็บ วันนี้ → ยาของฉัน → สรุป → ตั้งค่า: จำนวนคำขอ, จำนวน OPTIONS preflight, เวลาแต่ละคำขอ (TTFB/รวม) · เทียบกับ PWA บน Chrome ของเครื่องเดียวกันถ้าทำได้ · สมมติฐาน: (ก) preflight ทุกคำขอเพราะ CORS ปัจจุบันไม่มี `Max-Age` (ข) ไม่มี SW cache (ค) เน็ตถูก docker build แย่ง · วัดซ้ำหลังทาง A (Max-Age 600)
+
+**ลำดับ:** docker build → ทาง A (nginx) → วัดข้อ 2 → ช่วง C · ห้าม `up`/recreate หลัง 23:30 (ไม่ทัน = ย้ายไปพรุ่งนี้เช้า)
+
+---
+
+# สถานะคืน 15 ต.ค. (ปิดงานคืนนี้ — ไม่ได้ up/recreate container ใดๆ)
+
+- **docker build frontend ผ่านแล้ว** (168 วินาที: `npm ci` 150 วินาที 589 แพ็กเกจ · `ng build` 9 วินาที · process จบเอง · initial เว็บ 516.32 kB) — commit `77be86c`
+  - สาเหตุที่ build เคยค้าง/ล้ม: เครือข่ายสะดุดเป็นช่วง (tarball เดียวกัน 75 วินาที แล้ว 0.8 วินาที; ทั้งบนเครื่องและใน container; ไม่ใช่ IPv6) + npm เปิด ~15 ซ็อกเก็ตพร้อมกันแล้วถูกรีเซ็ต (`ECONNRESET`) · ตัวเลข 228–1376 วินาทีใน log รวมเวลารอคิว ไม่ใช่เวลาต่อไฟล์
+  - ที่ผิดพลาด: `--fetch-timeout=60000` (ชีฟแนะนำ) ทำให้เกิด `EIDLETIMEOUT` ซึ่งไม่ถูก retry → เอาออกแล้ว
+  - ที่แก้ใน Dockerfile: `--fetch-retries=5 --fetch-retry-mintimeout=2000 --maxsockets=4` + `--mount=type=cache,target=/root/.npm` (แคชข้ามรอบ แม้รอบที่ล้ม)
+- **ทาง A (nginx CORS) เตรียมไฟล์แล้วแต่ยังไม่ขึ้น:** `frontend/nginx.conf` (`map` origin → `https://localhost` เท่านั้น · `proxy_hide_header` ซ่อน `Access-Control-*` ของ Node-RED · ตอบ preflight 204 เอง ครบ methods รวม PATCH · `Max-Age 600` · `Vary: Origin`) · `nginx -t` ผ่านใน image ใหม่ (รันแบบ one-off ในเครือข่าย compose) · image `yatung-frontend:latest` build แล้ว แต่ container `yatung-frontend-1` ที่รันอยู่ยังใช้ image เก่า
+- **พรุ่งนี้เช้า (ต้องถามคาเด็ทก่อนทุกขั้น):** (1) `docker compose up -d frontend` (ขณะคาเด็ทไม่ได้เทสมือถือ) → (2) `bash scripts/test-cors-native.sh --ngrok` → (3) เว็บ Chrome เดสก์ท็อป: login และหยุด/กลับมาใช้ยา Paracetamol → (4) วัดความเร็วแอป (ข้อ 2 ผลช่วง A) ก่อน/หลังทาง A → (5) ช่วง C
+
+# งานค้าง (16 ต.ค.)
+- `frontend/nginx.conf` `location = /line/webhook`: เพิ่ม `proxy_hide_header Access-Control-Allow-Origin;` (และ `-Allow-Methods`, `-Allow-Headers`) — ตอนนี้ Node-RED (editor-api) ตอบ `ACAO: *` เองอยู่ก่อนแล้ว (ไม่ใช่จาก nginx ใหม่ ไม่กระทบ เพราะ webhook ตรวจลายเซ็น) ทำ**ตอน rebuild frontend ครั้งถัดไป** ไม่ rebuild เฉพาะเรื่องนี้ · หลังทำแล้วให้แก้ข้อ webhook ใน `scripts/test-cors-native.sh` กลับเป็น "ต้องไม่มี ACAO"
+
+# ผลทดสอบ 16 ต.ค. (Samsung Galaxy S23 FE · ใช้ทำสไลด์)
+- **ข้อ 4 (apk หยุดใช้/กลับมาใช้ Paracetamol ผ่าน PATCH):** ผ่าน ไม่มี error (ภาพ 6-14 ถึง 6-17) · เว็บ Chrome เดสก์ท็อปผ่านเช่นกัน (4→3→4, ภาพ 6-10 ถึง 6-13)
+- **CORS ที่ nginx:** `scripts/test-cors-native.sh` ผ่าน 15/15 (localhost) และ 30/30 (รวม ngrok) · `/line/webhook` ลายเซ็นผิดยังได้ 401 ทั้งสองทาง
+- **ข้อ 5 วัดความเร็ว apk (adb + CDP, สลับแท็บ วันนี้→ยาของฉัน→สรุป→ตั้งค่า→วันนี้ 2 รอบ):**
+  - คำขอ API 20 ครั้ง · ตอบ (TTFB) เฉลี่ย 237 ms · รวมเฉลี่ย 313 ms
+  - preflight (OPTIONS) 3 ครั้งทั้งหมด (`/api/settings/slot-times`, `/api/caregivers`, `/api/config`) เฉลี่ย 402 ms — **ครั้งเดียวต่อ endpoint** รอบที่สองไม่มีเลย (Max-Age 600 ได้ผล)
+  - หน้าที่ช้าสุด: `/api/caregivers` รอบแรก 1,040 ms · หน้าอื่นรอบสอง ≈ 150–360 ms ต่อคำขอ
+  - สรุป: ความหน่วงที่เหลือมาจากการไปกลับผ่าน ngrok ไม่ใช่ CORS · **ไม่มีตัวเลข "ก่อน" ที่วัดจริง** (container ขึ้นเป็นเวอร์ชันใหม่ก่อนวัด) — ประมาณการเท่านั้น: ก่อนมี Max-Age ทุกคำขอมี preflight เพิ่ม ≈ 340–490 ms
+  - ตัดสินใจ: ไม่เทียบ PWA, ไม่รวมคำขอ, ยังไม่ทำแคชฝั่งแอป
+
+# ช่วง C — กล้อง (16 ต.ค.)
+- **permission:** ไม่เพิ่มอะไรใน `AndroidManifest.xml` — เอกสาร `@capacitor/camera` v8 ระบุว่าไม่ต้องใช้สิทธิ์ (ยกเว้น `saveToGallery` ซึ่งเราไม่ใช้) ปลั๊กอินเปิดแอปกล้อง/Photo Picker ของเครื่อง และ `queries` ของ IMAGE_CAPTURE/GET_CONTENT/PICK มากับปลั๊กอินแล้ว · **ถ้าเพิ่ม `CAMERA` เองจะบังคับให้ต้องขอสิทธิ์และทำให้เกิดกล่องขอสิทธิ์ที่ไม่จำเป็น**
+- **ผลต่อ R5:** เมื่อไม่ได้ประกาศสิทธิ์ ระบบไม่มีกล่องขอสิทธิ์ให้อธิบายก่อน จึงไม่ทำข้อความ "ก่อนขอสิทธิ์" · ทำ `camera-errors.ts` แปลง error ของปลั๊กอินเป็นไทย: สิทธิ์ถูกปิด (บอกทาง ตั้งค่า → แอป → ยาตรง → สิทธิ์ → กล้อง + ให้เลือกคลังภาพแทน) · ไม่มีแอปกล้อง · ผิดพลาดอื่น (ข้อความทั่วไป ไม่ต่อข้อความดิบ) · ยกเลิกเอง = เงียบ · ปุ่มเปิดหน้าตั้งค่าแอปยังไม่ทำ (ต้องมีปลั๊กอินเพิ่ม)
+- **ขนาด/คุณภาพรูป = เส้นทางเว็บเดิมทุกค่า:** `Camera.getPhoto` `quality: 90`, `DataUrl`, `correctOrientation: true`, `allowEditing: false` แล้ว `compressImage` ด้านยาวสุด **1600 px**, JPEG **0.85** (ไม่เปลี่ยน) · ห้าม log base64 (ไม่มี `console.*` ในโฟลเดอร์ scan; ข้อความ error ที่แสดงไม่ต่อข้อความดิบ)
+- เทส: `ng test` 373 ผ่าน (เพิ่ม 4 ของ `camera-errors.spec.ts`) · `build:native` ผ่าน initial 516.38 kB (เว็บเดิม ~516 kB)
+
+## ตัดสินใจช่วง C (คาเด็ทอนุมัติ 16 ต.ค.)
+- **ไม่ประกาศ `CAMERA`** → ไม่มีกล่องขอสิทธิ์ ใช้แทน "ข้อความไทยก่อนขอสิทธิ์" ในส่วนที่ 3 ข้อ 6 (ยกเลิกข้อความก่อนขอสิทธิ์) · **ไม่ทำปุ่มเปิดหน้าตั้งค่าแอป** · ข้อความ "สิทธิ์ถูกปิด" ใน `camera-errors.ts` เก็บไว้
+- ทดสอบบนเครื่องปรับ: สแกนรูปเดียว ไปถึงหน้าตรวจแล้ว**กดยกเลิก ไม่บันทึก** (กันยาใหม่เข้าบัญชีทดสอบ/แจ้งญาติจริง) · คลังภาพ: เปิดตัวเลือกแล้วยกเลิก · ตัดขั้นปิดสิทธิ์กล้อง (ไม่มีสวิตช์ให้ปิด)
+- **ถ้าภาพ 6-21 ช้าหรือแอปค้างตอนกลับจากกล้อง:** เสนอเพิ่ม `width: 1600, height: 1600` ใน `Camera.getPhoto` (native ย่อก่อนส่ง DataUrl เข้า WebView) — ยังไม่แก้จนกว่าจะเห็นผล
+
+# ช่วง D — back / แถบระบบ / TTS / แจ้งเตือน (16 ต.ค.)
+- **back** (`core/native/back-decision.ts` ฟังก์ชันล้วน + `back-handler.service.ts` lazy เฉพาะ native + `back-layers.ts`): inline-ใน-sheet → sheet/dialog → inline-ของหน้า → หน้าย่อยย้อนตามประวัติ (ผ่าน canDeactivate; ไม่มีประวัติ = ไปแท็บแม่) → แท็บหลักไป /today → /today,/login,/register ออกจากแอป · กดซ้ำ < 350 ms นับครั้งเดียว + ไม่ทำอะไรระหว่างเปลี่ยนหน้า (ยกเว้นปิด dialog ของ canDeactivate) · เทสหน่วย `back-decision.spec.ts`, `back-layers.spec.ts`
+- **แถบระบบ:** Android 16 บังคับ edge-to-edge → ตั้งสีผ่านปลั๊กอินไม่ได้ จึงวาดเองใต้ `html.is-native` (`styles/_native.scss`): แถบบนเขียว `--yt-primary` (ไอคอนขาว) · แถบล่าง `--yt-surface` (ไอคอนเข้ม) ตั้งผ่าน `SystemBars.setStyle` แยกแถบ · `viewport-fit=cover` ใส่เฉพาะ native (main.ts) + `capacitor.config.ts` `SystemBars.insetsHandling: 'native'`, `initialViewportFitValueHint: 'cover'` · โครงแอปเริ่มใต้แถบบนด้วย `--yt-top-off = max(--yt-banner-h, --yt-safe-top)` (เว็บ `--yt-safe-top = 0` จึงค่าเท่าเดิม) · WebView < 140 ได้ env() = 0 และ Capacitor เว้นขอบให้เอง แต่สีแถบจะเป็นสีพื้นหน้าต่างของแอป
+- **TTS:** native `canSpeak = false` (ซ่อนปุ่ม 🔊 ทุกหน้า) · ตั้งค่า แถวเสียงอ่านเป็นป้าย "ใช้ได้บนเว็บ" ไม่เปิด sheet
+- **แจ้งเตือนบนเครื่อง:** `pushState` มีสถานะ `native` → ป้าย "ใช้ LINE แทน" · sheet = น้องยาตรง + กล่องคำพูด + ปุ่ม "ไปหน้าเชื่อม LINE" (ปิด sheet ก่อนเปลี่ยนหน้า)
+- **ล็อกแนวตั้ง** `screenOrientation="portrait"` · คีย์บอร์ด: ยังไม่เพิ่ม `@capacitor/keyboard` (SystemBars โหมด native จัด padding ตอนคีย์บอร์ดให้) รอผลเครื่องจริง
+- **พบบั๊กเดิมบนเว็บ (ไม่แก้ เพราะเปลี่ยนหน้าตาเว็บ — รอคาเด็ทสั่ง):** `.yt-sheet-bottom.mat-bottom-sheet-container` ใน `_components.scss` ไม่ตรง DOM ของ Material รุ่นนี้ (panelClass อยู่ที่ overlay pane) → แผ่นล่างไม่มีมุมโค้ง/ขีดจับ/ระยะ safe-area ทั้งเว็บและแอป · ในแอปแก้เฉพาะระยะล่างใต้ `.is-native`
+- **ขนาด:** initial เว็บ 517.27 kB (เดิม 516.3x, +~0.9 kB จาก token/สไตล์/ตัวเริ่ม native) · native 517.32 kB · `ng test` 386 ผ่าน (เดิม 373)
+- ภาพจำลอง `tools/day9-shots.mjs` (ng serve `--build-target=frontend:build:development,native --port 4300`) → `docs/screenshots/day9/` (ไม่ commit)
+
+## ผลทดสอบช่วง D บนเครื่อง (Samsung Galaxy S23 FE, 16 ต.ค.) — ผ่านทั้งหมด (ภาพ 6-25 ถึง 6-41)
+แถบบนเขียว/ล่างขาว ไม่ทับเนื้อหา (โหมดปัด + 3 ปุ่ม) · back ทุกกรณี (ยาของฉัน→วันนี้, กล่องหยุดใช้ยาใน sheet, กล่องออกจากระบบ, หน้าย่อย, ฟอร์มยาถามก่อนออก, กดรัวไม่ข้ามชั้น, /today ออกแอป) · ไม่มีปุ่ม 🔊 · แถว "ใช้ได้บนเว็บ"/"ใช้ LINE แทน" + sheet → หน้าเชื่อม LINE · ก++ ไม่ล้น · คีย์บอร์ดไม่บังช่องกรอก **จึงไม่เพิ่ม `@capacitor/keyboard`**
+
+# ผลช่วง E บนเครื่อง (Samsung Galaxy S23 FE, 16 ต.ค.) — ผ่าน
+ไอคอนใหม่บนหน้าโฮม ชื่อ "ยาตรง" · cold start (บังคับหยุดก่อน) เห็น splash พื้นมิ้นต์ + น้องยาตรง จังหวะเดียว ไม่มีจอขาวตามมา · แถบสถานะเขียว · คีย์บอร์ดหน้า login ไม่บัง
+
+# ช่วง G — TTS native ทาง (ก) (16 ต.ค., เริ่ม 13:12)
+- `@capacitor-community/text-to-speech@8.0.2` ผ่าน adapter `TtsEngine` (`core/tts/tts-engine.ts`) · ตัว native `native-tts-engine.ts` โหลดด้วย `import()` เฉพาะเมื่อ `TTS_ENV.native` ไม่เป็น null (build native) → initial เว็บ 517.39 kB / native 517.44 kB (เดิม 517.27 / 517.32 ≈ +0.1 kB) · ปลั๊กอินมี `<queries>` TTS_SERVICE มาเองไม่ต้องแก้ manifest
+- lang `th-TH` ; ตรวจเสียงไทยด้วย `isLanguageSupported` (ถามซ้ำ 6×500 ms เพราะ TextToSpeech ของระบบเริ่มแบบ async) ; **ไม่มีเสียงไทย = `canSpeak=false` ปุ่ม 🔊 ซ่อนเอง (ทาง ข)** ; ระหว่างตรวจ = ซ่อน
+- คิว: ปลั๊กอินไม่มีคิวที่รอจบ → วนทีละท่อนด้วย await + token (กดหยุด/เริ่มใหม่ ท่อนเก่าไม่ลามต่อ) ; `speak()` ของปลั๊กอินไม่ resolve หลัง `stop()` (ล้างคิวภายใน) จึงตัดสินด้วย token ไม่ใช่ promise
+- ตั้งค่า: แถว "เสียงอ่าน" เปิด sheet ได้เมื่อ `canSpeak` ; ไม่งั้นยังเป็นป้าย "ใช้ได้บนเว็บ" · ไม่มีการเลือกเสียง (ใช้เสียงเริ่มต้นของระบบ) ความเร็วช้า/ปกติใช้ได้
+- เว็บไม่เปลี่ยน: `tts.service.spec` เดิมผ่านทั้งหมดโดยไม่แก้ · เพิ่ม `tts-native.spec.ts` 9 เคส · `ng test` 395 (เดิม 386)
+- nginx /line/webhook ซ่อน ACAO: up frontend 16 ต.ค. 13:14 · test-cors-native ผ่าน 30/30 (localhost + ngrok) รวมข้อ webhook ไม่มี ACAO
+
+## ผลช่วง G บนเครื่อง (Samsung Galaxy S23 FE, 16 ต.ค.) — ผ่าน
+6-G2 ถึง 6-G5 ผ่านทั้งหมด · ได้ยินเสียงไทย · กด 🔊 ซ้ำระหว่างอ่านแล้วหยุดได้ · ชื่อยาอังกฤษ (ตาม lexicon) อ่านพอฟังรู้เรื่อง · sheet "แจ้งเตือนบนเครื่องนี้" ขึ้นข้อความ "เชื่อม LINE แล้ว…" เมื่อเชื่อมแล้ว (`push-native-copy.ts`) · เก็บหัวข้อ "เสียงอ่านในแอป (Android)" ไว้ในหน้าข้อมูลสำหรับผู้พัฒนา (เห็นเฉพาะ demoMode)
+
+# เรื่องเล่าไล่บั๊ก (ใช้ทำสไลด์)
+
+## ปุ่ม 🔊 ไม่ขึ้นบน Android ทั้งที่ระบบมีเสียงไทย (16 ต.ค. 14:30–15:20)
+**อาการ:** S23 FE เปลี่ยน TTS engine เป็น Google และติดตั้งเสียงไทยแล้ว (ฟังตัวอย่างในตั้งค่าเครื่องได้ยิน) แต่แอปยังขึ้น "ใช้ได้บนเว็บ" แทนปุ่มอ่านออกเสียง
+
+**ที่สงสัยก่อน (ไม่ใช่):** manifest ขาด `<queries>` ของ `TTS_SERVICE` (ตรวจ merged manifest แล้วมี) · รหัสภาษา `th`/`th_TH`/`tha` (เพิ่มตัวตรวจทนรหัสและ fallback `getSupportedLanguages`/`getSupportedVoices` แล้ว แต่ไม่ใช่ต้นเหตุ) · ปลั๊กอินผูก engine เก่าไว้ตอนเปิดแอป (เป็นไปได้แต่ไม่ใช่ตัวนี้)
+
+**วิธีหาต้นเหตุ:** เพิ่มข้อมูลวินิจฉัยในหน้าผู้พัฒนา (true/false/จำนวน/รหัส error ไม่มีข้อความที่อ่าน) → ภาพจากเครื่องรอบแรกเห็น "โหลด engine ไม่ได้" ไม่มีจำนวนภาษา → เพิ่ม timeout 2.5 วินาทีต่อการเรียกและแถว "ขั้นที่ทำอยู่/ค้าง" → ภาพรอบสอง: **ขั้น `load` · error `timeout:load`** คือไม่ได้ล้มตอนถาม engine แต่ค้างตั้งแต่ขั้น "โหลดปลั๊กอิน"
+
+**ต้นเหตุ:** `load()` เป็น `async` และ `return` ตัวปลั๊กอิน (`TextToSpeech` จาก `registerPlugin`) ตรงๆ — ตัวปลั๊กอินของ Capacitor เป็น `Proxy` ที่ตอบ**ทุกชื่อ property เป็นเมธอด native รวมถึง `then`** (`@capacitor/core` ไม่ได้ยกเว้น `then`; ยกเว้นเฉพาะ `$$typeof`/`toJSON`) → ค่าที่คืนจาก async/await ถูกมองเป็น **thenable** JavaScript จึงเรียก `proxy.then(resolve, reject)` ซึ่งไปถามฝั่ง native หาเมธอด "then" แล้วไม่ resolve ไม่ reject → `await this.load()` ค้างตลอดไป → การตรวจเสียงไทยไม่จบ → `canSpeak` เป็น false ปุ่มซ่อน (เทสเดิมไม่เจอเพราะใช้ engine จำลอง ไม่ใช่ปลั๊กอินจริง)
+
+**แก้:** ห่อปลั๊กอินไว้ในอ็อบเจ็กต์ `{ tts }` ก่อนคืน/await เสมอ (`native-tts-engine.ts`) + เทสกันย้อนกลับด้วย Proxy จำลองที่ตอบทุกชื่อเป็นฟังก์ชันค้าง (`tts-native.spec.ts`)
+
+**บทเรียน:** (1) ห้ามคืน/await ตัวปลั๊กอิน Capacitor ตรงๆ จาก async function หรือ `Promise.resolve()` — ห่อก่อนเสมอ (2) เครื่องมือวินิจฉัยบนเครื่องจริงที่แสดง "ขั้นที่ค้าง" + timeout คุ้มกว่าเดาจากโค้ด (3) เทสที่ใช้ engine จำลองไม่ครอบคลุมพฤติกรรมของ Proxy จริง
+
+**commit:** `fd024f8` ตรวจทนรหัสภาษา + ตรวจซ้ำเมื่อกลับเข้าแอป + วินิจฉัย · `765a09a` แสดง error แรก · `9d65a10` timeout + ขั้นที่ค้าง · `37803d9` แก้ต้นเหตุ
+
+## เทสของฉันเองที่ล้มรอบแรก (review-e2e, 16 ต.ค. 13:25)
+`app-scan-stage` หา "ไม่เจอ" ภายใน 8 วินาที — เกือบแก้เทสผิดทางเพราะเดาว่าเป็น `display: contents` ตรวจแล้ว host เป็น `display: flex` ตั้งแต่ 14 ต.ค. ต้นเหตุจริงคือ `ng serve` เพิ่งเปิดและกำลังคอมไพล์ รอบสองด้วยเทสเดิมผ่าน 67/0 ไม่ต้องแก้อะไร **บทเรียน:** ตรวจสมมติฐานจากโค้ด/ผลจริงก่อนแก้เทส
+
+# ตารางสรุปวันที่ 9 (ปิดวัน 16 ต.ค.)
+| ช่วง | งาน | commit หลัก | ผลบนเครื่อง S23 FE |
+|---|---|---|---|
+| A | Capacitor 8 + android/ + env native + probe ออนไลน์ | `edb0303` `d5543f9` `96fb173` (docker: `d154048` `77be86c`) | ผ่าน (พบ TTS ใช้ไม่ได้ + โหลดช้า) |
+| B | CORS ที่ nginx (origin `https://localhost`, preflight, PATCH) + webhook ซ่อน ACAO | `b5862ee` `9817894` `e6ece41` | ผ่าน: PATCH หยุด/กลับมาใช้ยา · test-cors-native 30/30 · วัดความเร็ว TTFB เฉลี่ย 237 ms |
+| C | กล้อง/คลังภาพ + ข้อความไทยเมื่อเปิดไม่ได้ (ไม่ประกาศ CAMERA) | `a09e9ca` `7ce12be` | ไม่มีบรรทัดผลแยกในแผน — คาเด็ทเติม |
+| D | back เป็นชั้น, แถบระบบ, ซ่อน TTS (ชั่วคราว), ใช้ LINE แทนแจ้งเตือนเครื่อง, ล็อกแนวตั้ง | `aa1938b` | ผ่านทั้งหมด (ภาพ 6-25 ถึง 6-41) |
+| E | ไอคอน + splash | `4dbdf94` `613767b` | ผ่าน |
+| F | เอกสาร build/ติดตั้ง apk | `72b5cd8` | — |
+| G | อ่านออกเสียงไทยบน Android (TtsEngine adapter) + sheet LINE + แก้บั๊ก Proxy thenable | `801047c` `2bb9632` `fd024f8` `765a09a` `9d65a10` `37803d9` | ผ่าน 6-G2 ถึง 6-G5 · กด 🔊 ซ้ำแล้วหยุดได้ · ชื่อยาอังกฤษอ่านรู้เรื่อง |
+
+ชุดสุดท้าย (16 ต.ค.): `ng test` 406 · initial เว็บ 517.39 kB / native 517.44 kB · dup-styles ผ่าน · scan-lazy ผ่าน · scan-offline ผ่าน · review-e2e 67/0 · `git grep` โดเมนจริง ว่าง

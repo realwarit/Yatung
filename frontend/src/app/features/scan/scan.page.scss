@@ -14,7 +14,7 @@
   margin: 0 auto;
   padding: 0 var(--yt-gutter) var(--yt-space-4);
   // มือถือ: เต็มความสูงจอ (หน้านี้ซ่อนแถบเมนูล่าง) ให้กรอบถ่ายรูปยืดกินที่ว่าง ปุ่มอยู่ล่างกรอบ
-  @media (max-width: 1023.98px) { min-height: calc(100dvh - var(--yt-banner-h, 0px)); }
+  @media (max-width: 1023.98px) { min-height: calc(100dvh - var(--yt-top-off)); }
   // จอกว้าง: สองคอลัมน์ กว้างรวมสูงสุด 1100px
   @media (min-width: 1024px) { max-width: 68.75rem; padding: var(--yt-space-4) var(--yt-space-5) var(--yt-space-6); }
 }

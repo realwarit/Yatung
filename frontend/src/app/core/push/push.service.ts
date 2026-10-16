@@ -3,6 +3,7 @@ import { SwPush } from '@angular/service-worker';
 import { firstValueFrom } from 'rxjs';
 import { errorCode, errorText } from '../api/api-error';
 import { PushApi } from '../api/push.api';
+import { isNative } from '../native/native';
 
 /**
  * สถานะการแจ้งเตือนบน "เครื่องนี้"
@@ -12,9 +13,11 @@ import { PushApi } from '../api/push.api';
  *  enabled       เปิดแล้ว
  *  blocked       ผู้ใช้เคยกดไม่อนุญาต — ต้องไปเปิดในตั้งค่าของเครื่อง
  */
-export type PushState = 'unsupported' | 'needs-install' | 'off' | 'enabled' | 'blocked';
+export type PushState = 'unsupported' | 'needs-install' | 'off' | 'enabled' | 'blocked' | 'native';
 
 export interface PushEnv {
+  /** แอป Android : ไม่ใช้ Web Push (ไม่มี service worker) การเตือนมาทาง LINE แทน */
+  native?: boolean;
   isIos: boolean;
   standalone: boolean;
   swEnabled: boolean;
@@ -25,6 +28,7 @@ export interface PushEnv {
 
 /** ตัดสินสถานะจากสภาพแวดล้อม (ฟังก์ชันล้วน ทดสอบได้) */
 export function pushState(e: PushEnv): PushState {
+  if (e.native) return 'native';
   if (e.isIos && !e.standalone) return 'needs-install';
   if (!e.swEnabled || !e.hasPushManager || e.permission === 'unsupported') return 'unsupported';
   if (e.permission === 'denied') return 'blocked';
@@ -55,6 +59,7 @@ export class PushService {
     const standalone = typeof window !== 'undefined' &&
       ((navigator as unknown as { standalone?: boolean }).standalone === true || window.matchMedia?.('(display-mode: standalone)').matches === true);
     return {
+      native: isNative(),
       isIos: detectIos(nav),
       standalone,
       swEnabled: this.swPush.isEnabled,

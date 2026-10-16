@@ -9,6 +9,8 @@ function setup(over: Partial<ConnectionEnv> = {}) {
     go: vi.fn(),
     location: () => ({ search: '', pathname: '/today', hash: '' }),
     replaceUrl: vi.fn(),
+    native: false,
+    fetchApiConfig: vi.fn(async () => ({ ok: true, contentType: 'application/json' })),
     ...over,
   };
   TestBed.configureTestingModule({ providers: [{ provide: CONNECTION_ENV, useValue: env }] });
@@ -84,5 +86,21 @@ describe('ConnectionService.reconnect / watch', () => {
     expect(svc.expired()).toBe(true);
     svc.markApiOk();
     expect(svc.expired()).toBe(false);
+  });
+});
+
+describe('ConnectionService.reconnect ในแอป Android', () => {
+  it('ไม่ navigate ไป origin ของแอป ; ถาม /api/config แล้วล้างสถานะเมื่อได้ JSON', async () => {
+    let ct = 'text/html';
+    const { env, svc } = setup({ native: true, fetchApiConfig: vi.fn(async () => ({ ok: true, contentType: ct })) });
+    svc.markApiHtml();
+    expect(svc.expired()).toBe(true);
+    await svc.reconnectNative();             // ยังได้ HTML = ยังหมดอายุ
+    expect(svc.expired()).toBe(true);
+    ct = 'application/json; charset=utf-8';
+    svc.reconnect();
+    await vi.waitFor(() => expect(svc.expired()).toBe(false));
+    expect(env.go).not.toHaveBeenCalled();
+    expect(env.fetchApiConfig).toHaveBeenCalledTimes(2);
   });
 });
