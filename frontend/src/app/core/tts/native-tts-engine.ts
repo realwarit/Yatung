@@ -8,14 +8,17 @@ import { TtsDiag, findThaiTag, toLanguageTag } from './tts-lang';
 const DEFAULT_LANG = 'th-TH';
 /** ลองถามตรงๆ ทีละรหัส (Java Locale อ่านได้เฉพาะรูปแบบขีดกลาง) */
 const DIRECT_TAGS = ['th-TH', 'th', 'tha'];
-const PROBE_TRIES = 6;
+const PROBE_TRIES = 4;
+/** ปลั๊กอินบางครั้งไม่ตอบเลย (ระบบ TTS ยังไม่ init) — กันค้างตลอดไป */
+const CALL_TIMEOUT_MS = 2500;
 const PROBE_GAP_MS = 500;
 
 export class NativeTtsEngine implements TtsEngine {
   private plugin: typeof import('@capacitor-community/text-to-speech').TextToSpeech | null = null;
   /** รหัสที่ engine ยอมรับจริง (ใช้ตอน speak — ปลั๊กอินปฏิเสธถ้ารหัสที่ส่งไม่ผ่าน isLanguageSupported) */
   private lang = DEFAULT_LANG;
-  private diagValue: TtsDiag = { engineLoaded: false, languageCount: null, voiceCount: null, hasThai: false, via: null, error: null };
+  private diagValue: TtsDiag = { engineLoaded: false, languageCount: null, voiceCount: null, hasThai: false, via: null, error: null, stage: 'new' };
+  onDiag?: (d: TtsDiag) => void;
 
   private async load() {
     if (!this.plugin) this.plugin = (await import('@capacitor-community/text-to-speech')).TextToSpeech;
@@ -24,6 +27,16 @@ export class NativeTtsEngine implements TtsEngine {
 
   diag(): TtsDiag { return { ...this.diagValue }; }
 
+  private stage(s: string): void { this.diagValue.stage = s; this.onDiag?.(this.diag()); }
+
+  private async call<T>(name: string, fn: () => Promise<T>): Promise<T> {
+    this.stage(name);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([fn(), new Promise<never>((_, rej) => { timer = setTimeout(() => rej(new Error(`timeout:${name}`)), CALL_TIMEOUT_MS); })]);
+    } finally { clearTimeout(timer); }
+  }
+
   /**
    * เครื่องมีเสียงไทยไหม — TextToSpeech ของระบบเริ่มทำงานแบบ async จึงถามซ้ำสั้นๆ ก่อนสรุปว่าไม่มี ;
    * ลำดับ: isLanguageSupported (th-TH, th, tha) → getSupportedLanguages → getSupportedVoices (ทนรหัส th/th-TH/th_TH/tha)
@@ -31,24 +44,25 @@ export class NativeTtsEngine implements TtsEngine {
   async probe(): Promise<boolean> {
     let tts;
     try {
-      tts = await this.load();
+      tts = await this.call('load', () => this.load());
       this.diagValue.engineLoaded = true;
+      this.stage('loaded');
     } catch (e) { this.note(e); return false; }  /* โหลดปลั๊กอินไม่ได้ */
 
     for (let i = 0; i < PROBE_TRIES; i++) {
       for (const tag of DIRECT_TAGS) {
         try {
-          if ((await tts.isLanguageSupported({ lang: tag })).supported) return this.found(tag, 'isLanguageSupported');
+          if ((await this.call(`isLang:${tag}`, () => tts.isLanguageSupported({ lang: tag }))).supported) return this.found(tag, 'isLanguageSupported');
         } catch (e) { this.note(e); /* ระบบ TTS ยังไม่พร้อม — ลองต่อ */ }
       }
       try {
-        const { languages } = await tts.getSupportedLanguages();
+        const { languages } = await this.call('languages', () => tts.getSupportedLanguages());
         this.diagValue.languageCount = Array.isArray(languages) ? languages.length : null;
         const tag = findThaiTag(languages);
         if (tag) return this.found(tag, 'languages');
       } catch (e) { this.note(e); }
       try {
-        const { voices } = await tts.getSupportedVoices();
+        const { voices } = await this.call('voices', () => tts.getSupportedVoices());
         this.diagValue.voiceCount = Array.isArray(voices) ? voices.length : null;
         const tag = findThaiTag(voices);
         if (tag) return this.found(tag, 'voices');
@@ -57,6 +71,7 @@ export class NativeTtsEngine implements TtsEngine {
     }
     this.diagValue.hasThai = false;
     this.diagValue.via = null;
+    this.stage('done:none');
     return false;
   }
 
@@ -64,12 +79,14 @@ export class NativeTtsEngine implements TtsEngine {
     if (this.diagValue.error) return;
     const m = e instanceof Error ? e.message : typeof e === 'string' ? e : (e as { message?: unknown } | null)?.message;
     this.diagValue.error = String(m ?? 'unknown').slice(0, 80);
+    this.onDiag?.(this.diag());
   }
 
   private found(tag: string, via: NonNullable<TtsDiag['via']>): true {
     this.lang = toLanguageTag(tag);
     this.diagValue.hasThai = true;
     this.diagValue.via = via;
+    this.stage('done:found');
     return true;
   }
 

@@ -34,7 +34,7 @@ async function setup(thai: boolean) {
 describe('TtsService แอป Android: ตรวจเสียงไทยซ้ำ', () => {
   it('ตอนแรกไม่มี แล้วผู้ใช้เปลี่ยน engine แล้วกลับเข้าแอป → ตรวจใหม่และแสดงปุ่ม', async () => {
     let thai = false;
-    const engine: TtsEngine = { probe: async () => thai, speak: async () => {}, stop: async () => {}, diag: () => ({ engineLoaded: true, languageCount: 3, voiceCount: 0, hasThai: thai, via: thai ? 'languages' : null, error: null }) };
+    const engine: TtsEngine = { probe: async () => thai, speak: async () => {}, stop: async () => {}, diag: () => ({ engineLoaded: true, languageCount: 3, voiceCount: 0, hasThai: thai, via: thai ? 'languages' : null, error: null, stage: 'x' }) };
     const env: TtsEnv = { synth: null, makeUtterance: () => { throw new Error('x'); }, native: async () => engine };
     TestBed.configureTestingModule({ providers: [provideRouter([{ path: 'a', component: Dummy }]), { provide: TTS_ENV, useValue: env }] });
     const s = TestBed.inject(TtsService);
@@ -45,7 +45,7 @@ describe('TtsService แอป Android: ตรวจเสียงไทยซ�
     document.dispatchEvent(new Event('visibilitychange'));
     await tick();
     expect(s.canSpeak()).toBe(true);
-    expect(s.nativeDiag()).toEqual({ engineLoaded: true, languageCount: 3, voiceCount: 0, hasThai: true, via: 'languages', error: null });
+    expect(s.nativeDiag()).toEqual({ engineLoaded: true, languageCount: 3, voiceCount: 0, hasThai: true, via: 'languages', error: null, stage: 'x' });
   });
 });
 

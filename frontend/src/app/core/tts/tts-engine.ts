@@ -9,4 +9,6 @@ export interface TtsEngine {
   stop(): Promise<void>;
   /** ข้อมูลวินิจฉัยหลัง probe (เฉพาะ true/false/จำนวน ไม่มีข้อความที่อ่าน) — ไม่ต้องมีก็ได้ */
   diag?(): TtsDiag;
+  /** engine เรียกทุกครั้งที่ข้อมูลวินิจฉัยเปลี่ยน (ให้หน้าผู้พัฒนาเห็นขั้นที่ค้างแบบสด) */
+  onDiag?: (d: TtsDiag) => void;
 }

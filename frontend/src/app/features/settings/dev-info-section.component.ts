@@ -16,9 +16,10 @@ import { ScreenInfoComponent } from './screen-info.component';
       <section class="tts" aria-label="เสียงอ่าน (native)">
         <h3 class="tts__t">เสียงอ่านในแอป (Android)</h3>
         <dl class="tts__l">
-          <dt>โหลด engine ได้</dt><dd>{{ diag() === null ? 'กำลังตรวจ…' : diag()?.engineLoaded ? 'ได้' : 'ไม่ได้' }}</dd>
+          <dt>โหลด engine ได้</dt><dd>{{ diag() === null ? 'ยังไม่เริ่ม' : diag()?.engineLoaded ? 'ได้' : diag()?.stage?.startsWith('done') || diag()?.stage === 'import' ? 'ไม่ได้' : 'กำลังตรวจ…' }}</dd>
           <dt>จำนวนภาษา</dt><dd class="num">{{ diag()?.languageCount ?? '–' }}</dd>
           <dt>จำนวนเสียง</dt><dd class="num">{{ diag()?.voiceCount ?? '–' }}</dd>
+          <dt>ขั้นที่ทำอยู่/ค้าง</dt><dd class="err">{{ diag()?.stage ?? '–' }}</dd>
           <dt>error แรกที่ได้รับ</dt><dd class="err">{{ diag()?.error ?? '–' }}</dd>
           <dt>มีเสียงไทย</dt><dd>{{ tts.canSpeak() ? 'มี' : 'ไม่มี' }}@if (diag()?.via; as v) { <span class="via"> ({{ v }})</span> }</dd>
         </dl>
