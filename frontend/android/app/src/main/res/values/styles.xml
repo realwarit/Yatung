@@ -15,8 +15,15 @@
         <item name="android:background">@null</item>
     </style>
 
-
+    <!--
+        Splash ตอนเปิดแอป (Android 12+ ใช้ Splash Screen API ของระบบ ; Android 11 ลงไปใช้ไลบรารี androidx core-splashscreen หน้าตาเดียวกัน)
+        = พื้นมิ้นต์ #e8f7f3 + น้องยาตรงกลาง (splash_icon) จังหวะเดียว ไม่มีชื่อแอป/ข้อความ
+        ไม่ใส่ android:background แล้ว : ภาพ drawable/splash เดิมทำให้ไลบรารีมีภาพที่สองซ้อน
+        ปลั๊กอิน SplashScreen ของ Capacitor ใช้ธีมนี้ (ถ้าธีมผิดจะตกไปใช้ทางสำรอง = ภาพเต็มจอ drawable/splash → จึงเก็บไฟล์นั้นไว้ให้หน้าตาตรงกัน)
+    -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/splash</item>
+        <item name="windowSplashScreenBackground">@color/yt_splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 </resources>
