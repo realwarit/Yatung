@@ -205,3 +205,6 @@
 - **พบบั๊กเดิมบนเว็บ (ไม่แก้ เพราะเปลี่ยนหน้าตาเว็บ — รอคาเด็ทสั่ง):** `.yt-sheet-bottom.mat-bottom-sheet-container` ใน `_components.scss` ไม่ตรง DOM ของ Material รุ่นนี้ (panelClass อยู่ที่ overlay pane) → แผ่นล่างไม่มีมุมโค้ง/ขีดจับ/ระยะ safe-area ทั้งเว็บและแอป · ในแอปแก้เฉพาะระยะล่างใต้ `.is-native`
 - **ขนาด:** initial เว็บ 517.27 kB (เดิม 516.3x, +~0.9 kB จาก token/สไตล์/ตัวเริ่ม native) · native 517.32 kB · `ng test` 386 ผ่าน (เดิม 373)
 - ภาพจำลอง `tools/day9-shots.mjs` (ng serve `--build-target=frontend:build:development,native --port 4300`) → `docs/screenshots/day9/` (ไม่ commit)
+
+## ผลทดสอบช่วง D บนเครื่อง (Samsung Galaxy S23 FE, 16 ต.ค.) — ผ่านทั้งหมด (ภาพ 6-25 ถึง 6-41)
+แถบบนเขียว/ล่างขาว ไม่ทับเนื้อหา (โหมดปัด + 3 ปุ่ม) · back ทุกกรณี (ยาของฉัน→วันนี้, กล่องหยุดใช้ยาใน sheet, กล่องออกจากระบบ, หน้าย่อย, ฟอร์มยาถามก่อนออก, กดรัวไม่ข้ามชั้น, /today ออกแอป) · ไม่มีปุ่ม 🔊 · แถว "ใช้ได้บนเว็บ"/"ใช้ LINE แทน" + sheet → หน้าเชื่อม LINE · ก++ ไม่ล้น · คีย์บอร์ดไม่บังช่องกรอก **จึงไม่เพิ่ม `@capacitor/keyboard`**
