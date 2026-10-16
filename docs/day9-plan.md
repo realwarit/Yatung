@@ -195,3 +195,13 @@
 - **ไม่ประกาศ `CAMERA`** → ไม่มีกล่องขอสิทธิ์ ใช้แทน "ข้อความไทยก่อนขอสิทธิ์" ในส่วนที่ 3 ข้อ 6 (ยกเลิกข้อความก่อนขอสิทธิ์) · **ไม่ทำปุ่มเปิดหน้าตั้งค่าแอป** · ข้อความ "สิทธิ์ถูกปิด" ใน `camera-errors.ts` เก็บไว้
 - ทดสอบบนเครื่องปรับ: สแกนรูปเดียว ไปถึงหน้าตรวจแล้ว**กดยกเลิก ไม่บันทึก** (กันยาใหม่เข้าบัญชีทดสอบ/แจ้งญาติจริง) · คลังภาพ: เปิดตัวเลือกแล้วยกเลิก · ตัดขั้นปิดสิทธิ์กล้อง (ไม่มีสวิตช์ให้ปิด)
 - **ถ้าภาพ 6-21 ช้าหรือแอปค้างตอนกลับจากกล้อง:** เสนอเพิ่ม `width: 1600, height: 1600` ใน `Camera.getPhoto` (native ย่อก่อนส่ง DataUrl เข้า WebView) — ยังไม่แก้จนกว่าจะเห็นผล
+
+# ช่วง D — back / แถบระบบ / TTS / แจ้งเตือน (16 ต.ค.)
+- **back** (`core/native/back-decision.ts` ฟังก์ชันล้วน + `back-handler.service.ts` lazy เฉพาะ native + `back-layers.ts`): inline-ใน-sheet → sheet/dialog → inline-ของหน้า → หน้าย่อยย้อนตามประวัติ (ผ่าน canDeactivate; ไม่มีประวัติ = ไปแท็บแม่) → แท็บหลักไป /today → /today,/login,/register ออกจากแอป · กดซ้ำ < 350 ms นับครั้งเดียว + ไม่ทำอะไรระหว่างเปลี่ยนหน้า (ยกเว้นปิด dialog ของ canDeactivate) · เทสหน่วย `back-decision.spec.ts`, `back-layers.spec.ts`
+- **แถบระบบ:** Android 16 บังคับ edge-to-edge → ตั้งสีผ่านปลั๊กอินไม่ได้ จึงวาดเองใต้ `html.is-native` (`styles/_native.scss`): แถบบนเขียว `--yt-primary` (ไอคอนขาว) · แถบล่าง `--yt-surface` (ไอคอนเข้ม) ตั้งผ่าน `SystemBars.setStyle` แยกแถบ · `viewport-fit=cover` ใส่เฉพาะ native (main.ts) + `capacitor.config.ts` `SystemBars.insetsHandling: 'native'`, `initialViewportFitValueHint: 'cover'` · โครงแอปเริ่มใต้แถบบนด้วย `--yt-top-off = max(--yt-banner-h, --yt-safe-top)` (เว็บ `--yt-safe-top = 0` จึงค่าเท่าเดิม) · WebView < 140 ได้ env() = 0 และ Capacitor เว้นขอบให้เอง แต่สีแถบจะเป็นสีพื้นหน้าต่างของแอป
+- **TTS:** native `canSpeak = false` (ซ่อนปุ่ม 🔊 ทุกหน้า) · ตั้งค่า แถวเสียงอ่านเป็นป้าย "ใช้ได้บนเว็บ" ไม่เปิด sheet
+- **แจ้งเตือนบนเครื่อง:** `pushState` มีสถานะ `native` → ป้าย "ใช้ LINE แทน" · sheet = น้องยาตรง + กล่องคำพูด + ปุ่ม "ไปหน้าเชื่อม LINE" (ปิด sheet ก่อนเปลี่ยนหน้า)
+- **ล็อกแนวตั้ง** `screenOrientation="portrait"` · คีย์บอร์ด: ยังไม่เพิ่ม `@capacitor/keyboard` (SystemBars โหมด native จัด padding ตอนคีย์บอร์ดให้) รอผลเครื่องจริง
+- **พบบั๊กเดิมบนเว็บ (ไม่แก้ เพราะเปลี่ยนหน้าตาเว็บ — รอคาเด็ทสั่ง):** `.yt-sheet-bottom.mat-bottom-sheet-container` ใน `_components.scss` ไม่ตรง DOM ของ Material รุ่นนี้ (panelClass อยู่ที่ overlay pane) → แผ่นล่างไม่มีมุมโค้ง/ขีดจับ/ระยะ safe-area ทั้งเว็บและแอป · ในแอปแก้เฉพาะระยะล่างใต้ `.is-native`
+- **ขนาด:** initial เว็บ 517.27 kB (เดิม 516.3x, +~0.9 kB จาก token/สไตล์/ตัวเริ่ม native) · native 517.32 kB · `ng test` 386 ผ่าน (เดิม 373)
+- ภาพจำลอง `tools/day9-shots.mjs` (ng serve `--build-target=frontend:build:development,native --port 4300`) → `docs/screenshots/day9/` (ไม่ commit)

@@ -43,7 +43,7 @@
 // สถานะเต็มหน้า
 .state { display: grid; justify-items: center; gap: var(--yt-space-3); max-width: 36rem; margin: var(--yt-space-4) auto 0; padding: var(--yt-space-4); text-align: center; p { margin: 0; } }
 
-.state--done { gap: var(--yt-space-4); max-width: 47.5rem; min-height: calc(100dvh - var(--yt-banner-h, 0px) - 8rem); align-content: center; border: 0; background: none; .say { max-width: 22rem; } }
+.state--done { gap: var(--yt-space-4); max-width: 47.5rem; min-height: calc(100dvh - var(--yt-top-off) - 8rem); align-content: center; border: 0; background: none; .say { max-width: 22rem; } }
 .state__t { margin: 0; font-size: var(--yt-text-title); color: var(--yt-primary-dark); }
 .state__btns { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--yt-space-3); width: 100%; a { flex: 1 1 12rem; min-height: var(--yt-tap); } }
 .done { display: grid; gap: var(--yt-space-2); width: 100%; margin: 0; padding: 0; list-style: none; text-align: left;

@@ -12,6 +12,14 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',   // origin ในแอป = https://localhost (ต้องตรงกับ CORS ที่ Node-RED)
   },
+  plugins: {
+    SystemBars: {
+      // Android 15+ บังคับ edge-to-edge : หน้าเว็บวาดพื้นแถบเอง (styles/_native.scss) ด้วย env(safe-area-inset-*)
+      // 'cover' ตรงกับ meta viewport ที่ main.ts ใส่ให้ build native → ไม่กระตุกตอนเริ่ม
+      insetsHandling: 'native',
+      initialViewportFitValueHint: 'cover',
+    },
+  },
 };
 
 export default config;

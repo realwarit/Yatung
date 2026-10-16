@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, inject, signal, viewChi
 import { MatButton } from '@angular/material/button';
 import { errorText } from '../../core/api/api-error';
 import { MedicationApi } from '../../core/api/medication.api';
+import { useBackLayer } from '../../core/native/back-layers';
 import { Medication } from '../../core/api/models';
 import { nbNum } from '../../core/nowrap';
 import { FitLabelDirective } from '../../shared/fit-label.directive';
@@ -80,6 +81,8 @@ export class MedDetailSheetComponent {
 
   protected readonly confirming = signal(false);
   protected readonly busy = signal(false);
+  // ปุ่ม back ของ Android ปิดกล่องยืนยันนี้ก่อนปิด sheet
+  private readonly backLayer = useBackLayer(this.confirming, () => this.confirming.set(false), 'overlay');
   protected readonly error = signal<string | null>(null);
 
   protected readonly nb = nbNum;

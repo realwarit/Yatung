@@ -1,6 +1,7 @@
 import { DestroyRef, Injectable, InjectionToken, computed, inject, signal } from '@angular/core';
 import { NavigationStart, Router } from '@angular/router';
 import { filter } from 'rxjs';
+import { isNative } from '../native/native';
 
 /** ตัวห่อ Web Speech API — ทดสอบด้วยของจำลองได้ ; synth = null เมื่อเบราว์เซอร์ไม่รองรับ */
 export interface TtsEnv {
@@ -57,7 +58,7 @@ export class TtsService {
    * แสดงปุ่ม 🔊 ได้ไหม: เบราว์เซอร์รองรับ และ (มีเสียงไทย หรือ รายการเสียงยังว่าง)
    * iOS ส่งรายการเสียงช้า/บางครั้งว่างตลอด → ห้ามซ่อนปุ่มหรือรอก่อนพูด ; รายการมีแล้วแต่ไม่มีเสียงไทยเลย = ซ่อน (พูดไทยไม่ได้จริง)
    */
-  readonly canSpeak = computed(() => this.supported() && (this.voices().length === 0 || this.thaiVoices().length > 0));
+  readonly canSpeak = computed(() => !isNative() && this.supported() && (this.voices().length === 0 || this.thaiVoices().length > 0));
   private readonly prefs = signal<Prefs>(readPrefs());
   readonly rate = computed(() => this.prefs().rate);
   readonly selectedVoice = computed<SpeechSynthesisVoice | null>(() => {

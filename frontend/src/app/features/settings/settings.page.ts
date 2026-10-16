@@ -7,6 +7,8 @@ import { SettingsApi } from '../../core/api/settings.api';
 import { SlotTimes } from '../../core/api/models';
 import { AuthService } from '../../core/auth/auth.service';
 import { SLOT_ORDER } from '../../core/i18n/labels';
+import { useBackLayer } from '../../core/native/back-layers';
+import { isNative } from '../../core/native/native';
 import { PushService } from '../../core/push/push.service';
 import { InstallService } from '../../core/pwa/install.service';
 import { MascotComponent, MascotMood } from '../../shared/components/mascot/mascot.component';
@@ -53,6 +55,10 @@ export class SettingsPage {
   /** GET /api/config (สาธารณะ) → true = แสดงแถวเดโม ; เรียกไม่ได้ = ซ่อน */
   protected readonly demoMode = signal(false);
   protected readonly leaving = signal(false);
+  /** แอป Android : เสียงอ่านใช้ไม่ได้ในแอป (ใช้ได้บนเว็บ) · การแจ้งเตือนบนเครื่องใช้ LINE แทน */
+  protected readonly native = isNative();
+  // ปุ่ม back ของ Android ปิดกล่องยืนยัน "ออกจากระบบ" ก่อนเปลี่ยนหน้า
+  private readonly backLayer = useBackLayer(this.leaving, () => this.leaving.set(false), 'page');
   protected readonly installMode = this.install.settingsMode;
   protected readonly installed = this.install.isInstalled;
 
@@ -61,7 +67,7 @@ export class SettingsPage {
     return t ? SLOT_ORDER.map((s) => t[s]).join(' · ') : 'กำลังโหลด…';
   });
   protected readonly pushLabel = computed(() => ({
-    enabled: 'เปิดอยู่', off: 'ปิดอยู่', blocked: 'ถูกบล็อก', 'needs-install': 'ต้องติดตั้งก่อน', unsupported: 'ไม่รองรับ',
+    enabled: 'เปิดอยู่', off: 'ปิดอยู่', blocked: 'ถูกบล็อก', 'needs-install': 'ต้องติดตั้งก่อน', unsupported: 'ไม่รองรับ', native: 'ใช้ LINE แทน',
   }[this.push.state()]));
   /** กล่องคำพูด : ข้อแรกที่เป็นจริง (ยังไม่เชื่อม LINE → ยังไม่มีญาติ → ครบ) ; ยังโหลดไม่เสร็จ = ข้อความกลาง ; ประโยคละก้อน */
   protected readonly say = computed<{ tone: BubbleTone; mood: MascotMood; text: string }>(() => {
