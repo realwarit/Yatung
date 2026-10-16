@@ -171,3 +171,6 @@
   - ที่แก้ใน Dockerfile: `--fetch-retries=5 --fetch-retry-mintimeout=2000 --maxsockets=4` + `--mount=type=cache,target=/root/.npm` (แคชข้ามรอบ แม้รอบที่ล้ม)
 - **ทาง A (nginx CORS) เตรียมไฟล์แล้วแต่ยังไม่ขึ้น:** `frontend/nginx.conf` (`map` origin → `https://localhost` เท่านั้น · `proxy_hide_header` ซ่อน `Access-Control-*` ของ Node-RED · ตอบ preflight 204 เอง ครบ methods รวม PATCH · `Max-Age 600` · `Vary: Origin`) · `nginx -t` ผ่านใน image ใหม่ (รันแบบ one-off ในเครือข่าย compose) · image `yatung-frontend:latest` build แล้ว แต่ container `yatung-frontend-1` ที่รันอยู่ยังใช้ image เก่า
 - **พรุ่งนี้เช้า (ต้องถามคาเด็ทก่อนทุกขั้น):** (1) `docker compose up -d frontend` (ขณะคาเด็ทไม่ได้เทสมือถือ) → (2) `bash scripts/test-cors-native.sh --ngrok` → (3) เว็บ Chrome เดสก์ท็อป: login และหยุด/กลับมาใช้ยา Paracetamol → (4) วัดความเร็วแอป (ข้อ 2 ผลช่วง A) ก่อน/หลังทาง A → (5) ช่วง C
+
+# งานค้าง (16 ต.ค.)
+- `frontend/nginx.conf` `location = /line/webhook`: เพิ่ม `proxy_hide_header Access-Control-Allow-Origin;` (และ `-Allow-Methods`, `-Allow-Headers`) — ตอนนี้ Node-RED (editor-api) ตอบ `ACAO: *` เองอยู่ก่อนแล้ว (ไม่ใช่จาก nginx ใหม่ ไม่กระทบ เพราะ webhook ตรวจลายเซ็น) ทำ**ตอน rebuild frontend ครั้งถัดไป** ไม่ rebuild เฉพาะเรื่องนี้ · หลังทำแล้วให้แก้ข้อ webhook ใน `scripts/test-cors-native.sh` กลับเป็น "ต้องไม่มี ACAO"
