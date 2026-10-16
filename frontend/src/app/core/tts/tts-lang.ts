@@ -28,4 +28,6 @@ export interface TtsDiag {
   hasThai: boolean;
   /** ตรวจเจอจากวิธีไหน */
   via: 'isLanguageSupported' | 'languages' | 'voices' | null;
+  /** ข้อความ error แรกที่ปลั๊กอิน/ระบบตอบ (ตัด 80 ตัวอักษร ; เป็นรหัส/ข้อความของระบบ ไม่ใช่ข้อความที่อ่าน) */
+  error: string | null;
 }

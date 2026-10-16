@@ -15,7 +15,7 @@ export class NativeTtsEngine implements TtsEngine {
   private plugin: typeof import('@capacitor-community/text-to-speech').TextToSpeech | null = null;
   /** รหัสที่ engine ยอมรับจริง (ใช้ตอน speak — ปลั๊กอินปฏิเสธถ้ารหัสที่ส่งไม่ผ่าน isLanguageSupported) */
   private lang = DEFAULT_LANG;
-  private diagValue: TtsDiag = { engineLoaded: false, languageCount: null, voiceCount: null, hasThai: false, via: null };
+  private diagValue: TtsDiag = { engineLoaded: false, languageCount: null, voiceCount: null, hasThai: false, via: null, error: null };
 
   private async load() {
     if (!this.plugin) this.plugin = (await import('@capacitor-community/text-to-speech')).TextToSpeech;
@@ -33,31 +33,37 @@ export class NativeTtsEngine implements TtsEngine {
     try {
       tts = await this.load();
       this.diagValue.engineLoaded = true;
-    } catch { return false; }  /* โหลดปลั๊กอินไม่ได้ */
+    } catch (e) { this.note(e); return false; }  /* โหลดปลั๊กอินไม่ได้ */
 
     for (let i = 0; i < PROBE_TRIES; i++) {
       for (const tag of DIRECT_TAGS) {
         try {
           if ((await tts.isLanguageSupported({ lang: tag })).supported) return this.found(tag, 'isLanguageSupported');
-        } catch { /* ระบบ TTS ยังไม่พร้อม — ลองต่อ */ }
+        } catch (e) { this.note(e); /* ระบบ TTS ยังไม่พร้อม — ลองต่อ */ }
       }
       try {
         const { languages } = await tts.getSupportedLanguages();
         this.diagValue.languageCount = Array.isArray(languages) ? languages.length : null;
         const tag = findThaiTag(languages);
         if (tag) return this.found(tag, 'languages');
-      } catch { /* ไม่รองรับ/ยังไม่พร้อม */ }
+      } catch (e) { this.note(e); }
       try {
         const { voices } = await tts.getSupportedVoices();
         this.diagValue.voiceCount = Array.isArray(voices) ? voices.length : null;
         const tag = findThaiTag(voices);
         if (tag) return this.found(tag, 'voices');
-      } catch { /* ไม่รองรับ/ยังไม่พร้อม */ }
+      } catch (e) { this.note(e); }
       await new Promise((r) => setTimeout(r, PROBE_GAP_MS));
     }
     this.diagValue.hasThai = false;
     this.diagValue.via = null;
     return false;
+  }
+
+  private note(e: unknown): void {
+    if (this.diagValue.error) return;
+    const m = e instanceof Error ? e.message : typeof e === 'string' ? e : (e as { message?: unknown } | null)?.message;
+    this.diagValue.error = String(m ?? 'unknown').slice(0, 80);
   }
 
   private found(tag: string, via: NonNullable<TtsDiag['via']>): true {

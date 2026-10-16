@@ -118,7 +118,10 @@ export class TtsService {
     void this.env.native!().then(async (engine) => {
       this.nativeEngine = engine;
       await this.probeNative();
-    }, () => { this.nativeLoadFailed.set(true); this.nativeThai.set(false); });
+    }, (e) => {
+      this.nativeLoadFailed.set(true); this.nativeThai.set(false);
+      this.nativeDiag.set({ engineLoaded: false, languageCount: null, voiceCount: null, hasThai: false, via: null, error: `import: ${String((e as Error)?.message ?? e).slice(0, 70)}` });
+    });
     // ผู้ใช้ไปเปลี่ยน TTS engine / ติดตั้งเสียงไทยในตั้งค่าเครื่องแล้วกลับมา → ตรวจใหม่ (เดิมจำผลแรกจนปิดแอป)
     const onBack = () => { if (document.visibilityState === 'visible' && this.nativeThai() === false) void this.probeNative(); };
     document.addEventListener('visibilitychange', onBack);

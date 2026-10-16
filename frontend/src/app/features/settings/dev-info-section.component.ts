@@ -16,9 +16,10 @@ import { ScreenInfoComponent } from './screen-info.component';
       <section class="tts" aria-label="เสียงอ่าน (native)">
         <h3 class="tts__t">เสียงอ่านในแอป (Android)</h3>
         <dl class="tts__l">
-          <dt>โหลด engine ได้</dt><dd>{{ engineLoaded() ? 'ได้' : 'ไม่ได้' }}</dd>
+          <dt>โหลด engine ได้</dt><dd>{{ diag() === null ? 'กำลังตรวจ…' : diag()?.engineLoaded ? 'ได้' : 'ไม่ได้' }}</dd>
           <dt>จำนวนภาษา</dt><dd class="num">{{ diag()?.languageCount ?? '–' }}</dd>
           <dt>จำนวนเสียง</dt><dd class="num">{{ diag()?.voiceCount ?? '–' }}</dd>
+          <dt>error แรกที่ได้รับ</dt><dd class="err">{{ diag()?.error ?? '–' }}</dd>
           <dt>มีเสียงไทย</dt><dd>{{ tts.canSpeak() ? 'มี' : 'ไม่มี' }}@if (diag()?.via; as v) { <span class="via"> ({{ v }})</span> }</dd>
         </dl>
         <button mat-stroked-button type="button" (click)="tts.probeNative()">ตรวจเสียงไทยอีกครั้ง</button>
@@ -48,6 +49,7 @@ import { ScreenInfoComponent } from './screen-info.component';
     .tts__t { margin: 0 0 var(--yt-space-2); font-size: var(--yt-text-heading); }
     .tts__l { display: grid; grid-template-columns: 1fr auto; gap: var(--yt-space-1) var(--yt-space-3); margin: 0 0 var(--yt-space-3); }
     .tts__l dd { margin: 0; font-weight: 700; text-align: right; }
+    .err { font-weight: 400; overflow-wrap: anywhere; font-size: var(--yt-text-sm); }
     .via { font-weight: 400; color: var(--yt-text-muted); }
     .list { list-style: none; margin: 0 0 var(--yt-space-3); padding: 0; display: flex; flex-direction: column; gap: var(--yt-space-2); }
     li { display: flex; flex-wrap: wrap; gap: 0 var(--yt-space-2); align-items: baseline; padding: var(--yt-space-2) 0; border-bottom: 1px solid var(--yt-border); }
@@ -60,7 +62,6 @@ export class DevInfoSectionComponent {
   protected readonly tts = inject(TtsService);
   protected readonly native = isNative();
   protected readonly diag = this.tts.nativeDiag;
-  protected readonly engineLoaded = () => !this.tts.nativeLoadFailed() && this.tts.nativeDiag() !== null;
   protected readonly reversed = () => [...this.log.entries()].reverse();
   constructor() { this.log.reload(); }
 }
