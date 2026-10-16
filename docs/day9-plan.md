@@ -174,3 +174,13 @@
 
 # งานค้าง (16 ต.ค.)
 - `frontend/nginx.conf` `location = /line/webhook`: เพิ่ม `proxy_hide_header Access-Control-Allow-Origin;` (และ `-Allow-Methods`, `-Allow-Headers`) — ตอนนี้ Node-RED (editor-api) ตอบ `ACAO: *` เองอยู่ก่อนแล้ว (ไม่ใช่จาก nginx ใหม่ ไม่กระทบ เพราะ webhook ตรวจลายเซ็น) ทำ**ตอน rebuild frontend ครั้งถัดไป** ไม่ rebuild เฉพาะเรื่องนี้ · หลังทำแล้วให้แก้ข้อ webhook ใน `scripts/test-cors-native.sh` กลับเป็น "ต้องไม่มี ACAO"
+
+# ผลทดสอบ 16 ต.ค. (Samsung Galaxy S23 FE · ใช้ทำสไลด์)
+- **ข้อ 4 (apk หยุดใช้/กลับมาใช้ Paracetamol ผ่าน PATCH):** ผ่าน ไม่มี error (ภาพ 6-14 ถึง 6-17) · เว็บ Chrome เดสก์ท็อปผ่านเช่นกัน (4→3→4, ภาพ 6-10 ถึง 6-13)
+- **CORS ที่ nginx:** `scripts/test-cors-native.sh` ผ่าน 15/15 (localhost) และ 30/30 (รวม ngrok) · `/line/webhook` ลายเซ็นผิดยังได้ 401 ทั้งสองทาง
+- **ข้อ 5 วัดความเร็ว apk (adb + CDP, สลับแท็บ วันนี้→ยาของฉัน→สรุป→ตั้งค่า→วันนี้ 2 รอบ):**
+  - คำขอ API 20 ครั้ง · ตอบ (TTFB) เฉลี่ย 237 ms · รวมเฉลี่ย 313 ms
+  - preflight (OPTIONS) 3 ครั้งทั้งหมด (`/api/settings/slot-times`, `/api/caregivers`, `/api/config`) เฉลี่ย 402 ms — **ครั้งเดียวต่อ endpoint** รอบที่สองไม่มีเลย (Max-Age 600 ได้ผล)
+  - หน้าที่ช้าสุด: `/api/caregivers` รอบแรก 1,040 ms · หน้าอื่นรอบสอง ≈ 150–360 ms ต่อคำขอ
+  - สรุป: ความหน่วงที่เหลือมาจากการไปกลับผ่าน ngrok ไม่ใช่ CORS · **ไม่มีตัวเลข "ก่อน" ที่วัดจริง** (container ขึ้นเป็นเวอร์ชันใหม่ก่อนวัด) — ประมาณการเท่านั้น: ก่อนมี Max-Age ทุกคำขอมี preflight เพิ่ม ≈ 340–490 ms
+  - ตัดสินใจ: ไม่เทียบ PWA, ไม่รวมคำขอ, ยังไม่ทำแคชฝั่งแอป
