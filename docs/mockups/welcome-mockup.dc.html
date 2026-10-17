@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>ยาตรง หน้าต้อนรับ สวนและเม็ดยา</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@500&amp;family=Mali:wght@600;700&amp;family=Kanit:wght@800&amp;family=Prompt:wght@800&amp;family=Mitr:wght@700&amp;family=Chonburi&amp;family=Noto+Sans+Thai+Looped:wght@400;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#134e4a}a:hover{color:#0f766e}
+/* ---------- ฉากเปิด (เล่นครั้งเดียว) ---------- */
+@keyframes ytSky{from{opacity:0}to{opacity:1}}
+@keyframes ytSunRise{0%{transform:translateY(190px) scale(.7);opacity:0}60%{opacity:1}100%{transform:none;opacity:1}}
+@keyframes ytHillUp{from{transform:translateY(140px)}to{transform:none}}
+@keyframes ytDrop{0%{transform:translateY(-330px) scale(.9);opacity:0}8%{opacity:1}58%{transform:translateY(0) scale(1)}68%{transform:scale(1.14,.84)}80%{transform:scale(.95,1.07)}90%{transform:scale(1.02,.98)}100%{transform:none;opacity:1}}
+@keyframes ytShadowIn{0%,40%{transform:scale(.2);opacity:0}58%{transform:scale(1.25);opacity:1}100%{transform:none;opacity:1}}
+@keyframes ytTitle{0%{transform:translateY(24px) scale(.7);opacity:0}60%{transform:translateY(-4px) scale(1.06);opacity:1}100%{transform:none;opacity:1}}
+@keyframes ytRise{from{transform:translateY(22px);opacity:0}to{transform:none;opacity:1}}
+@keyframes ytPopIn{0%{transform:scale(0) rotate(-40deg);opacity:0}70%{transform:scale(1.25) rotate(8deg);opacity:1}100%{transform:none;opacity:1}}
+@keyframes ytBubble{0%{transform:scale(0);opacity:0}70%{transform:scale(1.12);opacity:1}100%{transform:none;opacity:1}}
+@keyframes ytBubbleBob{0%,40%,100%{transform:none}8%,24%{transform:rotate(-4deg) scale(1.05)}16%,32%{transform:rotate(2deg)}}
+@keyframes ytLetterIn{0%{transform:translateY(-46px) scale(.4) rotate(-24deg);opacity:0}60%{transform:translateY(6px) scale(1.18) rotate(6deg);opacity:1}100%{transform:none;opacity:1}}
+@keyframes ytLetterJig{0%,80%,100%{transform:none}86%{transform:translateY(-12px) rotate(-7deg) scale(1.08)}92%{transform:translateY(0) rotate(4deg)}96%{transform:translateY(-3px)}}
+.yt-letter{position:relative;display:inline-block;margin:0 -1px}
+.yt-lb{position:absolute;left:0;top:0;color:#0f766e;text-shadow:0 1px 0 #0f766e,0 2px 0 #0f766e,0 3px 0 #0e6b64,0 4px 0 #0e6b64,0 5px 0 #115e59,0 6px 0 #115e59,0 7px 0 #134e4a,0 8px 0 #134e4a,0 16px 18px rgba(19,78,74,.35)}
+.yt-lf{position:relative;background:linear-gradient(180deg,#5eead4 0%,#2dd4bf 30%,#14b8a6 55%,#0f766e 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+/* ---------- เคลื่อนไหวต่อเนื่อง ---------- */
+@keyframes ytFloat{50%{transform:translateY(-6px)}}
+@keyframes ytBlink{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.1)}}
+@keyframes ytWaveLoop{0%,40%,100%{transform:rotate(0)}8%,24%{transform:rotate(-20deg)}16%,32%{transform:rotate(4deg)}}
+@keyframes ytHop{0%,80%,100%{transform:none}85%{transform:translateY(-26px) scale(.97,1.04)}90%{transform:translateY(0) scale(1.08,.92)}94%{transform:translateY(-7px)}97%{transform:none}}
+@keyframes ytHopShadow{0%,80%,100%{transform:none;opacity:1}85%{transform:scale(.7);opacity:.6}90%{transform:scale(1.1)}}
+@keyframes ytGlow{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(1.2);opacity:.18}}
+@keyframes ytSpin{to{transform:rotate(360deg)}}
+@keyframes ytSunBob{50%{transform:translateY(-5px)}}
+@keyframes ytDrift{from{transform:translateX(-170px)}to{transform:translateX(560px)}}
+@keyframes ytBob{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-14px) rotate(10deg)}}
+@keyframes ytOrbit{0%{transform:rotate(0) translateX(10px) rotate(0)}100%{transform:rotate(360deg) translateX(10px) rotate(-360deg)}}
+@keyframes ytTwinkle{0%,100%{transform:scale(0) rotate(0);opacity:0}45%{transform:scale(1) rotate(45deg);opacity:1}70%{transform:scale(.3) rotate(90deg);opacity:.4}}
+@keyframes ytFly{0%{transform:translate(-60px,0)}25%{transform:translate(70px,-14px)}50%{transform:translate(200px,6px)}75%{transform:translate(330px,-10px)}100%{transform:translate(470px,0)}}
+@keyframes ytFlap{50%{transform:scaleY(.35)}}
+@keyframes ytSway{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(7deg)}}
+@keyframes ytShine{0%,72%{transform:translateX(-140px) skewX(-20deg)}100%{transform:translateX(420px) skewX(-20deg)}}
+@keyframes ytBtnPulse{0%,100%{transform:none;box-shadow:0 6px 0 #b4e4d8,0 12px 22px rgba(19,78,74,.4)}50%{transform:translateY(-3px);box-shadow:0 9px 0 #b4e4d8,0 16px 28px rgba(19,78,74,.35)}}
+.yt-sky{animation:ytSky .8s ease-out both}
+.yt-sunrise{animation:ytSunRise 1.6s cubic-bezier(.22,1,.36,1) both}
+.yt-sunbob{animation:ytSunBob 6s ease-in-out 1.6s infinite}
+.yt-glow{transform-box:fill-box;transform-origin:center;animation:ytGlow 5s ease-in-out infinite}
+.yt-glow2{animation-delay:-2.5s}
+.yt-rays{transform-box:fill-box;transform-origin:center;animation:ytSpin 40s linear infinite}
+.yt-hill{animation:ytHillUp 1s cubic-bezier(.22,1,.36,1) both}
+.yt-drop{transform-origin:50% 100%;animation:ytDrop 1.2s cubic-bezier(.3,0,.4,1) .9s both}
+.yt-hop{transform-origin:50% 100%;animation:ytHop 7s ease-in-out 3.2s infinite}
+.yt-shadow{transform-box:fill-box;transform-origin:center;animation:ytShadowIn 1.2s ease-out .9s both}
+.yt-shadowhop{transform-box:fill-box;transform-origin:center;animation:ytHopShadow 7s ease-in-out 3.2s infinite}
+.yt-float{animation:ytFloat 4s ease-in-out infinite}
+.yt-blink{transform-box:fill-box;transform-origin:center;animation:ytBlink 5s ease-in-out infinite}
+.yt-wave{transform-origin:144px 118px;animation:ytWaveLoop 7s ease-in-out 2.1s infinite}
+.yt-title{transform-origin:50% 80%;animation:ytTitle .8s cubic-bezier(.34,1.56,.64,1) 1.7s both}
+.yt-rise{animation:ytRise .7s ease-out both}
+.yt-cloud{animation:ytDrift 48s linear infinite}
+.yt-twinkle{animation:ytTwinkle 3.2s ease-in-out infinite}
+.yt-fly{animation:ytFly 20s linear 3s infinite}
+.yt-flap{transform-box:fill-box;transform-origin:center;animation:ytFlap .45s ease-in-out infinite}
+.yt-sway{transform-box:fill-box;transform-origin:50% 100%;animation:ytSway 3s ease-in-out infinite}
+.yt-shine{animation:ytShine 4.5s ease-in-out 3.4s infinite}
+.yt-btnpulse{animation:ytRise .7s ease-out 2.6s both,ytBtnPulse 3s ease-in-out 3.4s infinite}
+.yt-still,.yt-still *{animation:none!important}
+@media (prefers-reduced-motion:reduce){.yt-scene,.yt-scene *{animation:none!important}}
+.yt-btn:focus-visible{outline:3px solid #f59e0b;outline-offset:3px}
+</style>
+</helmet>
+<div class="{{rootClass}}" style="position: relative; width: 384px; height: 832px; overflow: hidden; background: #e8f7f3; font-family: 'Noto Sans Thai Looped', sans-serif; color: #134e4a">
+
+<div class="yt-sky" style="position: absolute; left: 0; top: 0; width: 384px; height: 832px; background: radial-gradient(circle at 84% 11%, #fff1c7 0%, rgba(255,241,199,0) 46%), linear-gradient(180deg, #e8f7f3 0%, #fffaf2 70%)"></div>
+
+<div class="yt-sunrise" style="position: absolute; left: 250px; top: 26px; width: 140px; height: 140px">
+<div class="yt-sunbob">
+<svg width="140" height="140" viewBox="0 0 140 140" aria-hidden="true" style="display: block">
+<circle class="yt-glow" cx="70" cy="70" r="58" fill="#fde68a"></circle>
+<circle class="yt-glow yt-glow2" cx="70" cy="70" r="46" fill="#fcd34d" opacity=".5"></circle>
+<g class="yt-rays" stroke="#f59e0b" stroke-width="4" stroke-linecap="round">
+<line x1="70" y1="20" x2="70" y2="30"></line><line x1="70" y1="110" x2="70" y2="120"></line>
+<line x1="20" y1="70" x2="30" y2="70"></line><line x1="110" y1="70" x2="120" y2="70"></line>
+<line x1="41.7" y1="41.7" x2="34.6" y2="34.6"></line><line x1="98.3" y1="41.7" x2="105.4" y2="34.6"></line>
+<line x1="41.7" y1="98.3" x2="34.6" y2="105.4"></line><line x1="98.3" y1="98.3" x2="105.4" y2="105.4"></line>
+</g>
+<circle cx="70" cy="70" r="31" fill="#fbbf24" stroke="#f59e0b" stroke-width="3"></circle>
+<g class="yt-blink"><path d="M59 67Q62 63 65 67M75 67Q78 63 81 67" fill="none" stroke="#92400e" stroke-width="2.5" stroke-linecap="round"></path></g>
+<path d="M63 76Q70 82 77 76" fill="none" stroke="#92400e" stroke-width="2.5" stroke-linecap="round"></path>
+<ellipse cx="57" cy="75" rx="4" ry="2.5" fill="#fda4af"></ellipse><ellipse cx="83" cy="75" rx="4" ry="2.5" fill="#fda4af"></ellipse>
+</svg>
+</div>
+</div>
+
+<div class="yt-cloud" style="position: absolute; left: 0; top: 66px; animation-delay: -8s; opacity: .95">
+<svg width="120" height="52" viewBox="0 0 120 52" aria-hidden="true"><path d="M22 50a16 16 0 0 1 0-32 24 24 0 0 1 44-8 18 18 0 0 1 30 12 14 14 0 0 1 4 28z" fill="#ffffff"></path></svg>
+</div>
+<div class="yt-cloud" style="position: absolute; left: 0; top: 150px; animation-duration: 70s; animation-delay: -30s; opacity: .7">
+<svg width="78" height="34" viewBox="0 0 120 52" aria-hidden="true"><path d="M22 50a16 16 0 0 1 0-32 24 24 0 0 1 44-8 18 18 0 0 1 30 12 14 14 0 0 1 4 28z" fill="#ffffff"></path></svg>
+</div>
+<div class="yt-cloud" style="position: absolute; left: 0; top: 318px; animation-duration: 58s; animation-delay: -44s; opacity: .85">
+<svg width="96" height="42" viewBox="0 0 120 52" aria-hidden="true"><path d="M22 50a16 16 0 0 1 0-32 24 24 0 0 1 44-8 18 18 0 0 1 30 12 14 14 0 0 1 4 28z" fill="#ffffff"></path></svg>
+</div>
+
+<div class="yt-fly" style="position: absolute; left: 0; top: 112px">
+<svg width="40" height="20" viewBox="0 0 40 20" aria-hidden="true"><g class="yt-flap"><path d="M2 8Q7 2 12 8Q17 2 22 8" fill="none" stroke="#134e4a" stroke-width="2.2" stroke-linecap="round"></path></g><g class="yt-flap" style="animation-delay: -.2s"><path d="M20 16Q24 11 28 16Q32 11 36 16" fill="none" stroke="#134e4a" stroke-width="2" stroke-linecap="round"></path></g></svg>
+</div>
+
+<div class="yt-twinkle" style="position: absolute; left: 40px; top: 72px; animation-delay: 2.4s">
+<svg width="18" height="18" viewBox="-12 -12 24 24" aria-hidden="true"><path d="M0-11L3-3L11 0L3 3L0 11L-3 3L-11 0L-3-3Z" fill="#fbbf24"></path></svg>
+</div>
+<div class="yt-twinkle" style="position: absolute; left: 230px; top: 150px; animation-delay: 3.3s">
+<svg width="14" height="14" viewBox="-12 -12 24 24" aria-hidden="true"><path d="M0-11L3-3L11 0L3 3L0 11L-3 3L-11 0L-3-3Z" fill="#ffffff"></path></svg>
+</div>
+<div class="yt-twinkle" style="position: absolute; left: 150px; top: 380px; animation-delay: 4.1s">
+<svg width="16" height="16" viewBox="-12 -12 24 24" aria-hidden="true"><path d="M0-11L3-3L11 0L3 3L0 11L-3 3L-11 0L-3-3Z" fill="#fbbf24"></path></svg>
+</div>
+<div class="yt-twinkle" style="position: absolute; left: 352px; top: 222px; animation-delay: 2.9s">
+<svg width="14" height="14" viewBox="-12 -12 24 24" aria-hidden="true"><path d="M0-11L3-3L11 0L3 3L0 11L-3 3L-11 0L-3-3Z" fill="#fbbf24"></path></svg>
+</div>
+
+<div style="position: absolute; left: 24px; top: 348px; animation: ytPopIn .6s cubic-bezier(.34,1.56,.64,1) 2.2s both">
+<div style="animation: ytBob 6s ease-in-out 2.8s infinite">
+<svg width="46" height="22" viewBox="-1 -1 46 22" aria-hidden="true" style="transform: rotate(-24deg)"><path d="M10 0H22V20H10A10 10 0 0 1 10 0Z" fill="#fda4af"></path><path d="M22 0H34A10 10 0 0 1 34 20H22Z" fill="#fffbf2"></path><rect x="0" y="0" width="44" height="20" rx="10" fill="none" stroke="#134e4a" stroke-width="2.5"></rect></svg>
+</div>
+</div>
+<div style="position: absolute; left: 318px; top: 330px; animation: ytPopIn .6s cubic-bezier(.34,1.56,.64,1) 2.35s both">
+<div style="animation: ytOrbit 5s linear 2.9s infinite">
+<svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="12" fill="#fffbf2" stroke="#134e4a" stroke-width="2.5"></circle><path d="M8 15H22" stroke="#134e4a" stroke-width="2.5" stroke-linecap="round"></path></svg>
+</div>
+</div>
+<div style="position: absolute; left: 34px; top: 482px; animation: ytPopIn .6s cubic-bezier(.34,1.56,.64,1) 2.5s both">
+<div style="animation: ytBob 5.5s ease-in-out 3.1s infinite">
+<svg width="30" height="28" viewBox="2 2 20 20" aria-hidden="true"><path d="M12 20s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 9c0 5.8-8 11-8 11z" fill="#fda4af" stroke="#134e4a" stroke-width="1.8" stroke-linejoin="round"></path></svg>
+</div>
+</div>
+<div style="position: absolute; left: 324px; top: 462px; animation: ytPopIn .6s cubic-bezier(.34,1.56,.64,1) 2.65s both">
+<div style="animation: ytBob 6.5s ease-in-out 3.3s infinite">
+<svg width="30" height="20" viewBox="-1 -1 46 22" aria-hidden="true" style="transform: rotate(30deg)"><path d="M10 0H22V20H10A10 10 0 0 1 10 0Z" fill="#5eead4"></path><path d="M22 0H34A10 10 0 0 1 34 20H22Z" fill="#fffbf2"></path><rect x="0" y="0" width="44" height="20" rx="10" fill="none" stroke="#134e4a" stroke-width="2.5"></rect></svg>
+</div>
+</div>
+<div style="position: absolute; left: 66px; top: 128px; animation: ytPopIn .6s cubic-bezier(.34,1.56,.64,1) 2.8s both">
+<div style="animation: ytOrbit 7s linear 3.4s infinite reverse">
+<svg width="24" height="24" viewBox="-14 -14 28 28" aria-hidden="true"><path d="M0-11L3.5-3.5L11 0L3.5 3.5L0 11L-3.5 3.5L-11 0L-3.5-3.5Z" fill="#f59e0b" stroke="#134e4a" stroke-width="2" stroke-linejoin="round"></path></svg>
+</div>
+</div>
+
+<div style="position: absolute; left: 24px; right: 24px; top: 196px; text-align: center; z-index: 2">
+<h1 aria-label="ยาตรง" style="margin: 0; font-family: &quot;Mitr&quot;; font-weight: 700; font-size: 66px; line-height: 1.2; letter-spacing: 3px; font-style: normal"><span class="yt-letter" aria-hidden="true" style="animation: ytLetterIn .6s cubic-bezier(.34,1.56,.64,1) 1.6s both, ytLetterJig 5s ease-in-out 3.6s infinite"><span class="yt-lb">ย</span><span class="yt-lf">ย</span></span><span class="yt-letter" aria-hidden="true" style="animation: ytLetterIn .6s cubic-bezier(.34,1.56,.64,1) 1.7s both, ytLetterJig 5s ease-in-out 3.75s infinite"><span class="yt-lb">า</span><span class="yt-lf">า</span></span><span class="yt-letter" aria-hidden="true" style="animation: ytLetterIn .6s cubic-bezier(.34,1.56,.64,1) 1.8s both, ytLetterJig 5s ease-in-out 3.9s infinite"><span class="yt-lb">ต</span><span class="yt-lf">ต</span></span><span class="yt-letter" aria-hidden="true" style="animation: ytLetterIn .6s cubic-bezier(.34,1.56,.64,1) 1.9s both, ytLetterJig 5s ease-in-out 4.05s infinite"><span class="yt-lb">ร</span><span class="yt-lf">ร</span></span><span class="yt-letter" aria-hidden="true" style="animation: ytLetterIn .6s cubic-bezier(.34,1.56,.64,1) 2.0s both, ytLetterJig 5s ease-in-out 4.2s infinite"><span class="yt-lb">ง</span><span class="yt-lf">ง</span></span></h1>
+<p class="yt-rise" style="margin: 14px auto 0; max-width: 310px; font-family: 'Noto Sans Thai Looped', sans-serif; font-size: 21px; line-height: 1.55; font-weight: 600; color: #134e4a; animation-delay: 2.2s">{{tagline}}</p>
+</div>
+
+<svg class="yt-hill" width="384" height="272" viewBox="0 0 384 272" aria-hidden="true" style="position: absolute; left: 0; top: 560px; display: block; animation-delay: .15s">
+<path d="M0 70C70 20 150 30 210 55C270 80 330 30 384 45V272H0Z" fill="#b4e4d8"></path>
+</svg>
+<svg class="yt-hill" width="384" height="272" viewBox="0 0 384 272" aria-hidden="true" style="position: absolute; left: 0; top: 560px; display: block; overflow: visible; animation-delay: .3s">
+<path d="M0 120C60 80 130 44 200 44C270 44 330 86 384 100V272H0Z" fill="#7fd3bf"></path>
+<g class="yt-sway"><path d="M58 116V102" stroke="#0f766e" stroke-width="2.5" stroke-linecap="round"></path><circle cx="58" cy="100" r="5" fill="#f59e0b"></circle><circle cx="58" cy="100" r="1.8" fill="#fffbf2"></circle></g>
+<g class="yt-sway" style="animation-delay: -1s"><path d="M88 100V86" stroke="#0f766e" stroke-width="2.5" stroke-linecap="round"></path><circle cx="88" cy="84" r="4.5" fill="#fda4af"></circle><circle cx="88" cy="84" r="1.6" fill="#fffbf2"></circle></g>
+<g class="yt-sway" style="animation-delay: -2s"><path d="M300 90V76" stroke="#0f766e" stroke-width="2.5" stroke-linecap="round"></path><circle cx="300" cy="74" r="4.5" fill="#fda4af"></circle><circle cx="300" cy="74" r="1.6" fill="#fffbf2"></circle></g>
+<g class="yt-sway" style="animation-delay: -.5s"><path d="M334 104V90" stroke="#0f766e" stroke-width="2.5" stroke-linecap="round"></path><circle cx="334" cy="88" r="5" fill="#f59e0b"></circle><circle cx="334" cy="88" r="1.8" fill="#fffbf2"></circle></g>
+</svg>
+
+<svg width="200" height="20" viewBox="0 0 200 20" aria-hidden="true" style="position: absolute; left: 92px; top: 594px; display: block; overflow: visible">
+<g class="yt-shadow"><ellipse class="yt-shadowhop" cx="100" cy="10" rx="38" ry="5" fill="#134e4a" opacity=".2"></ellipse></g>
+</svg>
+
+<div class="yt-drop" style="position: absolute; left: 92px; top: 398px; width: 200px; height: 216px">
+<div class="yt-hop">
+<svg viewBox="0 0 200 216" width="200" height="216" aria-hidden="true" style="display: block; overflow: visible">
+<g class="yt-float">
+<rect x="68" y="158" width="26" height="38" rx="13" fill="#14b8a6" stroke="#134e4a" stroke-width="5"></rect>
+<rect x="106" y="158" width="26" height="38" rx="13" fill="#14b8a6" stroke="#134e4a" stroke-width="5"></rect>
+<path d="M52 96V82a48 48 0 0 1 96 0v14z" fill="#14b8a6"></path>
+<path d="M52 96v30a48 48 0 0 0 96 0V96z" fill="#fffbf2"></path>
+<path d="M70 80Q70 60 86 52" fill="none" stroke="#fffbf2" stroke-width="6" stroke-linecap="round" opacity=".6"></path>
+<path d="M52 96h96" fill="none" stroke="#134e4a" stroke-width="5" stroke-linecap="round"></path>
+<rect x="52" y="34" width="96" height="140" rx="48" fill="none" stroke="#134e4a" stroke-width="5"></rect>
+<ellipse cx="66" cy="138" rx="8" ry="5" fill="#fda4af"></ellipse>
+<ellipse cx="134" cy="138" rx="8" ry="5" fill="#fda4af"></ellipse>
+<g class="yt-blink"><circle cx="82" cy="122" r="9" fill="#134e4a"></circle><circle cx="85" cy="119" r="3" fill="#ffffff"></circle><circle cx="118" cy="122" r="9" fill="#134e4a"></circle><circle cx="121" cy="119" r="3" fill="#ffffff"></circle></g>
+<path d="M91 137Q100 146 109 137" fill="none" stroke="#134e4a" stroke-width="5" stroke-linecap="round"></path>
+<path d="M56 120Q42 130 44 148" fill="none" stroke="#134e4a" stroke-width="22" stroke-linecap="round"></path>
+<path d="M56 120Q42 130 44 148" fill="none" stroke="#14b8a6" stroke-width="12" stroke-linecap="round"></path>
+<g class="yt-wave"><path d="M144 118Q168 110 166 82" fill="none" stroke="#134e4a" stroke-width="22" stroke-linecap="round"></path><path d="M144 118Q168 110 166 82" fill="none" stroke="#14b8a6" stroke-width="12" stroke-linecap="round"></path></g>
+</g>
+</svg>
+</div>
+</div>
+
+<svg class="yt-hill" width="384" height="272" viewBox="0 0 384 272" aria-hidden="true" style="position: absolute; left: 0; top: 560px; display: block; animation-delay: .45s">
+<path d="M0 170C90 130 290 128 384 162V272H0Z" fill="#0f766e"></path>
+</svg>
+
+<div style="position: absolute; left: 222px; top: 378px; z-index: 3; transform-origin: 18px 100%; animation: ytBubble .5s cubic-bezier(.34,1.56,.64,1) 2.1s both">
+<div style="position: relative; transform-origin: 18px 100%; animation: ytBubbleBob 7s ease-in-out 2.1s infinite; padding: 8px 16px; border-radius: 18px; background: #ffffff; box-shadow: 0 6px 16px rgba(19,78,74,.18); font-family: Mitr, sans-serif; font-weight: 500; font-size: 19px; line-height: 1.4; color: #134e4a; white-space: nowrap">สวัสดีค่ะ!<div aria-hidden="true" style="position: absolute; left: 14px; bottom: -6px; width: 14px; height: 14px; background: #ffffff; transform: rotate(45deg); border-radius: 2px"></div></div>
+</div>
+
+<a href="#" class="yt-btn yt-btnpulse" style="position: absolute; left: 32px; right: 32px; top: 728px; height: 60px; display: flex; align-items: center; justify-content: center; gap: 10px; overflow: hidden; border-radius: 30px; background: linear-gradient(180deg, #ffffff 0%, #fffaf2 100%); color: #0f766e; font-family: Mitr, sans-serif; font-weight: 500; font-size: 24px; text-decoration: none; box-shadow: 0 6px 0 #b4e4d8, 0 12px 22px rgba(19,78,74,.4)"><span class="yt-shine" aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 60px; height: 60px; background: linear-gradient(90deg, rgba(204,251,241,0), rgba(204,251,241,.9), rgba(204,251,241,0))"></span><span style="position: relative">เริ่มต้นใช้งาน</span><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="position: relative"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+<p class="yt-rise" style="position: absolute; left: 24px; right: 24px; top: 798px; margin: 0; text-align: center; font-size: 16px; color: #e8f7f3; animation-delay: 2.8s">สำหรับผู้ป่วยและญาติผู้ดูแล</p>
+</div>
+<helmet><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue:wght@400&amp;display=swap"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&amp;display=swap"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&amp;display=swap"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;display=swap"></helmet></x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tagline":{"editor":"enum","options":["กินยาตรงเวลา น้องยาตรงช่วยเตือนเองนะคะ","ไม่ลืมยาอีกต่อไป มีน้องยาตรงอยู่ข้าง ๆ ค่ะ","ดูแลเรื่องยา ให้คนที่คุณรักสบายใจนะคะ"],"default":"กินยาตรงเวลา น้องยาตรงช่วยเตือนเองนะคะ","section":"คำโปรย"},"titleFont":{"editor":"enum","options":["Mali","Kanit","Prompt","Mitr","Chonburi"],"default":"Mali","section":"ฟอนต์"},"still":{"editor":"boolean","default":false,"section":"การเคลื่อนไหว"},"$preview":{"width":384,"height":832}}'>
+class Component extends DCLogic {
+renderVals() {
+return {
+tagline: this.props.tagline ?? 'กินยาตรงเวลา น้องยาตรงช่วยเตือนเองนะคะ',
+rootClass: 'yt-scene' + (this.props.still ? ' yt-still' : ''),
+titleFont: "'" + (this.props.titleFont ?? 'Mali') + "', sans-serif",
+bodyFont: (this.props.titleFont ?? 'Mali') === 'Chonburi' ? "'Mali', sans-serif" : "'" + (this.props.titleFont ?? 'Mali') + "', sans-serif"
+};
+}
+}
+</script>
+</body>
+</html>
