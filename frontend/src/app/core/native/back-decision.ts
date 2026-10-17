@@ -5,9 +5,10 @@
  *  3) กล่องยืนยัน inline ของหน้า → ปิด
  *  4) หน้าย่อย (/settings/*, ฟอร์มยา, Review, Scan) → ย้อนตามประวัติ (ผ่าน canDeactivate เดิม) ; ไม่มีประวัติในแอป = ไปแท็บแม่
  *  5) แท็บหลักที่ไม่ใช่ /today → /today (แทนที่ประวัติ ห้ามถอยข้ามแท็บ)
- *  6) /today, /login, /register → ออกจากแอป
+ *  6) /login ที่มาจากหน้าต้อนรับ (history.state.from = 'welcome') → กลับ /welcome
+ *  7) /welcome, /today, /login, /register → ออกจากแอป
  */
-export type BackAction = 'ignore' | 'close-inline' | 'close-overlay' | 'history-back' | 'go-parent' | 'go-today' | 'exit';
+export type BackAction = 'ignore' | 'close-inline' | 'close-overlay' | 'history-back' | 'go-parent' | 'go-today' | 'go-welcome' | 'exit';
 
 export interface BackState {
   inline: 'page' | 'overlay' | null;
@@ -17,10 +18,12 @@ export interface BackState {
   navigating: boolean;
   /** เคยเปลี่ยนหน้าในแอปนี้อย่างน้อย 1 ครั้ง (มีที่ให้ย้อน) */
   hasHistory: boolean;
+  /** /login ที่เปิดจากปุ่มของหน้าต้อนรับ (`history.state.from === 'welcome'`) */
+  cameFromWelcome?: boolean;
 }
 
 export const MAIN_TABS: readonly string[] = ['/today', '/medications', '/overview', '/settings'];
-const EXIT_PATHS: readonly string[] = ['/', '/today', '/login', '/register'];
+const EXIT_PATHS: readonly string[] = ['/', '/welcome', '/today', '/login', '/register'];
 
 export function normalizePath(url: string): string {
   const p = url.split('#')[0].split('?')[0].replace(/\/+$/, '');
@@ -40,6 +43,7 @@ export function decideBack(s: BackState): BackAction {
   if (s.inline) return 'close-inline';
   if (s.navigating) return 'ignore';
   const p = normalizePath(s.path);
+  if (p === '/login' && s.cameFromWelcome) return 'go-welcome';
   if (EXIT_PATHS.includes(p)) return 'exit';
   if (MAIN_TABS.includes(p)) return 'go-today';
   return s.hasHistory ? 'history-back' : 'go-parent';

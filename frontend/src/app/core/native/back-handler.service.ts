@@ -35,6 +35,7 @@ export class BackHandlerService {
       path: this.router.url,
       navigating: this.router.getCurrentNavigation() !== null,
       hasHistory: this.navCount > 1,
+      cameFromWelcome: (history.state as { from?: string } | null)?.from === 'welcome',
     });
     switch (action) {
       case 'close-inline': this.layers.closeTop(); break;
@@ -45,6 +46,7 @@ export class BackHandlerService {
       case 'history-back': this.location.back(); break;
       case 'go-parent': void this.router.navigateByUrl(parentOf(this.router.url), { replaceUrl: true }); break;
       case 'go-today': void this.router.navigateByUrl('/today', { replaceUrl: true }); break;
+      case 'go-welcome': void this.router.navigateByUrl('/welcome', { replaceUrl: true }); break;
       case 'exit': void App.exitApp(); break;
       case 'ignore': break;
     }
