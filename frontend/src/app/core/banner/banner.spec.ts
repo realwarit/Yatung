@@ -34,9 +34,22 @@ describe('pickBanner', () => {
     expect(b.dismissible).toBe(false);
   });
 
-  it('อัปเดต: ready = info + ปุ่มอัปเดต · broken = warning + ปุ่มโหลดใหม่ ; ปิดไม่ได้', () => {
-    expect(pickBanner({ ...none, update: 'ready' })).toMatchObject({ tone: 'info', action: 'อัปเดต', dismissible: false });
+  it('อัปเดต: ready = info + ปุ่มอัปเดต ปิดได้ · broken = warning + ปุ่มโหลดใหม่ ปิดไม่ได้', () => {
+    expect(pickBanner({ ...none, update: 'ready' })).toMatchObject({ tone: 'info', action: 'อัปเดต', dismissible: true });
     expect(pickBanner({ ...none, update: 'broken' })).toMatchObject({ tone: 'warning', action: 'โหลดใหม่', dismissible: false });
+  });
+
+  it('อัปเดตไม่สำเร็จ: แถบสุภาพ (info ไม่ใช่ warning, ไม่มีปุ่ม, ปิดได้, ข้อความ "จะลองใหม่") ไม่มีคำว่าผิดพลาด/ล้มเหลว', () => {
+    const b = pickBanner({ ...none, update: 'failed' })!;
+    expect(b).toMatchObject({ kind: 'update', tone: 'info', icon: 'info', action: null, dismissible: true });
+    expect(b.text).toContain('จะลองใหม่');
+    expect(b.text).not.toMatch(/ผิดพลาด|ล้มเหลว|error/i);
+  });
+
+  it('อัปเดตไม่สำเร็จ: เชื่อมต่อหมดอายุ/ออฟไลน์มาก่อน ; อยู่เหนือชวนติดตั้ง/ขนาดตัวอักษร', () => {
+    expect(pickBanner({ ...none, update: 'failed', offline: true })!.kind).toBe('offline');
+    expect(pickBanner({ ...none, update: 'failed', expired: true })!.kind).toBe('expired');
+    expect(pickBanner({ ...none, update: 'failed', install: 'native', font: true })!.kind).toBe('update');
   });
 
   it('ชวนติดตั้ง: native/ios-guide ปิดได้ ; แจ้งขนาดตัวอักษรปิดได้และชี้ไปตั้งค่า', () => {

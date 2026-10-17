@@ -45,6 +45,29 @@ const STATES = [
   { name: 'settings-dev', route: '/settings/developer', st: { demo: true }, seedLog: true, expect: 'ข้อมูลผู้พัฒนา[\\s\\S]*E-304', shot: 'app-dev-info-section' },
   { name: 'font-hint', noFont: true, expect: 'ปรับขนาดตัวอักษรให้ใหญ่ขึ้นได้ที่ ตั้งค่า' },
   { name: 'banner-one-at-a-time', run: async (p, c) => { await c.ctx.setOffline(true); await p.evaluate(() => window.dispatchEvent(new Event('offline'))); await p.evaluate(fakePrompt); }, noFont: true, expect: 'ออฟไลน์', only1: true },
+  // อัปเดตแอป (fix/pwa-update): ng serve ไม่มี service worker จึงสั่ง UpdateService ผ่าน window.ng (เฉพาะ dev) ; ทุกสถานะต้องไม่ล้น/ไม่เกิน 1 แถบ/ข้อความไม่ตกใจ
+  { name: 'update-failed', noFont: false, expect: 'จะลองใหม่อัตโนมัตินะคะ', only1: true, run: async (p, c) => {
+      await p.evaluate(() => { const svc = window.ng.getComponent(document.querySelector('app-banner-host')).svc; svc.update.state.set('failed'); });
+      await p.waitForTimeout(200);
+      const t = await p.evaluate(() => document.querySelector('[data-banner="update"]')?.textContent ?? '');
+      if (/ผิดพลาด|ล้มเหลว|error/i.test(t)) c.issues.push('แถบ failed ต้องไม่มีคำว่าผิดพลาด/ล้มเหลว');
+      if (!await p.locator('[data-banner="update"] button.x').count()) c.issues.push('แถบ failed ต้องมีปุ่มปิด');
+    } },
+  { name: 'update-ready-dismiss', expect: '.', run: async (p, c) => {
+      const drive = (fn) => p.evaluate(fn);
+      await drive(() => { window.ng.getComponent(document.querySelector('app-banner-host')).svc.update.onReady('h1'); });
+      await p.waitForTimeout(150);
+      if (!(await p.locator('[data-banner="update"]').count())) c.issues.push('ready ต้องขึ้นแถบ');
+      await p.locator('[data-banner="update"] button.x').click();
+      await p.waitForTimeout(150);
+      if (await p.locator('[data-banner="update"]').count()) c.issues.push('กดปิดแล้วแถบต้องหาย');
+      await drive(() => { window.ng.getComponent(document.querySelector('app-banner-host')).svc.update.onReady('h1'); });
+      await p.waitForTimeout(150);
+      if (await p.locator('[data-banner="update"]').count()) c.issues.push('ready ของเวอร์ชันเดิมต้องไม่ขึ้นซ้ำหลังปิด');
+      await drive(() => { window.ng.getComponent(document.querySelector('app-banner-host')).svc.update.onReady('h2'); });
+      await p.waitForTimeout(150);
+      if (!(await p.locator('[data-banner="update"]').count())) c.issues.push('เวอร์ชันใหม่กว่าต้องขึ้นได้อีก');
+    } },
   { name: 'kb-login', route: '/login', guest: true, expect: 'เข้าสู่ระบบ', run: async (p, c) => {
       const on = () => p.evaluate(() => document.documentElement.classList.contains('kb-open'));
       await p.locator('#email').click(); await p.waitForTimeout(250);
