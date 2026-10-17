@@ -33,3 +33,14 @@
 
 ## ไม่อยู่ใน commit (ตั้งใจ)
 `environment.native.ts`, `*.apk`, `android/app/build/`, `docs/mockups/` (ต้นแบบจากเครื่องมือออกแบบ — ยังไม่ track), ภาพใน `docs/screenshots/`
+
+## ตารางก่อน/หลัง (ฐาน = `5f5f190` ปลายวันที่ 9 ซึ่งอยู่ใน `origin/main` แล้ว)
+| รายการ | ก่อน | หลัง | หมายเหตุ |
+|---|---|---|---|
+| `ng test` | 406 เทส / 41 ไฟล์ | 418 เทส / 43 ไฟล์ | +12 |
+| `first-screen-check --strict` | 538 ผ่าน | 554 ผ่าน / 0 ไม่ผ่าน | +16 ของ `/welcome` (ก่อน = ลบจำนวนของ /welcome ออกจากผลรวม) |
+| `overflow-check` (เกณฑ์ทั้งชุด) | 324 | 360 ผ่านทั้งหมด | +36 ของ `/welcome` |
+| px ใน scss ทั้ง `src` | 355 | 417 | +62 (ระยะ keyframes/ขนาดฉากที่ต้นแบบกำหนด) ; เป้าเดิมใน CLAUDE.md ≤ 353 เกินอยู่แล้วก่อนหน้า |
+| initial bundle เว็บ | 517.39 kB / 137.51 kB | 517.84 kB / 137.61 kB | +0.45 kB |
+| initial bundle native | 517.44 kB / 137.55 kB | 517.89 kB / 137.66 kB | +0.45 kB |
+| lazy chunk ของ `/welcome` | — | 23,194 B raw / 6,517 B gzip (`chunk-BYIQ4FYL.js`) | ชื่อ chunk เปลี่ยนทุก build ; รวมหน้า + ฉาก + เนิน + ชื่อ + ปุ่ม ; มาสคอต/กล่องคำพูดใช้ร่วมกับหน้าอื่น |
