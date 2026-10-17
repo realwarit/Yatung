@@ -19,7 +19,7 @@ const server = http.createServer((req, res) => {
 });
 await new Promise((r) => server.listen(4311, r));
 const BASE = 'http://localhost:4311';
-const MARK = 'ช่วยเตือนเองนะคะ';   // ข้อความเฉพาะของ chunk welcome
+const MARK = 'app-welcome-page';   // selector (ASCII) ของคอมโพเนนต์ welcome — ข้อความไทยใน bundle บางไฟล์ถูกเข้ารหัสเป็น XXXX จึงใช้เทียบข้อความไม่ได้
 let fail = 0;
 const check = (name, ok, extra = '') => { if (!ok) fail++; console.log(ok ? 'PASS' : 'FAIL', name, extra); };
 
@@ -50,8 +50,11 @@ const browser = await chromium.launch({ channel: 'msedge' }).catch(() => chromiu
   await ctx.addInitScript(() => { try { localStorage.setItem('yatung_font_hint_off', '1'); } catch {} });
   const page = await ctx.newPage();
   await mockApi(page, {});
+  let guestSeen = 0;
+  page.on('response', async (r) => { if (/\.js$/.test(r.url())) { try { if ((await r.text()).includes(MARK)) guestSeen++; } catch {} } });
   await page.goto(BASE + '/');
   await page.waitForSelector('button.go', { timeout: 15000 });
+  check('(ตัวควบคุมของตัวตรวจ) ผู้ใช้ยังไม่ล็อกอินโหลด chunk ของ welcome จริง — ถ้าเป็น 0 ตัวตรวจข้างบนใช้ไม่ได้', guestSeen >= 1, `(${guestSeen})`);
   check('ยังไม่ล็อกอิน: `/` → /welcome', new URL(page.url()).pathname === '/welcome', page.url());
   await page.waitForFunction(async () => (await navigator.serviceWorker.getRegistration())?.active?.state === 'activated', null, { timeout: 60000 });
   await page.waitForTimeout(8000);
