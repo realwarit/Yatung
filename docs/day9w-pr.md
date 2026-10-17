@@ -32,8 +32,11 @@
 
 ภาพ (git-ignored): `docs/screenshots/day9w/` — สร้างใหม่ด้วย `node tools/welcome-shots.mjs`
 
+## ไฟล์เพิ่มเติมที่อยู่ใน PR
+`docs/mockups/welcome-mockup.dc.html` (ต้นแบบจากเครื่องมือออกแบบ — commit แยก เป็นหลักฐานกระบวนการออกแบบ ใช้อ่านค่าสี/ขนาด/keyframes เท่านั้น ไม่ได้นำโครงสร้างไปใช้)
+
 ## ไม่อยู่ใน commit (ตั้งใจ)
-`environment.native.ts`, `*.apk`, `android/app/build/`, `docs/mockups/` (ต้นแบบจากเครื่องมือออกแบบ — ยังไม่ track), ภาพใน `docs/screenshots/`
+`environment.native.ts`, `*.apk`, `android/app/build/`, ภาพใน `docs/screenshots/`
 
 ## ตารางก่อน/หลัง (ฐาน = `5f5f190` ปลายวันที่ 9 ซึ่งอยู่ใน `origin/main` แล้ว)
 | รายการ | ก่อน | หลัง | หมายเหตุ |
