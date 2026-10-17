@@ -51,14 +51,24 @@ const STATES = [
       await p.waitForTimeout(200);
       const t = await p.evaluate(() => document.querySelector('[data-banner="update"]')?.textContent ?? '');
       if (/ผิดพลาด|ล้มเหลว|error/i.test(t)) c.issues.push('แถบ failed ต้องไม่มีคำว่าผิดพลาด/ล้มเหลว');
-      if (!await p.locator('[data-banner="update"] button.x').count()) c.issues.push('แถบ failed ต้องมีปุ่มปิด');
+      const x = p.locator('[data-banner="update"] button.x');
+      if (!await x.count()) c.issues.push('แถบ failed ต้องมีปุ่มปิด');
+      else {
+        const box = await x.boundingBox();
+        if (!box || box.width < 44 || box.height < 44) c.issues.push(`ปุ่ม × แถบ failed ต้อง ≥ 44px (ได้ ${box && Math.round(box.width)}×${box && Math.round(box.height)})`);
+        if ((await x.getAttribute('aria-label')) !== 'ปิดแจ้งเตือนเวอร์ชันใหม่') c.issues.push('ปุ่ม × แถบ failed ต้องมี aria-label "ปิดแจ้งเตือนเวอร์ชันใหม่"');
+      }
     } },
   { name: 'update-ready-dismiss', expect: '.', run: async (p, c) => {
       const drive = (fn) => p.evaluate(fn);
       await drive(() => { window.ng.getComponent(document.querySelector('app-banner-host')).svc.update.onReady('h1'); });
       await p.waitForTimeout(150);
       if (!(await p.locator('[data-banner="update"]').count())) c.issues.push('ready ต้องขึ้นแถบ');
-      await p.locator('[data-banner="update"] button.x').click();
+      const xr = p.locator('[data-banner="update"] button.x');
+      const xb = await xr.boundingBox();
+      if (!xb || xb.width < 44 || xb.height < 44) c.issues.push(`ปุ่ม × แถบ ready ต้อง ≥ 44px (ได้ ${xb && Math.round(xb.width)}×${xb && Math.round(xb.height)})`);
+      if ((await xr.getAttribute('aria-label')) !== 'ปิดแจ้งเตือนเวอร์ชันใหม่') c.issues.push('ปุ่ม × แถบ ready ต้องมี aria-label "ปิดแจ้งเตือนเวอร์ชันใหม่"');
+      await xr.click();
       await p.waitForTimeout(150);
       if (await p.locator('[data-banner="update"]').count()) c.issues.push('กดปิดแล้วแถบต้องหาย');
       await drive(() => { window.ng.getComponent(document.querySelector('app-banner-host')).svc.update.onReady('h1'); });

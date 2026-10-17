@@ -128,6 +128,21 @@ describe('UpdateService — แถบอัปเดต + เช็กตอน�
       expect(svc.bannerState()).toBe('none');
     });
 
+    it('สถานะปิดแถบอยู่ในหน่วยความจำเท่านั้น: ไม่เขียน localStorage/sessionStorage ; เปิดแอปรอบใหม่ (service ใหม่) ขึ้นแถบเวอร์ชันเดิมได้อีก', () => {
+      const ls = vi.spyOn(Storage.prototype, 'setItem');
+      const { svc, versions } = setup();
+      versions.next({ type: 'VERSION_READY', latestVersion: { hash: 'h1' } });
+      svc.dismiss();
+      versions.next({ type: 'VERSION_INSTALLATION_FAILED' });
+      svc.dismiss();
+      expect(ls).not.toHaveBeenCalled();
+      ls.mockRestore();
+      TestBed.resetTestingModule();   // = ปิดแอปแล้วเปิดใหม่
+      const again = setup();
+      again.versions.next({ type: 'VERSION_READY', latestVersion: { hash: 'h1' } });
+      expect(again.svc.bannerState()).toBe('ready');
+    });
+
     it('apply() หลังปิดแถบยังใช้ได้ (activateUpdate + reload)', async () => {
       const { svc, sw, versions } = setup();
       versions.next({ type: 'VERSION_READY', latestVersion: { hash: 'h1' } });

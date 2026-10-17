@@ -46,6 +46,13 @@ describe('pickBanner', () => {
     expect(b.text).not.toMatch(/ผิดพลาด|ล้มเหลว|error/i);
   });
 
+  it('ป้ายปุ่ม × : แถบอัปเดต (ready/failed) = "ปิดแจ้งเตือนเวอร์ชันใหม่" · ชนิดอื่น = "ปิดข้อความนี้"', () => {
+    expect(pickBanner({ ...none, update: 'ready' })!.closeLabel).toBe('ปิดแจ้งเตือนเวอร์ชันใหม่');
+    expect(pickBanner({ ...none, update: 'failed' })!.closeLabel).toBe('ปิดแจ้งเตือนเวอร์ชันใหม่');
+    expect(pickBanner({ ...none, install: 'native' })!.closeLabel).toBe('ปิดข้อความนี้');
+    expect(pickBanner({ ...none, font: true })!.closeLabel).toBe('ปิดข้อความนี้');
+  });
+
   it('อัปเดตไม่สำเร็จ: เชื่อมต่อหมดอายุ/ออฟไลน์มาก่อน ; อยู่เหนือชวนติดตั้ง/ขนาดตัวอักษร', () => {
     expect(pickBanner({ ...none, update: 'failed', offline: true })!.kind).toBe('offline');
     expect(pickBanner({ ...none, update: 'failed', expired: true })!.kind).toBe('expired');

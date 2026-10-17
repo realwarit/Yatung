@@ -17,7 +17,7 @@ import { IconComponent } from '../../icon.component';
         <app-icon [name]="b.icon" />
         <span class="txt">{{ b.text }}</span>
         @if (b.action) { <button type="button" class="yt-compact act" (click)="svc.act()">{{ b.action }}</button> }
-        @if (b.dismissible) { <button type="button" class="x" aria-label="ปิดข้อความนี้" (click)="svc.dismiss()"><app-icon name="close" /></button> }
+        @if (b.dismissible) { <button type="button" class="x" [attr.aria-label]="b.closeLabel" (click)="svc.dismiss()"><app-icon name="close" /></button> }
       </div>
     }
   `,
