@@ -15,13 +15,13 @@ fs.mkdirSync(out, { recursive: true });
 
 const browser = await chromium.launch({ channel: 'msedge' }).catch(() => chromium.launch({ channel: 'chrome' }));
 
-async function open(w, h, { reduced = false } = {}) {
+async function open(w, h, { reduced = false, sc = scale } = {}) {
   const mobile = w < 768;
   const ctx = await browser.newContext({
     viewport: { width: w, height: h }, locale: 'th-TH', timezoneId: 'Asia/Bangkok', deviceScaleFactor: 2,
     isMobile: mobile, hasTouch: mobile, reducedMotion: reduced ? 'reduce' : 'no-preference',
   });
-  await ctx.addInitScript((sc) => { try { localStorage.setItem('yatung_font_scale_v2', sc); localStorage.setItem('yatung_font_hint_off', '1'); } catch {} }, scale);
+  await ctx.addInitScript((sc) => { try { localStorage.setItem('yatung_font_scale_v2', sc); localStorage.setItem('yatung_font_hint_off', '1'); } catch {} }, sc);
   const page = await ctx.newPage();
   await mockApi(page, {});
   page.on('pageerror', (e) => console.log('pageerror:', e.message.slice(0, 300)));
@@ -53,6 +53,15 @@ for (const [w, h] of [[384, 832], [320, 640], [1280, 800]]) {
   const { ctx, page } = await open(384, 832, { reduced: true });
   await page.waitForTimeout(800);
   await page.screenshot({ path: `${out}/reduced-384x832.png` });
+  await ctx.close();
+}
+{
+  // ตัวอักษร ก++ (ใหญ่สุด) ที่จอเล็ก
+  const { ctx, page } = await open(320, 640, { sc: '125' });
+  await page.waitForTimeout(7000);
+  await seek(page, 4200);
+  await page.screenshot({ path: `${out}/final-320x640-s125.png` });
+  await page.screenshot({ path: `${out}/final-320x640-s125-full.png`, fullPage: true });
   await ctx.close();
 }
 await browser.close();

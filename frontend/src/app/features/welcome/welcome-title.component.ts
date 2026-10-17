@@ -11,7 +11,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
           <span class="ch" aria-hidden="true" [style.--i]="$index"><span class="back">{{ l }}</span><span class="face">{{ l }}</span></span>
         }
       </h1>
-      <p class="tag">กินยาตรงเวลา <span class="nw">น้องยาตรง</span>ช่วยเตือนเองนะคะ</p>
+      <p class="tag"><span class="ph"><span class="nw">กินยาตรงเวลา</span></span><span class="ph"><span class="nw">น้องยาตรง</span> <span class="nw">ช่วยเตือนเองนะคะ</span></span></p>
     </section>
   `,
   styleUrl: './welcome-title.component.scss',
