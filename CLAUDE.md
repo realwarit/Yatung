@@ -252,6 +252,14 @@
   - รูปทดสอบ (ข้อมูลสมมติ) `docs/sample-images/` สร้างด้วย `cd frontend && node tools/make-sample-images.mjs`
   - body สูงสุด 12mb (`apiMaxLength` + nginx `client_max_body_size 12m`) เพราะรูป 8 MB เป็น base64 ≈ 10.7 MB
 
+## หน้าต้อนรับ (วันที่ 9W, `features/welcome/`; แผน `docs/day9w-plan.md`)
+- **route:** `/` ไม่ล็อกอิน → `/welcome` ; ล็อกอินแล้ว → `/today` (`rootGuard` คืน UrlTree เสมอ) · `/welcome` ล็อกอินแล้ว → `/today` (`welcomeGuard`) · **deep link ทุกหน้า (เช่น `/today` จาก Flex LINE) ไม่ผ่านหน้าต้อนรับ** — `authGuard` ยังส่ง `/login?returnUrl=…` ; `**` ยังไป `today` · manifest `start_url` = `/` (Capacitor โหลด `/` อยู่แล้ว) ; ปุ่ม "เริ่มต้นใช้งาน" → `/login` พร้อม `history.state.from='welcome'` (ไม่มี returnUrl → หลัง login ไป `/today`) · lazy chunk แยก ผู้ที่ล็อกอินแล้วไม่โหลด (ตรวจด้วย `node tools/welcome-offline-check.mjs` หลัง `ng build` เว็บ ; build:native ทับ dist ต้อง `ng build` ใหม่ก่อน)
+- **back (Android):** `decideBack` — `/welcome` ออกแอป · `/login` ที่ `cameFromWelcome` (อ่าน `history.state.from` ตอนกด) → `go-welcome` (replaceUrl) · เข้า `/login` ทางอื่น/`/register` = ออกแอปเหมือนเดิม
+- **คอมโพเนนต์:** `welcome.page` (โครง + ปุ่ม ก/ก+/ก++ compact + มาสคอต + กล่องคำพูด) · `welcome-scene` (ท้องฟ้า ดวงอาทิตย์ซ้ายบน เมฆ นก ประกาย) · `welcome-floaters` (ของลอย ยึดกับตัวน้องยาตรงด้วย `--hill-h`/`--mw` ไม่ใช่ % ของจอ) · `welcome-hills` (เนิน 3 ชั้น + ดอกไม้ ; ความสูง `--hill-h` จากหน้า) · `welcome-title` (ชื่อ "ยาตรง" ทีละตัว + คำโปรย) · `welcome-cta` (ปุ่ม + บรรทัดล่าง) — แยกเพราะ scss ชนงบ 4 kB ; **สีของฉากเป็น token `--yt-wc-*` ใน `_tokens.scss` (ใช้เฉพาะหน้านี้)** ; น้องยาตรงใช้ `app-mascot` เดิม (input เพิ่ม `shadow` [false = ไม่วาดเงา] และ `loopWave` [โบก 2 ครั้ง/7 วินาที ค่าเริ่มต้นเดิมไม่เปลี่ยน]) ; กล่องคำพูดใช้ `app-speech-bubble tail="down-left"`
+- **ชื่อ "ยาตรง" ใช้ Mitr 500 + ชั้นความหนา 8 ชั้น** (ไม่เพิ่ม Mitr 700 ตามกฎ 500 เท่านั้น) ; เนิน/ฉากเป็นสัดส่วนของความสูงจอ ไม่ใช้ตำแหน่ง px ของต้นแบบ ; จอ ≥ 768px ของตกแต่งอยู่ในคอลัมน์ ≤ 420px (ฟ้า/เนินเต็มจอ)
+- **motion (ข้อยกเว้นกฎ ≤ 300ms เฉพาะหน้านี้):** ฉากเปิดเล่นครั้งเดียว ~2.6 วินาทีแล้ววนเบาๆ ; CSS/SVG ล้วน ไม่มี JS วนเฟรม ; ใช้ transform/opacity ; **ปุ่มกดได้ตั้งแต่เฟรมแรก** (animation ไม่บล็อกคลิก) ; `prefers-reduced-motion` = หยุดทุกอย่างที่ท่าสุดท้าย (ฐาน CSS ของทุกชิ้นคือท่าสุดท้าย) ; ตัวอักษรย่อย/ของตกแต่ง `aria-hidden` ส่วน `<h1 aria-label="ยาตรง">`
+- ตรวจ: `node tools/welcome-shots.mjs` → `docs/screenshots/day9w/` (ท่าสุดท้าย 384×832 / 320×640 / 1280×800, reduced-motion, เฟรมฉากเปิดที่ 0.5/1.5/3 วินาทีโดย seek `document.getAnimations()`) · `node tools/welcome-overlap-check.mjs` (ของตกแต่งไม่ทับปุ่ม ก/ก+/ก++ และข้อความตลอดแอนิเมชัน ที่ 246/295/320/384/1280 ทุก ก–ก++ ; จอเตี้ย/แคบมากซ่อนนก-ประกาย-ของลอยบางชิ้นด้วย media query) · `/welcome` อยู่ใน `overflow-check.mjs` + `first-screen-check.mjs` (ป้าย `start`, `mascot`) · `ng test`: `auth.guard.spec.ts`, `welcome.page.spec.ts`, `back-decision.spec.ts`
+
 ## Database (MySQL 8.4, `db/init/01_schema.sql` + `02_seed.sql`)
 - `users` (line_user_id, line_display_name, line_link_code, line_link_code_expires_at, tts_rate), `user_slot_times` (เวลามื้อต่อคน; trigger สร้าง default 08/12/18/21)
 - `caregivers` (ญาติ, line_user_id, line_display_name, link_code, link_code_expires_at, escalate_after_min 10–720)
@@ -359,7 +367,7 @@
 - error = ไอคอน + ข้อความ (`.yt-error-text`, `.yt-alert`) ไม่ใช้สีอย่างเดียว; ผูก `aria-invalid` / `aria-describedby`
 - ปุ่มแสดงรหัสผ่านต้องมีข้อความ ("แสดงรหัส"/"ซ่อนรหัส") ไม่ใช่ไอคอนอย่างเดียว
 - ปุ่ม ก / ก+ / ก++ (`FontScaleService`, `shared/font-scale.ts` ฟังก์ชันล้วน, key **`yatung_font_scale_v2`** = 100/112/125 ↔ 16/18/20px) ต้องมีทุกหน้า (มุมบนขวา) และทุกหน้าต้องไม่ล้น/ซ้อนที่ ก++ ที่ความกว้าง 360 / 375 / 768 / 1366 / 1920 ; **ย้ายค่าจาก key เดิม `yatung_font_scale` ครั้งเดียว** (ไม่ลบ key เดิม): เดิม 100 (18px) → v2 112 (ก+ 18px) · 112 → 125 · 125 → 125 (20px เล็กลง 11% ที่ยอมรับแล้ว) · ไม่มี key = ก ; `index.html` inline script ต้องให้ผลตรง `resolveScale()` (spec บังคับ)
-- animation ≤ 300ms, ใช้ `.yt-enter`; `prefers-reduced-motion` ปิด animation อัตโนมัติ (อย่าใส่ animation ที่ขัดกับกฎนี้)
+- animation ≤ 300ms, ใช้ `.yt-enter`; `prefers-reduced-motion` ปิด animation อัตโนมัติ (อย่าใส่ animation ที่ขัดกับกฎนี้) — **ข้อยกเว้นเดียว: ฉากเปิดของ `/welcome` (~2.6 วินาที เล่นครั้งเดียว + วนเบาๆ) ดูหัวข้อ "หน้าต้อนรับ (วันที่ 9W)"**
 - ไอคอนใหม่ → เพิ่มใน `shared/icon.component.ts` (ไม่พึ่ง CDN) ; ภาพประกอบวาดเอง ห้ามใช้ตัวการ์ตูน/โลโก้ที่มีลิขสิทธิ์
 
 ## Mascot — "น้องยาตรง"

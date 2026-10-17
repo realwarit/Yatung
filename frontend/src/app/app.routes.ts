@@ -1,10 +1,12 @@
 import { isDevMode } from '@angular/core';
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard } from './core/auth/auth.guard';
+import { authGuard, guestGuard, rootGuard, welcomeGuard } from './core/auth/auth.guard';
 import { unsavedChangesGuard } from './core/unsaved-changes.guard';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'today' },
+  // `/` : ยังไม่ล็อกอิน = หน้าต้อนรับ ; ล็อกอินแล้ว = /today (rootGuard คืน UrlTree เสมอ)
+  { path: '', pathMatch: 'full', canActivate: [rootGuard], children: [] },
+  { path: 'welcome', canActivate: [welcomeGuard], loadComponent: () => import('./features/welcome/welcome.page').then(m => m.WelcomePage) },
   { path: 'login', canActivate: [guestGuard], loadComponent: () => import('./features/auth/login.page').then(m => m.LoginPage) },
   { path: 'register', canActivate: [guestGuard], loadComponent: () => import('./features/auth/register.page').then(m => m.RegisterPage) },
   // โครงแอปหลัง login: แถบล่าง (มือถือ) / sidebar (จอกว้าง)

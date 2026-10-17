@@ -1,0 +1,25 @@
+:host { display: contents; }
+svg { display: block; overflow: visible; }
+// ของลอย : ฐาน = ท่าสุดท้าย ; .strip = ชิ้นที่อยู่แถบเหนือชื่อ (ซ่อนเมื่อจอเตี้ย)
+.fl { position: absolute; bottom: calc(0.8 * var(--hill-h) + var(--mw) * (1.08 - var(--dy) / 200) - 1.5rem); animation: pop-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.lp { animation: bob 6s ease-in-out infinite; }
+.lp.orbit { animation-name: orbit; animation-timing-function: linear; }
+.lp.orbit-rev { animation-name: orbit; animation-timing-function: linear; animation-direction: reverse; }
+.fl svg * { stroke: var(--yt-primary-deep); stroke-linejoin: round; }
+.cap rect { fill: none; stroke-width: 2.5; }
+.cap .c1 { fill: var(--yt-mascot-cheek); stroke: none; }
+.cap.mint .c1 { fill: var(--yt-wc-mint-1); }
+.cap .c2 { fill: var(--yt-mascot-bottom); stroke: none; }
+.rot-l { transform: rotate(-24deg); }
+.rot-r { transform: rotate(30deg); }
+.pill circle { fill: var(--yt-wc-sun-halo); stroke-width: 2.5; }
+.pill .shine { fill: none; stroke: var(--yt-surface); stroke-width: 2.5; stroke-linecap: round; opacity: 0.85; }
+.heart path { fill: var(--yt-mascot-cheek); stroke-width: 1.8; }
+.fstar path { fill: var(--yt-accent); stroke-width: 2; }
+
+@keyframes pop-in { 0% { transform: scale(0) rotate(-40deg); opacity: 0; } 70% { transform: scale(1.25) rotate(8deg); opacity: 1; } }
+@keyframes bob { 0%, 100% { transform: translateY(0) rotate(-8deg); } 50% { transform: translateY(-14px) rotate(10deg); } }
+@keyframes orbit { 0% { transform: rotate(0) translateX(10px) rotate(0); } 100% { transform: rotate(360deg) translateX(10px) rotate(-360deg); } }
+@media (max-height: 40rem) { .strip { display: none; } }
+@media (max-width: 15.5rem) { .fl { display: none; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } }

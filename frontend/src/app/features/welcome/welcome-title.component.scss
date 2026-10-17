@@ -1,0 +1,35 @@
+:host { display: contents; }
+.hero { flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center; padding: var(--yt-space-2) 0; }
+.title {
+  margin: 0; font-family: var(--yt-font-display); font-weight: 500; font-size: clamp(3.25rem, 8dvh, 4.125rem);
+  line-height: 1.2; letter-spacing: 3px;
+}
+.ch {
+  position: relative; display: inline-block; margin: 0 -1px;
+  animation: letter-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) calc(1.6s + var(--i) * 0.1s) both,
+            jig 5s ease-in-out calc(3.6s + var(--i) * 0.15s) infinite;
+}
+.back, .face { display: block; }
+.back {
+  position: absolute; inset: 0 auto auto 0; color: var(--yt-primary);
+  text-shadow: 0 1px 0 var(--yt-primary), 0 2px 0 var(--yt-primary), 0 3px 0 var(--yt-wc-title-edge), 0 4px 0 var(--yt-wc-title-edge),
+    0 5px 0 var(--yt-primary-dark), 0 6px 0 var(--yt-primary-dark), 0 7px 0 var(--yt-primary-deep), 0 8px 0 var(--yt-primary-deep),
+    0 16px 18px rgb(var(--yt-shadow-color) / 0.35);
+}
+.face {
+  position: relative; color: transparent; -webkit-background-clip: text; background-clip: text;
+  background-image: linear-gradient(180deg, var(--yt-wc-mint-1) 0%, var(--yt-wc-mint-2) 30%, var(--yt-mascot-top) 55%, var(--yt-primary) 100%);
+}
+// แต่ละวลีขึ้นบรรทัดใหม่ (ไม่แตกกลางคำ) ; ถ้าจอ/ตัวอักษรกว้างจนวลีที่สองไม่พอ จึงตัดได้ระหว่าง "น้องยาตรง" กับ "ช่วยเตือนเองนะคะ" เท่านั้น
+.ph { display: block; }
+.nw { white-space: nowrap; }
+.tag {
+  max-width: 19.375rem; margin: var(--yt-space-3) auto 0; font-weight: 600; font-size: 1.3125rem; line-height: 1.55;
+  color: var(--yt-primary-deep); animation: rise 0.7s ease-out 2.2s both;
+}
+
+@keyframes letter-in { 0% { transform: translateY(-46px) scale(0.4) rotate(-24deg); opacity: 0; } 60% { transform: translateY(6px) scale(1.18) rotate(6deg); opacity: 1; } }
+@keyframes jig { 0%, 80%, 100% { transform: none; } 86% { transform: translateY(-12px) rotate(-7deg) scale(1.08); } 92% { transform: translateY(0) rotate(4deg); } 96% { transform: translateY(-3px); } }
+@keyframes rise { from { transform: translateY(22px); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } }

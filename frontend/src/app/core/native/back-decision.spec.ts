@@ -29,7 +29,19 @@ describe('decideBack (ปุ่ม back ของ Android)', () => {
   });
 
   it('6) /today, /login, /register → ออกจากแอป', () => {
-    for (const path of ['/today', '/login', '/register', '/']) expect(at({ path })).toBe('exit');
+    for (const path of ['/today', '/login', '/register', '/', '/welcome']) expect(at({ path })).toBe('exit');
+  });
+
+  it('7) /login ที่มาจากหน้าต้อนรับ → กลับ /welcome ; เข้า /login ทางอื่น → ออก ; /register ใช้กฎเดิม', () => {
+    expect(at({ path: '/login', cameFromWelcome: true })).toBe('go-welcome');
+    expect(at({ path: '/login', cameFromWelcome: false })).toBe('exit');
+    expect(at({ path: '/login?returnUrl=%2Ftoday' })).toBe('exit');
+    expect(at({ path: '/register', cameFromWelcome: true })).toBe('exit');
+    expect(at({ path: '/welcome', cameFromWelcome: true })).toBe('exit');
+  });
+
+  it('sheet/กล่องยืนยันยังมาก่อนเสมอแม้มาจากหน้าต้อนรับ', () => {
+    expect(at({ path: '/login', cameFromWelcome: true, overlayOpen: true })).toBe('close-overlay');
   });
 
   it('query/fragment/ทับท้ายไม่มีผลต่อการตัดสิน', () => {

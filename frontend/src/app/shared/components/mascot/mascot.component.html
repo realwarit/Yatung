@@ -2,7 +2,7 @@
      [attr.role]="decorative() ? null : 'img'"
      [attr.aria-label]="decorative() ? null : ariaLabel()"
      [attr.aria-hidden]="decorative() ? 'true' : null">
-  <ellipse class="shadow" cx="100" cy="206" rx="38" ry="5" />
+  @if (shadow()) { <ellipse class="shadow" cx="100" cy="206" rx="38" ry="5" /> }
 
   <g class="bounce"><g class="float">
     <!-- ขา -->

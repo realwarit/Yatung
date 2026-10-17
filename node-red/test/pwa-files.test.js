@@ -15,7 +15,7 @@ test('manifest: ฟิลด์ที่ installability + iOS/Android ต้อ�
   assert.equal(m.lang, 'th');
   assert.equal(m.display, 'standalone');
   assert.equal(m.id, '/');
-  assert.equal(m.start_url, '/today');
+  assert.equal(m.start_url, '/');
   assert.equal(m.scope, '/');
   assert.equal(m.theme_color, '#0f766e');
   assert.match(m.background_color, /^#[0-9a-f]{6}$/i);
