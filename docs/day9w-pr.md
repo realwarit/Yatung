@@ -26,7 +26,7 @@
 | `dup-styles-check` | ไม่ซ้ำ |
 | `scan-lazy-check` / `scan-offline-check` | ผ่านทั้งหมด |
 | `welcome-offline-check` (ใหม่) | ผ่านทั้งหมด: ล็อกอินแล้วไม่โหลด chunk welcome · SW แคชครบ 116/116 · ออฟไลน์เปิด `/`, `/welcome` ได้ · deep link → login |
-| `review-e2e` | **ยังไม่ได้รัน** (ต้อง docker/ฐานข้อมูล — รอคาเด็ทอนุญาต) |
+| `review-e2e` | 67/0 (รันกับ stack จริง ไม่ recreate; ผู้ใช้สุ่มถูกลบหลังจบ) |
 | บนเครื่อง S23 FE | **ยังไม่ได้ทดสอบ** — รายการ `docs/day9w-device-checklist.md` (ชุด 7: 7-1 ถึง 7-18) |
 
 ภาพ (git-ignored): `docs/screenshots/day9w/` — สร้างใหม่ด้วย `node tools/welcome-shots.mjs`
