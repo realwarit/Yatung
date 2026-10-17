@@ -1,5 +1,12 @@
 # ชุด 7 — หน้าต้อนรับ บน Samsung Galaxy S23 FE (วันที่ 9W)
 
+## ผลทดสอบ — **ผ่านครบทุกข้อ (7-1 ถึง 7-18)**
+- วันที่ทดสอบ: 17 ต.ค. 2569 (2026-10-17)
+- เครื่อง: Samsung Galaxy S23 FE (SM-S711B) · One UI 8.5 / Android 16
+- build ที่ทดสอบ: apk จาก `d9fa3a4` (cap sync หลัง commit fix) · ข้อ 7-16 ใน Chrome Incognito · ไม่มีการออกจากระบบบน PWA/Chrome ปกติ
+- สรุปรายข้อ: A 7-1/7-2/7-3 ผ่าน · B 7-4/7-5/7-6/7-7 ผ่าน · C 7-8/7-9/7-10/7-11 ผ่าน · D 7-12/7-13/7-14/7-15/7-16 ผ่าน · E 7-17/7-18 ผ่าน
+
+
 ตัวแอปซิงก์เข้า `frontend/android` แล้ว (`npm run cap:sync` ผ่านเมื่อ 17 ต.ค.) ที่ CLI ไม่มี JDK 21 จึง **build apk ใน Android Studio ตาม [`docs/day9-android.md`](day9-android.md)** (Gradle JDK = 21, ห้ามกด Upgrade AGP) → ต่อ USB → Run ; ถ้าเคยติดตั้งไว้ ให้ถอนการติดตั้งแอปเก่าก่อน (ล้าง state)
 
 **ข้อควรระวัง (PWA บัญชี "การ์ตูน" ถือ Web Push):** ทุกข้อที่ต้องออกจากระบบ ให้ทำบน **apk เท่านั้น** (storage ของ apk แยกจาก PWA/Chrome) ห้ามออกจากระบบบน PWA หรือ Chrome ปกติ (Chrome กับ PWA ที่ origin เดียวกันใช้ localStorage ร่วมกัน — ออกจากระบบฝั่งไหนก็หลุดทั้งคู่) ; ข้อ 7-16 ใช้ Incognito แทน
