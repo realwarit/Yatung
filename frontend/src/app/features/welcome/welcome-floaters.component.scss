@@ -13,7 +13,7 @@ svg { display: block; overflow: visible; }
 .rot-l { transform: rotate(-24deg); }
 .rot-r { transform: rotate(30deg); }
 .pill circle { fill: var(--yt-wc-sun-halo); stroke-width: 2.5; }
-.pill path { stroke-width: 2.5; stroke-linecap: round; }
+.pill .shine { fill: none; stroke: var(--yt-surface); stroke-width: 2.5; stroke-linecap: round; opacity: 0.85; }
 .heart path { fill: var(--yt-mascot-cheek); stroke-width: 1.8; }
 .fstar path { fill: var(--yt-accent); stroke-width: 2; }
 

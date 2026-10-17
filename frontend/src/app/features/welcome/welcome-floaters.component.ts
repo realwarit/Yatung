@@ -15,7 +15,7 @@ interface Floater { x: number; dy: number; y?: number; kind: 'cap-pink' | 'cap-m
         @switch (f.kind) {
           @case ('cap-pink') { <svg class="cap rot-l" width="46" height="22" viewBox="-1 -1 46 22"><path class="c1" d="M10 0H22V20H10A10 10 0 0 1 10 0Z"/><path class="c2" d="M22 0H34A10 10 0 0 1 34 20H22Z"/><rect x="0" y="0" width="44" height="20" rx="10"/></svg> }
           @case ('cap-mint') { <svg class="cap rot-r mint" width="30" height="20" viewBox="-1 -1 46 22"><path class="c1" d="M10 0H22V20H10A10 10 0 0 1 10 0Z"/><path class="c2" d="M22 0H34A10 10 0 0 1 34 20H22Z"/><rect x="0" y="0" width="44" height="20" rx="10"/></svg> }
-          @case ('pill') { <svg class="pill" width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="12"/><path d="M9.5 20.5L20.5 9.5"/></svg> }
+          @case ('pill') { <svg class="pill" width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="12"/><path class="shine" d="M8.5 13Q9.5 9.5 13 8.2"/></svg> }
           @case ('heart') { <svg class="heart" width="30" height="28" viewBox="2 2 20 20"><path d="M12 20s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 9c0 5.8-8 11-8 11z"/></svg> }
           @case ('star') { <svg class="fstar" width="24" height="24" viewBox="-14 -14 28 28"><path d="M0-11L3.5-3.5L11 0L3.5 3.5L0 11L-3.5 3.5L-11 0L-3.5-3.5Z"/></svg> }
         }

@@ -4,7 +4,7 @@ svg { display: block; overflow: visible; }
 
 .sky {
   position: absolute; inset: 0; animation: sky 0.8s ease-out both;
-  background: radial-gradient(circle at 16% 11%, var(--yt-wc-sun-glow) 0%, transparent 46%), linear-gradient(180deg, var(--yt-bg-mint) 0%, var(--yt-bg-cream) 70%);
+  background: linear-gradient(180deg, var(--yt-bg-mint) 0%, var(--yt-bg-cream) 70%);
 }
 
 // ---- เมฆ / นก ----
@@ -16,9 +16,11 @@ svg { display: block; overflow: visible; }
 .f2 { animation-delay: -0.2s; }
 
 // ---- คอลัมน์กลาง (จอกว้าง: ของตกแต่งอยู่ในแถบ ≤ 420px ไม่กระจายทั้งจอ) ----
-.col { position: absolute; inset: 0 auto; left: 50%; width: min(100%, 26.25rem); transform: translateX(-50%); }
+.col { --sw: clamp(64px, min(13.5dvh, 30vw), 140px); position: absolute; inset: 0 auto; left: 50%; width: min(100%, 26.25rem); transform: translateX(-50%); }
 // ดวงอาทิตย์ไม่ใหญ่จนล้ำชื่อ "ยาตรง" ที่จอเตี้ย/ตัวอักษรใหญ่
-.sunrise { position: absolute; left: -1.5%; top: 3.1%; width: clamp(64px, min(13.5dvh, 30vw), 140px); animation: sun-rise 1.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.sunrise { position: absolute; left: -1.5%; top: 3.1%; width: var(--sw); animation: sun-rise 1.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+// แสงอุ่นรอบดวงอาทิตย์ : ศูนย์กลางตามตำแหน่งดวงอาทิตย์ทุกขนาดจอ (อยู่ใน .col เหมือนดวงอาทิตย์)
+.warm { position: absolute; left: calc(-1.5% + var(--sw) / 2); top: calc(3.1% + var(--sw) / 2); width: clamp(280px, 100vmin, 520px); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle closest-side, var(--yt-wc-sun-glow), transparent); animation: sky 0.8s ease-out both; }
 .sunbob { animation: bob-y 6s ease-in-out 1.6s infinite; }
 .sunrise svg { width: 100%; height: auto; }
 .glow { fill: var(--yt-wc-sun-halo); transform-box: fill-box; transform-origin: center; animation: glow 5s ease-in-out infinite; }
@@ -48,12 +50,12 @@ svg { display: block; overflow: visible; }
 // ท่าสุดท้ายนิ่ง : ดอกไม้ตั้งตรง ของลอยเอียงตามต้นแบบ ; เมฆ/นก/ประกายซ่อน (เป็นของเคลื่อนไหวล้วน) ; ดวงอาทิตย์/เนิน/ของลอยอยู่ที่เดิม
 // จอเตี้ย/ตัวอักษรใหญ่ (สูง ≤ 40rem: ก = 640px, ก+ = 720px) แถบเหนือชื่อ "ยาตรง" แคบ — ดวงอาทิตย์เล็กลง ซ่อนนก/ประกายในแถบนั้นกันทับชื่อ
 @media (max-height: 40rem) {
-  .sunrise { width: clamp(56px, min(9dvh, 30vw), 140px); }
+  .col { --sw: clamp(56px, min(9dvh, 30vw), 140px); }
   .bird, .strip { display: none; }
 }
 // จอแคบมากจริงๆ (≤ 15.5rem ≈ 246px : เครื่อง 320px + ตัวอักษรระบบ 130%) ไม่มีที่ว่างข้างข้อความ — เหลือแต่ฟ้า เมฆ เนิน
 @media (max-width: 15.5rem) {
-  .sunrise { display: none; }
+  .sunrise, .warm { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   :host *, :host *::before { animation: none !important; }
