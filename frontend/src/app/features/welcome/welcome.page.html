@@ -1,0 +1,17 @@
+<app-welcome-scene />
+
+<main class="page">
+  <div class="top"><app-font-size-toggle [compact]="true" /></div>
+
+  <app-welcome-title />
+
+  <div class="stage">
+    <div class="mw" data-first-screen="mascot">
+      <div class="hop"><app-mascot mood="wave" [fluid]="true" [shadow]="false" [loopWave]="true" /></div>
+      <div class="shadow"></div>
+      <div class="bpos"><div class="bob"><app-speech-bubble text="สวัสดีค่ะ!" tail="down-left" [typing]="false" /></div></div>
+    </div>
+  </div>
+
+  <app-welcome-cta (start)="start()" />
+</main>

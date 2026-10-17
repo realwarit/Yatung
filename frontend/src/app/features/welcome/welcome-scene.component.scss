@@ -1,0 +1,72 @@
+// ฉากหลัง /welcome — ตกแต่งล้วน ; ฐาน = ท่าสุดท้าย (reduced-motion ปิด animation แล้วเห็นท่านี้) ; ใช้ transform/opacity เท่านั้น
+:host { position: fixed; inset: var(--yt-top-off) 0 0 0; overflow: hidden; pointer-events: none; }
+svg { display: block; overflow: visible; }
+
+.sky {
+  position: absolute; inset: 0; animation: sky 0.8s ease-out both;
+  background: radial-gradient(circle at 84% 11%, var(--yt-wc-sun-glow) 0%, transparent 46%), linear-gradient(180deg, var(--yt-bg-mint) 0%, var(--yt-bg-cream) 70%);
+}
+
+// ---- เมฆ / นก ----
+.cloud { position: absolute; left: 0; animation: drift 48s linear infinite; }
+.cloud path { fill: var(--yt-surface); }
+.bird { position: absolute; left: 0; top: 13.5%; animation: fly 20s linear 3s infinite; }
+.bird path { fill: none; stroke: var(--yt-primary-deep); stroke-linecap: round; }
+.flap { transform-box: fill-box; transform-origin: center; animation: flap 0.45s ease-in-out infinite; }
+.f2 { animation-delay: -0.2s; }
+
+// ---- คอลัมน์กลาง (จอกว้าง: ของตกแต่งอยู่ในแถบ ≤ 420px ไม่กระจายทั้งจอ) ----
+.col { position: absolute; inset: 0 auto; left: 50%; width: min(100%, 26.25rem); transform: translateX(-50%); }
+.sunrise { position: absolute; right: -1.5%; top: 3.1%; width: clamp(96px, 16.8dvh, 140px); animation: sun-rise 1.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.sunbob { animation: bob-y 6s ease-in-out 1.6s infinite; }
+.sunrise svg { width: 100%; height: auto; }
+.glow { fill: var(--yt-wc-sun-halo); transform-box: fill-box; transform-origin: center; animation: glow 5s ease-in-out infinite; }
+.g2 { fill: var(--yt-wc-sun-halo2); opacity: 0.5; animation-delay: -2.5s; }
+.rays { stroke: var(--yt-accent); stroke-width: 4; stroke-linecap: round; transform-box: fill-box; transform-origin: center; animation: spin 40s linear infinite; }
+.disc { fill: var(--yt-amber); stroke: var(--yt-accent); stroke-width: 3; }
+.face { fill: none; stroke: var(--yt-wc-sun-ink); stroke-width: 2.5; stroke-linecap: round; }
+.cheek { fill: var(--yt-mascot-cheek); }
+.blink { transform-box: fill-box; transform-origin: center; animation: blink 5s ease-in-out infinite; }
+
+.twinkle { position: absolute; animation: twinkle 3.2s ease-in-out infinite; }
+.twinkle path { fill: var(--yt-amber); }
+.twinkle.white path { fill: var(--yt-surface); }
+.twinkle svg { width: 100%; height: auto; }
+
+// ---- ของลอย ----
+.fl { position: absolute; animation: pop-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.lp { animation: bob 6s ease-in-out infinite; }
+.lp.orbit { animation-name: orbit; animation-timing-function: linear; }
+.lp.orbit-rev { animation-name: orbit; animation-timing-function: linear; animation-direction: reverse; }
+.fl svg * { stroke: var(--yt-primary-deep); stroke-linejoin: round; }
+.cap rect { fill: none; stroke-width: 2.5; }
+.cap .c1 { fill: var(--yt-mascot-cheek); stroke: none; }
+.cap.mint .c1 { fill: var(--yt-wc-mint-1); }
+.cap .c2 { fill: var(--yt-mascot-bottom); stroke: none; }
+.rot-l { transform: rotate(-24deg); }
+.rot-r { transform: rotate(30deg); }
+.pill circle { fill: var(--yt-mascot-bottom); stroke-width: 2.5; }
+.pill path { stroke-width: 2.5; stroke-linecap: round; }
+.heart path { fill: var(--yt-mascot-cheek); stroke-width: 1.8; }
+.fstar path { fill: var(--yt-accent); stroke-width: 2; }
+
+@keyframes sky { from { opacity: 0; } }
+@keyframes sun-rise { 0% { transform: translateY(190px) scale(0.7); opacity: 0; } 60% { opacity: 1; } }
+@keyframes pop-in { 0% { transform: scale(0) rotate(-40deg); opacity: 0; } 70% { transform: scale(1.25) rotate(8deg); opacity: 1; } }
+@keyframes glow { 0%, 100% { transform: scale(1); opacity: 0.55; } 50% { transform: scale(1.2); opacity: 0.18; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes bob-y { 50% { transform: translateY(-5px); } }
+@keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.1); } }
+@keyframes drift { from { transform: translateX(-170px); } to { transform: translateX(calc(100vw + 40px)); } }
+@keyframes bob { 0%, 100% { transform: translateY(0) rotate(-8deg); } 50% { transform: translateY(-14px) rotate(10deg); } }
+@keyframes orbit { 0% { transform: rotate(0) translateX(10px) rotate(0); } 100% { transform: rotate(360deg) translateX(10px) rotate(-360deg); } }
+@keyframes twinkle { 0%, 100% { transform: scale(0) rotate(0); opacity: 0; } 45% { transform: scale(1) rotate(45deg); opacity: 1; } 70% { transform: scale(0.3) rotate(90deg); opacity: 0.4; } }
+@keyframes fly { 0% { transform: translate(-60px, 0); } 25% { transform: translate(70px, -14px); } 50% { transform: translate(200px, 6px); } 75% { transform: translate(330px, -10px); } 100% { transform: translate(calc(100vw + 40px), 0); } }
+@keyframes flap { 50% { transform: scaleY(0.35); } }
+
+// ท่าสุดท้ายนิ่ง : ดอกไม้ตั้งตรง ของลอยเอียงตามต้นแบบ ; เมฆ/นก/ประกายซ่อน (เป็นของเคลื่อนไหวล้วน) ; ดวงอาทิตย์/เนิน/ของลอยอยู่ที่เดิม
+@media (prefers-reduced-motion: reduce) {
+  :host *, :host *::before { animation: none !important; }
+  .bird, .twinkle { display: none; }
+  .cloud { transform: translateX(10vw); }
+}

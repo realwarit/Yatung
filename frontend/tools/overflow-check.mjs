@@ -18,8 +18,8 @@ const scales = val('scales', '100,112,125').split(',');
 const zooms = val('textzoom', '100,130').split(',');
 const NOCARD = args.includes('--no-card');   // ปิดการตรวจลูกล้นพ่อ (เปรียบเทียบกับเกณฑ์เดิม)
 const SAMPLE = resolve(process.env.SCAN_SAMPLE ?? '../docs/sample-images/yatung-test-envelope-1.png');
-const routes = val('routes', '/today,/overview,/medications,/settings,/scan,/scan+image,/review/1,/login,/register').split(',');   // /scan+image = หน้าสแกนสถานะ "มีภาพแล้ว"
-const GUEST = new Set(['/login', '/register']);   // หน้า auth: ล้าง token ก่อนเข้า (ไม่งั้น guestGuard พาไป /today)
+const routes = val('routes', '/today,/overview,/medications,/settings,/scan,/scan+image,/review/1,/login,/register,/welcome').split(',');   // /scan+image = หน้าสแกนสถานะ "มีภาพแล้ว"
+const GUEST = new Set(['/login', '/register', '/welcome']);   // หน้า auth: ล้าง token ก่อนเข้า (ไม่งั้น guestGuard พาไป /today)
 const probe = args.includes('--probe');
 
 const browser = await chromium.launch({ channel: 'msedge' }).catch(() => chromium.launch({ channel: 'chrome' }));

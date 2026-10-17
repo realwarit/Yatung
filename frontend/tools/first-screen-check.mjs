@@ -34,6 +34,7 @@ const PAGES = [
     { id: 'before', names: ['progress', 'listen', 'next-slot'] },
     { id: 'done', names: ['progress', 'listen', 'cheer'] },
   ] },
+  { route: '/welcome', auth: false, names: ['start', 'mascot'] },
   { route: '/login', auth: false, names: ['fields', 'submit'], fill: '.content .yt-disclaimer' },
   { route: '/register', auth: false, names: ['fields', 'submit'], fill: '.content .yt-disclaimer' },
   { route: '/scan', names: ['ai-notice', 'tips', 'camera', 'gallery'] },

@@ -69,6 +69,16 @@
   --yt-mascot-cheek: #fda4af;
   --yt-mascot-sweat: #7dd3fc;
 
+  // ---------- หน้าต้อนรับ (/welcome, วันที่ 9W) : สีของฉาก ใช้เฉพาะ features/welcome ----------
+  --yt-wc-sun-glow: #fff1c7;
+  --yt-wc-sun-halo: #fde68a;
+  --yt-wc-sun-halo2: #fcd34d;
+  --yt-wc-sun-ink: #92400e;      // ตา ปาก ของดวงอาทิตย์
+  --yt-wc-hill-mid: #7fd3bf;
+  --yt-wc-mint-1: #5eead4;       // ไล่เฉดตัวอักษรชื่อแอป + แคปซูลลอย
+  --yt-wc-mint-2: #2dd4bf;
+  --yt-wc-title-edge: #0e6b64;   // ชั้นความหนาของตัวอักษร (ระหว่าง primary → primary-dark)
+
   // ---------- รัศมีมุม ----------
   --yt-radius-sm: 12px;
   --yt-radius-field: 16px;

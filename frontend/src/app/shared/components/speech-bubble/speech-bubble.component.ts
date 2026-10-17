@@ -90,11 +90,11 @@ function graphemes(text: string): string[] {
     :host(.tail-down) .bubble::before { bottom: -0.4rem; left: 50%; margin-left: -0.375rem; border-left: 0; border-top: 0; }
     :host(.tail-down-left) .bubble::before { bottom: -0.4rem; left: 1.5rem; border-left: 0; border-top: 0; }
   `,
-  host: { '[class.tail-left]': 'tail() === "left"', '[class.tail-left-low]': 'tail() === "left-low"', '[class.tail-up]': 'tail() === "up"', '[class.tail-down]': 'tail() === "down"', '[class.tone-info]': 'tone() === "info"', '[class.tone-warning]': 'tone() === "warning"', '[class.tone-success]': 'tone() === "success"' },
+  host: { '[class.tail-left]': 'tail() === "left"', '[class.tail-left-low]': 'tail() === "left-low"', '[class.tail-up]': 'tail() === "up"', '[class.tail-down]': 'tail() === "down"', '[class.tail-down-left]': 'tail() === "down-left"', '[class.tone-info]': 'tone() === "info"', '[class.tone-warning]': 'tone() === "warning"', '[class.tone-success]': 'tone() === "success"' },
 })
 export class SpeechBubbleComponent {
   readonly text = input.required<string>();
-  readonly tail = input<'left' | 'left-low' | 'down' | 'up'>('left');
+  readonly tail = input<'left' | 'left-low' | 'down' | 'down-left' | 'up'>('left');
   readonly tone = input<BubbleTone>('neutral');
   /** บรรทัดรอง 13px (ไม่บังคับ) */
   readonly sub = input<string | null>(null);

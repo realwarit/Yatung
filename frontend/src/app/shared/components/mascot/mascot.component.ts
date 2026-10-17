@@ -60,7 +60,7 @@ const SMALL_LOOK_GAIN = 2.2;
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mascot.component.html',
   styleUrl: './mascot.component.scss',
-  host: { '[class.celebrate]': 'mood() === "celebrate"', '[class.fluid]': 'fluid()', '[attr.data-mood]': 'mood()' },
+  host: { '[class.celebrate]': 'mood() === "celebrate"', '[class.fluid]': 'fluid()', '[class.wave-loop]': 'loopWave()', '[attr.data-mood]': 'mood()' },
 })
 export class MascotComponent {
   readonly mood = input<MascotMood>('happy');
@@ -72,6 +72,10 @@ export class MascotComponent {
   readonly peek = input(false);
   /** true = มือสองข้างเกาะขอบด้านล่าง (ใช้คู่กับ wrapper ที่ตัดภาพ) */
   readonly grip = input(false);
+  /** false = ไม่วาดเงาใต้ตัว (หน้าที่วาดเงาเองเพราะเงาต้องไม่กระโดดตามตัว — หน้าต้อนรับ) */
+  readonly shadow = input(true);
+  /** true = โบกมือ 2 ครั้งทุก 7 วินาทีวนต่อเนื่อง (เฉพาะ mood wave ; ค่าเริ่มต้นโบก 3 ครั้งแล้วหยุด) ; หน่วงเริ่มด้วย --yt-wave-delay */
+  readonly loopWave = input(false);
   /** true = ของตกแต่ง (aria-hidden) · false = สื่อความหมาย (role="img" + aria-label ภาษาไทย) */
   readonly decorative = input(true);
   /** ข้อความแทนค่าเริ่มต้นของ mood เมื่อ decorative = false */

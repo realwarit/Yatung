@@ -1,0 +1,37 @@
+// /welcome : host เป็น scroll container (เหมือน auth-shell) ; ฉากอยู่ใน welcome-scene ; ฐานของทุกชิ้น = ท่าสุดท้าย (reduced-motion ปิด animation แล้วเห็นท่านี้)
+// ข้อยกเว้นกฎ animation ≤ 300ms : ฉากเปิดเล่นครั้งเดียว ~2.6 วินาที เฉพาะหน้านี้ (ดู CLAUDE.md)
+:host {
+  --hill-h: clamp(190px, 32.7dvh, 300px);   // เนินล่างสุด (ปุ่มอยู่บนเนินหน้าสีเข้ม)
+  --mw: clamp(120px, 24dvh, 200px);         // ความกว้างน้องยาตรง
+  --cta-h: 6.7rem;                          // ปุ่ม + บรรทัดล่าง (ใช้คำนวณให้น้องยืนบนเนินกลางพอดี)
+  position: fixed; inset: var(--yt-top-off) 0 0 0; overflow-x: hidden; overflow-y: auto;
+  background: var(--yt-bg-mint);
+}
+.page {
+  position: relative; z-index: 1; min-height: 100%; max-width: 26.25rem; margin: 0 auto; display: flex; flex-direction: column;
+  padding: 0 var(--yt-gutter) env(safe-area-inset-bottom, 0px);
+}
+.top { display: flex; justify-content: flex-end; min-height: 3rem; padding-top: var(--yt-space-1); }
+
+// น้องยาตรงยืนบนเนินกลาง : ขอบล่างของกล่อง = 0.8 ของความสูงเนิน (สัดส่วนจากต้นแบบ) ลบความสูงของแถบปุ่ม
+.stage { margin-bottom: max(0px, calc(var(--hill-h) * 0.8 - var(--cta-h))); display: flex; justify-content: center; }
+.mw { position: relative; width: var(--mw); transform-origin: 50% 100%; animation: drop 1.2s cubic-bezier(0.3, 0, 0.4, 1) 0.9s both; }
+.hop { transform-origin: 50% 100%; animation: hop 7s ease-in-out 3.2s infinite; --yt-wave-delay: 2.1s; }
+.shadow {
+  position: absolute; left: 31%; width: 38%; bottom: 1.2%; aspect-ratio: 38 / 5; transform-origin: center; animation: shadow-in 1.2s ease-out 0.9s both;
+  &::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--yt-primary-deep); opacity: 0.2; animation: hop-shadow 7s ease-in-out 3.2s infinite; }
+}
+.bpos { position: absolute; left: 65%; top: -9%; z-index: 3; width: max-content; transform-origin: 18px 100%; animation: bubble 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 2.1s both; --bubble-fs: 1.1875rem; }
+.bob { transform-origin: 18px 100%; animation: bubble-bob 7s ease-in-out 2.1s infinite; }
+
+@keyframes drop { 0% { transform: translateY(-330px) scale(0.9); opacity: 0; } 8% { opacity: 1; } 58% { transform: translateY(0) scale(1); } 68% { transform: scale(1.14, 0.84); } 80% { transform: scale(0.95, 1.07); } 90% { transform: scale(1.02, 0.98); } }
+@keyframes hop { 0%, 80%, 100% { transform: none; } 85% { transform: translateY(-26px) scale(0.97, 1.04); } 90% { transform: translateY(0) scale(1.08, 0.92); } 94% { transform: translateY(-7px); } 97% { transform: none; } }
+@keyframes shadow-in { 0%, 40% { transform: scale(0.2); opacity: 0; } 58% { transform: scale(1.25); opacity: 1; } }
+@keyframes hop-shadow { 0%, 80%, 100% { transform: none; opacity: 1; } 85% { transform: scale(0.7); opacity: 0.6; } 90% { transform: scale(1.1); } }
+@keyframes bubble { 0% { transform: scale(0); opacity: 0; } 70% { transform: scale(1.12); opacity: 1; } }
+@keyframes bubble-bob { 0%, 40%, 100% { transform: none; } 8%, 24% { transform: rotate(-4deg) scale(1.05); } 16%, 32% { transform: rotate(2deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  :host *, :host *::before, :host *::after { animation: none !important; }
+  .shine { display: none; }
+}
