@@ -1,6 +1,6 @@
-# PR: feat/welcome → feat/day9-capacitor (ร่าง — ยังไม่ push / ยังไม่เปิด PR)
+# PR: feat/welcome → main
 
-> แตกจาก `feat/day9-capacitor` (ต้อง merge สาขานั้นก่อน หรือใช้เป็นฐานของ PR นี้)
+> วันที่ 9 (`feat/day9-capacitor`) merge เข้า main แล้ว (PR #33) — PR นี้ฐาน `main` ตรง ๆ ไม่มี commit ของวันที่ 9 ติดมา
 
 ## ชื่อ PR
 `feat(welcome): วันที่ 9W — หน้าต้อนรับแบบ motion (/welcome) + ปรับ start_url และปุ่ม back`
@@ -28,7 +28,7 @@
 | `scan-lazy-check` / `scan-offline-check` | ผ่านทั้งหมด |
 | `welcome-offline-check` (ใหม่) | ผ่านทั้งหมด: ล็อกอินแล้วไม่โหลด chunk welcome · SW แคชครบ 116/116 · ออฟไลน์เปิด `/`, `/welcome` ได้ · deep link → login |
 | `review-e2e` | 67/0 (รันกับ stack จริง ไม่ recreate; ผู้ใช้สุ่มถูกลบหลังจบ) |
-| บนเครื่อง S23 FE | **ยังไม่ได้ทดสอบ** — รายการ `docs/day9w-device-checklist.md` (ชุด 7: 7-1 ถึง 7-18) |
+| บนเครื่อง S23 FE | **ผ่านครบ 7-1 ถึง 7-18** (17 ต.ค. 2569, Samsung Galaxy S23 FE SM-S711B, One UI 8.5 / Android 16, apk จาก `d9fa3a4`; ข้อ 7-16 deep link ใน Chrome Incognito) — รายละเอียด `docs/day9w-device-checklist.md` |
 
 ภาพ (git-ignored): `docs/screenshots/day9w/` — สร้างใหม่ด้วย `node tools/welcome-shots.mjs`
 
