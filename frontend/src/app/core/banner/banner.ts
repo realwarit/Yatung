@@ -13,7 +13,7 @@ export interface BannerInputs {
   expired: boolean;
   offline: boolean;
   offlineText: string;
-  update: 'none' | 'ready' | 'broken';
+  update: 'none' | 'ready' | 'broken' | 'failed';
   install: InstallMode | null;
   font: boolean;
 }
@@ -26,9 +26,14 @@ export interface Banner {
   /** ปุ่มท้ายแถบ (ไม่มี = ทั้งแถบไม่ใช่ปุ่ม) */
   action: string | null;
   dismissible: boolean;
+  /** ป้ายอ่านออกเสียงของปุ่ม × (ตัวอ่านหน้าจอ) */
+  closeLabel: string;
 }
 
 export const UPDATE_READY_TEXT = 'มีเวอร์ชันใหม่ แตะเพื่ออัปเดต';
+export const CLOSE_LABEL = 'ปิดข้อความนี้';
+export const UPDATE_CLOSE_LABEL = 'ปิดแจ้งเตือนเวอร์ชันใหม่';
+export const UPDATE_FAILED_TEXT = 'โหลดเวอร์ชันใหม่ไม่สำเร็จ จะลองใหม่อัตโนมัตินะคะ';
 export const UPDATE_BROKEN_TEXT = 'แอปต้องโหลดใหม่เพื่อให้ใช้งานต่อได้';
 export const FONT_HINT_TEXT = 'ปรับขนาดตัวอักษรให้ใหญ่ขึ้นได้ที่ ตั้งค่า';
 
@@ -36,21 +41,22 @@ export function pickBanner(i: BannerInputs): Banner | null {
   for (const k of BANNER_ORDER) {
     switch (k) {
       case 'expired':
-        if (i.expired) return { kind: k, tone: 'warning', icon: 'alert', text: 'การเชื่อมต่อหมดอายุ · แตะเพื่อเชื่อมต่อใหม่', action: 'เชื่อมต่อ', dismissible: false };
+        if (i.expired) return { kind: k, tone: 'warning', icon: 'alert', text: 'การเชื่อมต่อหมดอายุ · แตะเพื่อเชื่อมต่อใหม่', action: 'เชื่อมต่อ', dismissible: false, closeLabel: CLOSE_LABEL };
         break;
       case 'offline':
-        if (i.offline) return { kind: k, tone: 'offline', icon: 'cloud-off', text: i.offlineText, action: null, dismissible: false };
+        if (i.offline) return { kind: k, tone: 'offline', icon: 'cloud-off', text: i.offlineText, action: null, dismissible: false, closeLabel: CLOSE_LABEL };
         break;
       case 'update':
-        if (i.update === 'ready') return { kind: k, tone: 'info', icon: 'download', text: UPDATE_READY_TEXT, action: 'อัปเดต', dismissible: false };
-        if (i.update === 'broken') return { kind: k, tone: 'warning', icon: 'alert', text: UPDATE_BROKEN_TEXT, action: 'โหลดใหม่', dismissible: false };
+        if (i.update === 'ready') return { kind: k, tone: 'info', icon: 'download', text: UPDATE_READY_TEXT, action: 'อัปเดต', dismissible: true, closeLabel: UPDATE_CLOSE_LABEL };
+        if (i.update === 'failed') return { kind: k, tone: 'info', icon: 'info', text: UPDATE_FAILED_TEXT, action: null, dismissible: true, closeLabel: UPDATE_CLOSE_LABEL };
+        if (i.update === 'broken') return { kind: k, tone: 'warning', icon: 'alert', text: UPDATE_BROKEN_TEXT, action: 'โหลดใหม่', dismissible: false, closeLabel: UPDATE_CLOSE_LABEL };
         break;
       case 'install':
-        if (i.install === 'native') return { kind: k, tone: 'info', icon: 'phone', text: 'ติดตั้งยาตรงไว้บนหน้าจอ', action: 'ติดตั้ง', dismissible: true };
-        if (i.install === 'ios-guide') return { kind: k, tone: 'info', icon: 'phone', text: 'เพิ่มยาตรงลงหน้าจอโฮมเพื่อรับแจ้งเตือน', action: 'ดูวิธี', dismissible: true };
+        if (i.install === 'native') return { kind: k, tone: 'info', icon: 'phone', text: 'ติดตั้งยาตรงไว้บนหน้าจอ', action: 'ติดตั้ง', dismissible: true, closeLabel: CLOSE_LABEL };
+        if (i.install === 'ios-guide') return { kind: k, tone: 'info', icon: 'phone', text: 'เพิ่มยาตรงลงหน้าจอโฮมเพื่อรับแจ้งเตือน', action: 'ดูวิธี', dismissible: true, closeLabel: CLOSE_LABEL };
         break;
       case 'font':
-        if (i.font) return { kind: k, tone: 'info', icon: 'info', text: FONT_HINT_TEXT, action: 'ตั้งค่า', dismissible: true };
+        if (i.font) return { kind: k, tone: 'info', icon: 'info', text: FONT_HINT_TEXT, action: 'ตั้งค่า', dismissible: true, closeLabel: CLOSE_LABEL };
         break;
     }
   }

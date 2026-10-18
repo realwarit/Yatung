@@ -1,5 +1,5 @@
 // ตรวจ "ของสำคัญต้องอยู่ในจอแรก" ด้วย API จำลอง (ไม่ต้อง login/docker) — ต้องมี ng serve (4200)
-//   node tools/first-screen-check.mjs [--stage=d2|all] [--routes=/today,…] [--strict] [--sizes=375x667,360x640] [--scales=100,112,125] [--banners=none,offline]
+//   node tools/first-screen-check.mjs [--stage=d2|all] [--routes=/today,…] [--strict] [--sizes=375x667,360x640] [--scales=100,112,125] [--banners=none,offline,failed]  (failed = แถบ "โหลดเวอร์ชันใหม่ไม่สำเร็จ" 2 บรรทัด ผ่าน window.ng ของ ng serve)
 // กติกา (8D): element ที่ติดป้าย data-first-screen="<ชื่อ>" ต้องมีขอบล่าง ≤ ความสูงจอ − ความสูงแถบเมนูล่าง − 8px
 //   และต้องไม่ถูกปุ่มสแกนกลางที่ยื่นเหนือแถบบัง ; ป้ายเดียวกันหลาย element = ใช้ตัวที่ต่ำสุด
 //   ป้ายที่เป็นแถบปุ่มติดล่างจอ (position: sticky/fixed) = ตรวจว่าอยู่ในจอทั้งหมด (ขอบล่าง ≤ ความสูงจอ)
@@ -24,7 +24,7 @@ const strict = args.includes('--strict');
 const stage = val('stage', 'd2');
 const sizes = val('sizes', '375x667,360x640').split(',').map((s) => s.split('x').map(Number));
 const scales = val('scales', '100,112,125').split(',');
-const banners = val('banners', 'none,offline').split(',');
+const banners = val('banners', 'none,offline,failed').split(',');
 const SCALE_NAME = { 100: 'ก', 112: 'ก+', 125: 'ก++' };
 
 // ป้ายที่แต่ละหน้าต้องมี (รายการตาม docs/day8d-plan.md D2/D3) ; auth:false = ไม่ login ; d3 = ยังไม่ถึงช่วงของหน้านั้น
@@ -75,6 +75,7 @@ for (const [w, h] of sizes) {
           await page.waitForLoadState('networkidle').catch(() => {});
           await page.addStyleTag({ content: '*{animation:none!important;transition:none!important}' });
           await page.waitForTimeout(500);
+          if (banner === 'failed') { await page.evaluate(() => { window.ng.getComponent(document.querySelector('app-banner-host')).svc.update.state.set('failed'); }); await page.waitForTimeout(700); }
           if (banner === 'offline') { await ctx.setOffline(true); await page.evaluate(() => window.dispatchEvent(new Event('offline'))); await page.waitForTimeout(700); }
           if (p.after) await p.after(page);
           await page.evaluate(() => { document.querySelectorAll('*').forEach((e) => { if (e.scrollTop) e.scrollTop = 0; }); });
@@ -187,12 +188,12 @@ for (const [w, h] of sizes) {
             const hit = coverR.some((c) => last.q.left < c.right && last.q.right > c.left && last.q.top < c.bottom && last.q.bottom > c.top);
             return { s: last.s, bottom: Math.round(last.q.bottom), hit, H: window.innerHeight };
           });
-          const tag = `${p.route}${p.id ? ' [' + p.id + ']' : ''}${sc.id ? ' [' + sc.id + ']' : ''}${banner === 'offline' ? ' +banner' : ''} @${w}x${h} ${SCALE_NAME[scale]}`;
+          const tag = `${p.route}${p.id ? ' [' + p.id + ']' : ''}${sc.id ? ' [' + sc.id + ']' : ''}${banner !== 'none' ? ' +banner(' + banner + ')' : ''} @${w}x${h} ${SCALE_NAME[scale]}`;
           // Register: ก+ และ ก++ ยอมให้เลื่อน (ฟอร์ม 4 ช่อง ; ตามที่ D2 ตัดสิน) — รายงานอย่างเดียว
           const hard = scale !== '125' && !(p.route === '/register' && scale === '112');
           const lines = [];
-          if (banner === 'offline' && r.bannerCount !== 1) { fail++; lines.push(`✘ ต้องมี banner 1 แถบพอดี (พบ ${r.bannerCount})`); }
-          if (banner === 'offline' && r.bannerCount === 1) lines.push(`ⓘ banner สูง ${r.bannerH}px`);
+          if (banner !== 'none' && r.bannerCount !== 1) { fail++; lines.push(`✘ ต้องมี banner 1 แถบพอดี (พบ ${r.bannerCount})`); }
+          if (banner !== 'none' && r.bannerCount === 1) lines.push(`ⓘ banner สูง ${r.bannerH}px`);
           for (const it of r.items) {
             if (it.missing) {
               skip++;

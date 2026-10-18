@@ -39,7 +39,7 @@ export class BannerService {
     expired: this.conn.expired(),
     offline: this.online.offline(),
     offlineText: offlineBarText(this.snap.lastSavedAt()),
-    update: this.update.state(),
+    update: this.update.bannerState(),
     install: this.inShell() && this.path() === '/today' && this.installLatched() ? this.install.todayModeNow() : null,
     font: this.inShell() && !this.fontScale.chosen() && !this.fontHintOff(),
   }));
@@ -76,6 +76,7 @@ export class BannerService {
   dismiss(): void {
     const b = this.banner();
     if (b?.kind === 'install') this.install.dismiss();
+    else if (b?.kind === 'update') this.update.dismiss();
     else if (b?.kind === 'font') this.hideFontHint();
   }
 
