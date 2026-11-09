@@ -39,7 +39,7 @@ export class SettingsLinePage {}
   selector: 'app-settings-caregivers-page',
   imports: [SettingsSubFrameComponent, CaregiversSectionComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<app-settings-sub-frame title="ญาติ/ผู้ดูแล"><app-caregivers-section /></app-settings-sub-frame>`,
+  template: `<app-settings-sub-frame title="คนที่ห่วงใย"><app-caregivers-section /></app-settings-sub-frame>`,
 })
 export class SettingsCaregiversPage {}
 

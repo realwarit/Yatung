@@ -12,19 +12,19 @@ import { IconComponent } from '../../shared/icon.component';
 import { CaregiverCodeDialogComponent } from './caregiver-code-dialog.component';
 import { CaregiverFormDialogComponent } from './caregiver-form-dialog.component';
 
-/** ส่วน "ญาติ/ผู้ดูแล": รายการ + สถานะ LINE + เพิ่ม/แก้ไข/ลบ/ส่งรหัสให้ญาติ */
+/** ส่วน "ญาติ/ผู้ดูแล": รายการ + สถานะ LINE + เพิ่ม/แก้ไข/ลบ/ส่งรหัสให้คนที่ห่วงใย */
 @Component({
   selector: 'app-caregivers-section',
   imports: [MatButton, IconComponent, MascotComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p class="hint">ถ้าลืมกินยานานเกินเวลาที่ตั้งไว้ น้องยาตรงจะแจ้งญาติทาง LINE</p>
+    <p class="hint">ถ้าลืมกินยานานเกินเวลาที่ตั้งไว้ น้องยาตรงจะแจ้งคนที่ห่วงใยทาง LINE</p>
     @if (loadError(); as e) {
       <div class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span>{{ e }}</span></div>
       <button mat-flat-button type="button" (click)="load()">ลองใหม่</button>
     } @else if (list(); as items) {
       @if (!items.length) {
-        <div class="empty"><app-mascot mood="happy" [size]="96" /><p>ยังไม่มีผู้ดูแล เพิ่มญาติที่ไว้ใจได้เลยค่ะ</p></div>
+        <div class="empty"><app-mascot mood="happy" [size]="96" /><p>ยังไม่มีคนที่ห่วงใย เพิ่มคนที่ไว้ใจได้เลยค่ะ</p></div>
       }
       <ul class="cgs">
         @for (c of items; track c.id) {
@@ -56,7 +56,7 @@ import { CaregiverFormDialogComponent } from './caregiver-form-dialog.component'
               @if (c.line_linked) {
                 <button mat-stroked-button type="button" (click)="sendCode(c)">เชื่อม LINE ใหม่</button>
               } @else {
-                <button mat-flat-button type="button" (click)="sendCode(c)">ส่งรหัสให้ญาติ</button>
+                <button mat-flat-button type="button" (click)="sendCode(c)">ส่งรหัสให้คนที่ห่วงใย</button>
               }
               <button mat-stroked-button type="button" (click)="edit(c)"><app-icon name="edit" /> แก้ไข</button>
               <button mat-stroked-button type="button" (click)="remove(c)"><app-icon name="trash" /> ลบ</button>
@@ -64,9 +64,9 @@ import { CaregiverFormDialogComponent } from './caregiver-form-dialog.component'
           </li>
         }
       </ul>
-      <button mat-stroked-button type="button" class="add" (click)="edit(null)"><app-icon name="plus" /> เพิ่มผู้ดูแล</button>
+      <button mat-stroked-button type="button" class="add" (click)="edit(null)"><app-icon name="plus" /> เพิ่มคนที่ห่วงใย</button>
     } @else {
-      <div class="yt-skeleton sk" aria-busy="true" aria-label="กำลังโหลดรายการผู้ดูแล"></div>
+      <div class="yt-skeleton sk" aria-busy="true" aria-label="กำลังโหลดรายชื่อคนที่ห่วงใย"></div>
     }
   `,
   styles: `
@@ -131,7 +131,7 @@ export class CaregiversSectionComponent {
     this.dialog.open(CaregiverFormDialogComponent, { data: c, width: '32rem', maxWidth: '95vw' }).afterClosed().subscribe((saved?: Caregiver) => {
       if (!saved) return;
       this.load();
-      this.snack.open(c ? 'แก้ไขข้อมูลผู้ดูแลแล้ว' : 'เพิ่มผู้ดูแลแล้ว', undefined, { duration: 5000, panelClass: 'yt-snack' });
+      this.snack.open(c ? 'แก้ไขข้อมูลแล้ว' : 'เพิ่มคนที่ห่วงใยแล้ว', undefined, { duration: 5000, panelClass: 'yt-snack' });
     });
   }
 
@@ -141,11 +141,11 @@ export class CaregiversSectionComponent {
 
   protected remove(c: Caregiver): void {
     this.dialog.open(ConfirmDialogComponent, {
-      data: { title: `ลบ ${c.name}?`, message: 'จะไม่มีการแจ้งเตือนไปที่ผู้ดูแลคนนี้อีก', confirmLabel: 'ลบผู้ดูแล' },
+      data: { title: `ลบ ${c.name}?`, message: 'จะไม่มีการแจ้งเตือนไปที่คนนี้อีก', confirmLabel: 'ลบคนที่ห่วงใย' },
     }).afterClosed().subscribe((yes) => {
       if (yes !== true) return;
       this.api.deleteCaregiver(c.id).subscribe({
-        next: () => { this.load(); this.snack.open('ลบผู้ดูแลแล้ว', undefined, { duration: 5000, panelClass: 'yt-snack' }); },
+        next: () => { this.load(); this.snack.open('ลบคนที่ห่วงใยแล้ว', undefined, { duration: 5000, panelClass: 'yt-snack' }); },
         error: (e) => this.snack.open(errorText(e), undefined, { duration: 7000, panelClass: 'yt-snack' }),
       });
     });

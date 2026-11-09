@@ -230,7 +230,7 @@ expect "ผู้ป่วย: ปุ่มดูรายละเอียด�
 expect_nomatch "ผู้ป่วย: ไม่ทำให้เกิดข้อความอื่นนอกจาก reply" "$(fl_count push)" '^[1-9]'
 
 say "$LG" "สรุป 7 วัน"
-expect_match "ผู้ดูแล: ผู้ที่คุณดูแล 1 คน" "$REPLY" 'ผู้ที่คุณดูแล 1 คน'
+expect_match "ผู้ดูแล: ผู้ที่คุณดูแล 1 คน" "$REPLY" 'คนที่คุณห่วงใย 1 คน'
 expect_match "ผู้ดูแล: ชื่อผู้ป่วย + อัตรา" "$REPLY" 'คุณผู้ทดสอบ day8 A.*กินครบ [0-9]+% ใน 7 วัน'
 expect_nomatch "ผู้ดูแล: ไม่มีชื่อยาในข้อความ" "$REPLY" 'TEST-8'
 expect_nomatch "ผู้ดูแล: ไม่มีชื่อยาแม้ดูทั้ง JSON" "$(fl_last reply 'JSON.stringify(r.body.messages)')" 'TEST-8'
@@ -238,9 +238,9 @@ expect "ผู้ดูแล: quick reply" "$(qr_labels)" "📊 สรุป,�
 
 say "$LB" "สรุป"
 expect "สองบทบาท: 2 ข้อความ" "$(msg_count)" "2"
-expect_match "สองบทบาท: ของตัวเองก่อน (ยังไม่มีข้อมูล) ตามด้วยผู้ที่ดูแล" "$REPLY" '^📊 สรุปการกินยา 7 วัน: ยังไม่มีข้อมูล .*📊 สรุปการกินยา 7 วันของผู้ที่คุณดูแล 1 คน'
+expect_match "สองบทบาท: ของตัวเองก่อน (ยังไม่มีข้อมูล) ตามด้วยผู้ที่ดูแล" "$REPLY" '^📊 สรุปการกินยา 7 วัน: ยังไม่มีข้อมูล .*📊 สรุปการกินยา 7 วันของคนที่คุณห่วงใย 1 คน'
 expect "สองบทบาท: ข้อความแรกเป็นของตัวเอง" "$(fl_last reply 'r.body.messages[0].altText')" "📊 สรุปการกินยา 7 วัน: ยังไม่มีข้อมูล"
-expect_match "สองบทบาท: ข้อความที่สองเป็นของผู้ป่วยที่ดูแล" "$(fl_last reply 'r.body.messages[1].altText')" 'ผู้ที่คุณดูแล 1 คน'
+expect_match "สองบทบาท: ข้อความที่สองเป็นของผู้ป่วยที่ดูแล" "$(fl_last reply 'r.body.messages[1].altText')" 'คนที่คุณห่วงใย 1 คน'
 
 say "$LU" "สรุป"
 expect_match "ยังไม่เชื่อมบัญชี → วิธีเชื่อมเหมือนข้อความอื่น" "$REPLY" 'ยังไม่ได้เชื่อมบัญชี'
@@ -335,7 +335,7 @@ expect "ngsw.json ไม่มี dataGroups" "$(printf '%s' "$NGSW" | node -e '
 MANI="$(curl -s -m 10 "$WEB_URL/manifest.webmanifest")"
 mget() { printf '%s' "$MANI" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const m=JSON.parse(s);const v=eval(process.argv[1]);console.log(v===undefined?"":typeof v==="object"?JSON.stringify(v):v)}catch(e){console.log("")}})' "$1"; }
 expect "manifest: id" "$(mget 'm.id')" "/"
-expect "manifest: start_url" "$(mget 'm.start_url')" "/today"
+expect "manifest: start_url" "$(mget 'm.start_url')" "/"
 expect "manifest: display" "$(mget 'm.display')" "standalone"
 expect "manifest: shortcuts (ยาวันนี้, สแกนซองยา)" "$(mget 'm.shortcuts.map(x=>x.name+"="+x.url).join(",")')" "ยาวันนี้=/today,สแกนซองยา=/scan"
 expect "manifest: ไอคอน maskable 192 และ 512" "$(mget 'm.icons.filter(i=>i.purpose==="maskable").map(i=>i.sizes).join(",")')" "192x192,512x512"

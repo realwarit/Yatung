@@ -117,8 +117,8 @@ test('4.2/4.3 เชื่อมสำเร็จ: ผู้ป่วย (ป�
 
   const c = M.buildLinkedCaregiver('มาลี', 90, ENV);
   const ct = all(c.contents).filter((n) => n.type === 'text').map((n) => n.text);
-  assert.ok(ct.includes('เชื่อมเป็นผู้ดูแลแล้วค่ะ 💚'));
-  assert.ok(ct.includes('ผู้ดูแลของคุณ มาลี'));
+  assert.ok(ct.includes('เชื่อมเป็นคนที่ห่วงใยแล้วค่ะ 💚'));
+  assert.ok(ct.includes('คุณเป็นคนที่ห่วงใยของ') && ct.includes('คุณมาลี'));
   assert.ok(ct.includes('ถ้าคุณมาลีลืมกินยา'));
   assert.ok(ct.includes('เกิน 90 นาที น้องยาตรง'));
 });
@@ -236,8 +236,8 @@ test('วันที่ไทยสั้น', () => {
 });
 
 test('ผู้ดูแลอย่างเดียว / ยังไม่เชื่อม: ข้อความ text', () => {
-  assert.equal(M.TEXT.caregiverOnly(['สมชาย']).text, '💚 คุณเป็นผู้ดูแลของ\nสมชาย\nน้องยาตรงจะแจ้งที่แชทนี้\nเมื่อผู้ป่วยลืมกินยานะคะ');
-  assert.match(M.TEXT.caregiverOnly(['A', 'B']).text, /ผู้ดูแลของ\nA และ B/);
+  assert.equal(M.TEXT.caregiverOnly(['สมชาย']).text, '💚 คุณเป็นคนที่ห่วงใย\nสมชาย\nน้องยาตรงจะแจ้งที่แชทนี้\nเมื่อเขาลืมกินยานะคะ');
+  assert.match(M.TEXT.caregiverOnly(['A', 'B']).text, /คนที่ห่วงใย\nA และ B/);
   assert.match(M.TEXT.notLinked().text, /ยังไม่ได้เชื่อมบัญชี/);
   assert.match(M.TEXT.notLinked().text, /รับรหัสเชื่อม LINE/);
 });
@@ -319,7 +319,7 @@ test('"วันนี้": ผู้ป่วย = Flex, ผู้ดูแล�
   h = harness({ caregiverOf: ['สมชาย'] });
   await svc.handleEvent(ev('วันนี้'), { db: h.db, client: h.client, env: ENV });
   assert.equal(h.sent[0].messages[0].type, 'flex');
-  assert.equal(h.sent[0].messages[0].altText, '📋 ยาวันนี้ของผู้ที่คุณดูแล 1 คน');
+  assert.equal(h.sent[0].messages[0].altText, '📋 ยาวันนี้ของคนที่คุณห่วงใย 1 คน');
   h = harness();
   await svc.handleEvent(ev('วันนี้'), { db: h.db, client: h.client, env: ENV });
   assert.match(h.sent[0].messages[0].text, /ยังไม่ได้เชื่อมบัญชี/);

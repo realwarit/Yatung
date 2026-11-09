@@ -94,12 +94,12 @@
           } @else if (textSource()) {
             <div class="pic typed">
               <h2 class="side__h"><app-icon name="type" /> ข้อความที่คุณพิมพ์</h2>
-              <pre class="typed__t">{{ textSource() }}</pre>
+              <pre class="typed__t">{{ textView() }}</pre>
             </div>
           }
           <details class="ocr">
             <summary>ข้อความที่น้องอ่านได้ <span class="ocr__sub">(ปิดชื่อและ HN แล้ว)</span></summary>
-            <pre>{{ rx()?.ocr_text }}</pre>
+            <pre>{{ ocrText() }}</pre>
           </details>
         </aside>
 

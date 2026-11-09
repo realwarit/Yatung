@@ -16,9 +16,9 @@ import { IconComponent } from '../../shared/icon.component';
     <button mat-flat-button type="button" class="full" [disabled]="busy()" (click)="send()">
       <app-icon name="bell" /> {{ busy() ? 'กำลังส่ง…' : 'ทดลองส่งเตือนตอนนี้' }}
     </button>
-    <p class="hint hint--gap">แจ้งญาติที่เชื่อม LINE แล้วทุกคนทันทีสำหรับรอบที่ใกล้เวลาปัจจุบันที่สุด โดยไม่ต้องรอเวลาที่ตั้งไว้</p>
+    <p class="hint hint--gap">แจ้งคนที่ห่วงใยที่เชื่อม LINE แล้วทุกคนทันทีสำหรับรอบที่ใกล้เวลาปัจจุบันที่สุด โดยไม่ต้องรอเวลาที่ตั้งไว้</p>
     <button mat-stroked-button type="button" class="full" [disabled]="busyEsc()" (click)="escalate(false)">
-      <app-icon name="alert" /> {{ busyEsc() ? 'กำลังแจ้ง…' : 'ทดลองแจ้งญาติตอนนี้' }}
+      <app-icon name="alert" /> {{ busyEsc() ? 'กำลังแจ้ง…' : 'ทดลองแจ้งคนที่ห่วงใยตอนนี้' }}
     </button>
     <p class="hint hint--gap">ส่งข้อความ "ยาใกล้หมด" ของยาที่ใกล้หมดตอนนี้เข้า LINE ทันที โดยไม่ต้องรอเวลา 09:00</p>
     <button mat-stroked-button type="button" class="full" [disabled]="busyLow()" fitLabel="ทดลองแจ้งยาใกล้หมดตอนนี้" fitShort="ทดลองแจ้ง" (click)="lowStock(false)">
@@ -111,7 +111,7 @@ export class DemoSectionComponent {
   private askResend(e: HttpErrorResponse): void {
     const left = Number((e.error as { quota_left?: number } | null)?.quota_left);
     const quota = Number.isFinite(left) ? ` (เหลือโควตาสำรอง ${left} ข้อความ)` : '';
-    this.resend.set({ kind: 'esc', title: 'แจ้งญาติไปแล้ว ส่งซ้ำไหม?', message: `ใช้โควตาสำรองของ LINE เพิ่ม${quota}` });
+    this.resend.set({ kind: 'esc', title: 'แจ้งคนที่ห่วงใยไปแล้ว ส่งซ้ำไหม?', message: `ใช้โควตาสำรองของ LINE เพิ่ม${quota}` });
   }
 
   protected doResend(kind: 'esc' | 'low'): void {

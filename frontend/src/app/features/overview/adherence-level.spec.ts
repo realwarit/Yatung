@@ -1,5 +1,5 @@
 import { AdherenceDay, AdherenceMeal, AdherenceSources } from '../../core/api/stats.api';
-import { barFraction, barLabel, chartSummary, dayChips, dayDetail, dayKind, isPartialToday, levelOf, rangeText, sourceGroups, sourceLine, toneOf, worstMeal } from './adherence-level';
+import { barFraction, barLabel, chartSummary, dayChips, dayDetail, dayKind, isPartialToday, levelOf, rangeText, sourceGroups, sourceLine, sourceParts, toneOf, worstMeal } from './adherence-level';
 
 const day = (o: Partial<AdherenceDay>): AdherenceDay => ({
   date: '2026-10-12', label_th: 'จ. 12 ต.ค.', is_today: false, taken: 0, missed: 0, pending_due: 0, upcoming: 0, due: 0, rate: null, ...o,
@@ -43,7 +43,7 @@ describe('sourceGroups', () => {
   it('"แอป" = app + push, source ไม่รู้จัก (other) ไม่แสดง', () => {
     const s: AdherenceSources = { app: 3, push: 2, line: 1, caregiver: 0, other: 9 };
     expect(sourceGroups(s)).toEqual([
-      { key: 'app', label: 'แอป', count: 5 }, { key: 'line', label: 'LINE', count: 1 }, { key: 'caregiver', label: 'ญาติยืนยัน', count: 0 },
+      { key: 'app', label: 'แอป', count: 5 }, { key: 'line', label: 'LINE', count: 1 }, { key: 'caregiver', label: 'คนที่ห่วงใยยืนยัน', count: 0 },
     ]);
   });
 });
@@ -99,8 +99,12 @@ describe('สเกลสีและเลขบนแท่ง (จัดห�
     expect(dayChips(day({ pending_due: 5 }))).toEqual(['ยังไม่กิน 5']);
     expect(dayChips(day({}))).toEqual([]);
   });
+  it('sourceParts: แต่ละช่องทางเป็นท่อนเดียว (ตัวนับ + ชื่อ) เรียงเหมือน sourceLine', () => {
+    expect(sourceParts({ app: 2, push: 1, line: 1, caregiver: 1, other: 4 })).toEqual(['แอป 3', 'LINE 1', 'คนที่ห่วงใย 1']);
+    expect(sourceParts({ app: 0, push: 0, line: 0, caregiver: 0, other: 3 })).toEqual([]);
+  });
   it('sourceLine: เฉพาะช่องทางที่มี', () => {
-    expect(sourceLine({ app: 2, push: 1, line: 1, caregiver: 1, other: 4 })).toBe('บันทึกผ่าน แอป 3 · LINE 1 · ญาติ 1');
+    expect(sourceLine({ app: 2, push: 1, line: 1, caregiver: 1, other: 4 })).toBe('บันทึกผ่าน แอป 3 · LINE 1 · คนที่ห่วงใย 1');
     expect(sourceLine({ app: 0, push: 0, line: 2, caregiver: 0, other: 0 })).toBe('บันทึกผ่าน LINE 2');
     expect(sourceLine({ app: 0, push: 0, line: 0, caregiver: 0, other: 3 })).toBe('');
   });

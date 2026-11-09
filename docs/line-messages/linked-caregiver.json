@@ -15,7 +15,7 @@
       },
       {
         "type": "text",
-        "text": "เชื่อมเป็นผู้ดูแลแล้วค่ะ 💚",
+        "text": "เชื่อมเป็นคนที่ห่วงใยแล้วค่ะ 💚",
         "wrap": true,
         "scaling": true,
         "size": "lg",
@@ -35,7 +35,16 @@
     "contents": [
       {
         "type": "text",
-        "text": "ผู้ดูแลของคุณ สมชาย ใจดี",
+        "text": "คุณเป็นคนที่ห่วงใยของ",
+        "wrap": true,
+        "scaling": true,
+        "size": "lg",
+        "color": "#12302d",
+        "weight": "bold"
+      },
+      {
+        "type": "text",
+        "text": "คุณสมชาย ใจดี",
         "wrap": true,
         "scaling": true,
         "size": "lg",

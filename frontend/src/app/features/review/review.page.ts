@@ -27,7 +27,7 @@ import { ReviewBannerComponent } from './review-banner.component';
 import { ReviewBarComponent } from './review-bar.component';
 import { ReviewCardComponent } from './review-card.component';
 import {
-  ReviewCard, TodoItem, blankCard, draftFromParsed, newCard, reasonsFor, todoOf, toConfirmItems, domIdOf,
+  ReviewCard, TodoItem, blankCard, draftFromParsed, newCard, reasonsFor, todoOf, toConfirmItems, domIdOf, ocrForDisplay,
 } from './review.model';
 
 type View = 'loading' | 'error' | 'draft' | 'done' | 'confirmed' | 'discarded';
@@ -121,6 +121,8 @@ export class ReviewPage implements HasUnsavedChanges, OnDestroy {
   protected readonly doneCount = computed(() => (this.result()?.created.length ?? 0) + (this.result()?.refilled.length ?? 0));
   protected readonly stepNow = computed(() => (this.view() === 'done' || this.view() === 'confirmed' ? 2 : 1));
   protected readonly textSource = computed(() => (this.rx()?.input_type === 'text' ? this.rx()!.ocr_text : ''));
+  protected readonly textView = computed(() => ocrForDisplay(this.textSource()));
+  protected readonly ocrText = computed(() => ocrForDisplay(this.rx()?.ocr_text));
 
   constructor() {
     this.settings.slotTimes().subscribe({ next: (t) => this.times.set(t), error: () => { /* ใช้เวลาตั้งต้น */ } });

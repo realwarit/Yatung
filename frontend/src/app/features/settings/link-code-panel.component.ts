@@ -30,7 +30,7 @@ import { IconComponent } from '../../shared/icon.component';
       }
       @if (inviteText(); as t) {
         <button mat-stroked-button type="button" class="copy" (click)="copy(t)">
-          <app-icon [name]="copied() ? 'check' : 'layers'" /> {{ copied() ? 'คัดลอกแล้ว' : 'คัดลอกข้อความเชิญส่งให้ญาติ' }}
+          <app-icon [name]="copied() ? 'check' : 'layers'" /> {{ copied() ? 'คัดลอกแล้ว' : 'คัดลอกข้อความเชิญ' }}
         </button>
       }
 

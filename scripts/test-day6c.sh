@@ -147,7 +147,7 @@ expect_match "follow ซ้ำของผู้ป่วยที่เชื�
 req POST /api/caregivers "$TA" '{"name":"ลูกสาว","escalate_after_min":90}'; CG="$(jget 'o.id')"
 req POST "/api/caregivers/$CG/link-code" "$TA"; CODE_C="$(jget 'o.code')"
 say "$LC" "$CODE_C"
-expect_match "ผู้ดูแลส่งรหัส → Flex เชื่อมเป็นผู้ดูแล + กี่นาที" "$REPLY" 'เชื่อมเป็นผู้ดูแลแล้วค่ะ 💚.*ผู้ดูแลของคุณ ผู้ทดสอบ day6c A.*เกิน 90 นาที'
+expect_match "ผู้ดูแลส่งรหัส → Flex เชื่อมเป็นผู้ดูแล + กี่นาที" "$REPLY" 'เชื่อมเป็นคนที่ห่วงใยแล้วค่ะ 💚.*คุณเป็นคนที่ห่วงใยของ.*ผู้ทดสอบ day6c A.*เกิน 90 นาที'
 expect "  quick reply (ผู้ดูแลอย่างเดียว)" "$(qr_labels)" "📊 สรุป,❓ ช่วยเหลือ"
 say "$LU" "123456"
 expect_match "รหัสผิด → ข้อความ text" "$REPLY" '🤔 รหัสนี้ใช้ไม่ได้ค่ะ รหัสใช้ได้ 10 นาทีเท่านั้น'
@@ -184,7 +184,7 @@ say "$LA" "วันนี้"
 expect_match "กินครบ → ชมด้วย mascot-cheer" "$REPLY" 'กินครบทุกรายการแล้ว.*กินแล้ว 4 จาก 4 รายการ.*วันนี้กินครบทุกรายการแล้ว เก่งมากค่ะ 🌟'
 expect "  รูปท่าดีใจ" "$(fl_last reply 'JSON.stringify(r.body.messages[0].contents.header).match(/mascot-[a-z]+/)[0]')" "mascot-cheer"
 say "$LC" "วันนี้"
-expect_match "ผู้ดูแลอย่างเดียว → Flex สรุปยาวันนี้ของผู้ป่วยที่ดูแล (7A) มีชื่อผู้ป่วย" "$REPLY" '📋 ยาวันนี้ของผู้ที่คุณดูแล 1 คน.*ผู้ทดสอบ day6c A'
+expect_match "ผู้ดูแลอย่างเดียว → Flex สรุปยาวันนี้ของผู้ป่วยที่ดูแล (7A) มีชื่อผู้ป่วย" "$REPLY" '📋 ยาวันนี้ของคนที่คุณห่วงใย 1 คน.*ผู้ทดสอบ day6c A'
 expect "  quick reply (ผู้ดูแล)" "$(qr_labels)" "📊 สรุป,❓ ช่วยเหลือ"
 say "$LU" "วันนี้"
 expect_match "ยังไม่เชื่อม → วิธีเชื่อมแบบสั้น" "$REPLY" '🔗 ยังไม่ได้เชื่อมบัญชีค่ะ.*รับรหัสเชื่อม LINE'

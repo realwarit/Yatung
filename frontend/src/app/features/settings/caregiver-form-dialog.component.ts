@@ -12,7 +12,7 @@ import { IconComponent } from '../../shared/icon.component';
   imports: [MatDialogTitle, MatDialogContent, MatDialogActions, MatButton, StepperComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 mat-dialog-title>{{ data ? 'แก้ไขผู้ดูแล' : 'เพิ่มผู้ดูแล' }}</h2>
+    <h2 mat-dialog-title>{{ data ? 'แก้ไขข้อมูล' : 'เพิ่มคนที่ห่วงใย' }}</h2>
     <mat-dialog-content>
       <div class="yt-field">
         <label class="yt-label" for="cg-name">ชื่อ</label>
@@ -30,8 +30,8 @@ import { IconComponent } from '../../shared/icon.component';
         </div>
       </div>
       <div class="yt-field">
-        <span class="yt-label" id="cg-min-l">แจ้งผู้ดูแลเมื่อไม่กดกินยานานเกิน</span>
-        <app-stepper [(value)]="minutes" [min]="10" [max]="720" [step]="10" [display]="minutes() + ' นาที'" label="นาทีก่อนแจ้งผู้ดูแล" />
+        <span class="yt-label" id="cg-min-l">แจ้งเมื่อไม่กดกินยานานเกิน</span>
+        <app-stepper [(value)]="minutes" [min]="10" [max]="720" [step]="10" [display]="minutes() + ' นาที'" label="นาทีก่อนแจ้งคนที่ห่วงใย" />
         <p class="yt-hint">ตั้งได้ 10–720 นาที</p>
       </div>
       @if (error(); as e) { <p class="yt-error-text" role="alert"><app-icon name="alert" /> {{ e }}</p> }
@@ -59,7 +59,7 @@ export class CaregiverFormDialogComponent {
 
   protected save(): void {
     const name = this.name().trim();
-    this.nameError.set(name ? null : 'กรุณาใส่ชื่อผู้ดูแล');
+    this.nameError.set(name ? null : 'กรุณาใส่ชื่อคนที่ห่วงใย');
     if (!name) return;
     this.saving.set(true);
     this.error.set(null);

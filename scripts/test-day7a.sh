@@ -243,10 +243,10 @@ due "$UE" 70; fl_clear; R="$(run_esc)"
 expect "แจ้งผู้ดูแลทั้งสองคน (2 ข้อความ)" "$(fl_count push)" "2"
 fl_clear
 press "$LX" "a=cg_take&d=$DE1" wait
-expect_match "LINE ที่ไม่ใช่ผู้ดูแลกดยืนยัน → แจ้งว่าไม่มีสิทธิ์ (ไม่เงียบ)" "$REPLY" 'ไม่พบสิทธิ์ผู้ดูแล'
+expect_match "LINE ที่ไม่ใช่ผู้ดูแลกดยืนยัน → แจ้งว่าไม่มีสิทธิ์ (ไม่เงียบ)" "$REPLY" 'ไม่พบสิทธิ์ของคุณ'
 expect "  dose ยัง pending" "$(sql "SELECT status FROM dose_logs WHERE id=$DE1;")" "pending"
 press "$LC3" "a=cg_take&d=$DE1" wait
-expect_match "ผู้ดูแลของผู้ป่วยคนอื่นกด → ไม่มีสิทธิ์" "$REPLY" 'ไม่พบสิทธิ์ผู้ดูแล'
+expect_match "ผู้ดูแลของผู้ป่วยคนอื่นกด → ไม่มีสิทธิ์" "$REPLY" 'ไม่พบสิทธิ์ของคุณ'
 expect "  dose ยัง pending" "$(sql "SELECT status FROM dose_logs WHERE id=$DE1;")" "pending"
 expect "  remaining_qty ยัง 30" "$(sql "SELECT remaining_qty FROM medications WHERE id=$ME1;")" "30.00"
 press "$LC1" "a=cg_take&d=$DE1" wait
@@ -260,7 +260,7 @@ expect "  ไม่ส่งให้คนที่กดยืนยันเ�
 expect_match "  altText ปิดเรื่อง" "$(fl_last push 'r.body.messages[0].altText')" '^💚 คุณผู้ทดสอบกินยามื้อก่อนนอนแล้วค่ะ · [0-9:]+ น.$'
 fl_clear
 press "$LC2" "a=cg_take&d=$DE1" wait
-expect_match "ผู้ดูแลอีกคนกดทีหลัง → บอกว่ามีญาติยืนยันไว้แล้ว" "$REPLY" 'ญาติยืนยันเมื่อ'
+expect_match "ผู้ดูแลอีกคนกดทีหลัง → บอกว่ามีญาติยืนยันไว้แล้ว" "$REPLY" 'คนที่ห่วงใยยืนยัน.*เมื่อ'
 expect "  ไม่หักยาซ้ำ" "$(sql "SELECT remaining_qty FROM medications WHERE id=$ME1;")" "29.00"
 req GET /api/doses/today "$TE"
 expect "GET /api/doses/today แสดง source = caregiver" "$(jget 'o.slots[0].doses[0].source')" "caregiver"
@@ -296,7 +296,7 @@ req POST "/api/doses/$DF1/undo" "$TF"; req POST "/api/doses/$DF1/take" "$TF"; sl
 expect "  กินซ้ำหลัง undo ไม่ส่งปิดเรื่องอีก" "$(fl_count push)" "2"
 fl_clear
 press "$LC2" "a=cg_take&d=$DF1" wait
-expect_match "ญาติกดยืนยันหลังผู้ป่วยกินไปแล้ว → บอกว่าผู้ป่วยกินไปก่อนหน้านี้" "$REPLY" 'ผู้ป่วยกินเมื่อ [0-9:]+ น.'
+expect_match "ญาติกดยืนยันหลังผู้ป่วยกินไปแล้ว → บอกว่าผู้ป่วยกินไปก่อนหน้านี้" "$REPLY" 'กินเมื่อ [0-9:]+ น.'
 expect "  ไม่หักยาซ้ำ (เหลือ 29 หลังกินครั้งแรก)" "$(sql "SELECT remaining_qty FROM medications WHERE id=$MF1;")" "29.00"
 expect "  บันทึก acknowledged_at ของญาติคนนั้น" "$(sql "SELECT acknowledged_at IS NOT NULL FROM dose_escalations WHERE id=$EF2;")" "1"
 
@@ -387,13 +387,13 @@ mkmed "$TP" "TEST-7A-ลับ-ชื่อยา"; sql "UPDATE dose_logs SET sc
 new_user Q; TQ="$TOKEN_NEW"; UQ="$UID_NEW"
 mkcg "$TQ" "ญาติ" 60 "$LC3"
 fl_clear; wh "$(ev_text "$LC3" "วันนี้")"; wait_n reply 1
-expect_match "ผู้ดูแล 2 ผู้ป่วย พิมพ์ \"วันนี้\" → Flex สรุปผู้ที่ดูแล" "$(fl_last reply 'r.body.messages[0].altText')" '^📋 ยาวันนี้ของผู้ที่คุณดูแล [0-9]+ คน$'
+expect_match "ผู้ดูแล 2 ผู้ป่วย พิมพ์ \"วันนี้\" → Flex สรุปผู้ที่ดูแล" "$(fl_last reply 'r.body.messages[0].altText')" '^📋 ยาวันนี้ของคนที่คุณห่วงใย [0-9]+ คน$'
 expect "  ไม่แสดงชื่อยา" "$(fl_last reply 'JSON.stringify(r.body.messages).includes("TEST-7A")')" "false"
 expect "  ไม่แสดงอีเมลของใคร" "$(fl_last reply 'JSON.stringify(r.body.messages).includes("@example.test")')" "false"
 fl_clear; wh "$(ev_text "$LP" "วันนี้")"; wait_n reply 1
 expect "LINE ที่เป็นทั้งผู้ป่วยและผู้ดูแล → 2 ข้อความ (ของตัวเอง + ผู้ที่ดูแล)" "$(fl_last reply 'r.body.messages.length')" "2"
 expect_match "  ข้อความแรก = ยาของตัวเอง" "$(fl_last reply 'r.body.messages[0].altText')" '^📋 ยาของวันนี้'
-expect_match "  ข้อความที่สอง = ผู้ที่ดูแล" "$(fl_last reply 'r.body.messages[1].altText')" '^📋 ยาวันนี้ของผู้ที่คุณดูแล 1 คน$'
+expect_match "  ข้อความที่สอง = ผู้ที่ดูแล" "$(fl_last reply 'r.body.messages[1].altText')" '^📋 ยาวันนี้ของคนที่คุณห่วงใย 1 คน$'
 
 section "โหมดเดโม: POST /api/demo/escalate-now (DEMO_MODE=true)"
 new_user J; TJ="$TOKEN_NEW"; UJ="$UID_NEW"
@@ -403,7 +403,7 @@ sql "UPDATE dose_logs SET scheduled_at=NOW() + INTERVAL 10 MINUTE WHERE id=$DJ1;
 fl_clear; req POST /api/demo/escalate-now "$TJ"
 expect "แจ้งญาติทันที (ยังไม่ถึงเวลา) → 200" "$STATUS" "200"
 expect "  caregivers=1 resent=false" "$(jget 'o.caregivers+":"+o.resent')" "1:false"
-expect_match "  message ภาษาไทย" "$(jget 'o.message')" '^แจ้งญาติ 1 คน เรื่องมื้อก่อนนอน [0-9:]+ น\. \(1 รายการ\) เข้า LINE แล้วค่ะ$'
+expect_match "  message ภาษาไทย" "$(jget 'o.message')" '^แจ้งคนที่ห่วงใย 1 คน เรื่องมื้อก่อนนอน [0-9:]+ น\. \(1 รายการ\) เข้า LINE แล้วค่ะ$'
 expect "  push ถึงญาติ 1 ข้อความ" "$(fl_count push)" "1"
 expect_match "  ยังไม่ถึงเวลา → การ์ดแสดง \"ใกล้ถึงเวลา\" ไม่ใช่ \"เลยมา\"" "$(fl_last push 'r.body.messages[0].altText')" 'ใกล้ถึงเวลากินยามื้อก่อนนอน · อีก (9|10) นาที$'
 expect "  จองก่อนส่ง (dose_escalations 1 แถว)" "$(sql "SELECT COUNT(*) FROM dose_escalations WHERE dose_id=$DJ1;")" "1"

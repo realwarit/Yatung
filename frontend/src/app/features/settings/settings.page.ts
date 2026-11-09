@@ -5,6 +5,7 @@ import { MatButton } from '@angular/material/button';
 import { DemoApi, LineApi } from '../../core/api/line.api';
 import { SettingsApi } from '../../core/api/settings.api';
 import { SlotTimes } from '../../core/api/models';
+import { nobreak } from '../../core/text';
 import { AuthService } from '../../core/auth/auth.service';
 import { SLOT_ORDER } from '../../core/i18n/labels';
 import { TtsService } from '../../core/tts/tts.service';
@@ -68,6 +69,8 @@ export class SettingsPage {
     const t = this.times();
     return t ? SLOT_ORDER.map((s) => t[s]).join(' · ') : 'กำลังโหลด…';
   });
+  /** ตัดบรรทัดได้แค่ระหว่าง "แจ้งเตือน" กับ "บนเครื่องนี้" (ไม่ให้ "นี้" ตกบรรทัดเดี่ยว) */
+  protected readonly pushTitle = 'แจ้งเตือน ' + nobreak('บน', 'เครื่อง', 'นี้');
   protected readonly pushLabel = computed(() => ({
     enabled: 'เปิดอยู่', off: 'ปิดอยู่', blocked: 'ถูกบล็อก', 'needs-install': 'ต้องติดตั้งก่อน', unsupported: 'ไม่รองรับ', native: 'ใช้ LINE แทน',
   }[this.push.state()]));
@@ -75,7 +78,7 @@ export class SettingsPage {
   protected readonly say = computed<{ tone: BubbleTone; mood: MascotMood; text: string }>(() => {
     const linked = this.lineLinked(), n = this.caregiverCount();
     if (linked === false) return { tone: 'info', mood: 'happy', text: 'เชื่อม LINE ไว้ น้องจะเตือน' + NL + 'กินยาทาง LINE ด้วยนะคะ' };
-    if (linked === true && n === 0) return { tone: 'info', mood: 'happy', text: 'เพิ่มญาติไว้นะคะ ถ้าลืมกินยา' + NL + 'น้องจะบอกญาติให้ค่ะ' };
+    if (linked === true && n === 0) return { tone: 'info', mood: 'happy', text: 'เพิ่มคนที่ห่วงใยไว้นะคะ' + NL + 'ถ้าลืมกินยา น้องจะบอกเขาให้ค่ะ' };
     if (linked === true && n !== null) return { tone: 'success', mood: 'celebrate', text: 'ตั้งค่าครบแล้วค่ะ น้องพร้อม' + NL + 'เตือนทุกมื้อเลยนะคะ' };
     return { tone: 'neutral', mood: 'happy', text: 'ตั้งค่าให้เหมาะกับคุณนะคะ' };
   });

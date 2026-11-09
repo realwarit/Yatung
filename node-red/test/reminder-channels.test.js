@@ -195,3 +195,90 @@ test('ยาใกล้หมด: ไม่ส่ง push เข้ามา �
   await stock.run(db, line, {});
   assert.equal(line.pushes.length, 1); assert.equal(db.meds[0].alerted, 0);
 });
+
+// ---------- เดโม remindNow ต้องเลือกช่องทางเหมือน cron (วันที่ 11 ข้อ 10) ----------
+function makeNowDb({ line = 'U7', hasSubs = false, hasPush = false, notifyBoth = 0 } = {}) {
+  const claimed = [];
+  return {
+    claimed,
+    async query(sql) {
+      if (/SELECT line_user_id, email FROM users/.test(sql)) return [{ line_user_id: line, email: 'a@example.test' }];
+      if (/ORDER BY ABS\(TIMESTAMPDIFF/.test(sql)) {
+        return [{ id: 1, user_id: 7, slot: 'morning', scheduled_at: '2026-10-09 08:00:00', was_reminded: 0, late_sec: 60, name: 'SECRET-DRUG', strength: null, dose_per_time: 1, unit: 'tablet', meal_relation: 'after', line_user_id: line, notify_both: notifyBoth, has_push: hasPush ? 1 : 0 }];
+      }
+      if (/^SELECT COUNT\(\*\) AS n FROM push_subscriptions/.test(sql)) return [{ n: hasSubs ? 1 : 0 }];
+      throw new Error('unexpected sql ' + sql.slice(0, 60));
+    },
+    withTransaction: async (fn) => fn({ query: async (sql, params) => { if (/FOR UPDATE/.test(sql)) return [[{ id: 1 }]]; claimed.push(params); return [{}]; } })
+  };
+}
+
+test('remindNow: เชื่อม LINE + มีเครื่อง ไม่เปิด notify_both → LINE อย่างเดียว (เหมือน cron)', async () => {
+  const db = makeNowDb({ hasPush: true }), line = fakeLine(), push = fakePush();
+  const r = await svc.remindNow(db, line, 7, ENV, push);
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(line.pushes.length, 1);
+  assert.equal(push.sent.length, 0);
+  assert.match(r.body.message, /เข้า LINE แล้วค่ะ/);
+  assert.equal(r.body.push_sent, 0);
+});
+
+test('remindNow: notify_both=1 + มีเครื่อง → ส่งทั้ง LINE และ Web Push จองครั้งเดียว (payload ไม่มีชื่อยา)', async () => {
+  const db = makeNowDb({ hasPush: true, notifyBoth: 1 }), line = fakeLine(), push = fakePush();
+  const r = await svc.remindNow(db, line, 7, ENV, push);
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(line.pushes.length, 1);
+  assert.equal(push.sent.length, 1);
+  assert.equal(push.sent[0].meta.kind, 'reminder');
+  assert.equal(JSON.stringify(push.sent[0].payload).includes('SECRET-DRUG'), false);
+  assert.equal(db.claimed.length, 1);   // จอง reminded_at ครั้งเดียวสำหรับทุกช่องทาง
+  assert.match(r.body.message, /เข้า LINE และเครื่องนี้ แล้วค่ะ/);
+  assert.equal(r.body.push_sent, 1);
+});
+
+test('remindNow: ไม่เชื่อม LINE แต่มีเครื่อง → ส่ง Web Push ได้ (ไม่ตอบ LINE_NOT_LINKED)', async () => {
+  const db = makeNowDb({ line: null, hasSubs: true, hasPush: true }), line = fakeLine(), push = fakePush();
+  const r = await svc.remindNow(db, line, 7, ENV, push);
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(line.pushes.length, 0);
+  assert.equal(push.sent.length, 1);
+  assert.match(r.body.message, /เข้าเครื่องนี้ แล้วค่ะ/);
+});
+
+test('remindNow: ไม่เชื่อม LINE และไม่มีเครื่อง / มีเครื่องแต่ระบบไม่มี VAPID → 409 LINE_NOT_LINKED', async () => {
+  const a = await svc.remindNow(makeNowDb({ line: null }), fakeLine(), 7, ENV, fakePush());
+  assert.deepEqual([a.status, a.body.error], [409, 'LINE_NOT_LINKED']);
+  const b = await svc.remindNow(makeNowDb({ line: null, hasSubs: true, hasPush: true }), fakeLine(), 7, ENV, fakePush({ configured: false }));
+  assert.deepEqual([b.status, b.body.error], [409, 'LINE_NOT_LINKED']);
+  const c = await svc.remindNow(makeNowDb({ line: null, hasSubs: true, hasPush: true }), fakeLine(), 7, ENV);   // ไม่ส่ง push = เหมือนเดิม
+  assert.deepEqual([c.status, c.body.error], [409, 'LINE_NOT_LINKED']);
+});
+
+test('remindNow: โควตา LINE เต็ม + มีเครื่อง → Web Push แทน ; ไม่ส่ง push เข้าฟังก์ชัน = LINE อย่างเดียวเหมือนเดิม', async () => {
+  const line = fakeLine({ allowed: false }), push = fakePush();
+  const r = await svc.remindNow(makeNowDb({ hasPush: true }), line, 7, ENV, push);
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(line.pushes.length, 0);
+  assert.equal(push.sent.length, 1);
+  const line2 = fakeLine();
+  const r2 = await svc.remindNow(makeNowDb({ hasPush: true, notifyBoth: 1 }), line2, 7, ENV);
+  assert.equal(r2.status, 200, JSON.stringify(r2.body));
+  assert.equal(line2.pushes.length, 1);
+});
+
+test('remindDemoUser: ส่ง push ต่อให้ remindNow (พารามิเตอร์ที่ 4)', async () => {
+  const push = fakePush(), line = fakeLine();
+  const db = makeNowDb({ hasPush: true, notifyBoth: 1 });
+  const q = db.query.bind(db);
+  db.query = async (sql, p) => (/SELECT id FROM users WHERE email/.test(sql) ? [{ id: 7 }] : q(sql, p));
+  const r = await svc.remindDemoUser(db, line, { ...ENV, DEMO_MODE: 'true' }, push);
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(push.sent.length, 1);
+});
+
+test('flows.json: remind-now และ inject เดโมส่ง pushService ให้ remindNow/remindDemoUser', () => {
+  const flows = JSON.parse(require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'data', 'flows.json'), 'utf8'));
+  const byId = (id) => flows.find((n) => n.id === id);
+  assert.match(byId('ln_demo_fn').func, /remindNow\([^)]*\)[^;]*global\.get\('pushService'\)\)/s);
+  assert.match(byId('ln_dmi_fn').func, /remindDemoUser\([\s\S]*global\.get\('pushService'\)\)/);
+});

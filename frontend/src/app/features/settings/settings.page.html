@@ -18,11 +18,11 @@
       <app-icon lead name="chat" />
       <span trail class="yt-chip" [class.yt-chip--ok]="lineLinked() === true">{{ lineLinked() === null ? '…' : lineLinked() ? 'เชื่อมแล้ว' : 'ยังไม่เชื่อม' }}</span>
     </a>
-    <a appListRow routerLink="/settings/caregivers" title="ญาติ/ผู้ดูแล" [chevron]="true">
+    <a appListRow routerLink="/settings/caregivers" title="คนที่ห่วงใย" [chevron]="true">
       <app-icon lead name="heart" />
       <span trail class="yt-chip">{{ caregiverCount() === null ? '…' : caregiverCount() + ' คน' }}</span>
     </a>
-    <button appListRow type="button" title="แจ้งเตือนบนเครื่องนี้" [chevron]="true" (click)="openSheet('push')">
+    <button appListRow type="button" [title]="pushTitle" [chevron]="true" (click)="openSheet('push')">
       <app-icon lead name="bell" />
       <span trail class="yt-chip" [class.yt-chip--ok]="push.state() === 'enabled'">{{ pushLabel() }}</span>
     </button>

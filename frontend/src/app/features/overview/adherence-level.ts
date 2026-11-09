@@ -33,7 +33,7 @@ export function sourceGroups(s: AdherenceSources): SourceGroup[] {
   return [
     { key: 'app', label: 'แอป', count: s.app + s.push },
     { key: 'line', label: 'LINE', count: s.line },
-    { key: 'caregiver', label: 'ญาติยืนยัน', count: s.caregiver },
+    { key: 'caregiver', label: 'คนที่ห่วงใยยืนยัน', count: s.caregiver },
   ];
 }
 
@@ -76,8 +76,12 @@ export function dayChips(d: AdherenceDay): string[] {
 }
 
 /** บรรทัดช่องทางท้ายการ์ด: "บันทึกผ่าน แอป 3 · LINE 1 · ญาติ 1" (เฉพาะช่องทางที่มี) ; ไม่มีเลย = '' */
+/** แต่ละช่องทางเป็นท่อนเดียว (ตัวนับ + ชื่อ) ให้หน้าจอแสดงแบบ nowrap — ไม่ตัดกลางคำ/ทิ้งเลขโดดเดี่ยวบรรทัดใหม่ */
+export function sourceParts(s: AdherenceSources): string[] {
+  return sourceGroups(s).filter((g) => g.count > 0).map((g) => `${g.key === 'caregiver' ? 'คนที่ห่วงใย' : g.label} ${g.count}`);
+}
 export function sourceLine(s: AdherenceSources): string {
-  const parts = sourceGroups(s).filter((g) => g.count > 0).map((g) => `${g.key === 'caregiver' ? 'ญาติ' : g.label} ${g.count}`);
+  const parts = sourceParts(s);
   return parts.length ? `บันทึกผ่าน ${parts.join(' · ')}` : '';
 }
 

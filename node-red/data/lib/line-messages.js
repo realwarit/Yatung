@@ -24,14 +24,14 @@ const thaiJoin = (items) => (items.length <= 1 ? items.join('') : `${items.slice
 const TEXT = {
   invalid: (ttlMin = 10) => plain(`🤔 รหัสนี้ใช้ไม่ได้ค่ะ\nรหัสใช้ได้ ${ttlMin} นาทีเท่านั้น\nขอรหัสใหม่ในแอป\nหน้า "ตั้งค่า" ได้เลยนะคะ`),
   tooMany: () => plain('⏳ ลองหลายครั้งเกินไปค่ะ\nรอประมาณ 10 นาที\nแล้วลองใหม่นะคะ'),
-  conflict: () => plain('🔒 LINE นี้เชื่อมไว้แล้วค่ะ\nกับผู้ป่วยอีกคนหนึ่ง\nต้องยกเลิกการเชื่อม\nในแอปของบัญชีเดิมก่อน\nแล้วขอรหัสใหม่นะคะ'),
+  conflict: () => plain('🔒 LINE นี้เชื่อมไว้แล้วค่ะ\nกับบัญชีอื่นอยู่\nต้องยกเลิกการเชื่อม\nในแอปของบัญชีเดิมก่อน\nแล้วขอรหัสใหม่นะคะ'),
   alreadyTaken: () => plain('✅ บันทึกไว้แล้วค่ะ\nไม่ต้องกดซ้ำนะคะ'),
   doseNotFound: () => plain('🔍 ไม่พบรายการยานี้แล้วค่ะ\nอาจถูกแก้ไขในแอป\nแตะ "ยาวันนี้"\nเพื่อดูรายการล่าสุดนะคะ'),
   help: () => plain('😊 น้องยาตรงช่วยได้แบบนี้ค่ะ\n📋 พิมพ์ "วันนี้"\nเพื่อดูยาของวันนี้\n📊 พิมพ์ "สรุป"\nเพื่อดูผล 7 วัน\n🔗 ส่งรหัส 6 หลัก\nเพื่อเชื่อมบัญชี\nหรือแตะปุ่มด้านล่าง\nได้เลยนะคะ\nไม่ใช่คำแนะนำ\nทางการแพทย์ค่ะ'),
   notLinked: () => plain('🔗 ยังไม่ได้เชื่อมบัญชีค่ะ\nเปิดแอปยาตรง\nไปที่หน้า "ตั้งค่า"\nกด "รับรหัสเชื่อม LINE"\nแล้วส่งเลข 6 หลัก\nมาที่แชทนี้นะคะ'),
-  caregiverOnly: (patients) => plain(`💚 คุณเป็นผู้ดูแลของ\n${thaiJoin(patients.map((p) => niceName(p)))}\nน้องยาตรงจะแจ้งที่แชทนี้\nเมื่อผู้ป่วยลืมกินยานะคะ`),
+  caregiverOnly: (patients) => plain(`💚 คุณเป็นคนที่ห่วงใย\n${thaiJoin(patients.map((p) => niceName(p)))}\nน้องยาตรงจะแจ้งที่แชทนี้\nเมื่อเขาลืมกินยานะคะ`),
   previewNote: () => plain('นี่คือข้อความตัวอย่างค่ะ\nยังไม่ได้บันทึกนะคะ'),
-  cgNoAuth: () => plain('🔒 ไม่พบสิทธิ์ผู้ดูแล\nสำหรับรายการนี้ค่ะ\nอาจถูกยกเลิกในแอปแล้ว\nสอบถามเจ้าของบัญชีนะคะ'),
+  cgNoAuth: () => plain('🔒 ไม่พบสิทธิ์ของคุณ\nสำหรับรายการนี้ค่ะ\nอาจถูกยกเลิกในแอปแล้ว\nสอบถามเจ้าของบัญชีนะคะ'),
   cgAck: () => plain('💚 รับทราบแล้วค่ะ\nขอบคุณที่ช่วยดูแลนะคะ'),
   cgAckNotFound: () => plain('🔍 ไม่พบรายการนี้แล้วค่ะ\nอาจถูกยกเลิกในแอปแล้ว')
 };
@@ -83,12 +83,13 @@ function buildLinkedPatient(name, env) {
 function buildLinkedCaregiver(patient, escalateAfterMin, env) {
   const p = niceName(patient);
   const body = bodyOf([
-    text(`ผู้ดูแลของคุณ ${p}`, { size: 'lg', weight: 'bold' }),
+    text('คุณเป็นคนที่ห่วงใยของ', { size: 'lg', weight: 'bold' }),
+    text(`คุณ${p}`, { size: 'lg', weight: 'bold' }),
     text(`ถ้าคุณ${p}ลืมกินยา`, { size: 'lg' }),
     text(`เกิน ${escalateAfterMin || 60} นาที น้องยาตรง`, { size: 'lg' }),
     text('จะแจ้งที่แชทนี้นะคะ', { size: 'lg' })
   ]);
-  return flexMessage(`เชื่อมเป็นผู้ดูแลของคุณ ${p} แล้วค่ะ 💚`, bubble({ header: header({ pose: 'cheer', title: 'เชื่อมเป็นผู้ดูแลแล้วค่ะ 💚' }, env), body }));
+  return flexMessage(`เชื่อมเป็นคนที่ห่วงใยของคุณ${p}แล้วค่ะ 💚`, bubble({ header: header({ pose: 'cheer', title: 'เชื่อมเป็นคนที่ห่วงใยแล้วค่ะ 💚' }, env), body }));
 }
 
 // ---------- Flex "วันนี้" ----------
@@ -167,7 +168,7 @@ function buildTaken(info, env) {
     bubble({ header: header({ pose: 'cheer', title: 'เก่งมากเลยค่ะ! 🎉' }, env), body: bodyOf(content) }));
 }
 
-// ---------- แจ้งญาติเมื่อลืมกินยา (วันที่ 7A) ----------
+// ---------- แจ้งคนที่ห่วงใยเมื่อลืมกินยา (วันที่ 7A) ----------
 // ชื่อในหัวข้อต้องสั้น (หัวข้อบรรทัดเดียว ≤ 26 ตัวอักษรฐาน) → ใช้ชื่อแรก ไม่เกิน 10 ตัวอักษร
 const firstName = (n, max = 10) => niceName(n, 60).split(' ')[0].slice(0, max);
 const cgTakeData = (ids) => `a=cg_take&d=${ids.join(',')}`;
@@ -194,7 +195,7 @@ function buildEscalation(g, env, opts = {}) {
   }));
 }
 
-// ปิดเรื่อง: ผู้ป่วยกินทีหลังที่แจ้งญาติไปแล้ว (ส่งครั้งเดียวต่อกลุ่ม)
+// ปิดเรื่อง: ผู้ป่วยกินทีหลังที่แจ้งคนที่ห่วงใยไปแล้ว (ส่งครั้งเดียวต่อกลุ่ม)
 // g.at = 'HH:MM' เวลาที่ผู้ป่วยกดจริง ; g.source = app|line|push ; g.doses.length = จำนวนรายการ
 function buildEscalationResolved(g, env) {
   const name = firstName(g.patient);
@@ -230,17 +231,17 @@ function buildCaregiverToday(list, today, env) {
     rows.push(box(items, { spacing: 'sm', margin: i > 0 ? 'md' : undefined }));
   });
   if (list.length > MAX_CG_PATIENTS) rows.push(text(`+ อีก ${list.length - MAX_CG_PATIENTS} คน`, { size: 'md', color: COLOR.muted, margin: 'md' }));
-  return flexMessage(`📋 ยาวันนี้ของผู้ที่คุณดูแล ${list.length} คน`, bubble({ header: header({ pose: 'hello', title: '📋 ยาวันนี้ที่คุณดูแล', badge: thaiDate(today) }, env), body: bodyOf(rows) }));
+  return flexMessage(`📋 ยาวันนี้ของคนที่คุณห่วงใย ${list.length} คน`, bubble({ header: header({ pose: 'hello', title: '📋 ยาวันนี้ที่คุณห่วงใย', badge: thaiDate(today) }, env), body: bodyOf(rows) }));
 }
 
-// reply หลังผู้ดูแลกด "ยืนยันว่ากินแล้ว" : taken = [{ name, slot }] , already = [{ name, slot, at, by: 'self'|'caregiver' }]
+// reply หลังคนที่ห่วงใยกด "ยืนยันว่ากินแล้ว" : taken = [{ name, slot }] , already = [{ name, slot, at, by: 'self'|'caregiver' }]
 function caregiverTakeResult({ taken = [], already = [] }) {
   const blocks = [];
   // ชื่อคน (ความยาวไม่แน่นอน) อยู่บรรทัดของตัวเองพร้อมมื้อ ; บรรทัดคงที่ยาวไม่เกินประมาณ 22 ตัวอักษร
   const who = (x) => `คุณ${niceName(x.name, 30)} · มื้อ${SLOT_LABEL[x.slot]}`;
   for (const t of taken) blocks.push(['✅ บันทึกแล้วค่ะ', who(t), 'ขอบคุณที่ช่วยดูแลนะคะ'].join('\n'));
   for (const a of already) {
-    const by = a.by === 'caregiver' ? `ญาติยืนยันเมื่อ ${a.at} น.` : `ผู้ป่วยกินเมื่อ ${a.at} น.`;
+    const by = a.by === 'caregiver' ? `คนที่ห่วงใยยืนยัน\nเมื่อ ${a.at} น.` : `กินเมื่อ ${a.at} น.`;
     blocks.push(['✅ กินไปแล้วค่ะ', who(a), by, 'ไม่ต้องกดซ้ำนะคะ'].join('\n'));
   }
   return plain(blocks.join('\n\n'));
@@ -315,7 +316,7 @@ function buildCaregiverAdherence(list, env) {
   if (list.length > MAX_CG_PATIENTS) rows.push(text(`+ อีก ${list.length - MAX_CG_PATIENTS} คน`, { size: 'md', color: COLOR.muted, margin: 'md' }));
   rows.push(text(LEGEND, { size: 'md', color: COLOR.muted, align: 'center', margin: 'md' }));
   const range = list[0] ? list[0].stats.range : null;
-  return flexMessage(`📊 สรุปการกินยา 7 วันของผู้ที่คุณดูแล ${list.length} คน`, bubble({ header: header({ pose: 'hello', title: 'สรุปการกินยา 7 วัน', badge: range ? rangeBadge(range) : undefined }, env), body: bodyOf(rows) }));
+  return flexMessage(`📊 สรุปการกินยา 7 วันของคนที่คุณห่วงใย ${list.length} คน`, bubble({ header: header({ pose: 'hello', title: 'สรุปการกินยา 7 วัน', badge: range ? rangeBadge(range) : undefined }, env), body: bodyOf(rows) }));
 }
 
 // ---------- ตัวอย่างทุกแบบ (#ตัวอย่าง n — เฉพาะ DEMO_MODE ; ข้อมูลสร้างในหน่วยความจำ ไม่เขียน DB) ----------
@@ -358,8 +359,8 @@ function samples(env) {
     { id: 'reminder-many', title: 'เตือน: ยาเกิน 6 รายการ', ctx: 'patient', messages: [rem('bedtime', '21:00', 10, [1, 2, 3, 4, 5, 6, 7, 8])] },
     { id: 'follow-welcome', title: 'ต้อนรับ (เพิ่มเพื่อน)', ctx: 'unlinked', messages: [buildWelcome(false, env)] },
     { id: 'how-to-linked', title: 'วิธีใช้ (เชื่อมแล้ว)', ctx: 'patient', messages: [buildWelcome(true, env)] },
-    { id: 'linked-patient', title: 'เชื่อมผู้ป่วยสำเร็จ', ctx: 'patient', messages: [buildLinkedPatient('สมชาย ใจดี', env)] },
-    { id: 'linked-caregiver', title: 'เชื่อมผู้ดูแลสำเร็จ', ctx: 'caregiver', messages: [buildLinkedCaregiver('สมชาย ใจดี', 60, env)] },
+    { id: 'linked-patient', title: 'เชื่อมสำเร็จ (คุณ)', ctx: 'patient', messages: [buildLinkedPatient('สมชาย ใจดี', env)] },
+    { id: 'linked-caregiver', title: 'เชื่อมสำเร็จ (คนที่ห่วงใย)', ctx: 'caregiver', messages: [buildLinkedCaregiver('สมชาย ใจดี', 60, env)] },
     { id: 'today-partial', title: 'วันนี้: กินบางส่วน', ctx: 'patient', messages: [buildToday(shapedOf([
       { slot: 'morning', time: '08:00', doses: [{ id: 1, status: 'taken' }, { id: 2, status: 'taken' }] },
       { slot: 'noon', time: '12:00', doses: [{ id: 3, status: 'pending', due: true }] },
@@ -379,28 +380,28 @@ function samples(env) {
     { id: 'text-already', title: 'กดซ้ำ', ctx: 'patient', messages: [TEXT.alreadyTaken()] },
     { id: 'text-notfound', title: 'ไม่พบรายการยา', ctx: 'patient', messages: [TEXT.doseNotFound()] },
     { id: 'text-help', title: 'ช่วยเหลือ', ctx: 'patient', messages: [TEXT.help()] },
-    { id: 'text-caregiver-only', title: 'ผู้ดูแลอย่างเดียว พิมพ์ "วันนี้"', ctx: 'caregiver', messages: [TEXT.caregiverOnly(['สมชาย ใจดี', 'มาลี ใจงาม'])] },
-    { id: 'cg-escalation', title: 'แจ้งญาติ: ลืมกินยา', ctx: 'caregiver', messages: [buildEscalation({ patient: 'สมชาย ใจดี', slot: 'evening', scheduled_at: '2026-10-09 18:00:00', late_min: 65, doses: sd([1, 2]), escalation_ids: [] }, env, { preview: true })] },
-    { id: 'cg-escalation-many', title: 'แจ้งญาติ: ยาเกิน 6 รายการ', ctx: 'caregiver', messages: [buildEscalation({ patient: 'มาลี ใจงาม', slot: 'morning', scheduled_at: '2026-10-09 08:00:00', late_min: 125, doses: sd([1, 2, 3, 4, 5, 6, 7, 8]), escalation_ids: [] }, env, { preview: true })] },
-    { id: 'cg-resolved', title: 'แจ้งญาติ: ผู้ป่วยกินแล้ว (ปิดเรื่อง)', ctx: 'caregiver', messages: [buildEscalationResolved({ patient: 'สมชาย ใจดี', slot: 'evening', scheduled_at: '2026-10-09 18:00:00', at: '18:42', source: 'line', doses: sd([1, 2]) }, env)] },
-    { id: 'cg-today', title: 'ผู้ดูแล: พิมพ์ "วันนี้"', ctx: 'caregiver', messages: [buildCaregiverToday([
+    { id: 'text-caregiver-only', title: 'คนที่ห่วงใยอย่างเดียว พิมพ์ "วันนี้"', ctx: 'caregiver', messages: [TEXT.caregiverOnly(['สมชาย ใจดี', 'มาลี ใจงาม'])] },
+    { id: 'cg-escalation', title: 'แจ้งคนที่ห่วงใย: ลืมกินยา', ctx: 'caregiver', messages: [buildEscalation({ patient: 'สมชาย ใจดี', slot: 'evening', scheduled_at: '2026-10-09 18:00:00', late_min: 65, doses: sd([1, 2]), escalation_ids: [] }, env, { preview: true })] },
+    { id: 'cg-escalation-many', title: 'แจ้งคนที่ห่วงใย: ยาเกิน 6 รายการ', ctx: 'caregiver', messages: [buildEscalation({ patient: 'มาลี ใจงาม', slot: 'morning', scheduled_at: '2026-10-09 08:00:00', late_min: 125, doses: sd([1, 2, 3, 4, 5, 6, 7, 8]), escalation_ids: [] }, env, { preview: true })] },
+    { id: 'cg-resolved', title: 'แจ้งคนที่ห่วงใย: กินแล้ว (ปิดเรื่อง)', ctx: 'caregiver', messages: [buildEscalationResolved({ patient: 'สมชาย ใจดี', slot: 'evening', scheduled_at: '2026-10-09 18:00:00', at: '18:42', source: 'line', doses: sd([1, 2]) }, env)] },
+    { id: 'cg-today', title: 'คนที่ห่วงใย: พิมพ์ "วันนี้"', ctx: 'caregiver', messages: [buildCaregiverToday([
       { name: 'สมชาย ใจดี', shaped: shapedOf([{ slot: 'morning', time: '08:00', doses: [{ id: 1, status: 'taken' }] }, { slot: 'evening', time: '18:00', doses: [{ id: 1, status: 'pending', due: true }] }, { slot: 'bedtime', time: '21:00', doses: [{ id: 6, status: 'pending' }] }]) },
       { name: 'มาลี ใจงาม', shaped: shapedOf([{ slot: 'morning', time: '08:00', doses: [{ id: 3, status: 'taken' }] }]) }], '2026-10-09', env)] },
     { id: 'summary-good', title: 'สรุป 7 วัน: เก่งมาก', ctx: 'patient', messages: [buildAdherence(sampleStats([[3, 3], [3, 3], [0, 0], [3, 3], [3, 3], [2, 3], [3, 3], [2, 2]], 2), env)] },
     { id: 'summary-low', title: 'สรุป 7 วัน: ยังไม่ค่อยครบ', ctx: 'patient', messages: [buildAdherence(sampleStats([[1, 3], [2, 3], [0, 3], [1, 3], [2, 3], [1, 3], [0, 1]], 0), env)] },
     { id: 'summary-none', title: 'สรุป 7 วัน: ยังไม่มีข้อมูล', ctx: 'patient', messages: [buildAdherence(sampleStats([]), env)] },
-    { id: 'cg-summary', title: 'ผู้ดูแล: พิมพ์ "สรุป"', ctx: 'caregiver', messages: [buildCaregiverAdherence([
+    { id: 'cg-summary', title: 'คนที่ห่วงใย: พิมพ์ "สรุป"', ctx: 'caregiver', messages: [buildCaregiverAdherence([
       { name: 'สมชาย ใจดี', stats: sampleStats([[3, 3], [3, 3], [0, 0], [3, 3], [2, 3], [3, 3], [2, 2]], 3) },
       { name: 'มาลี ใจงาม', stats: sampleStats([]) }], env)] },
-    { id: 'cg-taken', title: 'ผู้ดูแลกดยืนยัน: บันทึกแล้ว', ctx: 'caregiver', messages: [caregiverTakeResult({ taken: [{ name: 'สมชาย ใจดี', slot: 'evening' }] })] },
-    { id: 'cg-already', title: 'ผู้ดูแลกดยืนยัน: ผู้ป่วยกินไปแล้ว', ctx: 'caregiver', messages: [caregiverTakeResult({ already: [{ name: 'สมชาย ใจดี', slot: 'evening', at: '18:12', by: 'self' }] })] },
-    { id: 'cg-already-cg', title: 'ผู้ดูแลกดยืนยัน: ญาติคนอื่นยืนยันแล้ว', ctx: 'caregiver', messages: [caregiverTakeResult({ already: [{ name: 'สมชาย ใจดี', slot: 'evening', at: '16:33', by: 'caregiver' }] })] },
+    { id: 'cg-taken', title: 'คนที่ห่วงใยกดยืนยัน: บันทึกแล้ว', ctx: 'caregiver', messages: [caregiverTakeResult({ taken: [{ name: 'สมชาย ใจดี', slot: 'evening' }] })] },
+    { id: 'cg-already', title: 'คนที่ห่วงใยกดยืนยัน: กินไปแล้ว', ctx: 'caregiver', messages: [caregiverTakeResult({ already: [{ name: 'สมชาย ใจดี', slot: 'evening', at: '18:12', by: 'self' }] })] },
+    { id: 'cg-already-cg', title: 'คนที่ห่วงใยกดยืนยัน: คนอื่นยืนยันแล้ว', ctx: 'caregiver', messages: [caregiverTakeResult({ already: [{ name: 'สมชาย ใจดี', slot: 'evening', at: '16:33', by: 'caregiver' }] })] },
     { id: 'low-stock', title: 'ยาใกล้หมด', ctx: 'patient', messages: [buildLowStock([
       { name: 'เมตฟอร์มิน', strength: '500 mg', unit: 'tablet', remaining_qty: 6, days_left: 3, as_needed: false },
       { name: 'แอมโลดิปีน', strength: '5 mg', unit: 'tablet', remaining_qty: 14, days_left: 7, as_needed: false },
       { name: 'พาราเซตามอล', strength: '500 mg', unit: 'tablet', remaining_qty: 4, days_left: null, as_needed: true }], env)] },
-    { id: 'cg-ack', title: 'ผู้ดูแลกดรับทราบ', ctx: 'caregiver', messages: [TEXT.cgAck()] },
-    { id: 'cg-noauth', title: 'ผู้ดูแลกดแต่ไม่มีสิทธิ์', ctx: 'caregiver', messages: [TEXT.cgNoAuth()] },
+    { id: 'cg-ack', title: 'คนที่ห่วงใยกดรับทราบ', ctx: 'caregiver', messages: [TEXT.cgAck()] },
+    { id: 'cg-noauth', title: 'คนที่ห่วงใยกดแต่ไม่มีสิทธิ์', ctx: 'caregiver', messages: [TEXT.cgNoAuth()] },
     { id: 'text-not-linked', title: 'ยังไม่ได้เชื่อม พิมพ์ "วันนี้"', ctx: 'unlinked', messages: [TEXT.notLinked()] }
   ];
 }

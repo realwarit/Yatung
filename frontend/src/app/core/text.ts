@@ -13,3 +13,6 @@ export function plainName(s: string | null | undefined): string {
 export function medDisplayName(s: string | null | undefined): string {
   return (s ?? '').replace(/(?<![A-Za-z])[A-Z]{4,}(?![A-Za-z])/g, (w) => w[0] + w.slice(1).toLowerCase());
 }
+
+/** ต่อคำเข้าเป็นท่อนเดียวที่เบราว์เซอร์ไม่ตัดบรรทัดกลางท่อน (U+2060 คั่นระหว่างคำ) — ใช้กับป้ายสั้นๆ ที่ไม่อยากให้เหลือคำเดี่ยวตกบรรทัด เช่น nobreak('บน', 'เครื่อง', 'นี้') */
+export const nobreak = (...words: string[]): string => words.join('\u2060');
