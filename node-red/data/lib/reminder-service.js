@@ -166,12 +166,16 @@ async function runFollowup(db, client, env = process.env, push = null) {
 
 // โหมดเดโม: กลุ่ม pending ของวันนี้ที่ scheduled_at ใกล้เวลาปัจจุบันที่สุด (ทั้งก่อนและหลัง ; เท่ากัน = มื้อที่เร็วกว่า) ของ userId ;
 // ถ้าทุกรายการในกลุ่มเคยเตือนแล้ว = ส่งซ้ำโดยไม่จอง reminded_at ; ห้ามสร้าง dose ปลอม ; หัวข้อ Flex ตามช่วงเวลา (ใกล้ถึง/ถึงเวลา/เลยเวลา)
-async function remindNow(db, client, userId, env = process.env) {
+async function remindNow(db, client, userId, env = process.env, push = null) {
   const u = await db.query('SELECT line_user_id, email FROM users WHERE id = ?', [userId]);
   if (!u.length) return err(404, 'NOT_FOUND', 'ไม่พบข้อมูลที่ต้องการ');
   const suf = onlySuffix(env);
   if (suf && !String(u[0].email).endsWith(suf)) return err(409, 'TEST_MODE_ONLY', 'กำลังรันชุดทดสอบ จึงส่งเฉพาะบัญชีทดสอบ');
-  if (!u[0].line_user_id) return err(409, 'LINE_NOT_LINKED', 'ยังไม่ได้เชื่อม LINE กรุณาเชื่อม LINE ในหน้าตั้งค่าก่อนค่ะ');
+  // ไม่เชื่อม LINE แต่มีเครื่องที่เปิดแจ้งเตือน (และระบบตั้ง VAPID แล้ว) = ส่ง Web Push ได้เหมือน cron
+  if (!u[0].line_user_id) {
+    const subs = await db.query('SELECT COUNT(*) AS n FROM push_subscriptions WHERE user_id = ?', [userId]);
+    if (!(Number(subs[0] && subs[0].n) > 0 && pushReadyOf(push))) return err(409, 'LINE_NOT_LINKED', 'ยังไม่ได้เชื่อม LINE กรุณาเชื่อม LINE ในหน้าตั้งค่าก่อนค่ะ');
+  }
   const rows = await db.query(
     `SELECT ${COLS} FROM dose_logs d JOIN medications m ON m.id = d.medication_id JOIN users u ON u.id = d.user_id ` +
     "WHERE d.user_id = ? AND DATE(d.scheduled_at) = CURDATE() AND d.status = 'pending' AND m.is_active = 1 AND m.as_needed = 0 " +
@@ -180,24 +184,25 @@ async function remindNow(db, client, userId, env = process.env) {
   const first = rows[0];
   const group = groupRows(rows.filter((r) => r.scheduled_at === first.scheduled_at))[0];
   const resend = group.doses.every((d) => d.was_reminded);
-  const r = await sendGroup(db, client, group, { claim: !resend, env });
+  const r = await sendGroup(db, client, group, { claim: !resend, env, push });
   if (r.skipped === 'quota') return err(429, 'LINE_QUOTA', 'โควตาข้อความ LINE ของเดือนนี้ใกล้หมดแล้ว จึงไม่ส่งเตือนเพิ่มค่ะ');
   if (r.skipped === 'claimed') return err(409, 'ALREADY_REMINDED', 'รอบนี้เพิ่งถูกส่งเตือนไปแล้วค่ะ');
-  if (r.failed && !r.sent) return err(502, 'LINE_PUSH_FAILED', 'ส่งข้อความไป LINE ไม่สำเร็จ กรุณาลองใหม่ภายหลังค่ะ');
+  if (r.skipped === 'no_channel') return err(409, 'LINE_NOT_LINKED', 'ยังไม่ได้เชื่อม LINE กรุณาเชื่อม LINE ในหน้าตั้งค่าก่อนค่ะ');
+  if ((r.failed || r.push_failed) && !(r.sent || r.push_sent)) return err(502, 'LINE_PUSH_FAILED', 'ส่งข้อความไป LINE ไม่สำเร็จ กรุณาลองใหม่ภายหลังค่ะ');
   const time = lineFlex.timeText(group.scheduled_at);
   const lateMin = group.late_sec / 60;
   const state = lineFlex.latenessState(lateMin);
   const when = state === 'soon' ? ` · อีก ${lineFlex.durationText(Math.ceil(-lateMin))} จะถึงเวลา` : state === 'overdue' ? ` · เลยเวลามา ${lineFlex.durationText(Math.floor(lateMin))}` : '';
-  const message = `ส่งเตือนมื้อ${SLOT_LABEL[group.slot]} ${time} น. (${r.doses} รายการ) เข้า LINE แล้วค่ะ${when}${resend ? ' — ส่งซ้ำรอบที่เตือนไปแล้ว' : ''}`;
-  return { status: 200, body: { sent: r.sent, doses: r.doses, slot: group.slot, time, resent: resend, state, late_min: Math.floor(lateMin), message } };
+  const message = `ส่งเตือนมื้อ${SLOT_LABEL[group.slot]} ${time} น. (${r.doses} รายการ) ${r.sent && r.push_sent ? 'เข้า LINE และเครื่องนี้' : r.push_sent ? 'เข้าเครื่องนี้' : 'เข้า LINE'} แล้วค่ะ${when}${resend ? ' — ส่งซ้ำรอบที่เตือนไปแล้ว' : ''}`;
+  return { status: 200, body: { sent: r.sent, push_sent: r.push_sent || 0, doses: r.doses, slot: group.slot, time, resent: resend, state, late_min: Math.floor(lateMin), message } };
 }
 
 // inject ในหน้า editor: ส่งเตือนทดสอบให้บัญชีเดโม (ต้อง DEMO_MODE=true)
-async function remindDemoUser(db, client, env = process.env, email = 'demo@yatung.app') {
+async function remindDemoUser(db, client, env = process.env, push = null, email = 'demo@yatung.app') {
   if (env.DEMO_MODE !== 'true') return err(404, 'NOT_FOUND', 'โหมดเดโมปิดอยู่ (DEMO_MODE ไม่ใช่ true)');
   const u = await db.query('SELECT id FROM users WHERE email = ?', [email]);
   if (!u.length) return err(404, 'NOT_FOUND', 'ไม่พบบัญชีเดโม ' + email);
-  return remindNow(db, client, u[0].id, env);
+  return remindNow(db, client, u[0].id, env, push);
 }
 
 module.exports = { run, runFollowup, followupSql, followupMin, sendGroup, deliver, channelsOf, remindNow, remindDemoUser, groupRows, claim, DUE_SQL, dueSql, userFilter, WINDOW_MIN };

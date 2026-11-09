@@ -335,7 +335,7 @@ expect "ngsw.json ไม่มี dataGroups" "$(printf '%s' "$NGSW" | node -e '
 MANI="$(curl -s -m 10 "$WEB_URL/manifest.webmanifest")"
 mget() { printf '%s' "$MANI" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const m=JSON.parse(s);const v=eval(process.argv[1]);console.log(v===undefined?"":typeof v==="object"?JSON.stringify(v):v)}catch(e){console.log("")}})' "$1"; }
 expect "manifest: id" "$(mget 'm.id')" "/"
-expect "manifest: start_url" "$(mget 'm.start_url')" "/today"
+expect "manifest: start_url" "$(mget 'm.start_url')" "/"
 expect "manifest: display" "$(mget 'm.display')" "standalone"
 expect "manifest: shortcuts (ยาวันนี้, สแกนซองยา)" "$(mget 'm.shortcuts.map(x=>x.name+"="+x.url).join(",")')" "ยาวันนี้=/today,สแกนซองยา=/scan"
 expect "manifest: ไอคอน maskable 192 และ 512" "$(mget 'm.icons.filter(i=>i.purpose==="maskable").map(i=>i.sizes).join(",")')" "192x192,512x512"

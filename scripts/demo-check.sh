@@ -330,9 +330,9 @@ echo "== 11) PWA และ API สรุป"
 c="$(code "$WEB/api/stats/adherence?days=7")"; [ "$c" = "401" ] && ok "GET /api/stats/adherence ไม่มี JWT = 401" || bad "GET /api/stats/adherence ไม่มี JWT ได้ $c (ควร 401)"
 mani="$(curl -s -m 10 "$WEB/manifest.webmanifest")"
 mchk="$(printf '%s' "$mani" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const m=JSON.parse(s);const e=[];
-if(!m.id)e.push("id");if(m.start_url!=="/today")e.push("start_url");if(!(m.shortcuts||[]).length)e.push("shortcuts");if(!/^#[0-9a-f]{6}$/i.test(m.background_color||""))e.push("background_color");
+if(!m.id)e.push("id");if(m.start_url!=="/")e.push("start_url");if(!(m.shortcuts||[]).length)e.push("shortcuts");if(!/^#[0-9a-f]{6}$/i.test(m.background_color||""))e.push("background_color");
 if(!(m.icons||[]).some(i=>i.purpose==="maskable"&&i.sizes==="512x512"))e.push("maskable512");console.log(e.length?"MISSING "+e.join(","):"OK")}catch(x){console.log("NOTJSON")}})')"
-case "$mchk" in OK) ok "manifest.webmanifest = 200 ครบ (id, start_url /today, shortcuts, พื้นหลัง, maskable 512)" ;; NOTJSON) bad "manifest.webmanifest ไม่ใช่ JSON (docker compose up -d --build frontend ?)" ;; *) bad "manifest.webmanifest ขาด: ${mchk#MISSING } — build frontend ใหม่: docker compose up -d --build frontend" ;; esac
+case "$mchk" in OK) ok "manifest.webmanifest = 200 ครบ (id, start_url /, shortcuts, พื้นหลัง, maskable 512)" ;; NOTJSON) bad "manifest.webmanifest ไม่ใช่ JSON (docker compose up -d --build frontend ?)" ;; *) bad "manifest.webmanifest ขาด: ${mchk#MISSING } — build frontend ใหม่: docker compose up -d --build frontend" ;; esac
 ngsw="$(curl -s -m 10 -H 'Accept: application/json' "$WEB/ngsw.json")"
 nchk="$(printf '%s' "$ngsw" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const n=JSON.parse(s);console.log(JSON.stringify(n).includes("/api")?"HAS_API":(n.dataGroups&&n.dataGroups.length?"HAS_DATAGROUPS":"OK"))}catch(x){console.log("NOTJSON")}})')"
 case "$nchk" in OK) ok "ngsw.json เป็น JSON ไม่มี /api และไม่มี dataGroups (ไม่แคชข้อมูลข้ามผู้ใช้)" ;; HAS_API|HAS_DATAGROUPS) bad "ngsw.json แคช /api ($nchk) — ห้าม (cache key ไม่แยก JWT)" ;; *) bad "ngsw.json ไม่ใช่ JSON" ;; esac

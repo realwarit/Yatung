@@ -7,6 +7,7 @@
 - เกณฑ์คะแนน: Angular, Node-RED, REST API, JWT, Docker, Ionic, PWA, Android Studio
   + ความรู้นอกเหนือที่สอน (Gemini multimodal, LINE Messaging API)
 - นอกสโคป: ลายมือแพทย์, เชื่อม HIS, ปรึกษาแพทย์, ระบบ role หลายระดับ
+- **คำศัพท์ (วันที่ 11):** แอปใช้ได้ทุกคนทุกวัยที่ต้องกินยา — **ห้ามใช้ "ผู้ป่วย" "ผู้ดูแล" "ญาติ" "ป่วย" "ผู้สูงอายุ" ในข้อความที่ผู้ใช้เห็น** (UI, LINE, Web Push, error API, manifest) ใช้ "คุณ"/ชื่อ และ **"คนที่ห่วงใย"** (= `caregivers` ในโค้ด/DB/endpoint ที่ไม่เปลี่ยนชื่อ) ; ข้อยกเว้นเดียว: token ปิดชื่อฝั่ง server `[ชื่อผู้ป่วย]` (พรอมต์ Gemini/schema/mock/`validate-llm-output`) ซึ่งหน้า Review แสดงเป็น `[ชื่อ]` (`ocrForDisplay`) ; เทสกันคำหลุด: `node-red/test/no-forbidden-words.test.js` + `cd frontend && ng build && node tools/wording-bundle-check.mjs`
 
 ## สภาพแวดล้อม
 - Windows + PowerShell, Docker Desktop, Node 22, Angular 21, Ionic 9, Capacitor 8
