@@ -1,5 +1,5 @@
 import { AdherenceDay, AdherenceMeal, AdherenceSources } from '../../core/api/stats.api';
-import { barFraction, barLabel, chartSummary, dayChips, dayDetail, dayKind, isPartialToday, levelOf, rangeText, sourceGroups, sourceLine, toneOf, worstMeal } from './adherence-level';
+import { barFraction, barLabel, chartSummary, dayChips, dayDetail, dayKind, isPartialToday, levelOf, rangeText, sourceGroups, sourceLine, sourceParts, toneOf, worstMeal } from './adherence-level';
 
 const day = (o: Partial<AdherenceDay>): AdherenceDay => ({
   date: '2026-10-12', label_th: 'จ. 12 ต.ค.', is_today: false, taken: 0, missed: 0, pending_due: 0, upcoming: 0, due: 0, rate: null, ...o,
@@ -98,6 +98,10 @@ describe('สเกลสีและเลขบนแท่ง (จัดห�
   it('dayChips เฉพาะค่าที่ไม่เป็นศูนย์', () => {
     expect(dayChips(day({ pending_due: 5 }))).toEqual(['ยังไม่กิน 5']);
     expect(dayChips(day({}))).toEqual([]);
+  });
+  it('sourceParts: แต่ละช่องทางเป็นท่อนเดียว (ตัวนับ + ชื่อ) เรียงเหมือน sourceLine', () => {
+    expect(sourceParts({ app: 2, push: 1, line: 1, caregiver: 1, other: 4 })).toEqual(['แอป 3', 'LINE 1', 'คนที่ห่วงใย 1']);
+    expect(sourceParts({ app: 0, push: 0, line: 0, caregiver: 0, other: 3 })).toEqual([]);
   });
   it('sourceLine: เฉพาะช่องทางที่มี', () => {
     expect(sourceLine({ app: 2, push: 1, line: 1, caregiver: 1, other: 4 })).toBe('บันทึกผ่าน แอป 3 · LINE 1 · คนที่ห่วงใย 1');
