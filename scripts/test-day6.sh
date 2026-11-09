@@ -262,7 +262,7 @@ expect_match "  oa_message_url ตามรหัส" "$(jget 'o.oa_message_url'
 req POST /api/line/link-code "$TA"; CODE_A2="$(jget 'o.code')"
 expect "รหัสผู้ป่วยกับรหัสผู้ดูแลไม่ซ้ำกัน" "$([ "$CODE_A2" != "$CCODE1" ] && echo diff)" "diff"
 say "$LC" "$CCODE1"
-expect_match "ผู้ดูแลส่งรหัส → เชื่อมเป็นผู้ดูแลของ {ชื่อผู้ป่วย}" "$REPLY" "เชื่อมเป็นผู้ดูแลแล้วค่ะ.*ผู้ดูแลของคุณ ผู้ทดสอบ day6 A"
+expect_match "ผู้ดูแลส่งรหัส → เชื่อมเป็นผู้ดูแลของ {ชื่อผู้ป่วย}" "$REPLY" "เชื่อมเป็นคนที่ห่วงใยแล้วค่ะ.*คุณเป็นคนที่ห่วงใยของ.*ผู้ทดสอบ day6 A"
 expect "  caregivers.line_user_id = LC" "$(sql "SELECT line_user_id='$LC' AND line_display_name='ลูกสาว ทดสอบ' FROM caregivers WHERE id=$CG1;")" "1"
 expect "  รหัสผู้ดูแลถูกล้าง" "$(sql "SELECT link_code IS NULL FROM caregivers WHERE id=$CG1;")" "1"
 expect "  ไม่ไปแตะ users.line_user_id ของ A" "$(sql "SELECT line_user_id='$LA' FROM users WHERE id=$UA;")" "1"
@@ -273,7 +273,7 @@ expect_match "LC ดูแลผู้ป่วยคนที่ 2 (B) ได�
 expect "  LC ผูกกับผู้ดูแล 2 แถว (คนละผู้ป่วย)" "$(sql "SELECT COUNT(*) FROM caregivers WHERE line_user_id='$LC';")" "2"
 req POST "/api/caregivers/$CG2/link-code" "$TA"; CCODE_LA="$(jget 'o.code')"
 say "$LA" "$CCODE_LA"
-expect_match "LA (ผู้ป่วย A) เป็นผู้ดูแลของ A เองอีกบทบาทได้" "$REPLY" 'เชื่อมเป็นผู้ดูแลแล้วค่ะ'
+expect_match "LA (ผู้ป่วย A) เป็นผู้ดูแลของ A เองอีกบทบาทได้" "$REPLY" 'เชื่อมเป็นคนที่ห่วงใยแล้วค่ะ'
 expect "  ยังเป็นผู้ป่วยอยู่ด้วย" "$(sql "SELECT line_user_id='$LA' FROM users WHERE id=$UA;")" "1"
 
 section "unfollow / ยกเลิกการเชื่อม"

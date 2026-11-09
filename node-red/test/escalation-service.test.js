@@ -126,9 +126,9 @@ test('reply ผู้ดูแลกดยืนยัน: บันทึกแ
   const a = M.caregiverTakeResult({ taken: [{ name: 'สมชาย ใจดี', slot: 'evening' }] }).text;
   assert.equal(a, '✅ บันทึกแล้วค่ะ\nคุณสมชาย ใจดี · มื้อเย็น\nขอบคุณที่ช่วยดูแลนะคะ');
   const b = M.caregiverTakeResult({ already: [{ name: 'สมชาย ใจดี', slot: 'evening', at: '18:12', by: 'self' }] }).text;
-  assert.equal(b, '✅ กินไปแล้วค่ะ\nคุณสมชาย ใจดี · มื้อเย็น\nผู้ป่วยกินเมื่อ 18:12 น.\nไม่ต้องกดซ้ำนะคะ');
+  assert.equal(b, '✅ กินไปแล้วค่ะ\nคุณสมชาย ใจดี · มื้อเย็น\nกินเมื่อ 18:12 น.\nไม่ต้องกดซ้ำนะคะ');
   const c = M.caregiverTakeResult({ already: [{ name: 'ก', slot: 'noon', at: '12:00', by: 'caregiver' }] }).text;
-  assert.equal(c, '✅ กินไปแล้วค่ะ\nคุณก · มื้อกลางวัน\nญาติยืนยันเมื่อ 12:00 น.\nไม่ต้องกดซ้ำนะคะ');
+  assert.equal(c, '✅ กินไปแล้วค่ะ\nคุณก · มื้อกลางวัน\nคนที่ห่วงใยยืนยัน\nเมื่อ 12:00 น.\nไม่ต้องกดซ้ำนะคะ');
   for (const t of [a, b, c, M.TEXT.cgAck().text, M.TEXT.cgNoAuth().text]) {
     for (const line of t.split('\n')) assert.ok((line.match(/\p{Extended_Pictographic}/gu) || []).length <= 1, line);
   }
@@ -150,7 +150,7 @@ test('"วันนี้" ของผู้ดูแล: ไม่แสดง
   assert.ok(texts.includes('กินแล้ว 1 จาก 2 รายการ'));
   assert.ok(texts.includes('🌆 มื้อเย็น 18:00 น. · ยังไม่ได้กิน'));
   assert.ok(texts.includes('วันนี้ไม่มียาที่ต้องกินค่ะ'));
-  assert.equal(m.altText, '📋 ยาวันนี้ของผู้ที่คุณดูแล 2 คน');
+  assert.equal(m.altText, '📋 ยาวันนี้ของคนที่คุณห่วงใย 2 คน');
 });
 
 // ---------- SQL / กลุ่ม ----------

@@ -19,8 +19,8 @@ function validate(body, partial) {
   const out = {};
   if (!partial || b.name !== undefined) {
     const name = typeof b.name === 'string' ? b.name.trim() : '';
-    if (!name) return { error: 'กรุณาใส่ชื่อผู้ดูแล' };
-    if (name.length > 100) return { error: 'ชื่อผู้ดูแลยาวเกิน 100 ตัวอักษร' };
+    if (!name) return { error: 'กรุณาใส่ชื่อคนที่ห่วงใย' };
+    if (name.length > 100) return { error: 'ชื่อยาวเกิน 100 ตัวอักษร' };
     out.name = name;
   }
   if (b.relation !== undefined) {
@@ -31,7 +31,7 @@ function validate(body, partial) {
   }
   if (b.escalate_after_min !== undefined) {
     const n = b.escalate_after_min;
-    if (typeof n !== 'number' || !Number.isInteger(n) || n < 10 || n > 720) return { error: 'เวลาก่อนแจ้งผู้ดูแลต้องเป็นจำนวนเต็ม 10–720 นาที' };
+    if (typeof n !== 'number' || !Number.isInteger(n) || n < 10 || n > 720) return { error: 'เวลาก่อนแจ้งต้องเป็นจำนวนเต็ม 10–720 นาที' };
     out.escalate_after_min = n;
   } else if (!partial) out.escalate_after_min = 60;
   return { value: out };
@@ -47,7 +47,7 @@ async function create(db, userId, body) {
   const v = validate(body, false);
   if (v.error) return invalid(v.error);
   const [{ n }] = await db.query('SELECT COUNT(*) AS n FROM caregivers WHERE user_id = ? AND is_active = 1', [userId]);
-  if (Number(n) >= 10) return invalid('เพิ่มผู้ดูแลได้ไม่เกิน 10 คน');
+  if (Number(n) >= 10) return invalid('เพิ่มคนที่ห่วงใยได้ไม่เกิน 10 คน');
   const r = await db.query('INSERT INTO caregivers (user_id, name, relation, escalate_after_min) VALUES (?, ?, ?, ?)',
     [userId, v.value.name, v.value.relation ?? null, v.value.escalate_after_min]);
   const rows = await db.query(`SELECT ${COLS} FROM caregivers WHERE id = ?`, [r.insertId]);

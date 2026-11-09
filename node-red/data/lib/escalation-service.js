@@ -223,7 +223,7 @@ async function escalateNow(db, client, userId, body = {}, env = process.env) {
   if (suf && !String(u[0].email).endsWith(suf)) return err(409, 'TEST_MODE_ONLY', 'กำลังรันชุดทดสอบ จึงส่งเฉพาะบัญชีทดสอบ');
   const force = !!(body && body.force === true);
   const cgs = await db.query('SELECT id, line_user_id, escalate_after_min FROM caregivers WHERE user_id = ? AND is_active = 1 AND line_user_id IS NOT NULL ORDER BY id', [userId]);
-  if (!cgs.length) return err(409, 'NO_CAREGIVER_LINKED', 'ยังไม่มีญาติ/ผู้ดูแลที่เชื่อม LINE ค่ะ เพิ่มญาติและส่งรหัสให้เชื่อม LINE ก่อนนะคะ');
+  if (!cgs.length) return err(409, 'NO_CAREGIVER_LINKED', 'ยังไม่มีคนที่ห่วงใยที่เชื่อม LINE ค่ะ เพิ่มคนที่ห่วงใยและส่งรหัสให้เชื่อม LINE ก่อนนะคะ');
   const rows = await db.query(
     `SELECT ${COLS} FROM dose_logs d JOIN medications m ON m.id = d.medication_id JOIN users u ON u.id = d.user_id ` +
     "WHERE d.user_id = ? AND DATE(d.scheduled_at) = CURDATE() AND d.status = 'pending' AND m.is_active = 1 AND m.as_needed = 0 " +
@@ -236,7 +236,7 @@ async function escalateNow(db, client, userId, body = {}, env = process.env) {
   const done = (cg) => ids.every((id) => already.has(cg.id + '|' + id));
   const quota = await client.quotaStatus(db);
   if (!force && cgs.every(done)) {
-    return err(409, 'ALREADY_ESCALATED', 'แจ้งญาติรอบนี้ไปแล้วค่ะ', { quota_left: quota.remaining_for_escalation, reserve: quota.reserve });
+    return err(409, 'ALREADY_ESCALATED', 'แจ้งคนที่ห่วงใยรอบนี้ไปแล้วค่ะ', { quota_left: quota.remaining_for_escalation, reserve: quota.reserve });
   }
   let sent = 0, failed = 0, quotaSkipped = 0, resent = false, doses = 0;
   for (const cg of cgs) {
@@ -249,10 +249,10 @@ async function escalateNow(db, client, userId, body = {}, env = process.env) {
     sent += r.sent; failed += r.failed; doses = Math.max(doses, r.doses);
     if (r.skipped === 'quota') quotaSkipped++;
   }
-  if (quotaSkipped && !sent) return err(429, 'LINE_QUOTA', 'โควตาข้อความ LINE ของเดือนนี้หมดแล้ว จึงแจ้งญาติเพิ่มไม่ได้ค่ะ');
+  if (quotaSkipped && !sent) return err(429, 'LINE_QUOTA', 'โควตาข้อความ LINE ของเดือนนี้หมดแล้ว จึงแจ้งเพิ่มไม่ได้ค่ะ');
   if (failed && !sent) return err(502, 'LINE_PUSH_FAILED', 'ส่งข้อความไป LINE ไม่สำเร็จ กรุณาลองใหม่ภายหลังค่ะ');
   const time = lineFlex.timeText(first.scheduled_at);
-  const message = `แจ้งญาติ ${cgs.length} คน เรื่องมื้อ${SLOT_LABEL[first.slot]} ${time} น. (${ids.length} รายการ) เข้า LINE แล้วค่ะ${resent ? ' — ส่งซ้ำรอบที่แจ้งไปแล้ว' : ''}`;
+  const message = `แจ้งคนที่ห่วงใย ${cgs.length} คน เรื่องมื้อ${SLOT_LABEL[first.slot]} ${time} น. (${ids.length} รายการ) เข้า LINE แล้วค่ะ${resent ? ' — ส่งซ้ำรอบที่แจ้งไปแล้ว' : ''}`;
   return { status: 200, body: { sent, caregivers: cgs.length, doses: ids.length, slot: first.slot, time, resent, message } };
 }
 

@@ -52,7 +52,7 @@ test('Flex สรุป (ผู้ดูแล): ชื่อ + อัตรา 
   const t = texts(m.contents);
   assert.ok(t.includes('คุณสมชาย ใจดี') && t.includes('กินครบ 100% ใน 7 วัน'));
   assert.ok(t.includes('ยังไม่มีข้อมูลยาใน 7 วัน'));
-  assert.equal(m.altText, '📊 สรุปการกินยา 7 วันของผู้ที่คุณดูแล 2 คน');
+  assert.equal(m.altText, '📊 สรุปการกินยา 7 วันของคนที่คุณห่วงใย 2 คน');
   assert.ok(!all(m.contents).some((n) => n.type === 'button' && n.action.type === 'postback'));
 });
 
@@ -100,7 +100,7 @@ test('LINE "สรุป": ผู้ดูแลอย่างเดียว �
   const h = harness({ caregiverOf: ['สมชาย'], taken: 1, missed: 1 });
   await run(h, 'สรุป 7 วัน');
   assert.equal(h.sent[0].messages.length, 1);
-  assert.match(h.sent[0].messages[0].altText, /ผู้ที่คุณดูแล 1 คน/);
+  assert.match(h.sent[0].messages[0].altText, /คนที่คุณห่วงใย 1 คน/);
   assert.ok(!JSON.stringify(h.sent[0].messages).includes('ยาลับ'));
   assert.deepEqual(labels(h.sent[0].messages), ['📊 สรุป', '❓ ช่วยเหลือ']);
 });
@@ -110,7 +110,7 @@ test('LINE "สรุป": เป็นทั้งผู้ป่วยแล�
   await run(h, 'สรุป');
   assert.equal(h.sent[0].messages.length, 2);
   assert.match(h.sent[0].messages[0].altText, /^📊 สรุปการกินยา 7 วัน: 100%$/);
-  assert.match(h.sent[0].messages[1].altText, /ผู้ที่คุณดูแล/);
+  assert.match(h.sent[0].messages[1].altText, /คนที่คุณห่วงใย/);
 });
 
 test('LINE "สรุป": ยังไม่เชื่อมบัญชี → วิธีเชื่อมเหมือนข้อความอื่น', async () => {

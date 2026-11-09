@@ -3,7 +3,7 @@ const SLOT_LABEL = { morning: 'เช้า', noon: 'กลางวัน', eve
 // อิโมจิประจำมื้อ (ใช้ร่วมกันทุกข้อความ LINE)
 const SLOT_EMOJI = { morning: '🌅', noon: '☀️', evening: '🌆', bedtime: '🌙' };
 // ช่องทางที่กดยืนยัน (ใช้ในข้อความ 'ผ่านทาง …') — ตรงกับ CHANNEL_LABEL ของเว็บ
-const CHANNEL_LABEL = { app: 'แอป', line: 'LINE', push: 'แจ้งเตือนบนเครื่อง', caregiver: 'ญาติ' };
+const CHANNEL_LABEL = { app: 'แอป', line: 'LINE', push: 'แจ้งเตือนบนเครื่อง', caregiver: 'คนที่ห่วงใย' };
 const MEAL_LABEL = { before: 'ก่อนอาหาร', after: 'หลังอาหาร', with: 'พร้อมอาหาร', any: 'ไม่เกี่ยวกับอาหาร', unknown: '' };
 const UNIT_LABEL = {
   tablet: 'เม็ด', capsule: 'แคปซูล', ml: 'มล.', teaspoon: 'ช้อนชา', tablespoon: 'ช้อนโต๊ะ',
