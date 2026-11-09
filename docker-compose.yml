@@ -92,14 +92,35 @@ services:
     ports:
       - "8080:80"                      # http://localhost:8080
 
+  # tunnel หลัก = Tailscale Funnel (วันที่ 12) → https://${TS_PUBLIC_HOST} ชี้เข้า nginx ของ frontend (ขั้นตอน: docs/day12-cutover.md)
+  # nginx ส่งต่อเฉพาะ /api และ /line/webhook ; editor/admin API ของ Node-RED เข้าผ่าน tunnel ไม่ได้
+  # !! state ของ node (volume ts_state) ห้ามหาย: ไม่งั้นเป็น node ใหม่ชื่อ yatung-1 → URL เปลี่ยน + ชน rate limit ใบรับรอง
   tunnel:
-    image: ngrok/ngrok:3.39.11-alpine
+    image: tailscale/tailscale:v1.104.4
     profiles: ["tunnel"]
     restart: unless-stopped
     depends_on:
       - frontend
-    # โดเมนคงที่ของ ngrok (ฟรี 1 โดเมน) → https://${NGROK_DOMAIN} ชี้เข้า nginx ของ frontend
-    # nginx ส่งต่อเฉพาะ /api และ /line/webhook; editor/admin API ของ Node-RED เข้าผ่าน tunnel ไม่ได้
+    hostname: yatung
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY:-}          # ใช้ครั้งเดียวตอนลงทะเบียน แล้วลบออกจาก .env
+      TS_HOSTNAME: yatung
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_AUTH_ONCE: "true"                 # ล็อกอินเฉพาะตอนยังไม่เคยลงทะเบียน (state อยู่ใน volume)
+      TS_USERSPACE: "true"                 # ไม่ใช้ /dev/net/tun (Docker Desktop for Windows)
+      TS_SERVE_CONFIG: /config/serve.json  # เปิด Funnel 443 → frontend:80 (ชื่อ tailnet ไม่อยู่ใน repo : ไฟล์ใช้ ${TS_CERT_DOMAIN})
+    volumes:
+      - ts_state:/var/lib/tailscale
+      - ./tailscale:/config:ro             # mount เป็นโฟลเดอร์ (เอกสาร Tailscale แนะนำ)
+
+  # tunnel สำรอง = ngrok (เก็บไว้ถึงครบ 7 วันหลังสลับ) — ห้ามรันพร้อม Funnel เป็นสถานะปกติ
+  #   docker compose --profile tunnel-ngrok up -d tunnel-ngrok     (inspector http://127.0.0.1:4040)
+  tunnel-ngrok:
+    image: ngrok/ngrok:3.39.11-alpine
+    profiles: ["tunnel-ngrok"]
+    restart: unless-stopped
+    depends_on:
+      - frontend
     command: http frontend:80 --url=https://${NGROK_DOMAIN}
     environment:
       NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
@@ -116,3 +137,7 @@ services:
 
 volumes:
   db_data:
+  # external → `docker compose down -v` ไม่ลบ volume นี้ (สร้างครั้งเดียว: docker volume create yatung_ts_state)
+  ts_state:
+    external: true
+    name: yatung_ts_state
