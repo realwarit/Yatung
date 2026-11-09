@@ -165,9 +165,13 @@ if [ "$FUNNEL_UP" = 1 ]; then
     ok "Tailscale ต่อ tailnet แล้ว (BackendState=Running) เครื่อง $(mask_host "$selfdns")"
     case "$selfdns" in yatung.*) ;; *) warn "ชื่อเครื่องใน tailnet ไม่ใช่ yatung.* ($(mask_host "$selfdns")) — ถ้าเป็น yatung-1 แปลว่า state หาย/ลงทะเบียนซ้ำ URL จะไม่ตรงที่ตั้งไว้" ;; esac
     [ -n "$TS_HOST" ] && [ "$selfdns" != "$TS_HOST" ] && warn "TS_PUBLIC_HOST ใน .env ไม่ตรงกับชื่อเครื่องจริง — แก้ให้ตรงแล้ว docker compose up -d --force-recreate nodered"
-    kexp="$(printf '%s' "$tsj" | jget 'o.Self.KeyExpiry')"
-    if [ -z "$kexp" ] || [ "$kexp" = "null" ]; then ok "key expiry ของเครื่อง yatung ปิดอยู่ (Disable key expiry แล้ว)"
-    else warn "key expiry ของเครื่อง yatung ยังเปิดอยู่ (หมดอายุ ${kexp%%T*}) — tunnel จะหลุดวันนั้น ; admin console → Machines → yatung → ⋯ → Disable key expiry (docs/day12-cutover.md ขั้น 2)"; fi
+    # Self.KeyExpiry : ฟิลด์นี้ยังเดาไว้ (ยืนยันกับของจริงในขั้น 2.3 ของ cutover) → ถ้าไม่เจอฟิลด์ ขึ้น "ไม่ทราบ" (เหลือง) ห้ามตอบว่าปิดแล้ว
+    kexp_has="$(printf '%s' "$tsj" | jget '"KeyExpiry" in (o.Self||{})')"
+    kexp="$(printf '%s' "$tsj" | jget 'o.Self&&o.Self.KeyExpiry')"
+    if [ "$kexp_has" != "true" ]; then
+      warn "key expiry ของเครื่อง yatung: ไม่ทราบ (status --json ไม่มีฟิลด์ Self.KeyExpiry) — ดูที่ admin console → Machines → yatung ต้องมี \"Expiry disabled\""
+    elif [ -z "$kexp" ] || [ "$kexp" = "null" ] || [ "${kexp#0001-}" != "$kexp" ]; then ok "key expiry ของเครื่อง yatung ปิดอยู่ (Disable key expiry แล้ว)"
+    else warn "key expiry ของเครื่อง yatung ยังเปิดอยู่ (หมดอายุ ${kexp%%T*}) — tunnel จะหลุดวันนั้น ; admin console → Machines → yatung → ⋯ → Disable key expiry (docs/day12-cutover.md ขั้น 2.3)"; fi
     sj="$(docker compose exec -T "$FUNNEL_SVC" tailscale serve status --json 2>/dev/null)"
     printf '%s' "$sj" | jget 'Object.values(o.AllowFunnel||{}).some(v=>v===true)' | grep -q true && ok "Funnel เปิดอยู่ (AllowFunnel=true)" || bad "Funnel ยังไม่เปิด (serve status ไม่มี AllowFunnel) — ตรวจ tailscale/serve.json และ ACL nodeAttrs funnel ; ดู docker compose logs tunnel"
   else
@@ -209,6 +213,26 @@ match=""
 [ "$NGROK_UP" = 1 ] && [ -n "$NG_DOMAIN" ] && [ "$pbu_host" = "$NG_DOMAIN" ] && match="${match:+$match+}ngrok"
 if [ -n "$match" ]; then ok "PUBLIC_BASE_URL ตรงกับ tunnel ที่รันอยู่ ($match)"
 elif [ "$FUNNEL_UP" = 1 ] || [ "$NGROK_UP" = 1 ]; then bad "PUBLIC_BASE_URL ($(mask_host "$pbu")) ไม่ตรงกับ tunnel ที่รันอยู่ — ปุ่ม \"เปิดแอป\"/รูปในข้อความ LINE จะชี้ไปที่ไม่มีใครรับ ; แก้ใน .env แล้ว docker compose up -d --force-recreate nodered (ถามคาเด็ทก่อน ห้ามช่วงมื้อ)"; fi
+# PUBLIC_BASE_URL และ VAPID_SUBJECT (ค่าที่ nodered ใช้จริง) : ไม่ว่าง · ไม่มี ${ ค้าง (ลำดับตัวแปรใน .env ผิด) · ขึ้นต้น https:// · โฮสต์ตรงกับ tunnel ที่รัน
+vsub="$(docker compose exec -T nodered printenv VAPID_SUBJECT 2>/dev/null | tr -d '\r')"
+want_host=""
+if [ "$FUNNEL_UP" = 1 ] && [ "$NGROK_UP" = 0 ]; then want_host="$TS_HOST"
+elif [ "$NGROK_UP" = 1 ] && [ "$FUNNEL_UP" = 0 ]; then want_host="$NG_DOMAIN"; fi
+chk_url_env() { # chk_url_env ชื่อ ค่า ชนิด(strict|vapid)
+  local n="$1" v="$2" kind="$3" h
+  if [ -z "$v" ]; then bad "$n ว่างใน container — ตั้งใน .env แล้ว docker compose up -d --force-recreate nodered (ถามคาเด็ทก่อน)"; return; fi
+  case "$v" in *'$'*|*'{'*|*'}'*) bad "$n มี \${ ค้างอยู่ — ใน .env ต้องประกาศ TS_PUBLIC_HOST ไว้เหนือบรรทัดนี้ (ลำดับตัวแปรผิด)"; return ;; esac
+  case "$v" in
+    https://*) h="$(printf '%s' "$v" | sed -E 's#^https://##; s#/.*$##')"
+      if [ -n "$want_host" ] && [ "$h" != "$want_host" ]; then bad "$n ($(mask_host "$v")) ไม่ตรงกับ tunnel ที่รันอยู่"
+      elif [ -n "$want_host" ]; then ok "$n = https:// และตรงกับ tunnel ที่รันอยู่"
+      else ok "$n ขึ้นต้น https:// ($(mask_host "$v"))"; fi ;;
+    mailto:*) if [ "$kind" = "vapid" ] && [ "$FUNNEL_UP" = 1 ]; then bad "$n เป็น mailto: — ตอนใช้ Funnel ต้องเป็น https://\${TS_PUBLIC_HOST} (Apple ปฏิเสธบางค่า)"; else warn "$n เป็น mailto: (ใช้ได้กับ Android/Chrome ; ขั้น 4 ของ cutover เปลี่ยนเป็น https://\${TS_PUBLIC_HOST})"; fi ;;
+    *) bad "$n ต้องขึ้นต้น https:// (ได้ '${v%%:*}:…')" ;;
+  esac
+}
+chk_url_env PUBLIC_BASE_URL "$pbu" strict
+chk_url_env VAPID_SUBJECT "$vsub" vapid
 
 # รูปน้องยาตรงใน Flex: ต้องโหลดด้วย User-Agent ที่ไม่ใช่เบราว์เซอร์ได้ 200 image/png (tunnel บางแบบแสดงหน้าเตือนให้เฉพาะเบราว์เซอร์)
 asset="$(docker compose exec -T nodered printenv LINE_ASSET_BASE 2>/dev/null | tr -d '')"; asset="${asset:-${pbu%/}/line}"; asset="${asset%/}"
