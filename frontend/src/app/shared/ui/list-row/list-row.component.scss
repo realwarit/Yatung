@@ -1,5 +1,5 @@
 :host {
-  display: flex; flex-wrap: wrap; align-items: center; gap: var(--yt-space-2) var(--yt-space-3); box-sizing: border-box; width: 100%; min-height: var(--yt-row-min);
+  display: flex; align-items: center; gap: var(--yt-space-3); box-sizing: border-box; width: 100%; min-height: var(--yt-row-min);
   padding: var(--yt-space-3) var(--yt-space-4); border: 0; background: transparent; color: var(--yt-text);
   font: inherit; text-align: left; text-decoration: none;
 }
@@ -8,8 +8,11 @@
 .lead:empty, .trail:empty { display: none; }
 .lead, .trail { display: flex; align-items: center; flex: none; gap: var(--yt-space-2); }
 .trail { margin-left: auto; }
-// จอแคบ/ตัวอักษรใหญ่: ชื่อแถวได้ที่อย่างน้อย 7rem ไม่งั้นป้ายสถานะ+ลูกศรตกลงบรรทัดใหม่ (ไม่บีบชื่อเป็นทีละคำ)
-.body { flex: 1 1 7rem; min-width: 0; display: flex; flex-direction: column; }
+// ลูกศร (.chev) อยู่นอก .main เสมอ = อยู่แถวเดียวกับชื่อ ไม่ตกบรรทัดล่าง ; ใน .main จอแคบ/ตัวอักษรใหญ่:
+// ชื่อแถวได้ที่อย่างน้อย 6rem ไม่งั้นป้ายสถานะลงบรรทัดใหม่ใต้ชื่อ (ไม่บีบชื่อเป็นทีละคำ)
+// padding/margin ตรงข้ามกัน = ตำแหน่งเท่าเดิม แต่กล่องกว้างขึ้น 0.5rem รับพื้นที่แตะของปุ่มกะทัดรัดที่ยื่นออกมา (::before) ไม่ให้นับเป็นของล้น
+.main { flex: 1 1 auto; min-width: 0; padding-inline-end: var(--yt-space-2); margin-inline-end: calc(-1 * var(--yt-space-2)); display: flex; flex-wrap: wrap; align-items: center; gap: var(--yt-space-2) var(--yt-space-3); }
+.body { flex: 1 1 6rem; min-width: 0; display: flex; flex-direction: column; }
 .t, .s { overflow-wrap: anywhere; }
 .t { font-size: var(--yt-text-body); font-weight: 500; line-height: var(--yt-line-height-tight); }
 .s { font-size: var(--yt-text-sm); color: var(--yt-text-muted); line-height: var(--yt-line-height-tight); }

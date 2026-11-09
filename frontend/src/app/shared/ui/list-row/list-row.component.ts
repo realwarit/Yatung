@@ -12,12 +12,14 @@ import { IconComponent } from '../../icon.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <span class="lead"><ng-content select="[lead]" /></span>
-    <span class="body">
-      <span class="t">{{ title() }}</span>
-      @if (sub()) { <span class="s">{{ sub() }}</span> }
-      <ng-content />
+    <span class="main">
+      <span class="body">
+        <span class="t">{{ title() }}</span>
+        @if (sub()) { <span class="s">{{ sub() }}</span> }
+        <ng-content />
+      </span>
+      <span class="trail"><ng-content select="[trail]" /></span>
     </span>
-    <span class="trail"><ng-content select="[trail]" /></span>
     @if (chevron()) { <app-icon class="chev" name="chevron-right" /> }
   `,
   styleUrl: './list-row.component.scss',
