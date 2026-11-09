@@ -4,7 +4,7 @@ const stock = require('../data/lib/stock-service');
 const M = require('../data/lib/line-messages');
 const F = require('../data/lib/line-flex');
 
-const ENV = { PUBLIC_BASE_URL: 'https://x.ngrok-free.dev' };
+const ENV = { PUBLIC_BASE_URL: 'https://x.example.test' };
 const med = (extra = {}) => ({ id: 1, user_id: 7, name: 'เมตฟอร์มิน', strength: '500 mg', unit: 'tablet', as_needed: 0, is_active: 1, remaining_qty: 6, refill_alert_days: 7, days_left: 3, alerted: 0, line_user_id: 'U1', email: 'a@example.test', ...extra });
 
 // ---------- เกณฑ์ใกล้หมด ----------
@@ -188,7 +188,7 @@ test('Flex ยาใกล้หมด: หัว, รายการยา (ช
   assert.ok(texts.includes('อย่าลืมไปรับยา') && texts.includes('หรือซื้อเพิ่มนะคะ'));
   const btn = flat(m.contents.footer).find((n) => n.type === 'button');
   assert.equal(btn.action.label, 'เติมยาในแอป');
-  assert.equal(btn.action.uri, 'https://x.ngrok-free.dev/medications');
+  assert.equal(btn.action.uri, 'https://x.example.test/medications');
   assert.ok(flat(m.contents.header).some((n) => n.type === 'image' && /mascot-hello\.png$/.test(n.url)));
   assert.equal(m.contents.header.backgroundColor, F.COLOR.mint);     // หัวสีปกติ ไม่ใช่เหลือง
   assert.ok(m.altText.length <= 400 && m.altText.startsWith('💊 ยาใกล้หมด 3 รายการ'));

@@ -50,26 +50,38 @@ docker compose up -d --build
 
 > Linux: ถ้า Node-RED เขียนไฟล์ใน `node-red/data` ไม่ได้ ให้รัน `sudo chown -R 1000:1000 node-red/data`
 
-### LINE + ngrok (วันที่ 6)
+### LINE + Tailscale Funnel (วันที่ 6 · เปลี่ยน tunnel วันที่ 12)
 
-LINE Messaging API ส่ง webhook เข้ามาที่ `https://<NGROK_DOMAIN>/line/webhook` — ใช้ ngrok (โดเมนคงที่ฟรี 1 โดเมน) เป็น tunnel แทน cloudflared
+LINE ส่ง webhook เข้ามาที่ `https://<TS_PUBLIC_HOST>/line/webhook` — tunnel หลักคือ **Tailscale Funnel** (ฟรี, HTTPS, URL คงที่ `yatung.<tailnet>.ts.net`, **ไม่มีหน้าเตือนเหมือน ngrok**) ·
+**ขั้นตอนทีละขั้นสำหรับคนไม่ถนัดระบบ (สมัคร, กดตรงไหนใน admin console, ใส่ค่าใน `.env`, เปลี่ยน Webhook, ติดตั้งแอปใหม่, ย้อนกลับ): [`docs/day12-cutover.md`](docs/day12-cutover.md)**
 
-1. สมัคร ngrok → copy authtoken และจองโดเมนคงที่ (Domains) แล้วใส่ใน `.env`: `NGROK_AUTHTOKEN`, `NGROK_DOMAIN` (เช่น `xxx.ngrok-free.dev`); `PUBLIC_BASE_URL=https://${NGROK_DOMAIN}`
-2. ใส่ `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_OA_BASIC_ID` (เช่น `@014rktvr`) ใน `.env`
-3. `docker compose --profile tunnel up -d` (inspector ดู request ที่ http://127.0.0.1:4040)
-4. ตั้ง Webhook URL เป็น `https://<NGROK_DOMAIN>/line/webhook` ใน LINE Developers Console → กด Verify → เปิด Use webhook
+สรุปคำสั่งหลังตั้งค่าเสร็จ:
+```bash
+docker volume create yatung_ts_state      # ครั้งเดียว (เก็บ state ของเครื่อง yatung ใน Tailscale — ดูคำเตือนด้านล่าง)
+docker compose --profile tunnel up -d     # เริ่ม tunnel (Funnel)
+docker compose --profile tunnel logs tunnel   # ถ้าไม่ขึ้น: ดูว่าล็อกอิน/เปิด Funnel ไม่ผ่านเพราะอะไร
+bash scripts/test-tunnel.sh               # พิสูจน์จากภายนอกด้วย curl เปล่าๆ (หน้าแรก/API/webhook/editor ไม่หลุด/เวลาโหลด)
+```
+
+1. ใส่ `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_OA_BASIC_ID` (เช่น `@014rktvr`) ใน `.env`
+2. ตั้ง Webhook URL เป็น `https://<TS_PUBLIC_HOST>/line/webhook` ใน LINE Developers Console → กด Verify → เปิด Use webhook
    (ขั้นตอนเต็มพร้อมทดลองส่งเตือน/กดปุ่ม: [`docs/line-console-checklist.md`](docs/line-console-checklist.md))
 
-> **ngrok แพ็กเกจฟรีแสดงหน้าเตือน "You are about to visit …" เมื่อเปิดลิงก์ด้วยเบราว์เซอร์** — ครั้งแรกที่เปิด `https://<NGROK_DOMAIN>` (รวมปุ่ม "เปิดแอป" ในข้อความ LINE) ต้องกด **Visit Site** หนึ่งครั้ง (เบราว์เซอร์จำไว้ชั่วคราว) ·
-> คำขอที่ไม่ใช่เบราว์เซอร์ (LINE ส่ง webhook, LINE โหลดรูปน้องยาตรง) ไม่เจอหน้านี้ — `demo-check.sh` เช็กรูปด้วย User-Agent ที่ไม่ใช่เบราว์เซอร์ ถ้าได้ HTML แทน PNG ให้ย้ายรูปไปโฮสต์อื่นแล้วตั้ง `LINE_MASCOT_URL`
-> image ของ tunnel คือ `ngrok/ngrok:3.39.11-alpine` (tag `3.39.11` เปล่าไม่มีอยู่จริง)
+> **⚠ ห้ามทำลาย state ของ tunnel:** เครื่อง `yatung` ใน Tailscale เก็บ state ไว้ใน volume `yatung_ts_state` — ถ้าหาย จะกลายเป็นเครื่องใหม่ชื่อ `yatung-1` **URL เปลี่ยน** (ต้องติดตั้ง PWA และเปลี่ยน Webhook ใหม่) และขอใบรับรองซ้ำจนอาจชน rate limit ·
+> volume นี้ประกาศเป็น `external` จึง **`docker compose down -v` ไม่ลบ** (ยังใช้ล้างฐานข้อมูลตามเดิมได้) แต่ **ห้าม** `docker volume rm yatung_ts_state`, `docker volume prune`, `docker system prune --volumes` ·
+> `docker compose --profile tunnel up -d --force-recreate tunnel` ปลอดภัย (state อยู่นอก container) · เทสในโปรเจกต์ไม่แตะ service `tunnel` (มีเทส `node-red/test/tunnel-config.test.js` ตรวจ)
+
+> **tunnel สำรอง = ngrok** (เก็บไว้ถึงครบ 7 วันหลังสลับ แล้วถอดออก) : `docker compose --profile tunnel-ngrok up -d tunnel-ngrok` (inspector http://127.0.0.1:4040) ·
+> **ห้ามรันพร้อม Funnel เป็นสถานะปกติ** (ทับซ้อนได้เฉพาะช่วงสลับ — `demo-check.sh` เตือนถ้าเจอทั้งสองตัว) · ตอนย้อนกลับไป ngrok ต้องตั้ง `PUBLIC_BASE_URL=https://${NGROK_DOMAIN}` + เปลี่ยน Webhook กลับ (ดู `docs/day12-cutover.md`) ·
+> image ngrok คือ `ngrok/ngrok:3.39.11-alpine` (tag `3.39.11` เปล่าไม่มีอยู่จริง) ; หน้าเตือน "Visit Site" ของ ngrok ฟรีและ `ngrok.interceptor` ในแอปยังอยู่ช่วงทดลอง (header นั้นไม่มีผลกับ Funnel — มีเทสยืนยัน)
+
 
 > **แก้ frontend แล้วหน้าเว็บใน container ไม่เปลี่ยน** จนกว่าจะ build ใหม่: `docker compose up -d --build frontend` (`demo-check.sh` เตือนถ้า image เก่ากว่าไฟล์ที่แก้ล่าสุดใน `frontend/`)
 
-> **ลำดับตัวแปรใน `.env` สำคัญ:** Compose แทนค่า `${NGROK_DOMAIN}` จากตัวแปรที่ประกาศ "ก่อนหน้า" เท่านั้น — `PUBLIC_BASE_URL=https://${NGROK_DOMAIN}` ต้องอยู่หลัง `NGROK_DOMAIN=` (ไม่งั้นได้ `https://` เปล่าๆ; `demo-check.sh` ตรวจให้)
+> **ลำดับตัวแปรใน `.env` สำคัญ:** Compose แทนค่า `${TS_PUBLIC_HOST}` จากตัวแปรที่ประกาศ "ก่อนหน้า" เท่านั้น — `PUBLIC_BASE_URL=https://${TS_PUBLIC_HOST}` ต้องอยู่หลัง `TS_PUBLIC_HOST=` (ไม่งั้นได้ `https://` เปล่าๆ; `demo-check.sh` ตรวจให้)
 
 ความปลอดภัย: nginx ส่งต่อ **เฉพาะ `/api/*` และ `/line/webhook`** — editor/admin API ของ Node-RED (`/flows`, `/red`, `/settings`, …) เข้าผ่าน tunnel ไม่ได้ (มีเทสใน `scripts/test-day6.sh`) ·
-พอร์ต 1880/3306/8081/4040 ผูกที่ `127.0.0.1` ส่วน 8080 เปิดให้ LAN · **ห้ามเปิด tunnel ถ้ายังไม่ได้เปลี่ยน `NODE_RED_ADMIN_HASH`** (ค่าตัวอย่างคือรหัส `demo1234`)
+พอร์ต 1880/3306/8081/4040 (4040 = inspector ของ ngrok สำรอง) ผูกที่ `127.0.0.1` ส่วน 8080 เปิดให้ LAN · **ห้ามเปิด tunnel ถ้ายังไม่ได้เปลี่ยน `NODE_RED_ADMIN_HASH`** (ค่าตัวอย่างคือรหัส `demo1234`)
 
 เชื่อมบัญชี: หน้า "ตั้งค่า" → "เชื่อม LINE" → กด "รับรหัสเชื่อม LINE" (เลข 6 หลัก หมดอายุ 10 นาที ใช้ได้ครั้งเดียว) → กด "เปิด LINE แล้วกดส่ง" (หรือสแกน QR) · คนที่ห่วงใยเชื่อมด้วยรหัสของตัวเองจากปุ่ม "ส่งรหัสให้คนที่ห่วงใย"
 · ใน LINE พิมพ์ "วันนี้" เพื่อดูยาของวันนี้ (ใช้ reply จึงไม่เสียโควตา push)
@@ -111,7 +123,7 @@ cron 03:00 ปิดรอบที่ค้าง `pending` ของวัน�
 ตั้งค่าครั้งเดียวบนเครื่องที่รัน:
 ```bash
 node scripts/gen-vapid.mjs                       # สร้างคู่คีย์ VAPID ลง .env (ไม่เขียนทับของเดิม ; แสดงเฉพาะ public key)
-# แก้ VAPID_SUBJECT ใน .env เป็น mailto:<อีเมลของคุณ>  (หรือ https://<NGROK_DOMAIN>)
+# แก้ VAPID_SUBJECT ใน .env เป็น mailto:<อีเมลของคุณ>  (หรือ https://<TS_PUBLIC_HOST>)
 docker compose up -d --force-recreate nodered
 docker compose up -d --build frontend
 bash scripts/demo-check.sh                       # หัวข้อ 8) Web Push ต้องผ่าน
@@ -120,12 +132,14 @@ bash scripts/demo-check.sh                       # หัวข้อ 8) Web Pus
 - กฎเลือกช่องทาง (ใช้กับเตือนปกติ, เตือนซ้ำ, ยาใกล้หมด; แจ้งคนที่ห่วงใยใช้ LINE อย่างเดียว): เชื่อม LINE → LINE · ไม่เชื่อมแต่มีเครื่องที่เปิดแจ้งเตือน → Web Push · เปิด "ทั้ง LINE และเครื่อง" → ทั้งสองทาง ·
   โควตา LINE เต็มแต่มีเครื่องที่เปิดแจ้งเตือน → ใช้ Web Push แทน · ทุกช่องทางผ่านการ "จองก่อนส่ง" ตัวเดียวกัน (ไม่ส่งซ้ำ)
 - ปุ่ม "✓ กินแล้ว" บนแจ้งเตือน (Android Chrome): เปิด `/today#take=<token>` — token อยู่ใน **fragment** ไม่ใช่ query string เพราะ fragment ไม่ถูกส่งไปเซิร์ฟเวอร์ (ไม่ติด access log ของ nginx / ngrok inspector) และแอปลบออกจาก URL ทันที (`history.replaceState`) ก่อนเรียก API ; แอปที่เปิดค้างอยู่รับผ่าน `hashchange` ด้วย ; ลิงก์เก่า `?take=` ยังรับและลบทันที — แล้วแอปบันทึกให้ (token เซ็นด้วย HMAC ผูกผู้ใช้ + dose, อายุ 12 ชม., ใช้ซ้ำไม่หักยาซ้ำ) · iPhone ไม่แสดงปุ่ม action — แตะแจ้งเตือนเพื่อเปิดหน้า "วันนี้" · payload **ไม่มีชื่อยา** (เห็นบนหน้าจอล็อก)
-- **ถ้า iPhone ไม่ได้รับแจ้งเตือน** และ `docker compose logs nodered | grep web_push_error` เห็น `status=403 reason=BadJwtToken` (Apple ปฏิเสธ `VAPID_SUBJECT`): ตั้ง `VAPID_SUBJECT=https://<NGROK_DOMAIN>` (หรือ mailto ที่เป็นอีเมลจริง) → `docker compose up -d --force-recreate nodered` → บน iPhone ปิดแล้วเปิดการแจ้งเตือนใหม่
+- **ถ้า iPhone ไม่ได้รับแจ้งเตือน** และ `docker compose logs nodered | grep web_push_error` เห็น `status=403 reason=BadJwtToken` (Apple ปฏิเสธ `VAPID_SUBJECT`): ตั้ง `VAPID_SUBJECT=https://<TS_PUBLIC_HOST>` (หรือ mailto ที่เป็นอีเมลจริง) → `docker compose up -d --force-recreate nodered` → บน iPhone ปิดแล้วเปิดการแจ้งเตือนใหม่
   (log ไม่มี JWT/คีย์ ; มีเฉพาะ status กับ reason สั้นๆ)
-- ngrok ฟรีแสดงหน้า "Visit Site" ให้เบราว์เซอร์ครั้งแรก — กดครั้งเดียวต่ออุปกรณ์ (iPhone ที่เปิดจากไอคอนหน้าจอโฮม cookie แยกจาก Safari ต้องกดอีกครั้ง) ; `demo-check.sh` ตรวจว่า `ngsw-worker.js`/`manifest` ผ่าน tunnel ได้ไฟล์จริง
+- [เฉพาะตอนย้อนกลับไป ngrok] ngrok ฟรีแสดงหน้า "Visit Site" ให้เบราว์เซอร์ครั้งแรก — กดครั้งเดียวต่ออุปกรณ์ (iPhone ที่เปิดจากไอคอนหน้าจอโฮม cookie แยกจาก Safari ต้องกดอีกครั้ง) ; `demo-check.sh` ตรวจว่า `ngsw-worker.js`/`manifest` ผ่าน tunnel ได้ไฟล์จริง
 - ทดสอบอัตโนมัติ (push service ปลอมถอดรหัส payload จริง + ตรวจลายเซ็น VAPID): `bash scripts/test-day7c.sh` · ทดสอบบนมือถือจริง (iPhone / Android แยก 2 ชุด): [`docs/web-push-test.md`](docs/web-push-test.md)
 
 ### iPhone ค้างที่เวอร์ชันเก่า / หน้าวันนี้ขึ้น "เกิดข้อผิดพลาด" (ngrok ฟรี, 8C-C0)
+
+> **วันที่ 12:** ย้ายไป Tailscale Funnel แล้ว — ไม่มีหน้าเตือน "Visit Site" อีก หัวข้อนี้ใช้เฉพาะตอนย้อนกลับไป ngrok สำรอง
 
 **อาการ:** แอปที่เปิดจากไอคอนหน้าจอโฮมของ iPhone เป็นหน้าตาเก่า (เช่น เมนูล่างยังเป็น "ภาพรวม") และหน้าวันนี้ขึ้น "เกิดข้อผิดพลาด" ทั้งที่ Safari เครื่องเดียวกันเข้าได้ปกติ
 
@@ -170,7 +184,7 @@ npx cap open android
 ```
 
 ## กันความลับหลุดเข้า git
-- ห้าม commit `.env`, `node-red/data/flows_cred.json`, `node-red/data/.sessions.json`, `*.backup`, `.config.*.json` และห้ามฝังค่าลับ (LINE secret/token, ngrok authtoken, Gemini key, VAPID private key, JWT secret, hash รหัสผ่านจริง) ในโค้ด/เทส/เอกสาร
+- ห้าม commit `.env`, `node-red/data/flows_cred.json`, `node-red/data/.sessions.json`, `*.backup`, `.config.*.json` และห้ามฝังค่าลับ (LINE secret/token, ngrok authtoken, Tailscale auth key `tskey-…` / ชื่อ `*.ts.net` เต็ม, Gemini key, VAPID private key, JWT secret, hash รหัสผ่านจริง) ในโค้ด/เทส/เอกสาร
 - เปิด hook ครั้งเดียวหลัง clone: `bash scripts/setup-hooks.sh` (ตั้ง `core.hooksPath=.githooks`) → **pre-commit** บล็อก commit ที่ stage ไฟล์ต้องห้ามหรือมีรูปแบบความลับ · **pre-push** สแกน commit ที่ยังไม่อยู่บน remote ใดเลย
 - ไม่ต้องติดตั้ง gitleaks (ใช้ Node ล้วน `scripts/check-secrets.mjs`; ตัวตรวจ `scripts/lib/secret-scan.mjs`) ; ผลแสดงแค่ ชนิด/ไฟล์/บรรทัด ไม่แสดงค่า ; สแกนทั้งประวัติ: `node scripts/check-secrets.mjs --log --all`
 - `demo-check.sh` หัวข้อ 0 ตรวจ `git ls-files` ไม่มีไฟล์ต้องห้าม (ขึ้น ✗ ถ้ามี)
@@ -184,7 +198,7 @@ bash scripts/demo-check.sh
 
 สรุป ✓/✗ ทีละข้อ (ไม่ผ่านข้อใดจะ exit 1): container db/nodered/frontend · เว็บ :8080 และ proxy `/api` · MySQL credentials · warm-up Gemini ใน log ·
 login บัญชีเดโม · **สแกนข้อความสั้น 1 ครั้งจริง** (เรียก Gemini 1 request ของโควตาบัญชีเดโม แล้วลบ draft ทิ้ง) ·
-**LINE** (ข้อ 7): secret/token/OA ID ตั้งแล้ว · webhook ผ่าน nginx ตอบ 401 เมื่อ signature ผิด · tunnel ngrok (public URL, `/flows` ต้องไม่หลุดออกไป) ·
+**LINE** (ข้อ 7): secret/token/OA ID ตั้งแล้ว · webhook ผ่าน nginx ตอบ 401 เมื่อ signature ผิด · tunnel Tailscale Funnel [ngrok สำรอง] (public URL, `/flows` ต้องไม่หลุดออกไป) ·
 Webhook URL + Use webhook ใน LINE Console · **โควตา push: จริงจาก LINE / ใช้ไป / เหลือสำหรับเตือน / เหลือสำหรับแจ้งคนที่ห่วงใย** · `DEMO_MODE` ·
 รหัสผ่านเดโมอ่านจาก `DEMO_PASSWORD` (env หรือ `.env`; ไม่มี = `demo1234`)
 
@@ -228,13 +242,13 @@ bash scripts/test-all.sh 6b 7a    # เฉพาะบางชุด
 
 - **หน้าต้อนรับ (9W):** เปิดที่ `/` ตอนยังไม่ล็อกอินจะเห็นหน้าต้อนรับ (`/welcome`) ก่อน — ล็อกอินแล้วเข้า `/today` ตรงๆ ; ลิงก์ลึก (เช่นปุ่ม "เปิดแอป" ใน LINE) ไปหน้า login แล้วกลับหน้าเดิมเหมือนเดิม ; manifest `start_url` = `/`
 
-- **service worker ทำงานเฉพาะ HTTPS และ `localhost`** — เปิดผ่านเน็ตในบ้านแบบ `http://192.168.x.x:8080` **ไม่มี service worker** จึงไม่มีออฟไลน์ ไม่มีปุ่มติดตั้ง ไม่มี Web Push (เบราว์เซอร์บล็อก) ; ใช้ ngrok (HTTPS) หรือ `localhost` ตอนทดสอบ/นำเสนอ
+- **service worker ทำงานเฉพาะ HTTPS และ `localhost`** — เปิดผ่านเน็ตในบ้านแบบ `http://192.168.x.x:8080` **ไม่มี service worker** จึงไม่มีออฟไลน์ ไม่มีปุ่มติดตั้ง ไม่มี Web Push (เบราว์เซอร์บล็อก) ; ใช้ Tailscale Funnel (HTTPS) หรือ `localhost` ตอนทดสอบ/นำเสนอ
 - **ติดตั้งลงหน้าจอ:** Android/Chrome มีการ์ด "ติดตั้งยาตรงไว้บนหน้าจอ" (หน้าวันนี้ครั้งเดียวหลัง login, ปิดแล้วซ่อน 14 วัน ; หน้าตั้งค่าแสดงเสมอจนกว่าจะติดตั้ง) · iPhone Safari การ์ดสอน "แชร์ → เพิ่มไปยังหน้าจอโฮม" พร้อมเหตุผลว่า **ต้องเพิ่มก่อนถึงจะได้รับการแจ้งเตือน** · ซ่อนเมื่อเปิดแบบแอปอยู่แล้วหรือใน Capacitor ; manifest มี shortcut "ยาวันนี้" / "สแกนซองยา"
 - **ออฟไลน์ = อ่านอย่างเดียว:** หน้าวันนี้และสรุป 7 วันเก็บข้อมูลล่าสุดในเครื่อง (`localStorage`, key `yatung_snap:<userId>:…`, เฉพาะฟิลด์ที่หน้าจอใช้ ไม่มี ocr_text/รูป ; **ล้างตอน logout และ 401**) · ไม่มีเน็ต = แถบเหลือง "ออฟไลน์อยู่ · ข้อมูลล่าสุดเมื่อ HH:MM น." และปุ่ม "กินแล้ว" กดไม่ได้ ("ต่ออินเทอร์เน็ตก่อนนะคะ") — **ไม่ทำคิวบันทึกออฟไลน์** ; กลับมาออนไลน์ แอปรีเฟรชเอง
 - **ห้ามแคช `/api`** (`ngsw-config.json` ไม่มี `dataGroups`; cache key ของ service worker คือ URL ไม่แยก JWT → ข้อมูลข้ามผู้ใช้) — มีเทสใน `node-red/test/pwa-files.test.js`, `scripts/test-day8.sh` และ `demo-check.sh` หัวข้อ 11
 - **อัปเดตเวอร์ชัน:** เมื่อ deploy ใหม่ ผู้ใช้เห็น snackbar "มีเวอร์ชันใหม่ แตะเพื่ออัปเดต" (ไม่ reload เอง) ; เครื่องที่ติดตั้งเวอร์ชันเก่าก่อน 8C ไม่มี snackbar ในครั้งแรกที่อัปเดต (ปกติ)
 - **ฟอนต์:** โหลดจาก `@fontsource` (self-host) ผ่าน `angular.json` — Mitr 500/600 และ Noto Sans Thai Looped 400–700 ; ไฟล์ woff2 รวม ≈ 570 kB ใน `media/` (service worker แคชแบบ lazy) · **แอปไม่โหลดอะไรจาก CDN ภายนอก** (ลบ Material Icons ที่ไม่ได้ใช้ออกจาก `index.html` แล้ว)
-- **ngrok ฟรีกับ service worker:** ตรวจ 13 ต.ค. (curl ด้วย User-Agent iPhone ไม่มีคุกกี้) — `/ngsw.json` และ `/api/*` ได้ **หน้าเตือน HTML สถานะ 200** แทนไฟล์/JSON ; ใส่ header `ngrok-skip-browser-warning` ได้ของจริง → แอปใส่ header ให้ทุก `/api` เอง แต่คำขอ `ngsw.json` ที่ service worker ทำเองใส่ header ไม่ได้ จึงมีแถบ "การเชื่อมต่อหมดอายุ" (ดูหัวข้อ "iPhone ค้างที่เวอร์ชันเก่า" ด้านบน)
+- **[ngrok สำรอง] ngrok ฟรีกับ service worker (Funnel ไม่มีปัญหานี้):** ตรวจ 13 ต.ค. (curl ด้วย User-Agent iPhone ไม่มีคุกกี้) — `/ngsw.json` และ `/api/*` ได้ **หน้าเตือน HTML สถานะ 200** แทนไฟล์/JSON ; ใส่ header `ngrok-skip-browser-warning` ได้ของจริง → แอปใส่ header ให้ทุก `/api` เอง แต่คำขอ `ngsw.json` ที่ service worker ทำเองใส่ header ไม่ได้ จึงมีแถบ "การเชื่อมต่อหมดอายุ" (ดูหัวข้อ "iPhone ค้างที่เวอร์ชันเก่า" ด้านบน)
 - ตรวจ installability: Chrome DevTools → Application → Manifest (ต้องไม่มีคำเตือน) ; รายการทดสอบบนมือถือจริง: `docs/day8-device-checklist.md`
 
 ## AI pipeline (`POST /api/scan`)
@@ -296,3 +310,5 @@ docker compose logs -f nodered # ดู log ของ Node-RED
 docker compose --profile tunnel up -d
 docker compose --profile tunnel up -d --force-recreate tunnel   # ถ้า tunnel ค้างกับ network เก่า ("network … not found")
 docker compose --profile tunnel down                             # ถ้าจะ down ให้ใส่ profile เสมอ
+docker volume create yatung_ts_state                                   # ครั้งเดียวก่อนเปิด tunnel ครั้งแรก (ห้าม rm/prune volume นี้)
+docker compose --profile tunnel-ngrok up -d tunnel-ngrok         # tunnel สำรอง ngrok (ห้ามรันพร้อม Funnel เป็นสถานะปกติ)

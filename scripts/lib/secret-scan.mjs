@@ -1,8 +1,8 @@
 // ตรวจไฟล์ต้องห้าม + รูปแบบความลับ — ใช้โดย scripts/check-secrets.mjs (pre-commit / pre-push / demo-check) ; รายงานเฉพาะ ชนิด/ไฟล์/บรรทัด ห้ามพิมพ์ค่า
-export const FORBIDDEN_FILE = /(^|\/)\.env$|(^|\/)flows_cred\.json$|(^|\/)\.sessions\.json$|\.backup$|(^|\/)\.config\.[^/]+\.json$|\.pem$/;
+export const FORBIDDEN_FILE = /(^|\/)\.env(\.(?!example$)[^/]+)?$|(^|\/)flows_cred\.json$|(^|\/)\.sessions\.json$|\.backup$|(^|\/)\.config\.[^/]+\.json$|\.pem$/;
 
 // ค่าตัวอย่าง/ว่างที่ไม่ถือเป็นความลับ
-const PLACEHOLDER = /^(|change-?me.*|your[-_].*|xxx+|example.*|test.*|secret|password|demo.*|\$\{.*|<.*|\.\.\.|fake.*|dummy.*|placeholder.*|\*+)$/i;
+const PLACEHOLDER = /^(|change-?me.*|your[-_].*|xxx+|example.*|test.*|secret|password|demo.*|\$\{.*|<.*|\.\.\.|fake.*|dummy.*|placeholder.*|\*+|(?:[a-z0-9-]+\.)?(?:your-tailnet|tailnet|example|tail-?x+|xxx+|name)\.ts\.net)$/i;
 
 // bcrypt ที่อนุญาต = hash ของ demo1234 (รหัสเดโมสาธารณะ) ในไฟล์เหล่านี้เท่านั้น ; ที่อื่นต้องไม่มี hash ใดๆ
 export const BCRYPT_ALLOWED_FILES = new Set(['db/init/02_seed.sql', '.env.example', 'node-red/data/lib/admin-auth.js']);
@@ -12,6 +12,10 @@ export const RULES = [
   ['LINE access token', /LINE_CHANNEL_ACCESS_TOKEN\s*[=:]\s*['"]?([A-Za-z0-9+/=_-]{60,})/],
   ['ngrok authtoken', /NGROK_AUTHTOKEN\s*[=:]\s*['"]?([A-Za-z0-9_]{20,})/],
   ['ngrok authtoken (รูปแบบ)', /\b(2[A-Za-z0-9]{20,}_[A-Za-z0-9]{15,})\b/],
+  ['Tailscale auth key', /\b(tskey-(?:auth|client|api|scim)-[A-Za-z0-9]{6,}(?:-[A-Za-z0-9]+)?)/],
+  ['TS_AUTHKEY ค่าจริง', /TS_AUTHKEY\s*[=:]\s*[\x27"]?([^\s\x27"#]{12,})/],
+  // ชื่อเต็ม (yatung.<tailnet>.ts.net) หรือชื่อ tailnet เดี่ยว (tailXXXX.ts.net) ; "<tailnet>.ts.net" / "*.ts.net" ในเอกสารไม่ตรงรูปแบบนี้
+  ['ชื่อเครื่อง/tailnet ของ Tailscale (*.ts.net)', /\b((?:[a-z0-9-]+\.)?[a-z0-9-]+\.ts\.net)\b/i],
   ['Gemini/Google API key', /\b(AIza[0-9A-Za-z_-]{35})\b/],
   ['LLM_API_KEY ค่าจริง', /LLM_API_KEY\s*[=:]\s*['"]?([^\s'"#]{20,})/],
   ['VAPID private key', /VAPID_PRIVATE_KEY\s*[=:]\s*['"]?([A-Za-z0-9_-]{42,44})\b/],

@@ -104,7 +104,7 @@ test('subscription: ตรวจ keys base64url', () => {
 test('describeFailure: Apple 403 BadJwtToken → คำแนะนำ VAPID_SUBJECT ; ไม่มี JWT/endpoint', () => {
   const d = P.describeFailure({ statusCode: 403, body: '{"reason":"BadJwtToken"}' }, 'web.push.apple.com');
   assert.equal(d.status, 403); assert.equal(d.reason, 'BadJwtToken');
-  assert.match(d.hint, /NGROK_DOMAIN/);
+  assert.match(d.hint, /TS_PUBLIC_HOST/);
   assert.equal(/eyJ/.test(J(d)), false);
 });
 test('describeFailure: อื่น ๆ', () => {
@@ -173,7 +173,7 @@ test('sendToUser: log ไม่มี endpoint/JWT ; Apple 403 มีคำแ�
   const svc = P.createPushService({ env: ENV, log: (m) => lines.push(m), sender: async () => { throw statusErr(403, '{"reason":"BadJwtToken"}'); } });
   await svc.sendToUser(db, 5, P.testPayload());
   const all = lines.join('\n') + J(db.st.logs);
-  assert.match(all, /BadJwtToken/); assert.match(all, /NGROK_DOMAIN/); assert.match(all, /web\.push\.apple\.com/);
+  assert.match(all, /BadJwtToken/); assert.match(all, /TS_PUBLIC_HOST/); assert.match(all, /web\.push\.apple\.com/);
   assert.equal(/SECRETPATH|eyJ/.test(all), false);
 });
 test('sendToUser: หลายเครื่อง ส่งทุกเครื่อง ; เครื่องที่ 410 ลบ เครื่องอื่นไม่กระทบ', async () => {

@@ -5,7 +5,7 @@ const svc = require('../data/lib/line-service');
 const S = require('../data/lib/stats-service');
 const { levelOf } = require('../data/lib/adherence-level');
 
-const ENV = { PUBLIC_BASE_URL: 'https://demo.ngrok-free.dev', DEMO_MODE: 'false' };
+const ENV = { PUBLIC_BASE_URL: 'https://demo.example.test', DEMO_MODE: 'false' };
 const NOW = new Date('2026-10-12T07:30:00Z');
 const all = (o, out = []) => { if (Array.isArray(o)) o.forEach((x) => all(x, out)); else if (o && typeof o === 'object') { out.push(o); Object.values(o).forEach((x) => all(x, out)); } return out; };
 const texts = (m) => all(m).filter((n) => n.type === 'text').map((n) => n.text);
@@ -28,7 +28,7 @@ test('Flex สรุป (ผู้ป่วย): altText, ตัวเลข, �
   assert.deepEqual(dots.contents.map((c) => c.contents[0].text), ['–', '–', '–', '–', '✓', '✓', '●']);   // ไม่มียา ×4 · ครบ ×2 · วันนี้
   const btn = all(m.contents).find((n) => n.type === 'button');
   assert.equal(btn.action.label, 'ดูรายละเอียด');
-  assert.equal(btn.action.uri, 'https://demo.ngrok-free.dev/overview');
+  assert.equal(btn.action.uri, 'https://demo.example.test/overview');
   assert.ok(Buffer.byteLength(JSON.stringify(m.contents)) <= 30000);
 });
 
