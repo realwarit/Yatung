@@ -43,7 +43,7 @@ describe('sourceGroups', () => {
   it('"แอป" = app + push, source ไม่รู้จัก (other) ไม่แสดง', () => {
     const s: AdherenceSources = { app: 3, push: 2, line: 1, caregiver: 0, other: 9 };
     expect(sourceGroups(s)).toEqual([
-      { key: 'app', label: 'แอป', count: 5 }, { key: 'line', label: 'LINE', count: 1 }, { key: 'caregiver', label: 'ญาติยืนยัน', count: 0 },
+      { key: 'app', label: 'แอป', count: 5 }, { key: 'line', label: 'LINE', count: 1 }, { key: 'caregiver', label: 'คนที่ห่วงใยยืนยัน', count: 0 },
     ]);
   });
 });
@@ -100,7 +100,7 @@ describe('สเกลสีและเลขบนแท่ง (จัดห�
     expect(dayChips(day({}))).toEqual([]);
   });
   it('sourceLine: เฉพาะช่องทางที่มี', () => {
-    expect(sourceLine({ app: 2, push: 1, line: 1, caregiver: 1, other: 4 })).toBe('บันทึกผ่าน แอป 3 · LINE 1 · ญาติ 1');
+    expect(sourceLine({ app: 2, push: 1, line: 1, caregiver: 1, other: 4 })).toBe('บันทึกผ่าน แอป 3 · LINE 1 · คนที่ห่วงใย 1');
     expect(sourceLine({ app: 0, push: 0, line: 2, caregiver: 0, other: 0 })).toBe('บันทึกผ่าน LINE 2');
     expect(sourceLine({ app: 0, push: 0, line: 0, caregiver: 0, other: 3 })).toBe('');
   });

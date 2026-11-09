@@ -75,7 +75,7 @@ export class SettingsPage {
   protected readonly say = computed<{ tone: BubbleTone; mood: MascotMood; text: string }>(() => {
     const linked = this.lineLinked(), n = this.caregiverCount();
     if (linked === false) return { tone: 'info', mood: 'happy', text: 'เชื่อม LINE ไว้ น้องจะเตือน' + NL + 'กินยาทาง LINE ด้วยนะคะ' };
-    if (linked === true && n === 0) return { tone: 'info', mood: 'happy', text: 'เพิ่มญาติไว้นะคะ ถ้าลืมกินยา' + NL + 'น้องจะบอกญาติให้ค่ะ' };
+    if (linked === true && n === 0) return { tone: 'info', mood: 'happy', text: 'เพิ่มคนที่ห่วงใยไว้นะคะ' + NL + 'ถ้าลืมกินยา น้องจะบอกเขาให้ค่ะ' };
     if (linked === true && n !== null) return { tone: 'success', mood: 'celebrate', text: 'ตั้งค่าครบแล้วค่ะ น้องพร้อม' + NL + 'เตือนทุกมื้อเลยนะคะ' };
     return { tone: 'neutral', mood: 'happy', text: 'ตั้งค่าให้เหมาะกับคุณนะคะ' };
   });

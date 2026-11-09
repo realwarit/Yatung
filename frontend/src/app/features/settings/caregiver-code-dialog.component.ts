@@ -86,7 +86,8 @@ export class CaregiverCodeDialogComponent {
 
   protected invite(l: LinkCode): string {
     const me = this.auth.currentUser()?.display_name ?? 'ผู้ใช้ยาตรง';
-    return `${me} ขอเชิญ ${this.cg.name} เป็นผู้ดูแลเรื่องกินยาในแอป “ยาตรง”\n` +
+    return `${me} ขอเชิญ ${this.cg.name} เป็นคนที่ห่วงใยในแอป “ยาตรง”\n` +
+      `ถ้าลืมกินยา น้องยาตรงจะแจ้งให้รู้ทาง LINE ค่ะ\n` +
       (l.oa_message_url ? `กดลิงก์นี้เพื่อเปิด LINE แล้วกดส่งข้อความรหัสได้เลย: ${l.oa_message_url}\n` : '') +
       `รหัสเชื่อม: ${l.code.slice(0, 3)} ${l.code.slice(3)} (ใช้ได้ 10 นาที)`;
   }

@@ -20,7 +20,7 @@ import { nativeNotifyCopy } from './push-native-copy';
   template: `
     @switch (push.state()) {
       @case ('native') {
-        <!-- แอป Android: ไม่ใช้แจ้งเตือนบนเครื่อง การเตือนกินยาและแจ้งญาติมาทาง LINE -->
+        <!-- แอป Android: ไม่ใช้แจ้งเตือนบนเครื่อง การเตือนกินยาและแจ้งคนที่ห่วงใยมาทาง LINE -->
         <div class="perch">
           <app-mascot mood="happy" [size]="56" />
           <app-speech-bubble class="b" tail="left-low" [typing]="false" [live]="true" tone="info"
@@ -51,7 +51,7 @@ import { nativeNotifyCopy } from './push-native-copy';
       @case ('off') {
         <p class="hint">รับการเตือนกินยาเป็นแจ้งเตือนบนเครื่องนี้ โดยไม่ต้องเปิดแอป แตะที่แจ้งเตือนเพื่อดูและบันทึกว่ากินแล้ว</p>
         @if (push.notConfigured()) {
-          <p class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span>ระบบยังไม่ได้ตั้งค่าการแจ้งเตือนบนเครื่อง กรุณาแจ้งผู้ดูแลระบบค่ะ</span></p>
+          <p class="yt-alert yt-alert--danger" role="alert"><app-icon name="alert" /> <span>ระบบยังไม่ได้ตั้งค่าการแจ้งเตือนบนเครื่อง กรุณาแจ้งผู้พัฒนาแอปค่ะ</span></p>
         } @else {
           <button mat-flat-button type="button" class="full" [disabled]="push.busy() || !push.publicKey()" (click)="push.enable()">
             <app-icon name="bell" /> {{ push.busy() ? 'กำลังเปิด…' : 'เปิดการแจ้งเตือน' }}

@@ -13,7 +13,7 @@ import { IconComponent } from '../../shared/icon.component';
         <span class="lbl">เริ่มต้นใช้งาน</span>
         <app-icon name="arrow-right" class="arr" />
       </button>
-      <p class="who">สำหรับผู้ป่วยและญาติผู้ดูแล</p>
+      <p class="who">สำหรับทุกคนที่ต้องกินยา ทุกวัย</p>
     </footer>
   `,
   styleUrl: './welcome-cta.component.scss',
