@@ -22,7 +22,7 @@
       <app-icon lead name="heart" />
       <span trail class="yt-chip">{{ caregiverCount() === null ? '…' : caregiverCount() + ' คน' }}</span>
     </a>
-    <button appListRow type="button" title="แจ้งเตือนบนเครื่องนี้" [chevron]="true" (click)="openSheet('push')">
+    <button appListRow type="button" [title]="pushTitle" [chevron]="true" (click)="openSheet('push')">
       <app-icon lead name="bell" />
       <span trail class="yt-chip" [class.yt-chip--ok]="push.state() === 'enabled'">{{ pushLabel() }}</span>
     </button>

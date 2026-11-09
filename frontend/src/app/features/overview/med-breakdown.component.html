@@ -14,7 +14,7 @@
       }
     </ul>
     @if (parts().length) {
-      <p class="src">บันทึกผ่าน{{ ' ' }}@for (p of parts(); track p) {<span class="yt-nowrap">{{ p }}</span>@if (!$last) {<span>{{ ' · ' }}</span>}}</p>
+      <p class="src">บันทึกผ่าน{{ ' ' }}@for (p of parts(); track p) {<span class="yt-nowrap">{{ $first ? '' : '· ' }}{{ p }}</span>@if (!$last) { {{ ' ' }} }}</p>
     }
   </section>
 }

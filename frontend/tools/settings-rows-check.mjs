@@ -21,17 +21,20 @@ for (const [name, body] of Object.entries(STATES)) for (const sc of ['100', '112
   await page.waitForSelector('#set-b');
   await page.addStyleTag({ content: '*{animation:none!important;transition:none!important}' });
   await page.waitForTimeout(500);
+  if (args.includes('--control')) await page.evaluate(() => { document.querySelectorAll('.t').forEach((e) => { e.textContent = e.textContent.replace(/⁠/g, ''); }); });   // ตัวควบคุมบวก: ถอดตัวกันตัดบรรทัด ต้องจับคำเดี่ยวได้
   const m = await page.evaluate(() => {
     const rows = [...document.querySelectorAll('#set-b .yt-row, #set-c .yt-row')].map((r) => {
       const R = (e) => e?.getBoundingClientRect();
       const t = R(r.querySelector('.t')), c = R(r.querySelector('.chev')), tr = R(r.querySelector('.trail')), row = R(r);
-      return { title: r.querySelector('.t')?.textContent.trim(), chev: !!c, chevOnNameRow: c ? c.top < t.bottom && c.bottom > t.top : true, chipOverTitle: tr && tr.width > 0 ? !(tr.left >= t.right - 1 || tr.top >= t.bottom - 1 || tr.bottom <= t.top + 1 || tr.right <= t.left + 1) : false, right: Math.round(row.right), tall: Math.round(row.height) };
+      const orphan = (el) => { if (!el) return null; const tn = [...el.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim()); if (!tn) return null; const s = tn.textContent; const rg = document.createRange(); const chars = []; for (let i = 0; i < s.length; i++) { if (/[⁠s]/.test(s[i])) continue; rg.setStart(tn, i); rg.setEnd(tn, i + 1); const q = rg.getClientRects()[0]; if (q) chars.push({ c: s[i], top: Math.round(q.top / 4) }); } const tops = [...new Set(chars.map((x) => x.top))]; if (tops.length < 2) return null; const last = chars.filter((x) => x.top === tops[tops.length - 1]).map((x) => x.c).join(''); return last.replace(/[ัิ-ฺ็-๎]/g, '').length <= 3 ? s.trim() + ' → บรรทัดสุดท้าย "' + last + '"' : null; };
+      const orph = orphan(r.querySelector('.t')) || orphan(r.querySelector('.s'));
+      return { orph, title: r.querySelector('.t')?.textContent.trim(), chev: !!c, chevOnNameRow: c ? c.top < t.bottom && c.bottom > t.top : true, chipOverTitle: tr && tr.width > 0 ? !(tr.left >= t.right - 1 || tr.top >= t.bottom - 1 || tr.bottom <= t.top + 1 || tr.right <= t.left + 1) : false, right: Math.round(row.right), tall: Math.round(row.height) };
     });
     return { overflowX: document.documentElement.scrollWidth - innerWidth, vw: innerWidth, rows };
   });
-  const problems = m.rows.filter((r) => !r.chevOnNameRow || r.chipOverTitle || r.right > m.vw);
+  const problems = m.rows.filter((r) => !r.chevOnNameRow || r.chipOverTitle || r.right > m.vw || r.orph);
   total++; if (problems.length || m.overflowX > 0) bad++;
-  console.log(`${problems.length || m.overflowX > 0 ? '✘' : '✓'} ${name} ${w}x${h} ${sc === '100' ? 'ก' : sc === '112' ? 'ก+' : 'ก++'} ${m.rows.map((r) => `${r.title.slice(0, 10)}:${r.tall}`).join(' ')}${problems.length ? ' ปัญหา=' + problems.map((p) => p.title).join(',') : ''}`);
+  console.log(`${problems.length || m.overflowX > 0 ? '✘' : '✓'} ${name} ${w}x${h} ${sc === '100' ? 'ก' : sc === '112' ? 'ก+' : 'ก++'} ${m.rows.map((r) => `${r.title.slice(0, 10)}:${r.tall}`).join(' ')}${problems.length ? ' ปัญหา=' + problems.map((p) => p.orph || p.title).join(' | ') : ''}`);
   await page.locator('app-section#set-b').screenshot({ path: path.join(out, `rows-${name}-${w}x${h}-s${sc}.png`) });
   await ctx.close();
 }
