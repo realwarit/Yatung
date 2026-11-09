@@ -35,6 +35,18 @@ test('scanPatch: diff ที่เพิ่มชื่อ *.ts.net จริง
   assert.ok(!JSON.stringify(r).includes(host));
 });
 
+test('สำเนา .env (เช่น .env.before-day12) เป็นไฟล์ต้องห้าม ; .env.example ผ่าน ; ถูก .gitignore และไม่ถูก track', async () => {
+  const { FORBIDDEN_FILE: F } = await import('../../scripts/lib/secret-scan.mjs');
+  for (const f of ['.env', '.env.before-day12', 'a/.env.bak', '.env.local', 'sub/.env.production']) assert.ok(F.test(f), f);
+  for (const f of ['.env.example', 'docs/env.md', 'scripts/lib/envfile.mjs', 'x.env.example.txt']) assert.ok(!F.test(f), f);
+  const root = path.resolve(__dirname, '../..');
+  const tracked = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' }).split('\0').filter(Boolean);
+  assert.deepEqual(tracked.filter((f) => F.test(f)), [], 'ห้ามมีสำเนา .env ถูก track');
+  const ign = (f) => { try { execFileSync('git', ['check-ignore', '-q', f], { cwd: root }); return true; } catch { return false; } };
+  assert.ok(ign('.env.before-day12') && ign('.env'), '.env.* ต้องอยู่ใน .gitignore');
+  assert.ok(!ign('.env.example'), '.env.example ต้อง track ได้');
+});
+
 test('ไฟล์ที่ track อยู่ใน repo ตอนนี้ไม่มีชื่อ *.ts.net / auth key จริง', async () => {
   const { scanLine } = await import('../../scripts/lib/secret-scan.mjs');
   const root = path.resolve(__dirname, '../..');

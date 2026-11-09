@@ -1,5 +1,5 @@
 // ตรวจไฟล์ต้องห้าม + รูปแบบความลับ — ใช้โดย scripts/check-secrets.mjs (pre-commit / pre-push / demo-check) ; รายงานเฉพาะ ชนิด/ไฟล์/บรรทัด ห้ามพิมพ์ค่า
-export const FORBIDDEN_FILE = /(^|\/)\.env$|(^|\/)flows_cred\.json$|(^|\/)\.sessions\.json$|\.backup$|(^|\/)\.config\.[^/]+\.json$|\.pem$/;
+export const FORBIDDEN_FILE = /(^|\/)\.env(\.(?!example$)[^/]+)?$|(^|\/)flows_cred\.json$|(^|\/)\.sessions\.json$|\.backup$|(^|\/)\.config\.[^/]+\.json$|\.pem$/;
 
 // ค่าตัวอย่าง/ว่างที่ไม่ถือเป็นความลับ
 const PLACEHOLDER = /^(|change-?me.*|your[-_].*|xxx+|example.*|test.*|secret|password|demo.*|\$\{.*|<.*|\.\.\.|fake.*|dummy.*|placeholder.*|\*+|(?:[a-z0-9-]+\.)?(?:your-tailnet|tailnet|example|tail-?x+|xxx+|name)\.ts\.net)$/i;

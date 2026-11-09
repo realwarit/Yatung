@@ -1,4 +1,7 @@
 .env
+# สำเนา .env ทุกชนิด (เช่น .env.before-day12 สำรองค่าก่อนสลับ tunnel) — มีความลับ ห้าม commit ; .env.example ต้อง track
+.env.*
+!.env.example
 node_modules/
 frontend/dist/
 frontend/.angular/
