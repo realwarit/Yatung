@@ -464,3 +464,4 @@
 - **log ของ nodered หายเมื่อ recreate:** `scripts/lib/nodered-log.sh` (source ในสคริปต์เทสทุกตัวที่ recreate) dump `docker compose logs nodered` ลง `test-logs/<เวลา>/nodered-<ชุด>.log` ก่อน `up/restart/stop/rm/kill … nodered` และ `down` อัตโนมัติ ; `test-all.sh` ชี้ไฟล์ log ของชุดที่ไม่ผ่านใต้ตารางสรุป ; `test-logs/` อยู่ใน `.gitignore` (ห้าม commit)
 - ห้าม commit `.env` หรือ `flows_cred.json`
 - ห้ามส่ง API key ไป frontend (Gemini/LINE เรียกจาก Node-RED เท่านั้น)
+- **เทสล้มแล้วรันซ้ำผ่าน (กฎ 9 พ.ย.):** ก่อนรันซ้ำต้องบันทึกชื่อข้อที่ล้ม + ข้อความ error ไว้ก่อนเสมอ (คัดจาก output หรือ `test-logs/` ; log ของ nodered หายเมื่อ recreate) แล้วระบุในรายงาน/PR ว่า "ล้มรอบแรก ผ่านรอบสอง" พร้อมข้อและสาเหตุที่น่าจะเป็น — ห้ามรายงานแค่ตัวเลขรอบที่ผ่าน (ตัวอย่าง: review-e2e 66/1 → 67/0 ใน PR #38 ที่ไม่ได้จดข้อที่ล้ม จึงสรุปสาเหตุไม่ได้)
