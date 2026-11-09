@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const flex = require('../data/lib/line-flex');
 
-const ENV = { PUBLIC_BASE_URL: 'https://demo.ngrok-free.dev' };
+const ENV = { PUBLIC_BASE_URL: 'https://demo.example.test' };
 const doses = [
   { id: 101, name: 'Metformin', strength: '500 mg', dose_per_time: 1, unit: 'tablet', meal_relation: 'after' },
   { id: 102, name: 'Amlodipine', strength: null, dose_per_time: 0.5, unit: 'tablet', meal_relation: 'any' }
@@ -47,7 +47,7 @@ test('durationText: นาที / ชม. / ชม.+นาที', () => {
 
 test('ส่วนหัวใช้ท่ากระดิ่ง ; รูปมาจาก LINE_ASSET_BASE / PUBLIC_BASE_URL/line', () => {
   const img = all(flex.buildReminder(group, ENV).contents.header).find((n) => n.type === 'image');
-  assert.equal(img.url, 'https://demo.ngrok-free.dev/line/mascot-bell.png');
+  assert.equal(img.url, 'https://demo.example.test/line/mascot-bell.png');
   assert.equal(flex.mascotUrl('cheer', { LINE_ASSET_BASE: 'https://cdn.example/x/' }), 'https://cdn.example/x/mascot-cheer.png');
   assert.equal(flex.mascotUrl('hello', { PUBLIC_BASE_URL: 'https://a.b/' }), 'https://a.b/line/mascot-hello.png');
 });
@@ -98,7 +98,7 @@ test('ปุ่มหลัก "✓ กินแล้ว" สี #0f766e เป
   assert.equal(primary.action.data, 'a=take&d=101,102');
   assert.equal(footer[1].style, 'secondary');
   assert.equal(footer[1].action.label, 'เปิดแอป');
-  assert.equal(footer[1].action.uri, 'https://demo.ngrok-free.dev/today');
+  assert.equal(footer[1].action.uri, 'https://demo.example.test/today');
   assert.equal(flex.buildReminder(group, {}).contents.footer.contents.length, 1);   // ไม่มี PUBLIC_BASE_URL = ไม่มีปุ่มเปิดแอป
   // ตัวอย่าง: ปุ่มกินแล้วเป็น a=preview ไม่แตะข้อมูลจริง
   assert.equal(flex.buildReminder(group, ENV, { preview: true }).contents.footer.contents[0].action.data, 'a=preview');
@@ -159,10 +159,10 @@ test('quickReply ตามประเภทผู้ใช้', () => {
   const p = flex.quickReply('patient', ENV).items;
   assert.deepEqual(p[0].action, { type: 'message', label: '📋 ยาวันนี้', text: 'วันนี้' });
   assert.deepEqual(p[1].action, { type: 'message', label: '📊 สรุป', text: 'สรุป' });
-  assert.equal(p[2].action.uri, 'https://demo.ngrok-free.dev/today');
+  assert.equal(p[2].action.uri, 'https://demo.example.test/today');
   assert.equal(p[3].action.text, 'ช่วยเหลือ');
   assert.equal(flex.quickReply('unlinked', ENV).items[0].action.text, 'วิธีใช้');
-  assert.equal(flex.quickReply('unlinked', ENV).items[1].action.uri, 'https://demo.ngrok-free.dev/settings');
+  assert.equal(flex.quickReply('unlinked', ENV).items[1].action.uri, 'https://demo.example.test/settings');
   assert.deepEqual(labels('patient', {}), ['📋 ยาวันนี้', '📊 สรุป', '❓ ช่วยเหลือ']);          // ไม่มี PUBLIC_BASE_URL = ไม่มีปุ่มลิงก์
   for (const ctx of ['patient', 'unlinked', 'caregiver']) for (const i of flex.quickReply(ctx, ENV).items) assert.ok(i.action.label.length <= 20);
 });

@@ -4,7 +4,7 @@ const F = require('../data/lib/line-flex');
 const M = require('../data/lib/line-messages');
 const svc = require('../data/lib/line-service');
 
-const ENV = { PUBLIC_BASE_URL: 'https://demo.ngrok-free.dev', DEMO_MODE: 'true' };
+const ENV = { PUBLIC_BASE_URL: 'https://demo.example.test', DEMO_MODE: 'true' };
 const all = (o, out = []) => { if (Array.isArray(o)) o.forEach((x) => all(x, out)); else if (o && typeof o === 'object') { out.push(o); Object.values(o).forEach((x) => all(x, out)); } return out; };
 const SAMPLES = M.samples(ENV);
 
@@ -91,8 +91,8 @@ test('4.1 follow: 3 ขั้นตอน + ปุ่มเปิดแอปไ
   assert.ok(t.includes('สวัสดีค่ะ 👋'));
   assert.ok(t.includes('เริ่มใช้ 3 ขั้นตอน'));
   assert.ok(t.some((x) => x.startsWith('1️⃣')) && t.some((x) => x.startsWith('2️⃣')) && t.some((x) => x.startsWith('3️⃣')));
-  assert.equal(all(m.contents.footer).find((n) => n.type === 'button').action.uri, 'https://demo.ngrok-free.dev/settings');
-  assert.equal(all(m.contents.header).find((n) => n.type === 'image').url, 'https://demo.ngrok-free.dev/line/mascot-hello.png');
+  assert.equal(all(m.contents.footer).find((n) => n.type === 'button').action.uri, 'https://demo.example.test/settings');
+  assert.equal(all(m.contents.header).find((n) => n.type === 'image').url, 'https://demo.example.test/line/mascot-hello.png');
 });
 
 test('4.10 วิธีใช้ (เชื่อมแล้ว): เนื้อหาเปลี่ยนเป็นวิธีใช้ปุ่มกินแล้ว/วันนี้/เมนู', () => {
@@ -200,7 +200,7 @@ test('4.5 วันนี้ (บางส่วน): วันที่ไท�
   assert.ok(t.includes('• ยากลางวัน') && t.includes('• ยาเย็น') && t.includes('• ยานอน'));
   assert.ok(!t.includes('• ยาเช้า'));                          // มื้อที่กินแล้วไม่แสดงชื่อยา
   assert.ok(m.altText.startsWith('📋 ยาของวันนี้') && /1 จาก 4/.test(m.altText));
-  assert.equal(all(m.contents.footer).find((n) => n.type === 'button').action.uri, 'https://demo.ngrok-free.dev/today');
+  assert.equal(all(m.contents.footer).find((n) => n.type === 'button').action.uri, 'https://demo.example.test/today');
 });
 
 test('วันนี้: pending ที่ถึงเวลาแล้ว (ยังไม่เลย 30 นาที) นับเป็น "ยังไม่ได้กิน" ; ยังไม่ถึงเวลา = "รอเวลา"', () => {

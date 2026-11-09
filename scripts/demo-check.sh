@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # เช็กความพร้อมก่อนนำเสนอ — สรุป ✓/✗ ทีละข้อ (exit 1 ถ้ามีข้อใดไม่ผ่าน)
 #   bash scripts/demo-check.sh
-# ตรวจ: container db/nodered/frontend รันอยู่ · LINE (webhook/tunnel ngrok/โควตา/DEMO_MODE) · · เว็บ :8080 · proxy /api · Node-RED มี credentials MySQL · warm-up Gemini ใน log ·
+# ตรวจ: container db/nodered/frontend รันอยู่ · LINE (webhook/tunnel Tailscale Funnel [สำรอง ngrok]/โควตา/DEMO_MODE) · · เว็บ :8080 · proxy /api · Node-RED มี credentials MySQL · warm-up Gemini ใน log ·
 #       login บัญชีเดโม · สแกนข้อความสั้น 1 ครั้ง "จริง" (เรียก Gemini 1 request; AI_MOCK=true จะข้าม Gemini และแจ้งเตือน) → ลบ draft ทิ้ง
 # รหัสผ่านเดโม: ตัวแปร DEMO_PASSWORD หรือบรรทัด DEMO_PASSWORD= ใน .env (ไม่มี = demo1234)
 set -u
@@ -132,27 +132,85 @@ oa="$(docker compose exec -T nodered printenv LINE_OA_BASIC_ID 2>/dev/null | tr 
 [ "$(curl -s -o /dev/null -m 10 -w '%{http_code}' -X POST "$WEB/line/webhook" -H 'x-line-signature: x' -H 'Content-Type: application/json' -d '{"events":[]}')" = "401" ] && ok "POST $WEB/line/webhook (signature ผิด) = 401" || bad "POST /line/webhook ควรได้ 401"
 pbu="$(docker compose exec -T nodered printenv PUBLIC_BASE_URL 2>/dev/null | tr -d '\r')"
 if printf '%s' "$pbu" | grep -qE '^https://[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+(/.*)?$' && ! printf '%s' "$pbu" | grep -q 'example'; then ok "PUBLIC_BASE_URL ใน container = $pbu"
-else bad "PUBLIC_BASE_URL ใน container ไม่มีโดเมน ('${pbu:-ว่าง}') — ใน .env ต้องประกาศ NGROK_DOMAIN ก่อนบรรทัด PUBLIC_BASE_URL=https://\${NGROK_DOMAIN} แล้ว docker compose up -d --force-recreate nodered"; fi
-tstate="$(docker compose ps --all --format '{{.State}}' tunnel 2>/dev/null | head -1)"
-if [ "$tstate" = "running" ]; then
-  # tunnel ต้องต่อ network เดียวกับ frontend (หลัง docker compose down/up network ถูกสร้างใหม่ แต่ tunnel เก่าอาจค้างกับ network เดิม → "network … not found" / ngrok ต่อ frontend ไม่ได้)
-  fe_id="$(docker compose ps -q frontend 2>/dev/null | head -1)"; tn_id="$(docker compose ps --all -q tunnel 2>/dev/null | head -1)"
-  fe_net="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$v.NetworkID}} {{end}}' "$fe_id" 2>/dev/null)"
-  tn_net="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$v.NetworkID}} {{end}}' "$tn_id" 2>/dev/null)"
-  if [ -n "$fe_net" ] && [ -n "$tn_net" ] && [ "$fe_net" = "$tn_net" ]; then ok "tunnel อยู่ network เดียวกับ frontend"
-  else bad "tunnel ไม่ได้อยู่ network เดียวกับ frontend (network เก่าค้างหลัง down/up) — แก้: docker compose --profile tunnel up -d --force-recreate tunnel"; fi
-  pub="$(curl -s -m 5 http://127.0.0.1:4040/api/tunnels 2>/dev/null | jget 'o.tunnels[0].public_url')"
-  if [ -n "$pub" ]; then
-    ok "tunnel (ngrok) รันอยู่: $pub"
-    [ -n "$NG_DOMAIN" ] && [ "$pub" != "https://$NG_DOMAIN" ] && warn "public_url ไม่ตรง NGROK_DOMAIN ($NG_DOMAIN)"
-    [ "$(code "$pub/api/me" -H 'ngrok-skip-browser-warning: 1')" = "401" ] && ok "ผ่าน tunnel: /api/me = 401" || bad "ผ่าน tunnel: /api/me ไม่ใช่ 401"
-    [ "$(code -X POST "$pub/line/webhook" -H 'x-line-signature: x' -d '{}')" = "401" ] && ok "ผ่าน tunnel: /line/webhook (signature ผิด) = 401" || bad "ผ่าน tunnel: /line/webhook ไม่ใช่ 401"
-    if curl -s -m 10 "$pub/flows" -H 'ngrok-skip-browser-warning: 1' | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{JSON.parse(s);process.exit(0)}catch(e){process.exit(1)}})'; then bad "ผ่าน tunnel: /flows ได้ JSON — editor/admin API หลุดออกไป!"; else ok "ผ่าน tunnel: /flows ไม่ใช่ Node-RED"; fi
-  else warn "tunnel รันอยู่แต่อ่าน inspector (127.0.0.1:4040) ไม่ได้ — ดู docker compose logs tunnel (NGROK_AUTHTOKEN/NGROK_DOMAIN ถูกไหม)"; fi
-else
-  bad "tunnel (ngrok) ไม่ได้รัน (สถานะ: ${tstate:-ไม่มี container}) — LINE ส่ง webhook เข้ามาไม่ได้ ; รัน: docker compose --profile tunnel up -d (ดู docker compose logs tunnel)"
+else bad "PUBLIC_BASE_URL ใน container ไม่มีโดเมน ('${pbu:-ว่าง}') — ใน .env ต้องประกาศ TS_PUBLIC_HOST ก่อนบรรทัด PUBLIC_BASE_URL=https://\${TS_PUBLIC_HOST} แล้ว docker compose up -d --force-recreate nodered"; fi
+# ---- tunnel (วันที่ 12) : หลัก = Tailscale Funnel (service tunnel) · สำรอง = ngrok (service tunnel-ngrok ; ก่อนสลับ service tunnel เดิมยังเป็น ngrok) ----
+# ชื่อ *.ts.net เต็มถือเป็นความลับ → แสดงแบบปิดชื่อ tailnet เสมอ
+mask_host() { printf '%s' "$1" | sed -E 's#^https?://##; s#/.*$##; s#\.$##' | sed -E 's#^([^.]+)\..*\.ts\.net$#https://\1.•••.ts.net#'; }
+svc_image() { docker compose ps --all --format '{{.Image}}' "$1" 2>/dev/null | head -1; }
+svc_state() { docker compose ps --all --format '{{.State}}' "$1" 2>/dev/null | head -1; }
+FUNNEL_UP=0; NGROK_UP=0; FUNNEL_SVC=""; NGROK_SVC=""
+for svc in tunnel tunnel-ngrok; do
+  st="$(svc_state "$svc")"; im="$(svc_image "$svc")"
+  [ "$st" = "running" ] || continue
+  case "$im" in *tailscale*) FUNNEL_UP=1; FUNNEL_SVC="$svc" ;; *ngrok*) NGROK_UP=1; NGROK_SVC="$svc" ;; esac
+done
+TS_HOST="$(envf TS_PUBLIC_HOST)"
+pub=""; pub_kind=""
+# tunnel ต้องต่อ network เดียวกับ frontend (หลัง docker compose down/up network ถูกสร้างใหม่ แต่ tunnel เก่าอาจค้างกับ network เดิม → "network … not found")
+same_net() { # same_net SERVICE
+  local fe tn
+  fe="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$v.NetworkID}} {{end}}' "$(docker compose ps -q frontend 2>/dev/null | head -1)" 2>/dev/null)"
+  tn="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$v.NetworkID}} {{end}}' "$(docker compose ps --all -q "$1" 2>/dev/null | head -1)" 2>/dev/null)"
+  [ -n "$fe" ] && [ -n "$tn" ] && [ "$fe" = "$tn" ]
+}
+if [ "$FUNNEL_UP" = 1 ] && [ "$NGROK_UP" = 1 ]; then
+  warn "tunnel รันพร้อมกัน 2 ตัว (Tailscale Funnel + ngrok) — ยอมรับได้เฉพาะช่วงสลับ (ขั้น 2–6 ใน docs/day12-cutover.md) ; สถานะปกติให้เหลือตัวเดียว: docker compose stop tunnel-ngrok"
 fi
-# รูปน้องยาตรงใน Flex: ต้องโหลดด้วย User-Agent ที่ไม่ใช่เบราว์เซอร์ได้ 200 image/png (ngrok ฟรีแสดงหน้าเตือนให้เฉพาะเบราว์เซอร์)
+if [ "$FUNNEL_UP" = 1 ]; then
+  same_net "$FUNNEL_SVC" && ok "tunnel (Tailscale) อยู่ network เดียวกับ frontend" || bad "tunnel (Tailscale) ไม่ได้อยู่ network เดียวกับ frontend — แก้: docker compose --profile tunnel up -d --force-recreate tunnel (state อยู่ใน volume ไม่หาย)"
+  tsj="$(docker compose exec -T "$FUNNEL_SVC" tailscale status --json 2>/dev/null)"
+  bstate="$(printf '%s' "$tsj" | jget 'o.BackendState')"
+  selfdns="$(printf '%s' "$tsj" | jget 'o.Self.DNSName' | sed 's/\.$//')"
+  if [ "$bstate" = "Running" ]; then
+    ok "Tailscale ต่อ tailnet แล้ว (BackendState=Running) เครื่อง $(mask_host "$selfdns")"
+    case "$selfdns" in yatung.*) ;; *) warn "ชื่อเครื่องใน tailnet ไม่ใช่ yatung.* ($(mask_host "$selfdns")) — ถ้าเป็น yatung-1 แปลว่า state หาย/ลงทะเบียนซ้ำ URL จะไม่ตรงที่ตั้งไว้" ;; esac
+    [ -n "$TS_HOST" ] && [ "$selfdns" != "$TS_HOST" ] && warn "TS_PUBLIC_HOST ใน .env ไม่ตรงกับชื่อเครื่องจริง — แก้ให้ตรงแล้ว docker compose up -d --force-recreate nodered"
+    kexp="$(printf '%s' "$tsj" | jget 'o.Self.KeyExpiry')"
+    if [ -z "$kexp" ] || [ "$kexp" = "null" ]; then ok "key expiry ของเครื่อง yatung ปิดอยู่ (Disable key expiry แล้ว)"
+    else warn "key expiry ของเครื่อง yatung ยังเปิดอยู่ (หมดอายุ ${kexp%%T*}) — tunnel จะหลุดวันนั้น ; admin console → Machines → yatung → ⋯ → Disable key expiry (docs/day12-cutover.md ขั้น 2)"; fi
+    sj="$(docker compose exec -T "$FUNNEL_SVC" tailscale serve status --json 2>/dev/null)"
+    printf '%s' "$sj" | jget 'Object.values(o.AllowFunnel||{}).some(v=>v===true)' | grep -q true && ok "Funnel เปิดอยู่ (AllowFunnel=true)" || bad "Funnel ยังไม่เปิด (serve status ไม่มี AllowFunnel) — ตรวจ tailscale/serve.json และ ACL nodeAttrs funnel ; ดู docker compose logs tunnel"
+  else
+    bad "Tailscale ยังไม่พร้อม (BackendState=${bstate:-อ่านไม่ได้}) — ดู docker compose logs tunnel (TS_AUTHKEY หมดอายุ/ผิด? ใส่ใน .env แล้ว up ใหม่)"
+  fi
+  if [ -n "$TS_HOST" ] && printf '%s' "$TS_HOST" | grep -qE '^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$' && ! printf '%s' "$TS_HOST" | grep -q 'your-tailnet'; then
+    pub="https://$TS_HOST"; pub_kind="funnel"
+    ok "URL สาธารณะ (Funnel): $(mask_host "$pub")"
+    # curl เปล่าๆ ไม่ใส่ header พิเศษ — ต้องได้ของจริงเหมือนผู้ใช้ทั่วไป (ไม่มีหน้าเตือน)
+    [ "$(code "$pub/api/me")" = "401" ] && ok "ผ่าน Funnel: /api/me = 401" || bad "ผ่าน Funnel: /api/me ไม่ใช่ 401 (DNS ของ Funnel ใหม่อาจรอได้ถึง ~10 นาที)"
+    cfg="$(curl -s -m 10 "$pub/api/config")"; printf '%s' "$cfg" | jget 'typeof o.demoMode' | grep -q boolean && ok "ผ่าน Funnel: /api/config ได้ JSON (ไม่ใช่หน้าเตือน)" || bad "ผ่าน Funnel: /api/config ไม่ใช่ JSON"
+    [ "$(code -X POST "$pub/line/webhook" -H 'x-line-signature: x' -d '{}')" = "401" ] && ok "ผ่าน Funnel: /line/webhook (signature ผิด) = 401" || bad "ผ่าน Funnel: /line/webhook ไม่ใช่ 401"
+    for p in /flows /red/ /settings; do
+      if curl -s -m 10 "$pub$p" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{JSON.parse(s);process.exit(0)}catch(e){process.exit(/<title>\s*Node-RED/i.test(s)?0:1)}})'; then bad "ผ่าน Funnel: $p เป็น Node-RED — editor/admin API หลุดออกไป!"; else ok "ผ่าน Funnel: $p ไม่ใช่ Node-RED"; fi
+    done
+  else
+    warn "ตั้ง TS_PUBLIC_HOST ใน .env เป็นชื่อเต็มของเครื่อง yatung (ดู docs/day12-cutover.md) — ข้ามการเช็กผ่าน Funnel"
+  fi
+fi
+if [ "$NGROK_UP" = 1 ]; then
+  same_net "$NGROK_SVC" && ok "tunnel (ngrok) อยู่ network เดียวกับ frontend" || bad "tunnel (ngrok) ไม่ได้อยู่ network เดียวกับ frontend — แก้: docker compose up -d --force-recreate $NGROK_SVC (เพิ่ม --profile ให้ตรง)"
+  ngpub="$(curl -s -m 5 http://127.0.0.1:4040/api/tunnels 2>/dev/null | jget 'o.tunnels[0].public_url')"
+  if [ -n "$ngpub" ]; then
+    ok "tunnel (ngrok สำรอง) รันอยู่: $ngpub"
+    [ -n "$NG_DOMAIN" ] && [ "$ngpub" != "https://$NG_DOMAIN" ] && warn "public_url ไม่ตรง NGROK_DOMAIN ($NG_DOMAIN)"
+    [ "$(code "$ngpub/api/me" -H 'ngrok-skip-browser-warning: 1')" = "401" ] && ok "ผ่าน ngrok: /api/me = 401" || bad "ผ่าน ngrok: /api/me ไม่ใช่ 401"
+    [ "$(code -X POST "$ngpub/line/webhook" -H 'x-line-signature: x' -d '{}')" = "401" ] && ok "ผ่าน ngrok: /line/webhook (signature ผิด) = 401" || bad "ผ่าน ngrok: /line/webhook ไม่ใช่ 401"
+    if curl -s -m 10 "$ngpub/flows" -H 'ngrok-skip-browser-warning: 1' | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{JSON.parse(s);process.exit(0)}catch(e){process.exit(1)}})'; then bad "ผ่าน ngrok: /flows ได้ JSON — editor/admin API หลุดออกไป!"; else ok "ผ่าน ngrok: /flows ไม่ใช่ Node-RED"; fi
+    [ -z "$pub" ] && { pub="$ngpub"; pub_kind="ngrok"; }
+  else warn "tunnel (ngrok) รันอยู่แต่อ่าน inspector (127.0.0.1:4040) ไม่ได้ — ดู docker compose logs $NGROK_SVC (NGROK_AUTHTOKEN/NGROK_DOMAIN ถูกไหม)"; fi
+fi
+if [ "$FUNNEL_UP" = 0 ] && [ "$NGROK_UP" = 0 ]; then
+  bad "ไม่มี tunnel รันอยู่ (tunnel: $(svc_state tunnel)) — LINE ส่ง webhook เข้ามาไม่ได้ ; รัน: docker compose --profile tunnel up -d (Funnel) หรือ docker compose --profile tunnel-ngrok up -d tunnel-ngrok (สำรอง) ; ดู docker compose logs tunnel"
+fi
+# PUBLIC_BASE_URL (ลิงก์ในข้อความ LINE / รูป mascot / rich menu) ต้องชี้ tunnel ที่รันอยู่จริง
+pbu_host="$(printf '%s' "$pbu" | sed -E 's#^https?://##; s#/.*$##')"
+match=""
+[ "$FUNNEL_UP" = 1 ] && [ -n "$TS_HOST" ] && [ "$pbu_host" = "$TS_HOST" ] && match="Funnel"
+[ "$NGROK_UP" = 1 ] && [ -n "$NG_DOMAIN" ] && [ "$pbu_host" = "$NG_DOMAIN" ] && match="${match:+$match+}ngrok"
+if [ -n "$match" ]; then ok "PUBLIC_BASE_URL ตรงกับ tunnel ที่รันอยู่ ($match)"
+elif [ "$FUNNEL_UP" = 1 ] || [ "$NGROK_UP" = 1 ]; then bad "PUBLIC_BASE_URL ($(mask_host "$pbu")) ไม่ตรงกับ tunnel ที่รันอยู่ — ปุ่ม \"เปิดแอป\"/รูปในข้อความ LINE จะชี้ไปที่ไม่มีใครรับ ; แก้ใน .env แล้ว docker compose up -d --force-recreate nodered (ถามคาเด็ทก่อน ห้ามช่วงมื้อ)"; fi
+
+# รูปน้องยาตรงใน Flex: ต้องโหลดด้วย User-Agent ที่ไม่ใช่เบราว์เซอร์ได้ 200 image/png (tunnel บางแบบแสดงหน้าเตือนให้เฉพาะเบราว์เซอร์)
 asset="$(docker compose exec -T nodered printenv LINE_ASSET_BASE 2>/dev/null | tr -d '')"; asset="${asset:-${pbu%/}/line}"; asset="${asset%/}"
 legacy="$(docker compose exec -T nodered printenv LINE_MASCOT_URL 2>/dev/null | tr -d '')"
 if printf '%s' "$asset" | grep -q '^https://'; then
@@ -160,7 +218,7 @@ if printf '%s' "$asset" | grep -q '^https://'; then
     u="$asset/$f"
     mh="$(curl -s -m 15 -o /dev/null -D - -A 'LineBotWebhook/2.0' "$u" 2>/dev/null | tr -d '')"
     mcode="$(printf '%s' "$mh" | head -1 | awk '{print $2}')"; mtype="$(printf '%s' "$mh" | grep -i '^content-type:' | head -1 | awk '{print tolower($2)}')"
-    [ "$mcode" = "200" ] && [ "${mtype%%;*}" = "image/png" ] && ok "รูปน้องยาตรง $u = 200 image/png (UA ไม่ใช่เบราว์เซอร์)" || bad "รูปน้องยาตรง $u ได้ HTTP ${mcode:-?} ${mtype:-?} (ต้อง 200 image/png) — ถ้าเป็นหน้า HTML ของ ngrok ให้ย้ายรูปไปโฮสต์อื่นแล้วตั้ง LINE_ASSET_BASE ; ถ้า 404 รัน docker compose up -d --build frontend"
+    [ "$mcode" = "200" ] && [ "${mtype%%;*}" = "image/png" ] && ok "รูปน้องยาตรง $u = 200 image/png (UA ไม่ใช่เบราว์เซอร์)" || bad "รูปน้องยาตรง $u ได้ HTTP ${mcode:-?} ${mtype:-?} (ต้อง 200 image/png) — ถ้าเป็นหน้า HTML (หน้าเตือนของ tunnel) ให้ย้ายรูปไปโฮสต์อื่นแล้วตั้ง LINE_ASSET_BASE ; ถ้า 404 รัน docker compose up -d --build frontend"
   done
 else warn "ข้ามเช็กรูปน้องยาตรง (LINE_ASSET_BASE '$asset' ไม่ใช่ https)"; fi
 [ -n "$legacy" ] && warn "LINE_MASCOT_URL ($legacy) ยังตั้งอยู่ — ใช้เป็นรูปท่ากระดิ่งแทน mascot-bell.png (ลบออกจาก .env ถ้าไม่ต้องการ)"
@@ -221,7 +279,7 @@ console.log(/^(mailto:[^@\s]+@[^@\s]+|https:\/\/\S+)$/.test(s) ? (/^mailto:.*(ex
 ' 2>/dev/null | tr -d '')"
 case "$vres" in
   OK) ok "VAPID: private 32 ไบต์ · public 65 ไบต์ขึ้นต้น 0x04 · เป็นคู่กัน · SUBJECT ตั้งแล้ว (ไม่แสดงค่า)" ;;
-  OK_WEAKSUBJECT) ok "VAPID ตั้งครบ และเป็นคู่กัน (ไม่แสดงค่า)"; warn "VAPID_SUBJECT เป็น mailto ของโดเมนสมมติ — Android/Chrome ไม่สน แต่ถ้า iPhone ไม่ได้รับแจ้งเตือน (log: status=403 BadJwtToken) ให้เปลี่ยนเป็น https://<NGROK_DOMAIN> แล้ว docker compose up -d --force-recreate nodered" ;;
+  OK_WEAKSUBJECT) ok "VAPID ตั้งครบ และเป็นคู่กัน (ไม่แสดงค่า)"; warn "VAPID_SUBJECT เป็น mailto ของโดเมนสมมติ — Android/Chrome ไม่สน แต่ถ้า iPhone ไม่ได้รับแจ้งเตือน (log: status=403 BadJwtToken) ให้เปลี่ยนเป็น https://<TS_PUBLIC_HOST> แล้ว docker compose up -d --force-recreate nodered" ;;
   MISSING*) bad "VAPID ไม่ครบใน container (${vres#MISSING }) — รัน: node scripts/gen-vapid.mjs ; ตั้ง VAPID_SUBJECT ใน .env ; docker compose up -d --force-recreate nodered" ;;
   PRIV_LEN) bad "VAPID_PRIVATE_KEY ถอดแล้วไม่ใช่ 32 ไบต์ (ถูกตัด 0 นำหน้า?)  — ลบทั้งสองบรรทัด VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY ใน .env แล้วรัน node scripts/gen-vapid.mjs (แล้ว recreate nodered)" ;;
   PUB_LEN) bad "VAPID_PUBLIC_KEY ถอดแล้วไม่ใช่ 65 ไบต์  — ลบทั้งสองบรรทัด VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY ใน .env แล้วรัน node scripts/gen-vapid.mjs (แล้ว recreate nodered)" ;;
@@ -266,14 +324,21 @@ swcheck() { # swcheck LABEL BASE_URL [extra curl args…]  — ตรวจว�
   rm -f /tmp/yt-sw-body
 }
 swcheck "เว็บ" "$WEB"
-if [ -n "${pub:-}" ]; then
+if [ "$pub_kind" = "funnel" ]; then
+  # Funnel ไม่มีหน้าเตือน → curl เปล่าๆ (ไม่ใส่ header พิเศษ) ต้องได้ไฟล์จริงทั้งหมด
+  swcheck "Funnel" "$pub"
+  # header เดิมของ ngrok ต้องไม่มีผลกับ Funnel (แอปยังส่งให้ทุก /api ช่วงทดลอง) : ผลต้องเหมือนกันทั้งมีและไม่มี
+  a="$(curl -s -m 10 "$pub/api/config")"; b="$(curl -s -m 10 -H 'ngrok-skip-browser-warning: 1' "$pub/api/config")"
+  [ -n "$a" ] && [ "$a" = "$b" ] && ok "Funnel: /api/config เหมือนกันทั้งมีและไม่มี header ngrok-skip-browser-warning" || bad "Funnel: /api/config ต่างกันเมื่อมี/ไม่มี header ngrok"
+elif [ "$pub_kind" = "ngrok" ]; then
   # ngrok ฟรีแทรกหน้าเตือน (HTML) ให้คำขอที่ดูเหมือนเบราว์เซอร์จนกว่าจะกด Visit Site (ตั้ง cookie) → ตรวจ 2 แบบ
   #  1) เหมือนเบราว์เซอร์ที่กด Visit Site แล้ว (ส่ง header ข้ามหน้าเตือน) — ต้องได้ไฟล์จริง ไม่งั้นลงทะเบียน service worker ไม่ได้
-  swcheck "tunnel (หลังกด Visit Site)" "$pub" -H 'ngrok-skip-browser-warning: 1'
+  swcheck "tunnel ngrok (หลังกด Visit Site)" "$pub" -H 'ngrok-skip-browser-warning: 1'
   #  2) เบราว์เซอร์ที่ยังไม่เคยกด — คาดว่าได้หน้าเตือน (แจ้งเฉยๆ ไม่ผิด)
   first="$(curl -s -m 10 -o /dev/null -w '%{content_type}' -A 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1' -H 'Accept: text/html' "$pub/")"
-  case "$first" in text/html*) warn "ngrok ฟรี: เปิดครั้งแรกด้วยเบราว์เซอร์จะเจอหน้า \"Visit Site\" — กดครั้งเดียวต่ออุปกรณ์ ; iPhone ที่เปิดจากไอคอนหน้าจอโฮม cookie แยกจาก Safari ต้องกดอีกครั้งในแอป (ดู docs/web-push-test.md)" ;; esac
-else warn "ข้ามเช็ก service worker ผ่าน tunnel (tunnel ไม่ได้รัน)"; fi
+  case "$first" in text/html*) warn "ngrok ฟรี: เปิดครั้งแรกด้วยเบราว์เซอร์จะเจอหน้า \"Visit Site\" — กดครั้งเดียวต่ออุปกรณ์ (นี่คือเหตุผลที่ย้ายไป Funnel)" ;; esac
+else warn "ข้ามเช็ก service worker ผ่าน tunnel (ไม่มี tunnel ที่ใช้ได้)"; fi
+
 
 echo "== 9) schema (DB จริงต้องมีคอลัมน์ครบตาม db/init/01_schema.sql)"
 # อ่านอย่างเดียวกับ DB จริง: สร้าง DB ชั่วคราว yt_schema_check จาก db/init แล้วเทียบ information_schema (ไม่เรียก migrate.sh ; ลบ DB ชั่วคราวทิ้งตอนจบ)

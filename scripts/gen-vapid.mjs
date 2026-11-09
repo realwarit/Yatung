@@ -71,7 +71,7 @@ function main() {
   console.log('VAPID_PUBLIC_KEY=' + r.publicKey);
   if (r.action === 'created') {
     console.log('(private key เขียนลง .env แล้ว ไม่แสดงบนหน้าจอ)');
-    console.log('ถัดไป: ตั้ง VAPID_SUBJECT ใน .env (mailto:อีเมลที่เป็นของคุณ หรือ https://<NGROK_DOMAIN>) แล้ว docker compose up -d --force-recreate nodered');
+    console.log('ถัดไป: ตั้ง VAPID_SUBJECT ใน .env (mailto:อีเมลที่เป็นของคุณ หรือ https://<TS_PUBLIC_HOST>) แล้ว docker compose up -d --force-recreate nodered');
   }
 }
 

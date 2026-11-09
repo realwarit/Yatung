@@ -54,7 +54,7 @@ const fakePush = (opts = {}) => {
     sendToUser: async (db, userId, payload, meta) => { sent.push({ userId, payload, meta }); await new Promise((r) => setTimeout(r, 3)); return { subs: 1, sent: opts.fail ? 0 : 1, failed: opts.fail ? 1 : 0, removed: 0 }; }
   };
 };
-const ENV = { PUBLIC_BASE_URL: 'https://x.ngrok-free.dev' };
+const ENV = { PUBLIC_BASE_URL: 'https://x.example.test' };
 
 test('ไม่เชื่อม LINE + มีเครื่อง → Web Push อย่างเดียว (จอง reminded_at, payload ไม่มีชื่อยา)', async () => {
   const db = makeDb([{ id: 1, user_id: 7, line: null, has_push: true }]);

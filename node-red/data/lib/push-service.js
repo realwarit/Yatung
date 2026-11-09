@@ -106,7 +106,7 @@ function describeFailure(e, host) {
   try { reason = String(JSON.parse(e.body || '{}').reason || '').slice(0, 40); } catch { /* body ไม่ใช่ JSON */ }
   const apple = /(^|\.)push\.apple\.com$/.test(host || '');
   let hint = '';
-  if (apple && (status === 403 || reason === 'BadJwtToken')) hint = ' hint=VAPID_SUBJECT_ของ_Apple_ไม่ผ่าน(แก้เป็น_https://<NGROK_DOMAIN>_แล้ว_recreate_nodered)';
+  if (apple && (status === 403 || reason === 'BadJwtToken')) hint = ' hint=VAPID_SUBJECT_ของ_Apple_ไม่ผ่าน(แก้เป็น_https://<TS_PUBLIC_HOST>_แล้ว_recreate_nodered)';
   else if (status === 401 || status === 403) hint = ' hint=VAPID_ไม่ตรงกับ_subscription(เปิดแจ้งเตือนใหม่ถ้าเพิ่งเปลี่ยนคีย์)';
   else if (status === 413) hint = ' hint=payload_ใหญ่เกิน';
   else if (status === 429) hint = ' hint=ผู้ให้บริการ_push_จำกัดความถี่';

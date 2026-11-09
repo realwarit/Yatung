@@ -40,7 +40,7 @@ const fakeClient = (opts = {}) => {
   };
 };
 const row = (id, user, time, name, extra = {}) => ({ id, user_id: user, slot: 'morning', scheduled_at: '2026-10-09 ' + time + ':00', name, due: true, ...extra });
-const ENV = { PUBLIC_BASE_URL: 'https://x.ngrok-free.dev' };
+const ENV = { PUBLIC_BASE_URL: 'https://x.example.test' };
 
 test('3 ยาในมื้อเดียวกัน → 1 push (1 ข้อความ 3 รายการ) + จอง reminded_at ครบ', async () => {
   const db = makeDb([row(1, 7, '08:00', 'A'), row(2, 7, '08:00', 'B'), row(3, 7, '08:00', 'C')]);

@@ -4,7 +4,7 @@ const esc = require('../data/lib/escalation-service');
 const M = require('../data/lib/line-messages');
 const F = require('../data/lib/line-flex');
 
-const ENV = { PUBLIC_BASE_URL: 'https://x.ngrok-free.dev' };
+const ENV = { PUBLIC_BASE_URL: 'https://x.example.test' };
 const dose = (id, name = 'ยา' + id) => ({ id, name, strength: '500 mg', dose_per_time: 1, unit: 'tablet', meal_relation: 'after' });
 const group = (extra = {}) => ({ patient: 'สมชาย ใจดี', slot: 'evening', scheduled_at: '2026-10-09 18:00:00', late_min: 65, doses: [dose(11), dose(12)], escalation_ids: [5, 6], ...extra });
 const flat = (n) => (n && typeof n === 'object' ? [n, ...Object.values(n).flatMap(flat)] : []);
