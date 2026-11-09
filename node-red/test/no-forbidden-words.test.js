@@ -14,6 +14,10 @@ const FORBIDDEN = /ป่วย|ผู้ดูแล|ญาติ|คนไข�
 const unescape = (s) => s
   .replace(/\\u\{([0-9a-fA-F]+)\}/g, (_, h) => String.fromCodePoint(parseInt(h, 16)))
   .replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+// ข้อยกเว้นที่อนุมัติ (ส่วนที่ 3 / 3.1 ข้อ 4) : อนุญาต *เฉพาะสตริง* `[ชื่อผู้ป่วย]` ในไฟล์ที่ระบุ เพราะเป็น token ปิดชื่อที่พรอมต์ Gemini ใช้
+// (หน้า Review แสดงเป็น [ชื่อ]) ; คำต้องห้ามอื่นในไฟล์เดียวกันยังถูกตรวจ ไฟล์อื่นห้ามมี
+const ALLOWED_STRING = { 'frontend/src/app/features/review/review.model.ts': ['[ชื่อผู้ป่วย]'] };
+const withoutAllowed = (rel, s) => (ALLOWED_STRING[rel] || []).reduce((acc, a) => acc.split(a).join(''), s);
 const findForbidden = (s) => { const m = FORBIDDEN.exec(unescape(s)); return m ? m[0] : null; };
 
 // ตัดคอมเมนต์ (// ที่ต้นบรรทัด/หลังช่องว่าง, /* */, <!-- -->) — ไม่ใช่ข้อความที่ผู้ใช้เห็น
@@ -45,6 +49,15 @@ test('ตัวควบคุมบวก: ตัวตรวจจับคำ
   assert.equal(findForbidden(stripComments("const u = 'https://x.test/ญาติ';")), 'ญาติ');
 });
 
+test('ข้อยกเว้น token: ตัดเฉพาะสตริงที่ระบุ คำอื่นยังถูกจับ และไฟล์ที่ไม่อยู่ในรายการไม่ได้รับยกเว้น', () => {
+  const rel = 'frontend/src/app/features/review/review.model.ts';
+  const src = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+  assert.ok(stripComments(src).includes('[ชื่อผู้ป่วย]'), 'ข้อยกเว้นต้องตรงกับโค้ดจริง');
+  assert.equal(findForbidden(withoutAllowed(rel, stripComments(src))), null);
+  assert.equal(findForbidden(withoutAllowed(rel, "const a = '[ชื่อผู้ป่วย]' + 'ผู้ดูแล';")), 'ผู้ดูแล');
+  assert.equal(findForbidden(withoutAllowed('frontend/src/app/other.ts', "const a = '[ชื่อผู้ป่วย]';")), 'ป่วย');
+});
+
 test('ตัวสแกนไฟล์หาไฟล์เจอจริง (ไม่ผ่านเพราะสแกนไม่ได้อะไร)', () => {
   const fe = walk(path.join(ROOT, 'frontend', 'src', 'app')).filter((f) => /\.(ts|html)$/.test(f) && !/\.spec\.ts$/.test(f));
   assert.ok(fe.length > 100, `พบไฟล์ frontend ${fe.length}`);
@@ -55,8 +68,9 @@ test('ไฟล์ frontend ที่ผู้ใช้เห็น (ts/html ไ
   const files = walk(path.join(ROOT, 'frontend', 'src', 'app')).filter((f) => /\.(ts|html)$/.test(f) && !/\.spec\.ts$/.test(f));
   const hits = [];
   for (const f of files) {
-    const w = findForbidden(stripComments(fs.readFileSync(f, 'utf8')));
-    if (w) hits.push(`${path.relative(ROOT, f)}: ${w}`);
+    const rel = path.relative(ROOT, f).split(path.sep).join('/');
+    const w = findForbidden(withoutAllowed(rel, stripComments(fs.readFileSync(f, 'utf8'))));
+    if (w) hits.push(`${rel}: ${w}`);
   }
   assert.deepEqual(hits, []);
 });

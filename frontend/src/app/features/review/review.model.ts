@@ -140,6 +140,9 @@ export const domIdOf = (uid: number, f: MedField | 'qty'): string =>
   f === 'qty' ? `c${uid}-qty` : `c${uid}-${f === 'indication' ? 'ind' : f === 'warnings' ? 'warn' : f}`;
 
 /** แสดง "ข้อความที่ AI อ่านได้" : token ปิดชื่อจากฝั่ง server เป็น [ชื่อผู้ป่วย] → แสดงเป็น [ชื่อ] (เฉพาะการแสดงผล ไม่แก้ข้อมูลที่ส่ง/บันทึก) */
-/** token ปิดชื่อฝั่ง server (สร้างจากรหัสตัวอักษร ไม่เขียนคำตรงๆ เพื่อไม่ให้เทสคำต้องห้ามจับซ้ำ) */
-const SERVER_NAME_TOKEN = '[' + String.fromCharCode(0xe0a, 0xe37, 0xe48, 0xe2d, 0xe1c, 0xe39, 0xe49, 0xe1b, 0xe48, 0xe27, 0xe22) + ']';
+/**
+ * token ที่พรอมต์ Gemini / redactPii ฝั่ง server ใช้แทนชื่อบนซอง (เขียนตรง ๆ จุดเดียว — เป็นข้อยกเว้นเดียวของคำต้องห้าม
+ * ระบุไว้ใน no-forbidden-words.test.js และ tools/wording-bundle-check.mjs) ; หน้า Review แสดงเป็น [ชื่อ] เฉพาะตอนแสดงผล
+ */
+const SERVER_NAME_TOKEN = '[ชื่อผู้ป่วย]';
 export const ocrForDisplay = (s: string | null | undefined): string => (s ?? '').split(SERVER_NAME_TOKEN).join('[ชื่อ]');
