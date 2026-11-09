@@ -299,3 +299,16 @@
 17. ช่วง 1, 3, 4 เสร็จแล้วรันเทสตามข้อ 17 ของส่วนที่ 1 (ยกเว้นข้อที่ต้องมี Funnel จริง) แล้วรายงาน ยังไม่ push จนกว่าคาเด็ทดู `docs/day12-cutover.md`
 
 **ผลต่อแผนส่วนที่ 2:** ช่วง 2 ถูกย้ายไปปิดท้าย → ตาราง 2.3 แถว interceptor/`NGROK_SKIP_HEADER`/probe header/สเปก **ไม่แก้ในรอบนี้** · `.env.example` ยังต้องมี NGROK_* (ย้ายไปส่วน "สำรอง") เพราะ `tunnel-ngrok` ยังใช้
+
+---
+
+# ส่วนที่ 3.1 — หลังรีวิว `day12-cutover.md` (วันที่ 12)
+
+1. **เวลาเทสหนัก:** `test-all.sh`, first-screen, overflow, state-check, review-e2e, demo-check เต็ม ทำเฉพาะ 16:30–17:30 (ไม่ทัน = พรุ่งนี้ 08:30–11:30) · ไม่แตะ service `tunnel` (ngrok) · เสร็จแล้วคืนสถานะ (AI_MOCK เดิม, 4 container รัน)
+2. **ขั้น 7.5:** ใช้ปุ่ม "ทดลองส่งแจ้งเตือน" (`POST /api/push/test`, ไม่แตะรอบยา) ; ห้ามใช้ remind-now กับบัญชี "การ์ตูน"
+3. **สำรอง `.env.before-day12`** (เฉพาะ `PUBLIC_BASE_URL`/`VAPID_SUBJECT`) ; `.gitignore` ครอบ `.env.*` (ยกเว้น `.env.example`) ; `check-secrets` ถือเป็นไฟล์ต้องห้าม ; ย้อนกลับคัดลอกจากไฟล์นี้
+4. **`TS_PUBLIC_HOST` อยู่เหนือทั้ง `PUBLIC_BASE_URL` และ `VAPID_SUBJECT`** ; demo-check ตรวจทั้งสองค่าใน container: ไม่ว่าง · ไม่มี `${` · `https://` · ตรง tunnel ที่รัน (VAPID `mailto:` = แดงเมื่อ Funnel รัน)
+5. **ขั้น 1:** merge + `git pull` ก่อน 13:15 และ `docker compose ps` ต้องเห็น ngrok เก่า running ก่อนรันคำสั่ง
+6. **หัวข้อ "เครื่องอื่นที่เคยติดตั้ง PWA"** เพิ่มใน cutover
+7. **`Self.KeyExpiry`:** ยืนยันกับ `tailscale status --json` จริงในขั้น 2.3 ; demo-check ขึ้นเหลือง "ไม่ทราบ" ถ้าไม่มีฟิลด์ ; ผิด = commit `fix(scripts): …`
+8. **ปิดงาน:** รายงานตารางก่อน→หลัง แล้ว push `feat/day12-tailscale` + Draft PR (`docs/day12-pr.md`) หลัง `git grep` + check-secrets
