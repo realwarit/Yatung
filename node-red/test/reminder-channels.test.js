@@ -275,3 +275,10 @@ test('remindDemoUser: ส่ง push ต่อให้ remindNow (พารา�
   assert.equal(r.status, 200, JSON.stringify(r.body));
   assert.equal(push.sent.length, 1);
 });
+
+test('flows.json: remind-now และ inject เดโมส่ง pushService ให้ remindNow/remindDemoUser', () => {
+  const flows = JSON.parse(require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'data', 'flows.json'), 'utf8'));
+  const byId = (id) => flows.find((n) => n.id === id);
+  assert.match(byId('ln_demo_fn').func, /remindNow\([^)]*\)[^;]*global\.get\('pushService'\)\)/s);
+  assert.match(byId('ln_dmi_fn').func, /remindDemoUser\([\s\S]*global\.get\('pushService'\)\)/);
+});
